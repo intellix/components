@@ -1,0 +1,74 @@
+{
+  "name": "@angular-community/qwik-cdk",
+  "version": "0.0.0",
+  "description": "Qwik port of @angular/cdk (foundation primitives + Dialog).",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint:no-ssr-leaks": "node ./scripts/lint-no-ssr-leaks.mjs"
+  },
+  "peerDependencies": {
+    "@builder.io/qwik": "^1.5.0"
+  },
+  "devDependencies": {
+    "@builder.io/qwik": "^1.5.0",
+    "@types/node": "*",
+    "happy-dom": "*",
+    "sass": "*",
+    "typescript": "*",
+    "vite": "*",
+    "vite-plugin-dts": "*",
+    "vitest": "*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./dialog": {
+      "types": "./dist/dialog/index.d.ts",
+      "import": "./dist/dialog/index.js"
+    },
+    "./overlay": {
+      "types": "./dist/overlay/index.d.ts",
+      "import": "./dist/overlay/index.js"
+    },
+    "./portal": {
+      "types": "./dist/portal/index.d.ts",
+      "import": "./dist/portal/index.js"
+    },
+    "./a11y": {
+      "types": "./dist/a11y/index.d.ts",
+      "import": "./dist/a11y/index.js"
+    },
+    "./platform": {
+      "types": "./dist/platform/index.d.ts",
+      "import": "./dist/platform/index.js"
+    },
+    "./bidi": {
+      "types": "./dist/bidi/index.d.ts",
+      "import": "./dist/bidi/index.js"
+    },
+    "./coercion": {
+      "types": "./dist/coercion/index.d.ts",
+      "import": "./dist/coercion/index.js"
+    },
+    "./keycodes": {
+      "types": "./dist/keycodes/index.d.ts",
+      "import": "./dist/keycodes/index.js"
+    },
+    "./overlay-prebuilt.css": "./dist/overlay-prebuilt.css",
+    "./a11y-prebuilt.css": "./dist/a11y-prebuilt.css",
+    "./scss/*": "./scss/*"
+  },
+  "files": [
+    "dist",
+    "scss"
+  ]
+}
