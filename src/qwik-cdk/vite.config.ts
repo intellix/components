@@ -6,7 +6,39 @@ import {resolve} from 'node:path';
 const entries = ['platform', 'bidi', 'coercion', 'keycodes', 'portal', 'a11y', 'overlay', 'dialog'];
 
 export default defineConfig({
-  plugins: [qwikVite({csr: true, srcDir: '.'}), dts({outDirs: 'dist', insertTypesEntry: true})],
+  plugins: [
+    qwikVite({csr: true, srcDir: '.'}),
+    dts({outDirs: 'dist', insertTypesEntry: true}),
+    {
+      name: 'qwik-cdk-compile-sass-prebuilt',
+      apply: 'build',
+      async closeBundle() {
+        const sass = await import('sass');
+        const fs = await import('node:fs/promises');
+        const path = await import('node:path');
+        const entries: [string, string][] = [
+          ['scss/overlay/overlay-prebuilt.scss', 'dist/overlay-prebuilt.css'],
+          ['scss/a11y/a11y-prebuilt.scss', 'dist/a11y-prebuilt.css'],
+        ];
+        for (const [src, out] of entries) {
+          const result = sass.compile(path.resolve(__dirname, src), {style: 'expanded'});
+          await fs.mkdir(path.dirname(path.resolve(__dirname, out)), {recursive: true});
+          await fs.writeFile(path.resolve(__dirname, out), result.css, 'utf8');
+        }
+      },
+    },
+    {
+      name: 'qwik-cdk-copy-scss',
+      apply: 'build',
+      async closeBundle() {
+        const fs = await import('node:fs/promises');
+        const path = await import('node:path');
+        const src = path.resolve(__dirname, 'scss');
+        const dst = path.resolve(__dirname, 'dist/scss');
+        await fs.cp(src, dst, {recursive: true});
+      },
+    },
+  ],
   build: {
     outDir: 'dist',
     lib: {
