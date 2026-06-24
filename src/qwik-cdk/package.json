@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "lint:no-ssr-leaks": "node ./scripts/lint-no-ssr-leaks.mjs"
+    "lint:no-ssr-leaks": "node ./scripts/lint-no-ssr-leaks.mjs",
+    "test:css-parity": "node ./scripts/diff-prebuilt-css.mjs"
   },
   "peerDependencies": {
     "@builder.io/qwik": "^1.5.0"
