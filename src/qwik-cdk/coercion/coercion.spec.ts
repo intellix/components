@@ -3,6 +3,7 @@ import {
   coerceBooleanProperty,
   coerceNumberProperty,
   coerceArray,
+  coerceStringArray,
   coerceCssPixelValue,
   coerceElement,
 } from './public-api';
@@ -31,5 +32,14 @@ describe('coercion', () => {
   it('coerceElement passes raw element through', () => {
     const el = document.createElement('div');
     expect(coerceElement(el)).toBe(el);
+  });
+  it('coerceElement unwraps { nativeElement }', () => {
+    const el = document.createElement('div');
+    const ref = {nativeElement: el};
+    expect(coerceElement(ref)).toBe(el);
+  });
+  it('coerceStringArray splits CSV', () => {
+    expect(coerceStringArray('a,b,c', ',')).toEqual(['a', 'b', 'c']);
+    expect(coerceStringArray(['a', 'b'])).toEqual(['a', 'b']);
   });
 });
