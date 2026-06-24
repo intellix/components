@@ -19,5 +19,5 @@
     "rootDir": "."
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+  "exclude": ["dist", "node_modules", "**/*.spec.ts", "vite.config.ts"]
 }
