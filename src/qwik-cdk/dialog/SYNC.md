@@ -23,6 +23,9 @@ Open deviations:
 - DialogRef: `keydownEvents: Observable` → `DialogConfig.onKeydown$: QRL` (same).
 - DialogRef: `outsidePointerEvents: Observable` → `DialogConfig.onOutsidePointer$: QRL`
   (same).
+- Dialog: `afterOpened: Subject` → `<QwikCdkRoot onDialogOpened$>` callback + `openDialogs`
+  signal on the Dialog service (avoid RxJS, surface in idiomatic shape).
+- Dialog: `afterAllClosed: Observable` → `<QwikCdkRoot onAllDialogsClosed$>` callback (same).
 
 Scenario port log (dialog.spec.ts):
 - Ports happen in Task 27. This is a placeholder for the full scenario list.
