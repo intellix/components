@@ -32,6 +32,7 @@ import {
   OverlayOutsideClickDispatcher,
   OVERLAY_OUTSIDE_CLICK_DISPATCHER,
 } from './overlay/public-api';
+import {DEFAULT_DIALOG_CONFIG} from './dialog/dialog-tokens';
 import type {DialogConfig} from './dialog/dialog-config';
 
 export interface QwikCdkRootProps {
@@ -81,6 +82,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   useContextProvider(OVERLAY_OUTSIDE_CLICK_DISPATCHER, outsideClickDispatcher);
   useContextProvider(OVERLAY_REGISTRY, registry);
   useContextProvider(OVERLAY, overlay);
+  useContextProvider(DEFAULT_DIALOG_CONFIG, props.dialogDefaults ?? {});
 
   // Cleanup dispatchers on teardown
   useVisibleTask$(({cleanup}) => {
