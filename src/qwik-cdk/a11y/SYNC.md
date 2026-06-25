@@ -20,3 +20,37 @@
   - Removed `inject(Platform)` — replaced with constructor parameter `platform: Platform = new Platform()`.
   - Dropped `import { Service, inject } from '@angular/core'`.
   - All helper functions and logic ported verbatim.
+
+### `InputModalityDetector`
+
+- Source: `src/cdk/a11y/input-modality/input-modality-detector.ts`
+- Destination: `src/qwik-cdk/a11y/input-modality/input-modality-detector.ts`
+- Changes from CDK original:
+  - Removed `@Service()` decorator and all Angular DI (`inject`, `NgZone`, `RendererFactory2`, `DOCUMENT`, `InjectionToken`).
+  - Removed RxJS (`BehaviorSubject`, `Observable`, `distinctUntilChanged`, `skip`).
+  - Replaced `_modality` BehaviorSubject with a plain `{ value: InputModality }` signal shim (`readonly modality`).
+  - Removed `modalityDetected` and `modalityChanged` RxJS observables; added `onModalityChange(cb)` callback registration for FocusMonitor integration.
+  - Replaced `renderer.listen` with direct `document.addEventListener` (gated by `isBrowser` from `@builder.io/qwik/build`).
+  - Added `destroy()` method that removes all event listeners and callbacks.
+  - Inlined keycode constants (ALT, CONTROL, MAC_META, META, SHIFT) — no CDK import.
+  - Inlined `isFakeMousedownFromScreenReader` and `isFakeTouchstartFromScreenReader` — no CDK import.
+  - Inlined `_getEventTarget` helper.
+  - Added `INPUT_MODALITY_DETECTOR` context and `useInputModalityDetector()` hook.
+
+### `FocusMonitor`
+
+- Source: `src/cdk/a11y/focus-monitor/focus-monitor.ts`
+- Destination: `src/qwik-cdk/a11y/focus-monitor/focus-monitor.ts`
+- Changes from CDK original:
+  - Removed `@Service()` decorator and all Angular DI (`inject`, `NgZone`, `DOCUMENT`, `InjectionToken`).
+  - Removed RxJS (`Observable`, `Subject`, `Subscription`, `takeUntil`, `observableOf`).
+  - Constructor parameters: `(platform: Platform, modalityDetector: InputModalityDetector, detectionMode?)` — no NgZone.
+  - `monitor()` returns `{ value: FocusOrigin }` signal shim instead of `Observable<FocusOrigin>`.
+  - Replaced `Subject<FocusOrigin>` per element with a plain `{ value: FocusOrigin }` object.
+  - Replaced RxJS subscription to `modalityDetected` with `InputModalityDetector.onModalityChange()` callback.
+  - All `runOutsideAngular` / `this._ngZone.run()` calls removed — direct invocation.
+  - Dropped `CdkMonitorFocus` directive (Angular component, not needed in Qwik port).
+  - Dropped `coerceElement` — `monitor()` and `stopMonitoring()` accept `HTMLElement` only.
+  - Inlined `_getEventTarget` and `_getShadowRoot` helpers.
+  - `_onFocus` and `_onBlur` made public for direct triggering in tests (happy-dom does not fire focus events reliably).
+  - Added `FOCUS_MONITOR` context and `useFocusMonitor()` hook.
