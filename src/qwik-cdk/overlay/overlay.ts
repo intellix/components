@@ -39,10 +39,10 @@ export function createOverlayService(registry: OverlayRegistry, idGen: _IdGenera
               ? `${config.height}px`
               : undefined,
         ),
-        minWidth: signalOf(undefined),
-        minHeight: signalOf(undefined),
-        maxWidth: signalOf(undefined),
-        maxHeight: signalOf(undefined),
+        minWidth: signalOf(toCssPx(config.minWidth)),
+        minHeight: signalOf(toCssPx(config.minHeight)),
+        maxWidth: signalOf(toCssPx(config.maxWidth)),
+        maxHeight: signalOf(toCssPx(config.maxHeight)),
       };
       const entry: OverlayEntry = {
         id,
@@ -74,4 +74,9 @@ function signalOf<T>(v: T): {value: T} {
 }
 function toArr<T>(v: T | T[] | undefined): T[] {
   return v == null ? [] : Array.isArray(v) ? v : [v];
+}
+function toCssPx(v: string | number | undefined): string | undefined {
+  if (typeof v === 'string') return v;
+  if (v != null) return `${v}px`;
+  return undefined;
 }

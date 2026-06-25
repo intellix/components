@@ -17,7 +17,7 @@ import type {OverlayEntry, OverlayRegistry} from '../overlay/public-api';
 import {_IdGenerator} from '../a11y/id-generator';
 import {createDialogService} from './dialog';
 import type {Dialog} from './dialog';
-import {DialogRef} from './dialog-ref';
+import type {DialogRef} from './dialog-ref';
 import type {Signal} from '@builder.io/qwik';
 
 // ---------------------------------------------------------------------------
