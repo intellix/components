@@ -1,2 +1,2 @@
-// Placeholder. Populated by entry-point tasks.
-export {};
+export {Directionality, DIRECTIONALITY, useDirectionality, isDirection} from './directionality';
+export type {Direction} from './directionality';
