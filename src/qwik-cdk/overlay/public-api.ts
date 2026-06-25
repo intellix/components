@@ -1,4 +1,7 @@
 export {OverlayConfig} from './overlay-config';
+export {OVERLAY_REGISTRY} from './overlay-registry';
+export type {OverlayEntry, OverlayRegistry, OverlayEntryState} from './overlay-registry';
+export {OverlayContainerOutlet} from './overlay-container-outlet';
 export type {PositionStrategy, PositionStrategyOverlayHandle} from './position/position-strategy';
 export type {ScrollStrategy, ScrollStrategyOverlayHandle} from './scroll/scroll-strategy';
 export type {OverlayContextOverride} from './overlay-context';

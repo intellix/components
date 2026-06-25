@@ -1,0 +1,38 @@
+import {component$, useSignal, useVisibleTask$} from '@builder.io/qwik';
+import type {OverlayEntry} from './overlay-registry';
+
+export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
+  const hostRef = useSignal<HTMLElement>();
+  const paneRef = useSignal<HTMLElement>();
+
+  useVisibleTask$(({cleanup}) => {
+    if (!hostRef.value || !paneRef.value) return;
+    entry.lifecycle.onAttached$(hostRef.value, paneRef.value);
+    cleanup(() => entry.lifecycle.onDetached$());
+  });
+
+  const Comp = entry.Component;
+  return (
+    <div ref={hostRef} class="cdk-overlay-host" data-overlay-id={entry.id}>
+      {entry.config.hasBackdrop && (
+        <div
+          class={`cdk-overlay-backdrop ${entry.state.backdropShowing.value ? 'cdk-overlay-backdrop-showing' : ''}`}
+        />
+      )}
+      <div
+        ref={paneRef}
+        class={['cdk-overlay-pane', ...entry.state.panelClasses.value].join(' ')}
+        style={{
+          width: entry.state.width.value,
+          height: entry.state.height.value,
+          minWidth: entry.state.minWidth.value,
+          minHeight: entry.state.minHeight.value,
+          maxWidth: entry.state.maxWidth.value,
+          maxHeight: entry.state.maxHeight.value,
+        }}
+      >
+        <Comp {...(entry.props as any)} />
+      </div>
+    </div>
+  );
+});
