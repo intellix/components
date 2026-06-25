@@ -15,6 +15,7 @@ import type {Overlay, OverlayRef} from '../overlay/public-api';
 import {OverlayKeyboardDispatcher, OverlayOutsideClickDispatcher} from '../overlay/public-api';
 import {DIALOG_DATA} from './dialog-tokens';
 import type {_IdGenerator} from '../a11y/id-generator';
+import {hasModifierKey} from '../keycodes/modifiers';
 
 export interface Dialog {
   open<C, D = unknown, R = unknown>(
@@ -115,7 +116,7 @@ export function createDialogService(deps: {
       deps.keyboardDispatcher.add(overlayRef, {
         onKeydown: (e: KeyboardEvent) => {
           merged.onKeydown$?.(e);
-          if (e.key === 'Escape' && !merged.disableClose) ref.close();
+          if (e.key === 'Escape' && !merged.disableClose && !hasModifierKey(e)) ref.close();
         },
       });
       deps.outsideClickDispatcher.add(overlayRef, {
