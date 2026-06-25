@@ -34,6 +34,8 @@ import {
 } from './overlay/public-api';
 import {DEFAULT_DIALOG_CONFIG} from './dialog/dialog-tokens';
 import type {DialogConfig} from './dialog/dialog-config';
+import {createDialogService, DIALOG} from './dialog/dialog';
+import type {DialogRef} from './dialog/dialog-ref';
 
 export interface QwikCdkRootProps {
   dialogDefaults?: Partial<DialogConfig>;
@@ -70,6 +72,12 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
 
   const overlay = noSerialize(createOverlayService(registry, idGen))!;
 
+  // Open dialogs tracked as a reactive signal (browser-only; no dialogs open during SSR)
+  const openDialogs = useSignal<readonly DialogRef[]>([]);
+  const dialog = noSerialize(
+    createDialogService({overlay, idGen, defaults: props.dialogDefaults ?? {}, openDialogs}),
+  )!;
+
   // Provide all contexts
   useContextProvider(PLATFORM, platform);
   useContextProvider(ID_GENERATOR, idGen);
@@ -83,6 +91,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   useContextProvider(OVERLAY_REGISTRY, registry);
   useContextProvider(OVERLAY, overlay);
   useContextProvider(DEFAULT_DIALOG_CONFIG, props.dialogDefaults ?? {});
+  useContextProvider(DIALOG, dialog);
 
   // Cleanup dispatchers on teardown
   useVisibleTask$(({cleanup}) => {
