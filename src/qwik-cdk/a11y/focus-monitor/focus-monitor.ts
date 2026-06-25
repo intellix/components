@@ -171,6 +171,7 @@ export class FocusMonitor {
    * Focuses the element via the specified focus origin.
    */
   focusVia(element: HTMLElement, origin: FocusOrigin, options?: FocusOptions): void {
+    if (!this._platform.isBrowser) return;
     const focusedElement = document.activeElement;
 
     if (element === focusedElement) {
