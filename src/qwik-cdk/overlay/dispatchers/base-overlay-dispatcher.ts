@@ -50,13 +50,9 @@ export abstract class BaseOverlayDispatcher {
 
   /**
    * Determines whether an overlay is allowed to receive a keyboard event.
-   * Returns false if the overlay has no keydown handler registered.
+   * The caller is responsible for checking that a handler exists before calling this.
    */
   protected canReceiveKeyboardEvent(overlayRef: OverlayRef, event: Event): boolean {
-    if (!overlayRef._keydownEvents) {
-      return false;
-    }
-
     if (overlayRef.eventPredicate) {
       return overlayRef.eventPredicate(event);
     }
@@ -66,13 +62,9 @@ export abstract class BaseOverlayDispatcher {
 
   /**
    * Determines whether an overlay is allowed to receive a pointer event.
-   * Returns false if the overlay has no outside pointer events handler registered.
+   * The caller is responsible for checking that a handler exists before calling this.
    */
   protected canReceivePointerEvent(overlayRef: OverlayRef, event: Event): boolean {
-    if (!overlayRef._outsidePointerEvents) {
-      return false;
-    }
-
     if (overlayRef.eventPredicate) {
       return overlayRef.eventPredicate(event);
     }

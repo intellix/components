@@ -75,7 +75,14 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   // Open dialogs tracked as a reactive signal (browser-only; no dialogs open during SSR)
   const openDialogs = useSignal<readonly DialogRef[]>([]);
   const dialog = noSerialize(
-    createDialogService({overlay, idGen, defaults: props.dialogDefaults ?? {}, openDialogs}),
+    createDialogService({
+      overlay,
+      idGen,
+      defaults: props.dialogDefaults ?? {},
+      openDialogs,
+      keyboardDispatcher,
+      outsideClickDispatcher,
+    }),
   )!;
 
   // Provide all contexts

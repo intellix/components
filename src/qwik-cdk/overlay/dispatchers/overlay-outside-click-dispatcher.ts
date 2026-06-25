@@ -12,6 +12,11 @@ import {Platform, _getEventTarget} from '../../platform/public-api';
 import {BaseOverlayDispatcher} from './base-overlay-dispatcher';
 import type {OverlayRef} from '../overlay-ref';
 
+/** Per-overlay outside-click handler registration. */
+export interface OutsideClickHandlers {
+  onOutsideClick: (e: MouseEvent) => void;
+}
+
 /**
  * Service for dispatching mouse click events that land on the body to appropriate overlay ref,
  * if any. It maintains a list of attached overlays to determine best suited overlay based
@@ -23,10 +28,15 @@ export class OverlayOutsideClickDispatcher extends BaseOverlayDispatcher {
   private _cursorStyleIsSet = false;
   private _pointerDownEventTarget: HTMLElement | null = null;
   private _cleanups: (() => void)[] | undefined;
+  private _handlers = new Map<OverlayRef, OutsideClickHandlers>();
 
-  /** Add a new overlay to the list of attached overlay refs. */
-  override add(overlayRef: OverlayRef): void {
+  /** Add a new overlay to the list of attached overlay refs, optionally with explicit handlers. */
+  override add(overlayRef: OverlayRef, handlers?: OutsideClickHandlers): void {
     super.add(overlayRef);
+
+    if (handlers) {
+      this._handlers.set(overlayRef, handlers);
+    }
 
     // Safari on iOS does not generate click events for non-interactive elements.
     // However, we want to receive a click for any element outside the overlay.
@@ -58,6 +68,12 @@ export class OverlayOutsideClickDispatcher extends BaseOverlayDispatcher {
 
       this._isAttached = true;
     }
+  }
+
+  /** Remove an overlay from the list of attached overlay refs. */
+  override remove(overlayRef: OverlayRef): void {
+    this._handlers.delete(overlayRef);
+    super.remove(overlayRef);
   }
 
   /** Detaches the global pointer event listeners. */
@@ -106,8 +122,15 @@ export class OverlayOutsideClickDispatcher extends BaseOverlayDispatcher {
     // the loop.
     for (let i = overlays.length - 1; i > -1; i--) {
       const overlayRef = overlays[i];
+      const handlers = this._handlers.get(overlayRef);
+      // Prefer the per-add handler; fall back to ref._outsidePointerEvents for backwards compat.
+      const handler = handlers?.onOutsideClick ?? overlayRef._outsidePointerEvents;
 
-      if (!overlayRef.hasAttached() || !this.canReceivePointerEvent(overlayRef, event)) {
+      if (
+        !handler ||
+        !overlayRef.hasAttached() ||
+        !this.canReceivePointerEvent(overlayRef, event)
+      ) {
         continue;
       }
 
@@ -121,7 +144,7 @@ export class OverlayOutsideClickDispatcher extends BaseOverlayDispatcher {
         break;
       }
 
-      overlayRef._outsidePointerEvents!(event);
+      handler(event);
     }
   };
 }

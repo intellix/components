@@ -12,6 +12,7 @@ import {DialogConfig as DialogConfigCtor} from './dialog-config';
 import {DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';
 import type {Overlay, OverlayRef} from '../overlay/public-api';
+import {OverlayKeyboardDispatcher, OverlayOutsideClickDispatcher} from '../overlay/public-api';
 import {DIALOG_DATA} from './dialog-tokens';
 import type {_IdGenerator} from '../a11y/id-generator';
 
@@ -57,6 +58,8 @@ export function createDialogService(deps: {
   idGen: _IdGenerator;
   defaults: Partial<DialogConfig>;
   openDialogs: Signal<readonly DialogRef[]>;
+  keyboardDispatcher: OverlayKeyboardDispatcher;
+  outsideClickDispatcher: OverlayOutsideClickDispatcher;
 }): Dialog {
   return {
     openDialogs: deps.openDialogs,
@@ -107,11 +110,27 @@ export function createDialogService(deps: {
 
       const ref = new DialogRef<R, C>(overlayRef, merged as any, isOpen, instance);
 
-      // Wire close-on-Escape and close-on-backdrop-click.
-      // (Phase 7 baseline: direct DOM listeners.  Task 23 will replace these
-      // with proper OverlayKeyboard/OutsideClick dispatcher integration.)
+      // Wire close-on-Escape and close-on-backdrop-click via dispatchers.
       if (!merged.disableClose) {
-        wireCloseBehavior(overlayRef, merged, ref);
+        deps.keyboardDispatcher.add(overlayRef, {
+          onKeydown: (e: KeyboardEvent) => {
+            merged.onKeydown$?.(e);
+            if (e.key === 'Escape' && !merged.disableClose) ref.close();
+          },
+        });
+        deps.outsideClickDispatcher.add(overlayRef, {
+          onOutsideClick: (e: MouseEvent) => {
+            merged.onOutsidePointer$?.(e);
+            if (isBackdropClick(e, overlayRef)) {
+              merged.onBackdropClick$?.(e);
+              if (!merged.disableClose) ref.close();
+            }
+          },
+        });
+        ref.closed.finally(() => {
+          deps.keyboardDispatcher.remove(overlayRef);
+          deps.outsideClickDispatcher.remove(overlayRef);
+        });
       }
 
       deps.openDialogs.value = [...deps.openDialogs.value, ref] as readonly DialogRef[];
@@ -132,27 +151,12 @@ export function createDialogService(deps: {
   };
 }
 
-function wireCloseBehavior<R, C>(
-  overlayRef: OverlayRef,
-  config: DialogConfig,
-  ref: DialogRef<R, C>,
-): void {
-  // Backdrop click — wait a microtask for the host element to be attached
-  queueMicrotask(() => {
-    const h = overlayRef.hostElement;
-    if (!h) return;
-    h.querySelector('.cdk-overlay-backdrop')?.addEventListener('click', (e: Event) => {
-      config.onBackdropClick$?.(e as MouseEvent);
-      if (!config.disableClose) ref.close();
-    });
-  });
-
-  // Escape key — attaches a direct document listener that cleans up on close.
-  // Task 23 will delegate this to OverlayKeyboardDispatcher instead.
-  const onKey = (e: KeyboardEvent) => {
-    config.onKeydown$?.(e);
-    if (e.key === 'Escape' && !config.disableClose) ref.close();
-  };
-  document.addEventListener('keydown', onKey);
-  ref.closed.finally(() => document.removeEventListener('keydown', onKey));
+/** Checks whether a pointer event's target is the backdrop element of the given overlay. */
+function isBackdropClick(event: Event, overlayRef: OverlayRef): boolean {
+  const target = event.target as Element | null;
+  if (!target) return false;
+  const host = overlayRef.hostElement;
+  if (!host) return false;
+  const backdrop = host.querySelector('.cdk-overlay-backdrop');
+  return backdrop !== null && (backdrop === target || backdrop.contains(target));
 }
