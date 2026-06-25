@@ -1,10 +1,31 @@
-// Task 16 placeholder — full implementation of OverlayPositionBuilder lands in Task 16.
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.dev/license
+ */
+
+import {GlobalPositionStrategy} from './global-position-strategy';
+import {
+  FlexibleConnectedPositionStrategy,
+  type FlexibleConnectedPositionStrategyOrigin,
+} from './flexible-connected-position-strategy';
+
+/** Builder for overlay position strategy. */
 export class OverlayPositionBuilder {
-  global(): never {
-    throw new Error('OverlayPositionBuilder not implemented until Task 16');
+  /** Creates a global position strategy. */
+  global(): GlobalPositionStrategy {
+    return new GlobalPositionStrategy();
   }
 
-  flexibleConnectedTo(_origin: unknown): never {
-    throw new Error('OverlayPositionBuilder not implemented until Task 16');
+  /**
+   * Creates a flexible position strategy.
+   * @param origin Origin relative to which to position the overlay.
+   */
+  flexibleConnectedTo(
+    origin: FlexibleConnectedPositionStrategyOrigin,
+  ): FlexibleConnectedPositionStrategy {
+    return new FlexibleConnectedPositionStrategy(origin);
   }
 }

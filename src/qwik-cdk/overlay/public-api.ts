@@ -23,3 +23,14 @@ export {OVERLAY, useOverlay, createOverlayService} from './overlay';
 export type {OverlayContainer} from './overlay-container';
 export {OVERLAY_CONTAINER, useOverlayContainer, DefaultOverlayContainer} from './overlay-container';
 export type {OverlayContainerOptions} from './overlay-container';
+export {GlobalPositionStrategy} from './position/global-position-strategy';
+export {
+  FlexibleConnectedPositionStrategy,
+  STANDARD_DROPDOWN_BELOW_POSITIONS,
+  STANDARD_DROPDOWN_ADJACENT_POSITIONS,
+} from './position/flexible-connected-position-strategy';
+export type {
+  FlexibleConnectedPositionStrategyOrigin,
+  FlexibleOverlayPopoverLocation,
+} from './position/flexible-connected-position-strategy';
+export {OverlayPositionBuilder} from './position/overlay-position-builder';

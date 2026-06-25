@@ -33,5 +33,5 @@ export interface PositionStrategy {
    * Returns the element into which the overlay should be inserted when
    * rendering as a native popover. Only relevant for popover-based overlays.
    */
-  getPopoverInsertionPoint?(): HTMLElement | null;
+  getPopoverInsertionPoint?(): Element | null | {type: 'parent'; element: Element};
 }
