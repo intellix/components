@@ -46,6 +46,7 @@ export class InteractivityChecker {
    * @returns Whether the element is visible.
    */
   isVisible(element: HTMLElement): boolean {
+    // ssr-leak-ok: callers (FocusTrap, focus-monitor) only invoke this on real HTMLElements.
     return hasGeometry(element) && getComputedStyle(element).visibility === 'visible';
   }
 

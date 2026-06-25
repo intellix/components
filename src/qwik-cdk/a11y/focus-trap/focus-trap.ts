@@ -251,6 +251,7 @@ export class FocusTrap {
 
   /** Creates an anchor element. */
   private _createAnchor(): HTMLElement {
+    // ssr-leak-ok: FocusTrap constructed inside useFocusTrap's isBrowser-gated useTask$.
     const anchor = document.createElement('div');
     this._toggleAnchorTabIndex(this._enabled, anchor);
     anchor.classList.add('cdk-focus-trap-anchor');
