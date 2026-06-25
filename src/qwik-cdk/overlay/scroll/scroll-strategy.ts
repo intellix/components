@@ -14,6 +14,11 @@ export interface ScrollStrategyOverlayHandle {
   readonly overlayElement: HTMLElement | null;
 }
 
+/** Returns an error to be thrown when attempting to attach a scroll strategy that is already attached. */
+export function getMatScrollStrategyAlreadyAttachedError(): Error {
+  return Error(`Scroll strategy has already been attached.`);
+}
+
 /**
  * Describes a strategy that will be used by an overlay to handle scroll events
  * while it is open.

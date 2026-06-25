@@ -34,3 +34,24 @@ export type {
   FlexibleOverlayPopoverLocation,
 } from './position/flexible-connected-position-strategy';
 export {OverlayPositionBuilder} from './position/overlay-position-builder';
+export {NoopScrollStrategy} from './scroll/noop-scroll-strategy';
+export {BlockScrollStrategy} from './scroll/block-scroll-strategy';
+export {CloseScrollStrategy} from './scroll/close-scroll-strategy';
+export type {CloseScrollStrategyConfig} from './scroll/close-scroll-strategy';
+export {RepositionScrollStrategy} from './scroll/reposition-scroll-strategy';
+export type {RepositionScrollStrategyConfig} from './scroll/reposition-scroll-strategy';
+export {
+  ScrollStrategyOptions,
+  SCROLL_STRATEGY_OPTIONS,
+  useScrollStrategyOptions,
+} from './scroll/scroll-strategy-options';
+export {
+  OverlayKeyboardDispatcher,
+  OVERLAY_KEYBOARD_DISPATCHER,
+  useOverlayKeyboardDispatcher,
+} from './dispatchers/overlay-keyboard-dispatcher';
+export {
+  OverlayOutsideClickDispatcher,
+  OVERLAY_OUTSIDE_CLICK_DISPATCHER,
+  useOverlayOutsideClickDispatcher,
+} from './dispatchers/overlay-outside-click-dispatcher';

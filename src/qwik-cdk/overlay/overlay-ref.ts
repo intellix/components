@@ -7,6 +7,18 @@ export class OverlayRef {
   private hostEl: HTMLElement | null = null;
   private paneEl: HTMLElement | null = null;
 
+  /**
+   * Optional keydown event callback. Assigned by consumers (e.g. Dialog in Task 23).
+   * The OverlayKeyboardDispatcher calls this when a keyboard event reaches the top overlay.
+   */
+  _keydownEvents?: (event: KeyboardEvent) => void;
+
+  /**
+   * Optional outside-pointer-event callback. Assigned by consumers (e.g. Dialog in Task 23).
+   * The OverlayOutsideClickDispatcher calls this when a click outside the overlay is detected.
+   */
+  _outsidePointerEvents?: (event: MouseEvent) => void;
+
   constructor(
     private readonly registry: OverlayRegistry,
     private readonly entry: OverlayEntry,
@@ -32,8 +44,18 @@ export class OverlayRef {
     this.paneEl = null;
   }
 
+  /** Returns true when the overlay's host and pane elements are attached to the DOM. */
+  hasAttached(): boolean {
+    return this.hostEl !== null && this.paneEl !== null;
+  }
+
   get config(): OverlayConfig {
     return this.entry.config;
+  }
+
+  /** Returns the eventPredicate from the overlay config, if any. */
+  get eventPredicate(): ((event: Event) => boolean) | undefined {
+    return this.entry.config.eventPredicate;
   }
   get hostElement(): HTMLElement | null {
     return this.hostEl;
