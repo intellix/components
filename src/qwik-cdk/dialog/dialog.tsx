@@ -110,28 +110,27 @@ export function createDialogService(deps: {
 
       const ref = new DialogRef<R, C>(overlayRef, merged as any, isOpen, instance);
 
-      // Wire close-on-Escape and close-on-backdrop-click via dispatchers.
-      if (!merged.disableClose) {
-        deps.keyboardDispatcher.add(overlayRef, {
-          onKeydown: (e: KeyboardEvent) => {
-            merged.onKeydown$?.(e);
-            if (e.key === 'Escape' && !merged.disableClose) ref.close();
-          },
-        });
-        deps.outsideClickDispatcher.add(overlayRef, {
-          onOutsideClick: (e: MouseEvent) => {
-            merged.onOutsidePointer$?.(e);
-            if (isBackdropClick(e, overlayRef)) {
-              merged.onBackdropClick$?.(e);
-              if (!merged.disableClose) ref.close();
-            }
-          },
-        });
-        ref.closed.finally(() => {
-          deps.keyboardDispatcher.remove(overlayRef);
-          deps.outsideClickDispatcher.remove(overlayRef);
-        });
-      }
+      // Register dispatcher handlers so user callbacks fire regardless of disableClose;
+      // disableClose only suppresses the auto-close calls inside each handler.
+      deps.keyboardDispatcher.add(overlayRef, {
+        onKeydown: (e: KeyboardEvent) => {
+          merged.onKeydown$?.(e);
+          if (e.key === 'Escape' && !merged.disableClose) ref.close();
+        },
+      });
+      deps.outsideClickDispatcher.add(overlayRef, {
+        onOutsideClick: (e: MouseEvent) => {
+          merged.onOutsidePointer$?.(e);
+          if (isBackdropClick(e, overlayRef)) {
+            merged.onBackdropClick$?.(e);
+            if (!merged.disableClose) ref.close();
+          }
+        },
+      });
+      ref.closed.finally(() => {
+        deps.keyboardDispatcher.remove(overlayRef);
+        deps.outsideClickDispatcher.remove(overlayRef);
+      });
 
       deps.openDialogs.value = [...deps.openDialogs.value, ref] as readonly DialogRef[];
       ref.closed.then(() => {
