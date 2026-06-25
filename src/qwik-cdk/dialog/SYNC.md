@@ -27,6 +27,12 @@ Open deviations:
   signal on the Dialog service (avoid RxJS, surface in idiomatic shape).
 - Dialog: `afterAllClosed: Observable` → `<QwikCdkRoot onAllDialogsClosed$>` callback (same).
 
+- DialogConfig: `autoFocus` ('first-tabbable' | 'first-heading' | string selectors)
+  simplified to a boolean — any non-false value calls useFocusTrap with autoCapture: true.
+  The fine-grained selector strategy will require enhancing useFocusTrap (deferred).
+- DialogConfig: `restoreFocus: false` opt-out not yet supported — useFocusTrap always
+  restores when autoCapture is true.
+
 Scenario port log (dialog.spec.ts):
 - Ports happen in Task 27. This is a placeholder for the full scenario list.
 Total: <N> ported / <M> skipped.
