@@ -17,3 +17,9 @@ export type {
   OverlayConnectionPosition,
 } from './position/connected-position';
 export {validateVerticalPosition, validateHorizontalPosition} from './position/connected-position';
+export {OverlayRef} from './overlay-ref';
+export type {Overlay} from './overlay';
+export {OVERLAY, useOverlay, createOverlayService} from './overlay';
+export type {OverlayContainer} from './overlay-container';
+export {OVERLAY_CONTAINER, useOverlayContainer, DefaultOverlayContainer} from './overlay-container';
+export type {OverlayContainerOptions} from './overlay-container';
