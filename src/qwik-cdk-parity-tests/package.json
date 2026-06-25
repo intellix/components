@@ -1,0 +1,12 @@
+{
+  "name": "qwik-cdk-parity-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "*",
+    "typescript": "*"
+  }
+}

@@ -2,6 +2,7 @@ packages:
   - .
   - src/qwik-cdk
   - src/qwik-cdk-dev-app
+  - src/qwik-cdk-parity-tests
   - docs
   - integration
   - src/aria
