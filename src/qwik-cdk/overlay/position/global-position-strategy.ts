@@ -30,9 +30,9 @@ export class GlobalPositionStrategy implements PositionStrategy {
   private _isDisposed = false;
 
   /**
-   * The wrapper element created inside hostElement. The CDK adds `wrapperClass` directly
-   * to `hostElement`, but in qwik-cdk the host is a shared container so we create our own
-   * wrapper child element and keep the overlay pane inside it.
+   * The wrapper element created inside hostElement. CDK adds `wrapperClass` directly to
+   * `hostElement`, but the brief's spec uses `host.querySelector('.cdk-global-overlay-wrapper')`
+   * which requires a child element, so qwik-cdk creates a child wrapper instead.
    */
   private _wrapper: HTMLElement | null = null;
 
@@ -47,8 +47,8 @@ export class GlobalPositionStrategy implements PositionStrategy {
       return;
     }
 
-    // Create a wrapper element inside the host and give it the CDK wrapper class.
-    // The pane is moved into the wrapper so that flex-based positioning works correctly.
+    // Create a wrapper child element with the CDK wrapper class. The brief's spec uses
+    // host.querySelector('.cdk-global-overlay-wrapper'), which requires a child element.
     if (!this._wrapper) {
       this._wrapper = host.ownerDocument.createElement('div');
       this._wrapper.classList.add(wrapperClass);
@@ -184,6 +184,26 @@ export class GlobalPositionStrategy implements PositionStrategy {
 
     const paneStyles = this._overlayRef.overlayElement.style;
     const wrapperStyles = this._wrapper.style;
+    // OverlayRef exposes `.config` as a public property; the handle interface only declares
+    // host/overlay elements, so fall back to `undefined` for non-OverlayRef stubs.
+    const config = (this._overlayRef as any).config as
+      | {
+          width?: string | number;
+          height?: string | number;
+          maxWidth?: string | number;
+          maxHeight?: string | number;
+        }
+      | undefined;
+    const width = config?.width;
+    const height = config?.height;
+    const maxWidth = config?.maxWidth;
+    const maxHeight = config?.maxHeight;
+    const shouldBeFlushHorizontally =
+      (width === '100%' || width === '100vw') &&
+      (!maxWidth || maxWidth === '100%' || maxWidth === '100vw');
+    const shouldBeFlushVertically =
+      (height === '100%' || height === '100vh') &&
+      (!maxHeight || maxHeight === '100%' || maxHeight === '100vh');
     const xPosition = this._xPosition;
     const xOffset = this._xOffset;
     // RTL detection: read direction from the wrapper's computed style if possible.
@@ -194,7 +214,9 @@ export class GlobalPositionStrategy implements PositionStrategy {
     let marginRight = '';
     let justifyContent = '';
 
-    if (xPosition === 'center') {
+    if (shouldBeFlushHorizontally) {
+      justifyContent = 'flex-start';
+    } else if (xPosition === 'center') {
       justifyContent = 'center';
       if (isRtl) {
         marginRight = xOffset;
@@ -218,12 +240,12 @@ export class GlobalPositionStrategy implements PositionStrategy {
     }
 
     paneStyles.position = this._cssPosition;
-    paneStyles.marginLeft = marginLeft;
-    paneStyles.marginTop = this._topOffset;
+    paneStyles.marginLeft = shouldBeFlushHorizontally ? '0' : marginLeft;
+    paneStyles.marginTop = shouldBeFlushVertically ? '0' : this._topOffset;
     paneStyles.marginBottom = this._bottomOffset;
-    paneStyles.marginRight = marginRight;
+    paneStyles.marginRight = shouldBeFlushHorizontally ? '0' : marginRight;
     wrapperStyles.justifyContent = justifyContent;
-    wrapperStyles.alignItems = this._alignItems;
+    wrapperStyles.alignItems = shouldBeFlushVertically ? 'flex-start' : this._alignItems;
   }
 
   /**
