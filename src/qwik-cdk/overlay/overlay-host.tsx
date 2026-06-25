@@ -16,7 +16,11 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
     <div ref={hostRef} class="cdk-overlay-host" data-overlay-id={entry.id}>
       {entry.config.hasBackdrop && (
         <div
-          class={`cdk-overlay-backdrop ${entry.state.backdropShowing.value ? 'cdk-overlay-backdrop-showing' : ''}`}
+          class={
+            entry.state.backdropShowing.value
+              ? 'cdk-overlay-backdrop cdk-overlay-backdrop-showing'
+              : 'cdk-overlay-backdrop'
+          }
         />
       )}
       <div
