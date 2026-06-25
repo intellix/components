@@ -1,0 +1,19 @@
+{
+  "name": "qwik-cdk-dev-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vite build --ssr src/entry.ssr.tsx",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@angular-community/qwik-cdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@builder.io/qwik": "^1.5.0",
+    "@builder.io/qwik-city": "^1.5.0",
+    "vite": "*",
+    "typescript": "*"
+  }
+}

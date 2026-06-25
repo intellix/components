@@ -51,12 +51,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: [
-        '@builder.io/qwik',
-        '@builder.io/qwik/build',
-        '@builder.io/qwik-city',
-        /^\.\/root$/,
-      ],
+      external: ['@builder.io/qwik', '@builder.io/qwik/build', '@builder.io/qwik-city'],
       output: {preserveModules: false, entryFileNames: '[name].js'},
     },
     target: 'es2022',
