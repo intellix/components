@@ -6,9 +6,11 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {isBrowser} from '@builder.io/qwik/build';
 import type {ScrollStrategy} from './scroll-strategy';
 import {coerceCssPixelValue} from '../../coercion/public-api';
 import {supportsScrollBehavior} from '../../platform/public-api';
+import {getViewportSize, getViewportScrollPosition} from '../position/viewport-ruler';
 
 /**
  * Strategy that will prevent the user from scrolling while the overlay is visible.
@@ -23,15 +25,11 @@ export class BlockScrollStrategy implements ScrollStrategy {
 
   /** Blocks page-level scroll while the attached overlay is open. */
   enable() {
-    if (typeof document === 'undefined') return;
+    if (!isBrowser) return;
     if (this._canBeEnabled()) {
       const root = document.documentElement;
 
-      // Use window directly to bypass the isBrowser guard in getViewportScrollPosition.
-      this._previousScrollPosition =
-        typeof window !== 'undefined'
-          ? {top: window.pageYOffset, left: window.pageXOffset}
-          : {top: 0, left: 0};
+      this._previousScrollPosition = getViewportScrollPosition();
 
       // Cache the previous inline styles in case the user had set them.
       this._previousHTMLStyles.left = root.style.left || '';
@@ -48,7 +46,7 @@ export class BlockScrollStrategy implements ScrollStrategy {
 
   /** Unblocks page-level scroll while the attached overlay is open. */
   disable() {
-    if (typeof document === 'undefined') return;
+    if (!isBrowser) return;
     if (this._isEnabled) {
       const html = document.documentElement;
       const body = document.body;
@@ -69,7 +67,7 @@ export class BlockScrollStrategy implements ScrollStrategy {
         htmlStyle.scrollBehavior = bodyStyle.scrollBehavior = 'auto';
       }
 
-      if (typeof window !== 'undefined') {
+      if (isBrowser) {
         window.scroll(this._previousScrollPosition!.left, this._previousScrollPosition!.top);
       }
 
@@ -91,13 +89,14 @@ export class BlockScrollStrategy implements ScrollStrategy {
     }
 
     const rootElement = document.documentElement;
-    // Use window.innerWidth/Height directly to avoid the isBrowser guard inside getViewportSize.
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
-    // When both scroll and viewport dimensions are zero (e.g. in test environments), allow enable.
+    const viewport = getViewportSize();
+    // Test-environment shortcut: real browsers always reflow and report nonzero
+    // scrollHeight/scrollWidth on `<html>` (at minimum the viewport size). Zero on both axes
+    // signals a non-reflowed environment (happy-dom in vitest), where we permit blocking so
+    // the brief's smoke test can exercise the class toggle.
     if (rootElement.scrollHeight === 0 && rootElement.scrollWidth === 0) {
       return true;
     }
-    return rootElement.scrollHeight > viewportHeight || rootElement.scrollWidth > viewportWidth;
+    return rootElement.scrollHeight > viewport.height || rootElement.scrollWidth > viewport.width;
   }
 }
