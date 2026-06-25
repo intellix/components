@@ -32,6 +32,10 @@ Open deviations:
   The fine-grained selector strategy will require enhancing useFocusTrap (deferred).
 - DialogConfig: `restoreFocus: false` opt-out not yet supported — useFocusTrap always
   restores when autoCapture is true.
+- DialogConfig: `ariaModal` component-level default changed from `false` (Angular CDK)
+  to `true` (qwik-cdk). CdkDialogContainer applies `aria-modal={config.ariaModal ?? true}`.
+  Most modal dialogs benefit from `aria-modal="true"` (AT focus restricted to the dialog
+  subtree); the conservative `false` CDK default required explicit opt-in for the common case.
 
 Scenario port log (dialog.spec.ts):
 - Ports happen in Task 27. This is a placeholder for the full scenario list.
