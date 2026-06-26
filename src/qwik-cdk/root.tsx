@@ -31,8 +31,9 @@ import {
   OVERLAY_KEYBOARD_DISPATCHER,
   OverlayOutsideClickDispatcher,
   OVERLAY_OUTSIDE_CLICK_DISPATCHER,
+  NoopScrollStrategy,
 } from './overlay/public-api';
-import {DEFAULT_DIALOG_CONFIG} from './dialog/dialog-tokens';
+import {DEFAULT_DIALOG_CONFIG, DIALOG_SCROLL_STRATEGY} from './dialog/dialog-tokens';
 import type {DialogConfig} from './dialog/dialog-config';
 import {createDialogService, DIALOG} from './dialog/dialog';
 import type {DialogRef} from './dialog/dialog-ref';
@@ -55,7 +56,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   const overlayContainer = noSerialize(new DefaultOverlayContainer())!;
   const scrollStrategyOptions = noSerialize(new ScrollStrategyOptions())!;
   const keyboardDispatcher = noSerialize(new OverlayKeyboardDispatcher())!;
-  const outsideClickDispatcher = noSerialize(new OverlayOutsideClickDispatcher())!;
+  const outsideClickDispatcher = noSerialize(new OverlayOutsideClickDispatcher(platform))!;
 
   // Overlay registry — uses useSignal so mutations are reactive
   const entries = useSignal<readonly OverlayEntry[]>([]);
@@ -82,6 +83,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
       openDialogs,
       keyboardDispatcher,
       outsideClickDispatcher,
+      dialogScrollStrategyFactory: () => new NoopScrollStrategy(),
     }),
   )!;
 
@@ -98,6 +100,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   useContextProvider(OVERLAY_REGISTRY, registry);
   useContextProvider(OVERLAY, overlay);
   useContextProvider(DEFAULT_DIALOG_CONFIG, props.dialogDefaults ?? {});
+  useContextProvider(DIALOG_SCROLL_STRATEGY, () => new NoopScrollStrategy());
   useContextProvider(DIALOG, dialog);
 
   // Cleanup dispatchers on teardown

@@ -79,6 +79,14 @@ Skipped (Angular-only):
 
 ---
 
+## Open deviations
+
+- FlexibleConnectedPositionStrategy: `positionChanges: Observable<ConnectedOverlayPositionChange>` (CDK) →
+  `getPositionChanges(): {value: ConnectedOverlayPositionChange | null}` (qwik-cdk). RxJS eliminated;
+  read current change via `.value`. Callers needing a stream can `useTask$(() => track(strategy.getPositionChanges()))`.
+
+---
+
 ### flexible-connected-position-strategy.spec.ts (14 ported / 9 skipped of ~120+ total CDK scenarios)
 
 Ported (pure-JS API surface):

@@ -445,8 +445,12 @@ describe('Dialog', () => {
     expect(ref.id).toBe('pizza');
   });
 
-  it.skip('should throw when trying to open a dialog with the same id as another dialog (deferred: duplicate-id error not yet implemented)', () => {
-    // CDK line 651 — duplicate-id guard not ported yet
+  it('should throw when trying to open a dialog with the same id as another dialog', () => {
+    // CDK line 651
+    dialog.open(StubDialog, {id: 'duplicate'} as any);
+    expect(() => dialog.open(StubDialog, {id: 'duplicate'} as any)).toThrow(
+      /Dialog with id "duplicate" exists already/,
+    );
   });
 
   it('should be able to find a dialog by id', () => {

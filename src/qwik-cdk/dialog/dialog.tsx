@@ -11,7 +11,7 @@ import type {DialogConfig} from './dialog-config';
 import {DialogConfig as DialogConfigCtor} from './dialog-config';
 import {DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';
-import type {Overlay, OverlayRef} from '../overlay/public-api';
+import type {Overlay, OverlayRef, ScrollStrategy} from '../overlay/public-api';
 import {OverlayKeyboardDispatcher, OverlayOutsideClickDispatcher} from '../overlay/public-api';
 import {DIALOG_DATA} from './dialog-tokens';
 import type {_IdGenerator} from '../a11y/id-generator';
@@ -43,6 +43,9 @@ const DialogWrapper = component$<{
   ContentComponent: Component<any>;
   contentProps: Record<string, unknown>;
 }>(({config, ContentComponent, contentProps}) => {
+  for (const override of config.context ?? []) {
+    useContextProvider(override.ctx, override.value);
+  }
   useContextProvider(DIALOG_DATA, config.data);
   // Cast required because CdkDialogContainer expects DialogConfig but we pass
   // a plain object (class identity stripped to avoid Qwik serialization errors).
@@ -61,6 +64,7 @@ export function createDialogService(deps: {
   openDialogs: Signal<readonly DialogRef[]>;
   keyboardDispatcher: OverlayKeyboardDispatcher;
   outsideClickDispatcher: OverlayOutsideClickDispatcher;
+  dialogScrollStrategyFactory?: () => ScrollStrategy;
 }): Dialog {
   return {
     openDialogs: deps.openDialogs,
@@ -89,7 +93,21 @@ export function createDialogService(deps: {
       }
 
       const merged = Object.assign(new DialogConfigCtor(), deps.defaults, config ?? {});
+
+      if (merged.id) {
+        for (const r of deps.openDialogs.value) {
+          if (r.id === merged.id) {
+            throw new Error(
+              `Dialog with id "${merged.id}" exists already. The dialog id must be unique.`,
+            );
+          }
+        }
+      }
       if (!merged.id) merged.id = deps.idGen.getId('cdk-dialog-');
+
+      if (!merged.scrollStrategy && deps.dialogScrollStrategyFactory) {
+        merged.scrollStrategy = deps.dialogScrollStrategyFactory();
+      }
 
       const isOpen = {value: true} as Signal<boolean>;
       const instance = {value: null} as Signal<C | null>;
@@ -101,6 +119,7 @@ export function createDialogService(deps: {
         {config: {...merged}, ContentComponent: component, contentProps: {}},
         {
           hasBackdrop: merged.hasBackdrop ?? true,
+          backdropClass: merged.backdropClass,
           panelClass: merged.panelClass,
           width: merged.width,
           height: merged.height,

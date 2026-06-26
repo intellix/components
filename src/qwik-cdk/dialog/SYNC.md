@@ -37,7 +37,7 @@ Open deviations:
   Most modal dialogs benefit from `aria-modal="true"` (AT focus restricted to the dialog
   subtree); the conservative `false` CDK default required explicit opt-in for the common case.
 
-Scenario port log (dialog.spec.ts) — 37 ported / 54 skipped of 78 CDK source scenarios
+Scenario port log (dialog.spec.ts) — 38 ported / 53 skipped of 78 CDK source scenarios
 (plus 13 extra service-level tests added beyond direct CDK equivalents):
 
 Ported (service-level):
@@ -66,6 +66,7 @@ Ported (service-level):
 - "should allow for the id to be overwritten" (CDK line 646)
 - "should be able to find a dialog by id" (CDK line 656)
 - "should return undefined for a dialog id that does not exist" (CDK line 656, inverse)
+- "should throw when trying to open a dialog with the same id as another dialog" (CDK line 651)
 - "should prevent closing via the escape key when disableClose is true" (CDK line 704)
 - "should allow closing after disableClose is set to false" (CDK line 717)
 - "should apply panelClass to the overlay entry panelClasses state" (CDK line 949, service-level)
@@ -130,7 +131,6 @@ Skipped (deferred — not yet implemented):
 - "should close all open dialogs when the location hash changes" (CDK line 508) — closeOnNavigation
 - "should close the dialog when detached externally" (CDK line 523) — CloseScrollStrategy integration
 - "should close all open dialogs on destroy" (CDK line 563) — Dialog service destroy lifecycle
-- "should throw when trying to open a dialog with the same id as another dialog" (CDK line 651) — duplicate-id guard
 - "should determine whether closing via the backdrop is allowed" (CDK line 776) — closePredicate not wired
 - "should determine whether closing via the escape key is allowed" (CDK line 804) — same
 - "should determine whether closing via the close method is allowed" (CDK line 831) — same

@@ -23,12 +23,15 @@ export interface OutsideClickHandlers {
  * on event target and order of overlay opens.
  */
 export class OverlayOutsideClickDispatcher extends BaseOverlayDispatcher {
-  private _platform = new Platform();
   private _cursorOriginalValue!: string;
   private _cursorStyleIsSet = false;
   private _pointerDownEventTarget: HTMLElement | null = null;
   private _cleanups: (() => void)[] | undefined;
   private _handlers = new Map<OverlayRef, OutsideClickHandlers>();
+
+  constructor(private _platform: Platform = new Platform()) {
+    super();
+  }
 
   /** Add a new overlay to the list of attached overlay refs, optionally with explicit handlers. */
   override add(overlayRef: OverlayRef, handlers?: OutsideClickHandlers): void {
