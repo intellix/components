@@ -107,7 +107,10 @@ export class InputModalityDetector {
   constructor(options?: InputModalityDetectorOptions) {
     this._options = {ignoreKeys: DEFAULT_IGNORE_KEYS, ...options};
 
-    if (isBrowser) {
+    // Use typeof guard rather than `isBrowser` because the qwik optimizer's CSR
+    // library build inlines `isBrowser` to `true` and DCE strips the guard,
+    // leaving `document.addEventListener` unconditional and crashing during SSR.
+    if (typeof document !== 'undefined') {
       const doc = document;
       const onKeydown = this._onKeydown as EventListener;
       const onMousedown = this._onMousedown as EventListener;
