@@ -5,9 +5,9 @@ import {ScenarioBody} from '../../../scenarios/_template';
 
 export default component$(() => {
   const dialog = useDialog();
-  useVisibleTask$(() => {
+  useVisibleTask$(async () => {
     const pos = new GlobalPositionStrategy().top('10px').left('20px');
-    dialog.open(ScenarioBody, {hasBackdrop: true, positionStrategy: pos} as any);
+    await dialog.open$(ScenarioBody, {hasBackdrop: true, positionStrategy: pos} as any);
   });
   return <main data-scenario-ready>ready</main>;
 });

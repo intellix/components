@@ -4,10 +4,10 @@ import {ScenarioBody} from '../../../scenarios/_template';
 
 export default component$(() => {
   const dialog = useDialog();
-  useVisibleTask$(() => {
+  useVisibleTask$(async () => {
     const trigger = document.querySelector<HTMLElement>('.restore-trigger');
     trigger?.focus();
-    dialog.open(ScenarioBody, {hasBackdrop: true, restoreFocus: true} as any);
+    await dialog.open$(ScenarioBody, {hasBackdrop: true, restoreFocus: true} as any);
   });
   return (
     <main data-scenario-ready>

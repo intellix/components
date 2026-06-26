@@ -7,7 +7,6 @@
  */
 
 import {createContextId, useContext} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
 
 /** The input modalities detected by this service. Null if unknown. */
 export type InputModality = 'keyboard' | 'mouse' | 'touch' | null;

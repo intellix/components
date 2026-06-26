@@ -4,9 +4,9 @@ import {ScenarioBody} from '../../../scenarios/_template';
 
 export default component$(() => {
   const dialog = useDialog();
-  useVisibleTask$(() => {
-    dialog.open(ScenarioBody, {id: 'a', hasBackdrop: true} as any);
-    dialog.open(ScenarioBody, {id: 'b', hasBackdrop: true} as any);
+  useVisibleTask$(async () => {
+    await dialog.open$(ScenarioBody, {id: 'a', hasBackdrop: true} as any);
+    await dialog.open$(ScenarioBody, {id: 'b', hasBackdrop: true} as any);
   });
   return <main data-scenario-ready>ready</main>;
 });

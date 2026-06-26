@@ -1,42 +1,26 @@
 import {
   component$,
+  noSerialize,
   Slot,
   useContextProvider,
   useSignal,
+  useStore,
   useVisibleTask$,
-  noSerialize,
+  type NoSerialize,
 } from '@builder.io/qwik';
-import {Platform, PLATFORM} from './platform/platform';
-import {Directionality, DIRECTIONALITY} from './bidi/directionality';
+import {Platform} from './platform/platform';
 import type {Direction} from './bidi/directionality';
-import {_IdGenerator, ID_GENERATOR} from './a11y/id-generator';
 import {
-  InputModalityDetector,
-  INPUT_MODALITY_DETECTOR,
-} from './a11y/input-modality/input-modality-detector';
-import {FocusMonitor, FOCUS_MONITOR} from './a11y/focus-monitor/focus-monitor';
-import {
-  OVERLAY_REGISTRY,
-  type OverlayRegistry,
   type OverlayEntry,
   OverlayContainerOutlet,
-  DefaultOverlayContainer,
-  OVERLAY_CONTAINER,
   type OverlayContainerOptions,
-  createOverlayService,
-  OVERLAY,
-  ScrollStrategyOptions,
-  SCROLL_STRATEGY_OPTIONS,
   OverlayKeyboardDispatcher,
-  OVERLAY_KEYBOARD_DISPATCHER,
   OverlayOutsideClickDispatcher,
-  OVERLAY_OUTSIDE_CLICK_DISPATCHER,
   NoopScrollStrategy,
 } from './overlay/public-api';
-import {DEFAULT_DIALOG_CONFIG, DIALOG_SCROLL_STRATEGY} from './dialog/dialog-tokens';
 import type {DialogConfig} from './dialog/dialog-config';
-import {createDialogService, DIALOG} from './dialog/dialog';
 import type {DialogRef} from './dialog/dialog-ref';
+import {QWIK_CDK, type QwikCdkInternals} from './internals/internals';
 
 export interface QwikCdkRootProps {
   dialogDefaults?: Partial<DialogConfig>;
@@ -46,70 +30,56 @@ export interface QwikCdkRootProps {
 }
 
 export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
-  // Singleton services — wrapped with noSerialize so Qwik does not try to
-  // serialise class instances into the SSR state snapshot.
-  const platform = noSerialize(new Platform())!;
-  const idGen = noSerialize(new _IdGenerator())!;
-  const dir = noSerialize(new Directionality(props.direction ?? 'ltr'))!;
-  const modalityDetector = noSerialize(new InputModalityDetector())!;
-  const focusMonitor = noSerialize(new FocusMonitor(platform, modalityDetector))!;
-  const overlayContainer = noSerialize(new DefaultOverlayContainer())!;
-  const scrollStrategyOptions = noSerialize(new ScrollStrategyOptions())!;
-  const keyboardDispatcher = noSerialize(new OverlayKeyboardDispatcher())!;
-  const outsideClickDispatcher = noSerialize(new OverlayOutsideClickDispatcher(platform))!;
-
-  // Overlay registry — uses useSignal so mutations are reactive
+  // === Reactive state (signals — serialize cleanly across SSR→CSR resume) ===
   const entries = useSignal<readonly OverlayEntry[]>([]);
-  const registry = noSerialize<OverlayRegistry>({
+  const openDialogs = useSignal<readonly NoSerialize<DialogRef>[]>([]);
+  const direction = useSignal<Direction>(props.direction ?? 'ltr');
+  const idCounter = useSignal(0);
+
+  // === Browser-only services (held in a store so mutation from a
+  // useVisibleTask$ survives resume; the noSerialize fields are undefined
+  // during SSR and re-populated on first client tick.) ===
+  const services = useStore<{
+    keyboardDispatcher: NoSerialize<OverlayKeyboardDispatcher> | undefined;
+    outsideClickDispatcher: NoSerialize<OverlayOutsideClickDispatcher> | undefined;
+    dialogScrollStrategyFactory: NoSerialize<() => NoopScrollStrategy> | undefined;
+  }>({
+    keyboardDispatcher: undefined,
+    outsideClickDispatcher: undefined,
+    dialogScrollStrategyFactory: undefined,
+  });
+
+  const internals: QwikCdkInternals = {
     entries,
-    push: e => {
-      entries.value = [...entries.value, e];
+    openDialogs,
+    direction,
+    idCounter,
+    dialogDefaults: props.dialogDefaults ?? {},
+    get keyboardDispatcher() {
+      return services.keyboardDispatcher;
     },
-    remove: id => {
-      entries.value = entries.value.filter(x => x.id !== id);
+    get outsideClickDispatcher() {
+      return services.outsideClickDispatcher;
     },
-    get: id => entries.value.find(x => x.id === id),
-  })!;
+    get dialogScrollStrategyFactory() {
+      return services.dialogScrollStrategyFactory;
+    },
+  };
 
-  const overlay = noSerialize(createOverlayService(registry, idGen))!;
+  useContextProvider(QWIK_CDK, internals);
 
-  // Open dialogs tracked as a reactive signal (browser-only; no dialogs open during SSR)
-  const openDialogs = useSignal<readonly DialogRef[]>([]);
-  const dialog = noSerialize(
-    createDialogService({
-      overlay,
-      idGen,
-      defaults: props.dialogDefaults ?? {},
-      openDialogs,
-      keyboardDispatcher,
-      outsideClickDispatcher,
-      dialogScrollStrategyFactory: () => new NoopScrollStrategy(),
-    }),
-  )!;
-
-  // Provide all contexts
-  useContextProvider(PLATFORM, platform);
-  useContextProvider(ID_GENERATOR, idGen);
-  useContextProvider(DIRECTIONALITY, dir);
-  useContextProvider(INPUT_MODALITY_DETECTOR, modalityDetector);
-  useContextProvider(FOCUS_MONITOR, focusMonitor);
-  useContextProvider(OVERLAY_CONTAINER, overlayContainer);
-  useContextProvider(SCROLL_STRATEGY_OPTIONS, scrollStrategyOptions);
-  useContextProvider(OVERLAY_KEYBOARD_DISPATCHER, keyboardDispatcher);
-  useContextProvider(OVERLAY_OUTSIDE_CLICK_DISPATCHER, outsideClickDispatcher);
-  useContextProvider(OVERLAY_REGISTRY, registry);
-  useContextProvider(OVERLAY, overlay);
-  useContextProvider(DEFAULT_DIALOG_CONFIG, props.dialogDefaults ?? {});
-  useContextProvider(DIALOG_SCROLL_STRATEGY, () => new NoopScrollStrategy());
-  useContextProvider(DIALOG, dialog);
-
-  // Cleanup dispatchers on teardown
+  // Construct browser-only dispatchers after hydration; clean up on teardown.
   useVisibleTask$(({cleanup}) => {
+    const platform = new Platform();
+    const kbd = new OverlayKeyboardDispatcher();
+    const ocd = new OverlayOutsideClickDispatcher(platform);
+    services.keyboardDispatcher = noSerialize(kbd);
+    services.outsideClickDispatcher = noSerialize(ocd);
+    services.dialogScrollStrategyFactory = noSerialize(() => new NoopScrollStrategy());
+
     cleanup(() => {
-      keyboardDispatcher.dispose();
-      outsideClickDispatcher.dispose();
-      modalityDetector.destroy?.();
-      focusMonitor.destroy();
+      kbd.dispose();
+      ocd.dispose();
     });
   });
 

@@ -29,38 +29,47 @@
   },
   "exports": {
     ".": {
+      "qwik": "./index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./dialog": {
+      "qwik": "./dialog/index.ts",
       "types": "./dist/dialog/index.d.ts",
       "import": "./dist/dialog/index.js"
     },
     "./overlay": {
+      "qwik": "./overlay/index.ts",
       "types": "./dist/overlay/index.d.ts",
       "import": "./dist/overlay/index.js"
     },
     "./portal": {
+      "qwik": "./portal/index.ts",
       "types": "./dist/portal/index.d.ts",
       "import": "./dist/portal/index.js"
     },
     "./a11y": {
+      "qwik": "./a11y/index.ts",
       "types": "./dist/a11y/index.d.ts",
       "import": "./dist/a11y/index.js"
     },
     "./platform": {
+      "qwik": "./platform/index.ts",
       "types": "./dist/platform/index.d.ts",
       "import": "./dist/platform/index.js"
     },
     "./bidi": {
+      "qwik": "./bidi/index.ts",
       "types": "./dist/bidi/index.d.ts",
       "import": "./dist/bidi/index.js"
     },
     "./coercion": {
+      "qwik": "./coercion/index.ts",
       "types": "./dist/coercion/index.d.ts",
       "import": "./dist/coercion/index.js"
     },
     "./keycodes": {
+      "qwik": "./keycodes/index.ts",
       "types": "./dist/keycodes/index.d.ts",
       "import": "./dist/keycodes/index.js"
     },
@@ -70,6 +79,13 @@
   },
   "files": [
     "dist",
-    "scss"
+    "scss",
+    "*.ts",
+    "*.tsx",
+    "**/*.ts",
+    "**/*.tsx",
+    "!**/*.spec.ts",
+    "!**/*.spec.tsx",
+    "!scripts"
   ]
 }

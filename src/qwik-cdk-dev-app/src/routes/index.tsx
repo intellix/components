@@ -11,7 +11,11 @@ export default component$(() => {
   return (
     <main>
       <h1>qwik-cdk dev-app</h1>
-      <button onClick$={$(() => dialog.open(Body, {data: {msg: 'hello'}, hasBackdrop: true}))}>
+      <button
+        onClick$={$(async () => {
+          await dialog.open$(Body, {data: {msg: 'hello'}, hasBackdrop: true});
+        })}
+      >
         open dialog
       </button>
     </main>

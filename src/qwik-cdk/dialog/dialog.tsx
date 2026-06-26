@@ -1,9 +1,12 @@
 import {
+  $,
   component$,
-  createContextId,
+  noSerialize,
   useContext,
   useContextProvider,
   type Component,
+  type NoSerialize,
+  type QRL,
   type Signal,
 } from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
@@ -11,32 +14,118 @@ import type {DialogConfig} from './dialog-config';
 import {DialogConfig as DialogConfigCtor} from './dialog-config';
 import {DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';
-import type {Overlay, OverlayRef, ScrollStrategy} from '../overlay/public-api';
-import {OverlayKeyboardDispatcher, OverlayOutsideClickDispatcher} from '../overlay/public-api';
+import type {Overlay, OverlayRef, OverlayRegistry, ScrollStrategy} from '../overlay/public-api';
+import {
+  createOverlayService,
+  OverlayKeyboardDispatcher,
+  OverlayOutsideClickDispatcher,
+} from '../overlay/public-api';
 import {DIALOG_DATA} from './dialog-tokens';
-import type {_IdGenerator} from '../a11y/id-generator';
+import {_IdGenerator} from '../a11y/id-generator';
 import {hasModifierKey} from '../keycodes/modifiers';
+import {QWIK_CDK} from '../internals/internals';
 
+/**
+ * Consumer-facing dialog hook.
+ *
+ * Returns QRL methods (so the closure survives the SSR→CSR resume) that close
+ * over signals provided by `<QwikCdkRoot>`. The hook reads no class-instance
+ * services from context — all state is signals; browser-only dispatchers are
+ * read by reference from a useStore the root populates in `useVisibleTask$`.
+ */
 export interface Dialog {
-  open<C, D = unknown, R = unknown>(
-    component: Component<any>,
-    config?: DialogConfig<D, R>,
-  ): DialogRef<R, C>;
-  closeAll(): void;
-  getDialogById<R = unknown>(id: string): DialogRef<R> | undefined;
-  readonly openDialogs: Signal<readonly DialogRef[]>;
+  /**
+   * Opens a dialog rendering the given Qwik component. The returned
+   * `DialogRef` is wrapped in `NoSerialize` because it owns DOM refs and is
+   * only meaningful within the current client-side session.
+   */
+  open$: QRL<
+    <C, D = unknown, R = unknown>(
+      component: Component<any>,
+      config?: DialogConfig<D, R>,
+    ) => NoSerialize<DialogRef<R, C>> | null
+  >;
+
+  /** Closes a specific dialog by `id`, optionally with a result. */
+  close$: QRL<(id: string, result?: unknown) => void>;
+
+  /** Closes every open dialog. */
+  closeAll$: QRL<() => void>;
+
+  /** Reactive list of every open dialog handle (NoSerialize-wrapped). */
+  readonly openDialogs: Signal<readonly NoSerialize<DialogRef>[]>;
 }
 
-export const DIALOG = createContextId<Dialog>('qwik-cdk/dialog');
-
 export function useDialog(): Dialog {
-  return useContext(DIALOG);
+  const ctx = useContext(QWIK_CDK);
+
+  const open$ = $(
+    <C, D, R>(
+      component: Component<any>,
+      config?: DialogConfig<D, R>,
+    ): NoSerialize<DialogRef<R, C>> | null => {
+      if (typeof window === 'undefined') return null;
+      const kbd = ctx.keyboardDispatcher;
+      const ocd = ctx.outsideClickDispatcher;
+      if (!kbd || !ocd) return null;
+
+      // Build a thin idGen + registry that close over the shared ctx signals.
+      const idGen = makeCtxIdGen(ctx.idCounter);
+      const registry = makeCtxRegistry(ctx.entries);
+      const overlay = createOverlayService(registry, idGen);
+
+      const service = createDialogService({
+        overlay,
+        idGen,
+        defaults: ctx.dialogDefaults,
+        openDialogs: ctx.openDialogs,
+        keyboardDispatcher: kbd,
+        outsideClickDispatcher: ocd,
+        dialogScrollStrategyFactory: ctx.dialogScrollStrategyFactory,
+      });
+      const ref = service.open<C, D, R>(component, config);
+      return noSerialize(ref);
+    },
+  );
+
+  const close$ = $((id: string, result?: unknown) => {
+    const ref = ctx.openDialogs.value.find(r => r?.id === id);
+    if (ref) ref.close(result as any);
+  });
+
+  const closeAll$ = $(() => {
+    for (const r of ctx.openDialogs.value) r?.close();
+  });
+
+  return {open$, close$, closeAll$, openDialogs: ctx.openDialogs};
+}
+
+function makeCtxIdGen(counter: Signal<number>): _IdGenerator {
+  // _IdGenerator's contract is just `getId(prefix): string` — fake the shape so
+  // createOverlayService can call it and we share the ctx counter signal so
+  // dialog and overlay IDs come from the same sequence.
+  const fake = Object.create(_IdGenerator.prototype) as _IdGenerator;
+  (fake as any).getId = (prefix: string) => `${prefix}${counter.value++}`;
+  return fake;
+}
+
+function makeCtxRegistry(entries: Signal<readonly any[]>): OverlayRegistry {
+  return {
+    entries,
+    push: e => {
+      entries.value = [...entries.value, e];
+    },
+    remove: id => {
+      entries.value = entries.value.filter(x => x.id !== id);
+    },
+    get: id => entries.value.find(x => x.id === id),
+  };
 }
 
 /**
- * The Dialog wrapper component that the overlay registry renders for each open dialog.
- * Receives a plain-object config (not a DialogConfig class instance) so Qwik can
- * serialize props without throwing "Value cannot be serialized" errors.
+ * The Dialog wrapper component that the overlay registry renders for each open
+ * dialog. Receives a plain-object config (not a DialogConfig class instance) so
+ * Qwik can serialize props without throwing "Value cannot be serialized" errors.
  */
 const DialogWrapper = component$<{
   config: Partial<DialogConfig>;
@@ -57,15 +146,30 @@ const DialogWrapper = component$<{
   );
 });
 
+/**
+ * Sync-method shape returned by `createDialogService`. Used internally and by
+ * vitest. The consumer-facing surface is the QRL-based `Dialog` interface.
+ */
+export interface DialogService {
+  open<C, D, R>(component: Component<any>, config?: DialogConfig<D, R>): DialogRef<R, C>;
+  closeAll(): void;
+  getDialogById<R>(id: string): DialogRef<R> | undefined;
+  openDialogs: Signal<readonly NoSerialize<DialogRef>[]>;
+}
+
+/**
+ * Pure factory used by `useDialog` (inside a QRL) and by the vitest harness.
+ * Holds no state beyond the deps it closes over; safe to call repeatedly.
+ */
 export function createDialogService(deps: {
   overlay: Overlay;
   idGen: _IdGenerator;
   defaults: Partial<DialogConfig>;
-  openDialogs: Signal<readonly DialogRef[]>;
+  openDialogs: Signal<readonly NoSerialize<DialogRef>[]>;
   keyboardDispatcher: OverlayKeyboardDispatcher;
   outsideClickDispatcher: OverlayOutsideClickDispatcher;
   dialogScrollStrategyFactory?: () => ScrollStrategy;
-}): Dialog {
+}): DialogService {
   return {
     openDialogs: deps.openDialogs,
 
@@ -96,7 +200,7 @@ export function createDialogService(deps: {
 
       if (merged.id) {
         for (const r of deps.openDialogs.value) {
-          if (r.id === merged.id) {
+          if (r?.id === merged.id) {
             throw new Error(
               `Dialog with id "${merged.id}" exists already. The dialog id must be unique.`,
             );
@@ -156,20 +260,21 @@ export function createDialogService(deps: {
         deps.outsideClickDispatcher.remove(overlayRef);
       });
 
-      deps.openDialogs.value = [...deps.openDialogs.value, ref] as readonly DialogRef[];
+      const wrapped = noSerialize(ref as DialogRef)!;
+      deps.openDialogs.value = [...deps.openDialogs.value, wrapped];
       ref.closed.then(() => {
-        deps.openDialogs.value = deps.openDialogs.value.filter(r => r !== ref);
+        deps.openDialogs.value = deps.openDialogs.value.filter(r => r?.id !== ref.id);
       });
 
       return ref;
     },
 
     closeAll(): void {
-      for (const r of deps.openDialogs.value) r.close();
+      for (const r of deps.openDialogs.value) r?.close();
     },
 
     getDialogById<R>(id: string): DialogRef<R> | undefined {
-      return deps.openDialogs.value.find(r => r.id === id) as DialogRef<R> | undefined;
+      return deps.openDialogs.value.find(r => r?.id === id) as DialogRef<R> | undefined;
     },
   };
 }

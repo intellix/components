@@ -7,7 +7,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {component$, jsx} from '@builder.io/qwik';
+import {component$, jsx, type NoSerialize} from '@builder.io/qwik';
 import {
   createOverlayService,
   OverlayKeyboardDispatcher,
@@ -16,7 +16,7 @@ import {
 import type {OverlayEntry, OverlayRegistry} from '../overlay/public-api';
 import {_IdGenerator} from '../a11y/id-generator';
 import {createDialogService} from './dialog';
-import type {Dialog} from './dialog';
+import type {DialogService} from './dialog';
 import type {DialogRef} from './dialog-ref';
 import type {Signal} from '@builder.io/qwik';
 
@@ -45,11 +45,13 @@ function makeRegistry(): OverlayRegistry {
   };
 }
 
-function makeDialog(defaults: Record<string, unknown> = {}): Dialog {
+function makeDialog(defaults: Record<string, unknown> = {}): DialogService {
   const registry = makeRegistry();
   const idGen = new _IdGenerator();
   const overlay = createOverlayService(registry, idGen);
-  const openDialogs = {value: [] as readonly DialogRef[]} as Signal<readonly DialogRef[]>;
+  const openDialogs = {value: [] as readonly NoSerialize<DialogRef>[]} as Signal<
+    readonly NoSerialize<DialogRef>[]
+  >;
   const keyboardDispatcher = new OverlayKeyboardDispatcher();
   const outsideClickDispatcher = new OverlayOutsideClickDispatcher();
   return createDialogService({
@@ -67,7 +69,7 @@ function makeDialog(defaults: Record<string, unknown> = {}): Dialog {
 // ---------------------------------------------------------------------------
 
 describe('Dialog', () => {
-  let dialog: Dialog;
+  let dialog: DialogService;
 
   beforeEach(() => {
     dialog = makeDialog();

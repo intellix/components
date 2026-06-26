@@ -5,9 +5,9 @@ import {ScenarioBody} from '../../../scenarios/_template';
 
 export default component$(() => {
   const dialog = useDialog();
-  useVisibleTask$(() => {
+  useVisibleTask$(async () => {
     const scroll = new BlockScrollStrategy();
-    dialog.open(ScenarioBody, {hasBackdrop: true, scrollStrategy: scroll} as any);
+    await dialog.open$(ScenarioBody, {hasBackdrop: true, scrollStrategy: scroll} as any);
   });
   return <main data-scenario-ready>ready</main>;
 });

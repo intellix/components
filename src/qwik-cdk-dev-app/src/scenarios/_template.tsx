@@ -40,8 +40,8 @@ export interface AutoOpenProps<D = unknown> {
 
 export const AutoOpen = component$<AutoOpenProps>(props => {
   const dialog = useDialog();
-  useVisibleTask$(() => {
-    dialog.open(props.Body ?? ScenarioBody, props.config);
+  useVisibleTask$(async () => {
+    await dialog.open$(props.Body ?? ScenarioBody, props.config);
   });
   return <main data-scenario-ready>ready</main>;
 });
