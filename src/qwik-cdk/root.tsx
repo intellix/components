@@ -30,41 +30,28 @@ export interface QwikCdkRootProps {
 }
 
 export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
-  // === Reactive state (signals — serialize cleanly across SSR→CSR resume) ===
+  // Reactive state (signals serialize cleanly across SSR→CSR resume).
   const entries = useSignal<readonly OverlayEntry[]>([]);
   const openDialogs = useSignal<readonly NoSerialize<DialogRef>[]>([]);
   const direction = useSignal<Direction>(props.direction ?? 'ltr');
   const idCounter = useSignal(0);
 
-  // === Browser-only services (held in a store so mutation from a
-  // useVisibleTask$ survives resume; the noSerialize fields are undefined
-  // during SSR and re-populated on first client tick.) ===
-  const services = useStore<{
-    keyboardDispatcher: NoSerialize<OverlayKeyboardDispatcher> | undefined;
-    outsideClickDispatcher: NoSerialize<OverlayOutsideClickDispatcher> | undefined;
-    dialogScrollStrategyFactory: NoSerialize<() => NoopScrollStrategy> | undefined;
-  }>({
-    keyboardDispatcher: undefined,
-    outsideClickDispatcher: undefined,
-    dialogScrollStrategyFactory: undefined,
-  });
-
-  const internals: QwikCdkInternals = {
+  // Single tracked store so that the NoSerialize dispatcher fields populated by
+  // useVisibleTask$ are visible to every consumer reading useContext(QWIK_CDK)
+  // — Qwik serializes the store object identity, the noSerialize fields are
+  // undefined during SSR, and the visible-task assignment lights them up on the
+  // client. Using a plain object with getters here would silently break because
+  // Qwik serializes getter RESULTS, not the getters themselves.
+  const internals = useStore<QwikCdkInternals>({
     entries,
     openDialogs,
     direction,
     idCounter,
     dialogDefaults: props.dialogDefaults ?? {},
-    get keyboardDispatcher() {
-      return services.keyboardDispatcher;
-    },
-    get outsideClickDispatcher() {
-      return services.outsideClickDispatcher;
-    },
-    get dialogScrollStrategyFactory() {
-      return services.dialogScrollStrategyFactory;
-    },
-  };
+    keyboardDispatcher: undefined,
+    outsideClickDispatcher: undefined,
+    dialogScrollStrategyFactory: undefined,
+  });
 
   useContextProvider(QWIK_CDK, internals);
 
@@ -73,9 +60,9 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
     const platform = new Platform();
     const kbd = new OverlayKeyboardDispatcher();
     const ocd = new OverlayOutsideClickDispatcher(platform);
-    services.keyboardDispatcher = noSerialize(kbd);
-    services.outsideClickDispatcher = noSerialize(ocd);
-    services.dialogScrollStrategyFactory = noSerialize(() => new NoopScrollStrategy());
+    internals.keyboardDispatcher = noSerialize(kbd);
+    internals.outsideClickDispatcher = noSerialize(ocd);
+    internals.dialogScrollStrategyFactory = noSerialize(() => new NoopScrollStrategy());
 
     cleanup(() => {
       kbd.dispose();
