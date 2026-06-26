@@ -5,10 +5,18 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
   const hostRef = useSignal<HTMLElement>();
   const paneRef = useSignal<HTMLElement>();
 
+  // Drive the OverlayRef lifecycle (host/pane attach, strategy apply, cleanup)
+  // directly from this component$'s visible-task. We deliberately don't route
+  // through entry-side QRL hooks — qwik's optimizer can't capture a
+  // forward-referenced `ref` local across the $() boundary in
+  // `createOverlayService`, so a `lifecycle.onAttached$` pattern compiles to a
+  // chunk that hits `ReferenceError: ref is not defined` at runtime.
   useVisibleTask$(({cleanup}) => {
     if (!hostRef.value || !paneRef.value) return;
-    entry.lifecycle.onAttached$(hostRef.value, paneRef.value);
-    cleanup(() => entry.lifecycle.onDetached$());
+    const ref = entry.ref;
+    if (!ref) return;
+    ref._onAttached(hostRef.value, paneRef.value);
+    cleanup(() => ref._onDetached());
   });
 
   const Comp = entry.Component;

@@ -1,4 +1,4 @@
-import {$, createContextId, useContext, type Component} from '@builder.io/qwik';
+import {createContextId, noSerialize, useContext, type Component} from '@builder.io/qwik';
 import {OverlayConfig} from './overlay-config';
 import {OverlayRef} from './overlay-ref';
 import type {OverlayRegistry, OverlayEntry, OverlayEntryState} from './overlay-registry';
@@ -50,12 +50,13 @@ export function createOverlayService(registry: OverlayRegistry, idGen: _IdGenera
         props: props as Record<string, unknown>,
         config,
         state: state as unknown as OverlayEntryState,
-        lifecycle: {
-          onAttached$: $((host: HTMLElement, pane: HTMLElement) => ref._onAttached(host, pane)),
-          onDetached$: $(() => ref._onDetached()),
-        },
       };
       const ref = new OverlayRef(registry, entry, config.positionStrategy, config.scrollStrategy);
+      // Backref the ref so OverlayHost's useVisibleTask$ can drive lifecycle
+      // (attach/detach + position-strategy.apply()). Avoids using a QRL closure
+      // over `ref`, which the qwik optimizer extracts as a free identifier when
+      // the closure lives outside a component$ — see ./overlay-host.tsx.
+      entry.ref = noSerialize(ref);
       registry.push(entry);
       // Trigger backdrop-show after attach via microtask (matches CDK animation timing)
       queueMicrotask(() => {
