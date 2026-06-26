@@ -21,7 +21,7 @@ const Harness = component$(() => {
     },
   });
   useContextProvider(OVERLAY_REGISTRY, registry as any);
-  registry.push({
+  registry!.push({
     id: 'a',
     Component: Stub,
     props: {},

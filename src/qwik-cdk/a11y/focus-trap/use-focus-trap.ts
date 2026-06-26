@@ -1,4 +1,4 @@
-import {type QRL, type Signal, useOnDocument, useSignal, useTask$, $} from '@builder.io/qwik';
+import {type Signal, useSignal, useTask$} from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
 import {FocusTrap} from './focus-trap';
 import {InteractivityChecker} from '../interactivity-checker/interactivity-checker';
