@@ -14,9 +14,9 @@ import type {PositionStrategy, PositionStrategyOverlayHandle} from './position-s
 import {
   type ConnectedPosition,
   type ViewportMargin,
-  ConnectedOverlayPositionChange,
-  ConnectionPositionPair,
-  ScrollingVisibility,
+  type ConnectedOverlayPositionChange,
+  type ConnectionPositionPair,
+  type ScrollingVisibility,
   validateHorizontalPosition,
   validateVerticalPosition,
 } from './connected-position';
@@ -773,16 +773,18 @@ export class FlexibleConnectedPositionStrategy implements PositionStrategy {
       !this._lastScrollVisibility ||
       !compareScrollVisibility(this._lastScrollVisibility, scrollVisibility)
     ) {
-      const changeEvent = new ConnectedOverlayPositionChange(
-        new ConnectionPositionPair(
-          {originX: position.originX, originY: position.originY},
-          {overlayX: position.overlayX, overlayY: position.overlayY},
-          position.offsetX,
-          position.offsetY,
-          position.panelClass,
-        ),
-        scrollVisibility,
-      );
+      const changeEvent: ConnectedOverlayPositionChange = {
+        connectionPair: {
+          originX: position.originX,
+          originY: position.originY,
+          overlayX: position.overlayX,
+          overlayY: position.overlayY,
+          offsetX: position.offsetX,
+          offsetY: position.offsetY,
+          panelClass: position.panelClass,
+        },
+        scrollableViewProperties: scrollVisibility,
+      };
       this._positionChanges.value = changeEvent;
     }
 

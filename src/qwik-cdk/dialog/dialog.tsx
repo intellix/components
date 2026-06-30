@@ -11,7 +11,6 @@ import {
 } from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
 import type {DialogConfig} from './dialog-config';
-import {DialogConfig as DialogConfigCtor} from './dialog-config';
 import {DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';
 import type {Overlay, OverlayRef, OverlayRegistry, ScrollStrategy} from '../overlay/public-api';
@@ -178,7 +177,7 @@ export function createDialogService(deps: {
       if (!isBrowser) {
         const isOpen = {value: false} as Signal<boolean>;
         const instance = {value: null} as Signal<C | null>;
-        const fakeConfig = Object.assign(new DialogConfigCtor(), deps.defaults, config ?? {});
+        const fakeConfig = Object.assign({} as DialogConfig, deps.defaults, config ?? {});
         if (!fakeConfig.id) fakeConfig.id = 'cdk-dialog-ssr-noop';
         const fake = new DialogRef<R, C>(
           {
@@ -196,7 +195,7 @@ export function createDialogService(deps: {
         return fake;
       }
 
-      const merged = Object.assign(new DialogConfigCtor(), deps.defaults, config ?? {});
+      const merged = Object.assign({} as DialogConfig, deps.defaults, config ?? {});
 
       if (merged.id) {
         for (const r of deps.openDialogs.value) {

@@ -3,12 +3,12 @@ import {DialogConfig} from './public-api';
 
 describe('DialogConfig', () => {
   it('constructs empty', () => {
-    const c = new DialogConfig();
+    const c = {};
     expect(c.role).toBeUndefined();
     expect(c.hasBackdrop).toBeUndefined();
   });
   it('all fields settable', () => {
-    const c = new DialogConfig<{x: 1}>();
+    const c = {};
     c.data = {x: 1};
     c.role = 'alertdialog';
     c.hasBackdrop = true;

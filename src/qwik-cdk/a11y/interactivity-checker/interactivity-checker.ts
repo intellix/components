@@ -3,11 +3,11 @@ import {Platform} from '../../platform';
 /**
  * Configuration for the isFocusable method.
  */
-export class IsFocusableConfig {
+export interface IsFocusableConfig {
   /**
    * Whether to count an element as focusable even if it is not currently visible.
    */
-  ignoreVisibility: boolean = false;
+  ignoreVisibility?: boolean;
 }
 
 // The InteractivityChecker leans heavily on the ally.js accessibility utilities.

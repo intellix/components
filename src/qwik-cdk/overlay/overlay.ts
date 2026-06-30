@@ -1,5 +1,5 @@
 import {createContextId, noSerialize, useContext, type Component} from '@builder.io/qwik';
-import {OverlayConfig} from './overlay-config';
+import type {OverlayConfig} from './overlay-config';
 import {OverlayRef} from './overlay-ref';
 import type {OverlayRegistry, OverlayEntry, OverlayEntryState} from './overlay-registry';
 import {OverlayPositionBuilder} from './position/overlay-position-builder';
@@ -19,7 +19,7 @@ export function useOverlay(): Overlay {
 export function createOverlayService(registry: OverlayRegistry, idGen: _IdGenerator): Overlay {
   const positionBuilder = new OverlayPositionBuilder();
   return {
-    create(component, props, config = new OverlayConfig()) {
+    create(component, props, config = {} as OverlayConfig) {
       const id = idGen.getId('cdk-overlay-');
       const state = {
         panelClasses: signalOf<readonly string[]>(toArr(config.panelClass)),

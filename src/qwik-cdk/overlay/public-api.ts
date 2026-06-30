@@ -1,4 +1,4 @@
-export {OverlayConfig} from './overlay-config';
+export type {OverlayConfig} from './overlay-config';
 export {OVERLAY_REGISTRY} from './overlay-registry';
 export type {OverlayEntry, OverlayRegistry, OverlayEntryState} from './overlay-registry';
 export {OverlayContainerOutlet} from './overlay-container-outlet';

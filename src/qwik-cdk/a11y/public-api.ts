@@ -1,9 +1,7 @@
 export {Platform} from '../platform';
 export {_IdGenerator, ID_GENERATOR, useIdGenerator} from './id-generator';
-export {
-  InteractivityChecker,
-  IsFocusableConfig,
-} from './interactivity-checker/interactivity-checker';
+export {InteractivityChecker} from './interactivity-checker/interactivity-checker';
+export type {IsFocusableConfig} from './interactivity-checker/interactivity-checker';
 export {
   InputModalityDetector,
   INPUT_MODALITY_DETECTOR,

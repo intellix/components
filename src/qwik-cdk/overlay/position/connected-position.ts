@@ -28,31 +28,21 @@ export interface OverlayConnectionPosition {
 }
 
 /** The points of the origin element and the overlay element to connect. */
-export class ConnectionPositionPair {
-  /** X-axis attachment point for connected overlay origin. Can be 'start', 'end', or 'center'. */
+export interface ConnectionPositionPair {
+  /** X-axis attachment point for connected overlay origin. */
   originX: HorizontalConnectionPos;
-  /** Y-axis attachment point for connected overlay origin. Can be 'top', 'bottom', or 'center'. */
+  /** Y-axis attachment point for connected overlay origin. */
   originY: VerticalConnectionPos;
-  /** X-axis attachment point for connected overlay. Can be 'start', 'end', or 'center'. */
+  /** X-axis attachment point for connected overlay. */
   overlayX: HorizontalConnectionPos;
-  /** Y-axis attachment point for connected overlay. Can be 'top', 'bottom', or 'center'. */
+  /** Y-axis attachment point for connected overlay. */
   overlayY: VerticalConnectionPos;
-
-  constructor(
-    origin: OriginConnectionPosition,
-    overlay: OverlayConnectionPosition,
-    /** Offset along the X axis. */
-    public offsetX?: number,
-    /** Offset along the Y axis. */
-    public offsetY?: number,
-    /** Class(es) to be applied to the panel while this position is active. */
-    public panelClass?: string | string[],
-  ) {
-    this.originX = origin.originX;
-    this.originY = origin.originY;
-    this.overlayX = overlay.overlayX;
-    this.overlayY = overlay.overlayY;
-  }
+  /** Offset along the X axis. */
+  offsetX?: number;
+  /** Offset along the Y axis. */
+  offsetY?: number;
+  /** Class(es) to be applied to the panel while this position is active. */
+  panelClass?: string | string[];
 }
 
 /**
@@ -80,21 +70,19 @@ export class ConnectionPositionPair {
  *
  *  @docs-private
  */
-export class ScrollingVisibility {
-  isOriginClipped: boolean = false;
-  isOriginOutsideView: boolean = false;
-  isOverlayClipped: boolean = false;
-  isOverlayOutsideView: boolean = false;
+export interface ScrollingVisibility {
+  isOriginClipped: boolean;
+  isOriginOutsideView: boolean;
+  isOverlayClipped: boolean;
+  isOverlayOutsideView: boolean;
 }
 
 /** The change event emitted by the strategy when a fallback position is used. */
-export class ConnectedOverlayPositionChange {
-  constructor(
-    /** The position used as a result of this change. */
-    public connectionPair: ConnectionPositionPair,
-    /** @docs-private */
-    public scrollableViewProperties: ScrollingVisibility,
-  ) {}
+export interface ConnectedOverlayPositionChange {
+  /** The position used as a result of this change. */
+  connectionPair: ConnectionPositionPair;
+  /** @docs-private */
+  scrollableViewProperties: ScrollingVisibility;
 }
 
 /**

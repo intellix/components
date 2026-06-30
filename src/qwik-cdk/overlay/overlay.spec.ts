@@ -103,14 +103,14 @@ describe('Overlay (createOverlayService)', () => {
   // ------------------------------------------------------------------ //
 
   it('panelClass config propagates to entry state', () => {
-    const config = new OverlayConfig({panelClass: 'custom-class'});
+    const config = {panelClass: 'custom-class'};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.panelClasses.value).toContain('custom-class');
   });
 
   it('multiple panelClasses are stored as an array', () => {
-    const config = new OverlayConfig({panelClass: ['classA', 'classB']});
+    const config = {panelClass: ['classA', 'classB']};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.panelClasses.value).toContain('classA');
@@ -118,63 +118,63 @@ describe('Overlay (createOverlayService)', () => {
   });
 
   it('numeric width is converted to px string', () => {
-    const config = new OverlayConfig({width: 500});
+    const config = {width: 500};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.width.value).toBe('500px');
   });
 
   it('string width is stored as-is', () => {
-    const config = new OverlayConfig({width: '200%'});
+    const config = {width: '200%'};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.width.value).toBe('200%');
   });
 
   it('numeric height is converted to px string', () => {
-    const config = new OverlayConfig({height: 500});
+    const config = {height: 500};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.height.value).toBe('500px');
   });
 
   it('string height is stored as-is', () => {
-    const config = new OverlayConfig({height: '100vh'});
+    const config = {height: '100vh'};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.height.value).toBe('100vh');
   });
 
   it('zero width is stored as 0px', () => {
-    const config = new OverlayConfig({width: 0});
+    const config = {width: 0};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.width.value).toBe('0px');
   });
 
   it('minWidth numeric is converted to px', () => {
-    const config = new OverlayConfig({minWidth: 200});
+    const config = {minWidth: 200};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.minWidth.value).toBe('200px');
   });
 
   it('maxWidth numeric is converted to px', () => {
-    const config = new OverlayConfig({maxWidth: 200});
+    const config = {maxWidth: 200};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.maxWidth.value).toBe('200px');
   });
 
   it('minHeight numeric is converted to px', () => {
-    const config = new OverlayConfig({minHeight: 500});
+    const config = {minHeight: 500};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.minHeight.value).toBe('500px');
   });
 
   it('maxHeight numeric is converted to px', () => {
-    const config = new OverlayConfig({maxHeight: 500});
+    const config = {maxHeight: 500};
     overlay.create(StubComponent, {}, config);
     const entry = registry.entries.value[0];
     expect(entry.state.maxHeight.value).toBe('500px');
@@ -192,7 +192,7 @@ describe('Overlay (createOverlayService)', () => {
   });
 
   it('removePanelClass removes a class from the entry state', () => {
-    const config = new OverlayConfig({panelClass: 'custom-class-one'});
+    const config = {panelClass: 'custom-class-one'};
     const ref = overlay.create(StubComponent, {}, config);
     ref.removePanelClass('custom-class-one');
     const entry = registry.entries.value[0];
@@ -258,7 +258,7 @@ describe('Overlay (createOverlayService)', () => {
   // ------------------------------------------------------------------ //
 
   it('OverlayRef.config returns the original OverlayConfig', () => {
-    const config = new OverlayConfig({hasBackdrop: true});
+    const config = {hasBackdrop: true};
     const ref = overlay.create(StubComponent, {}, config);
     expect(ref.config.hasBackdrop).toBe(true);
   });

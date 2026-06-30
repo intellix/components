@@ -7,12 +7,11 @@
  */
 
 import type {PositionStrategy} from './position/position-strategy';
-import type {Direction} from '../bidi/directionality';
-import type {Directionality} from '../bidi/directionality';
+import type {Direction, Directionality} from '../bidi/directionality';
 import type {ScrollStrategy} from './scroll/scroll-strategy';
 
 /** Initial configuration used when creating an overlay. */
-export class OverlayConfig {
+export interface OverlayConfig {
   /** Strategy with which to position the overlay. */
   positionStrategy?: PositionStrategy;
 
@@ -73,25 +72,4 @@ export class OverlayConfig {
    * event or if the event should go to the next overlay in the stack.
    */
   eventPredicate?: (event: Event) => boolean;
-
-  constructor(config?: OverlayConfig) {
-    if (config) {
-      // Use `Iterable` instead of `Array` because TypeScript, as of 3.6.3,
-      // loses the array generic type in the `for of`. But we *also* have to use `Array` because
-      // typescript won't iterate over an `Iterable` unless you compile with `--downlevelIteration`
-      const configKeys = Object.keys(config) as Iterable<keyof OverlayConfig> &
-        (keyof OverlayConfig)[];
-      for (const key of configKeys) {
-        if (config[key] !== undefined) {
-          // TypeScript, as of version 3.5, sees the left-hand-side of this expression
-          // as "I don't know *which* key this is, so the only valid value is the intersection
-          // of all the possible values." In this case, that happens to be `undefined`. TypeScript
-          // is not smart enough to see that the right-hand-side is actually an access of the same
-          // exact type with the same exact key, meaning that the value type must be identical.
-          // So we use `any` to work around this.
-          this[key] = config[key] as any;
-        }
-      }
-    }
-  }
 }

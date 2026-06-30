@@ -5,7 +5,7 @@ import type {PositionStrategy} from '../overlay/position/position-strategy';
 import type {ScrollStrategy} from '../overlay/scroll/scroll-strategy';
 import type {OverlayContextOverride} from '../overlay/overlay-context';
 
-export class DialogConfig<D = unknown, R = unknown> {
+export interface DialogConfig<D = unknown, R = unknown> {
   data?: D | null;
   direction?: Direction;
   id?: string;

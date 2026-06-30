@@ -3,7 +3,7 @@ import {DialogRef, DialogConfig} from './public-api';
 
 describe('DialogRef', () => {
   it('resolves closed promise with result when close() called', async () => {
-    const cfg = new DialogConfig();
+    const cfg = {};
     cfg.id = 'd1';
     const overlayRef: any = {
       dispose() {},
