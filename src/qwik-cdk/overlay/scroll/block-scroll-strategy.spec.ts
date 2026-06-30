@@ -7,7 +7,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {BlockScrollStrategy} from '../public-api';
+import {createBlockScrollStrategy} from '../public-api';
 
 describe('BlockScrollStrategy', () => {
   let s: BlockScrollStrategy;
@@ -17,7 +17,7 @@ describe('BlockScrollStrategy', () => {
     document.documentElement.classList.remove('cdk-global-scrollblock');
     document.documentElement.style.top = '';
     document.documentElement.style.left = '';
-    s = new BlockScrollStrategy();
+    s = createBlockScrollStrategy();
     s.attach({} as any);
   });
 
@@ -88,7 +88,7 @@ describe('BlockScrollStrategy', () => {
     s.disable();
 
     // Create a fresh strategy (the old one is "spent").
-    const s2 = new BlockScrollStrategy();
+    const s2 = createBlockScrollStrategy();
     s2.attach({} as any);
     s2.enable();
     expect(document.documentElement.classList.contains('cdk-global-scrollblock')).toBe(true);

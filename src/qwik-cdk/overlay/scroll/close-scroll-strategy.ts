@@ -21,93 +21,87 @@ export interface CloseScrollStrategyConfig {
 }
 
 /**
- * Strategy that will close the overlay as soon as the user starts scrolling.
+ * Strategy that closes the overlay as soon as the user starts scrolling.
  *
- * Throttle approach: uses a debounce flag + setTimeout(0) pattern.
- * CDK uses rxjs `auditTime(0)` (emit once per task boundary). We replicate
- * this with a pending boolean guard so that only one scroll event is processed
- * per event-loop turn.
+ * Throttle approach: pending flag + `setTimeout(0)` (leading-edge per
+ * task boundary). CDK uses rxjs `auditTime(0)`; for `CloseScrollStrategy` the
+ * functional result is identical because no event data flows out of the
+ * handler — both forms run the close check once per task boundary.
  */
-export class CloseScrollStrategy implements ScrollStrategy {
-  private _scrollTeardown: (() => void) | null = null;
-  private _overlayRef!: OverlayRef;
-  private _initialScrollPosition!: number;
+export function createCloseScrollStrategy(config?: CloseScrollStrategyConfig): ScrollStrategy {
+  let scrollTeardown: (() => void) | null = null;
+  let overlayRef: OverlayRef | null = null;
+  let initialScrollPosition = 0;
 
-  constructor(private _config?: CloseScrollStrategyConfig) {}
-
-  /** Attaches this scroll strategy to an overlay. */
-  attach(overlayRef: OverlayRef) {
-    if (this._overlayRef) {
-      throw getMatScrollStrategyAlreadyAttachedError();
-    }
-
-    this._overlayRef = overlayRef;
-  }
-
-  /** Enables the closing of the attached overlay on scroll. */
-  enable() {
-    if (!isBrowser) return;
-    if (this._scrollTeardown) {
-      return;
-    }
-
-    let pending = false;
-
-    if (this._config && this._config.threshold && this._config.threshold > 1) {
-      this._initialScrollPosition = getViewportScrollPosition().top;
-
-      const handler = () => {
-        if (pending) return;
-        pending = true;
-        setTimeout(() => {
-          pending = false;
-          const scrollPosition = getViewportScrollPosition().top;
-          if (Math.abs(scrollPosition - this._initialScrollPosition) > this._config!.threshold!) {
-            this._detach();
-          } else {
-            this._overlayRef.updatePosition();
-          }
-        }, 0);
-      };
-
-      document.addEventListener('scroll', handler, {capture: true, passive: true});
-      this._scrollTeardown = () =>
-        document.removeEventListener('scroll', handler, {capture: true} as EventListenerOptions);
-    } else {
-      const handler = () => {
-        if (pending) return;
-        pending = true;
-        setTimeout(() => {
-          pending = false;
-          this._detach();
-        }, 0);
-      };
-
-      document.addEventListener('scroll', handler, {capture: true, passive: true});
-      this._scrollTeardown = () =>
-        document.removeEventListener('scroll', handler, {capture: true} as EventListenerOptions);
+  function detachOverlay(): void {
+    disable();
+    if (overlayRef?.hasAttached()) {
+      overlayRef.detach();
     }
   }
 
-  /** Disables the closing the attached overlay on scroll. */
-  disable() {
-    if (this._scrollTeardown) {
-      this._scrollTeardown();
-      this._scrollTeardown = null;
+  function disable(): void {
+    if (scrollTeardown) {
+      scrollTeardown();
+      scrollTeardown = null;
     }
   }
 
-  detach() {
-    this.disable();
-    this._overlayRef = null!;
-  }
+  return {
+    attach(ref) {
+      if (overlayRef) {
+        throw getMatScrollStrategyAlreadyAttachedError();
+      }
+      overlayRef = ref as OverlayRef;
+    },
 
-  /** Detaches the overlay ref and disables the scroll strategy. */
-  private _detach = () => {
-    this.disable();
+    enable() {
+      if (!isBrowser) return;
+      if (scrollTeardown) return;
 
-    if (this._overlayRef.hasAttached()) {
-      this._overlayRef.detach();
-    }
+      let pending = false;
+
+      if (config && config.threshold && config.threshold > 1) {
+        initialScrollPosition = getViewportScrollPosition().top;
+
+        const handler = () => {
+          if (pending) return;
+          pending = true;
+          setTimeout(() => {
+            pending = false;
+            const scrollPosition = getViewportScrollPosition().top;
+            if (Math.abs(scrollPosition - initialScrollPosition) > config!.threshold!) {
+              detachOverlay();
+            } else {
+              overlayRef?.updatePosition();
+            }
+          }, 0);
+        };
+
+        document.addEventListener('scroll', handler, {capture: true, passive: true});
+        scrollTeardown = () =>
+          document.removeEventListener('scroll', handler, {capture: true} as EventListenerOptions);
+      } else {
+        const handler = () => {
+          if (pending) return;
+          pending = true;
+          setTimeout(() => {
+            pending = false;
+            detachOverlay();
+          }, 0);
+        };
+
+        document.addEventListener('scroll', handler, {capture: true, passive: true});
+        scrollTeardown = () =>
+          document.removeEventListener('scroll', handler, {capture: true} as EventListenerOptions);
+      }
+    },
+
+    disable,
+
+    detach() {
+      disable();
+      overlayRef = null;
+    },
   };
 }

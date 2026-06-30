@@ -20,7 +20,8 @@
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import {
-  FlexibleConnectedPositionStrategy,
+  createFlexibleConnectedPositionStrategy,
+  type FlexibleConnectedPositionStrategy,
   STANDARD_DROPDOWN_BELOW_POSITIONS,
   STANDARD_DROPDOWN_ADJACENT_POSITIONS,
 } from '../public-api';
@@ -49,7 +50,7 @@ describe('FlexibleConnectedPositionStrategy', () => {
     origin = document.createElement('div');
     document.body.appendChild(origin);
     ref = makeRefStub();
-    strategy = new FlexibleConnectedPositionStrategy(origin);
+    strategy = createFlexibleConnectedPositionStrategy(origin);
   });
 
   afterEach(() => {
@@ -62,7 +63,10 @@ describe('FlexibleConnectedPositionStrategy', () => {
   // ------------------------------------------------------------------ //
 
   it('constructs without error given an origin element', () => {
-    expect(strategy).toBeInstanceOf(FlexibleConnectedPositionStrategy);
+    expect(typeof strategy.attach).toBe('function');
+    expect(typeof strategy.apply).toBe('function');
+    expect(typeof strategy.dispose).toBe('function');
+    expect(typeof strategy.withPositions).toBe('function');
   });
 
   it('withPositions sets the preferred positions', () => {

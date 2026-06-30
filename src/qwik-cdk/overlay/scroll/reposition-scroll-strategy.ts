@@ -25,104 +25,105 @@ export interface RepositionScrollStrategyConfig {
 }
 
 /**
- * Strategy that will update the element position as the user is scrolling.
+ * Strategy that updates the element position as the user is scrolling.
  *
  * Throttle approach: uses requestAnimationFrame for zero-throttle (smooth, one update per
  * frame), and a setTimeout-based trailing-edge debounce for non-zero throttle values.
  * CDK uses rxjs `auditTime(throttle)` which emits once at the end of each throttle window;
  * we replicate this with a pending-timer pattern.
  */
-export class RepositionScrollStrategy implements ScrollStrategy {
-  private _scrollTeardown: (() => void) | null = null;
-  private _overlayRef!: OverlayRef;
+export function createRepositionScrollStrategy(
+  config?: RepositionScrollStrategyConfig,
+): ScrollStrategy {
+  let scrollTeardown: (() => void) | null = null;
+  let overlayRef: OverlayRef | null = null;
 
-  constructor(private _config?: RepositionScrollStrategyConfig) {}
-
-  /** Attaches this scroll strategy to an overlay. */
-  attach(overlayRef: OverlayRef) {
-    if (this._overlayRef) {
-      throw getMatScrollStrategyAlreadyAttachedError();
+  function disable(): void {
+    if (scrollTeardown) {
+      scrollTeardown();
+      scrollTeardown = null;
     }
-
-    this._overlayRef = overlayRef;
   }
 
-  /** Enables repositioning of the attached overlay on scroll. */
-  enable() {
-    if (!isBrowser) return;
-    if (this._scrollTeardown) return;
+  return {
+    attach(ref) {
+      if (overlayRef) {
+        throw getMatScrollStrategyAlreadyAttachedError();
+      }
+      overlayRef = ref as OverlayRef;
+    },
 
-    const throttle = this._config?.scrollThrottle ?? 0;
+    enable() {
+      if (!isBrowser) return;
+      if (scrollTeardown) return;
 
-    const applyUpdate = () => {
-      this._overlayRef.updatePosition();
+      const throttle = config?.scrollThrottle ?? 0;
 
-      if (this._config?.autoClose) {
-        const overlayEl = this._overlayRef.overlayElement;
-        if (overlayEl) {
-          const overlayRect = overlayEl.getBoundingClientRect();
-          const {width, height} = getViewportSize();
-          const parentRects = [{width, height, bottom: height, right: width, top: 0, left: 0}];
+      const applyUpdate = () => {
+        if (!overlayRef) return;
+        overlayRef.updatePosition();
 
-          if (isElementScrolledOutsideView(overlayRect, parentRects)) {
-            this.disable();
-            this._overlayRef.detach();
+        if (config?.autoClose) {
+          const overlayEl = overlayRef.overlayElement;
+          if (overlayEl) {
+            const overlayRect = overlayEl.getBoundingClientRect();
+            const {width, height} = getViewportSize();
+            const parentRects = [{width, height, bottom: height, right: width, top: 0, left: 0}];
+
+            if (isElementScrolledOutsideView(overlayRect, parentRects)) {
+              disable();
+              overlayRef.detach();
+            }
           }
         }
+      };
+
+      if (throttle === 0) {
+        // Use rAF for zero-throttle — one update per animation frame.
+        let rafId: number | null = null;
+        const handler = () => {
+          if (rafId !== null) return;
+          rafId = requestAnimationFrame(() => {
+            rafId = null;
+            applyUpdate();
+          });
+        };
+
+        document.addEventListener('scroll', handler, {capture: true, passive: true});
+        scrollTeardown = () => {
+          document.removeEventListener('scroll', handler, {capture: true} as EventListenerOptions);
+          if (rafId !== null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+          }
+        };
+      } else {
+        // Non-zero throttle: trailing-edge debounce via setTimeout.
+        let timerId: ReturnType<typeof setTimeout> | null = null;
+        const handler = () => {
+          if (timerId !== null) return;
+          timerId = setTimeout(() => {
+            timerId = null;
+            applyUpdate();
+          }, throttle);
+        };
+
+        document.addEventListener('scroll', handler, {capture: true, passive: true});
+        scrollTeardown = () => {
+          document.removeEventListener('scroll', handler, {capture: true} as EventListenerOptions);
+          if (timerId !== null) {
+            clearTimeout(timerId);
+            timerId = null;
+          }
+        };
       }
-    };
+    },
 
-    if (throttle === 0) {
-      // Use rAF for zero-throttle — one update per animation frame.
-      let rafId: number | null = null;
-      const handler = () => {
-        if (rafId !== null) return;
-        rafId = requestAnimationFrame(() => {
-          rafId = null;
-          applyUpdate();
-        });
-      };
+    disable,
 
-      document.addEventListener('scroll', handler, {capture: true, passive: true});
-      this._scrollTeardown = () => {
-        document.removeEventListener('scroll', handler, {capture: true} as EventListenerOptions);
-        if (rafId !== null) {
-          cancelAnimationFrame(rafId);
-          rafId = null;
-        }
-      };
-    } else {
-      // Non-zero throttle: trailing-edge debounce via setTimeout.
-      let timerId: ReturnType<typeof setTimeout> | null = null;
-      const handler = () => {
-        if (timerId !== null) return;
-        timerId = setTimeout(() => {
-          timerId = null;
-          applyUpdate();
-        }, throttle);
-      };
-
-      document.addEventListener('scroll', handler, {capture: true, passive: true});
-      this._scrollTeardown = () => {
-        document.removeEventListener('scroll', handler, {capture: true} as EventListenerOptions);
-        if (timerId !== null) {
-          clearTimeout(timerId);
-          timerId = null;
-        }
-      };
-    }
-  }
-
-  /** Disables repositioning of the attached overlay on scroll. */
-  disable() {
-    if (this._scrollTeardown) {
-      this._scrollTeardown();
-      this._scrollTeardown = null;
-    }
-  }
-
-  detach() {
-    this.disable();
-    this._overlayRef = null!;
-  }
+    detach() {
+      disable();
+      overlayRef = null;
+    },
+  };
 }

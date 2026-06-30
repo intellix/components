@@ -14,276 +14,228 @@ const wrapperClass = 'cdk-global-overlay-wrapper';
 
 /**
  * A strategy for positioning overlays. Using this strategy, an overlay is given an
- * explicit position relative to the browser's viewport. We use flexbox, instead of
- * transforms, in order to avoid issues with subpixel rendering which can cause the
- * element to become blurry.
+ * explicit position relative to the browser's viewport. Uses flexbox (rather than
+ * transforms) to avoid subpixel-rendering blur.
+ *
+ * Builder API extends `PositionStrategy` with the fluent positioning setters
+ * (`top()`, `centerHorizontally()` etc.) that return `this` for chaining.
  */
-export class GlobalPositionStrategy implements PositionStrategy {
-  /** The overlay to which this strategy is attached. */
-  private _overlayRef!: PositionStrategyOverlayHandle;
-  private _cssPosition = 'static';
-  private _topOffset = '';
-  private _bottomOffset = '';
-  private _alignItems = '';
-  private _xPosition = '';
-  private _xOffset = '';
-  private _isDisposed = false;
+export interface GlobalPositionStrategy extends PositionStrategy {
+  top(value?: string): GlobalPositionStrategy;
+  left(value?: string): GlobalPositionStrategy;
+  bottom(value?: string): GlobalPositionStrategy;
+  right(value?: string): GlobalPositionStrategy;
+  start(value?: string): GlobalPositionStrategy;
+  end(value?: string): GlobalPositionStrategy;
+  /** @deprecated Pass the `width` through the `OverlayConfig`. */
+  width(value?: string): GlobalPositionStrategy;
+  /** @deprecated Pass the `height` through the `OverlayConfig`. */
+  height(value?: string): GlobalPositionStrategy;
+  centerHorizontally(offset?: string): GlobalPositionStrategy;
+  centerVertically(offset?: string): GlobalPositionStrategy;
+}
+
+export function createGlobalPositionStrategy(): GlobalPositionStrategy {
+  let overlayRef: PositionStrategyOverlayHandle | null = null;
+  const cssPosition = 'static';
+  let topOffset = '';
+  let bottomOffset = '';
+  let alignItems = '';
+  let xPosition = '';
+  let xOffset = '';
+  let isDisposed = false;
 
   /**
    * The wrapper element created inside hostElement. CDK adds `wrapperClass` directly to
    * `hostElement`, but the brief's spec uses `host.querySelector('.cdk-global-overlay-wrapper')`
    * which requires a child element, so qwik-cdk creates a child wrapper instead.
    */
-  private _wrapper: HTMLElement | null = null;
+  let wrapper: HTMLElement | null = null;
 
-  attach(overlayRef: PositionStrategyOverlayHandle): void {
-    this._overlayRef = overlayRef;
-    this._isDisposed = false;
+  const strategy: GlobalPositionStrategy = {
+    attach(handle) {
+      overlayRef = handle;
+      isDisposed = false;
 
-    const host = overlayRef.hostElement;
-    const pane = overlayRef.overlayElement;
+      const host = handle.hostElement;
+      const pane = handle.overlayElement;
+      if (!host || !pane) return;
 
-    if (!host || !pane) {
-      return;
-    }
-
-    // Create a wrapper child element with the CDK wrapper class. The brief's spec uses
-    // host.querySelector('.cdk-global-overlay-wrapper'), which requires a child element.
-    if (!this._wrapper) {
-      this._wrapper = host.ownerDocument.createElement('div');
-      this._wrapper.classList.add(wrapperClass);
-      // Move the pane into the wrapper, then attach the wrapper to the host.
-      this._wrapper.appendChild(pane);
-      host.appendChild(this._wrapper);
-    }
-  }
-
-  /**
-   * Sets the top position of the overlay. Clears any previously set vertical position.
-   * @param value New top offset.
-   */
-  top(value: string = ''): this {
-    this._bottomOffset = '';
-    this._topOffset = value;
-    this._alignItems = 'flex-start';
-    return this;
-  }
-
-  /**
-   * Sets the left position of the overlay. Clears any previously set horizontal position.
-   * @param value New left offset.
-   */
-  left(value: string = ''): this {
-    this._xOffset = value;
-    this._xPosition = 'left';
-    return this;
-  }
-
-  /**
-   * Sets the bottom position of the overlay. Clears any previously set vertical position.
-   * @param value New bottom offset.
-   */
-  bottom(value: string = ''): this {
-    this._topOffset = '';
-    this._bottomOffset = value;
-    this._alignItems = 'flex-end';
-    return this;
-  }
-
-  /**
-   * Sets the right position of the overlay. Clears any previously set horizontal position.
-   * @param value New right offset.
-   */
-  right(value: string = ''): this {
-    this._xOffset = value;
-    this._xPosition = 'right';
-    return this;
-  }
-
-  /**
-   * Sets the overlay to the start of the viewport, depending on the overlay direction.
-   * This will be to the left in LTR layouts and to the right in RTL.
-   * @param value Offset from the edge of the screen.
-   */
-  start(value: string = ''): this {
-    this._xOffset = value;
-    this._xPosition = 'start';
-    return this;
-  }
-
-  /**
-   * Sets the overlay to the end of the viewport, depending on the overlay direction.
-   * This will be to the right in LTR layouts and to the left in RTL.
-   * @param value Offset from the edge of the screen.
-   */
-  end(value: string = ''): this {
-    this._xOffset = value;
-    this._xPosition = 'end';
-    return this;
-  }
-
-  /**
-   * Sets the overlay width and clears any previously set width.
-   * @param value New width for the overlay
-   * @deprecated Pass the `width` through the `OverlayConfig`.
-   * @breaking-change 8.0.0
-   */
-  width(_value: string = ''): this {
-    // Width sizing is managed via OverlayConfig in qwik-cdk; this method is kept
-    // for API parity but has no effect on the overlay pane directly.
-    return this;
-  }
-
-  /**
-   * Sets the overlay height and clears any previously set height.
-   * @param value New height for the overlay
-   * @deprecated Pass the `height` through the `OverlayConfig`.
-   * @breaking-change 8.0.0
-   */
-  height(_value: string = ''): this {
-    // Height sizing is managed via OverlayConfig in qwik-cdk; this method is kept
-    // for API parity but has no effect on the overlay pane directly.
-    return this;
-  }
-
-  /**
-   * Centers the overlay horizontally with an optional offset.
-   * Clears any previously set horizontal position.
-   *
-   * @param offset Overlay offset from the horizontal center.
-   */
-  centerHorizontally(offset: string = ''): this {
-    this.left(offset);
-    this._xPosition = 'center';
-    return this;
-  }
-
-  /**
-   * Centers the overlay vertically with an optional offset.
-   * Clears any previously set vertical position.
-   *
-   * @param offset Overlay offset from the vertical center.
-   */
-  centerVertically(offset: string = ''): this {
-    this.top(offset);
-    this._alignItems = 'center';
-    return this;
-  }
-
-  /**
-   * Apply the position to the element.
-   * @docs-private
-   */
-  apply(): void {
-    // Since the overlay ref applies the strategy asynchronously, it could
-    // have been disposed before it ends up being applied. If that is the
-    // case, we shouldn't do anything.
-    if (!this._overlayRef || !this._overlayRef.overlayElement || !this._wrapper) {
-      return;
-    }
-
-    const paneStyles = this._overlayRef.overlayElement.style;
-    const wrapperStyles = this._wrapper.style;
-    // OverlayRef exposes `.config` as a public property; the handle interface only declares
-    // host/overlay elements, so fall back to `undefined` for non-OverlayRef stubs.
-    const config = (this._overlayRef as any).config as
-      | {
-          width?: string | number;
-          height?: string | number;
-          maxWidth?: string | number;
-          maxHeight?: string | number;
-        }
-      | undefined;
-    const width = config?.width;
-    const height = config?.height;
-    const maxWidth = config?.maxWidth;
-    const maxHeight = config?.maxHeight;
-    const shouldBeFlushHorizontally =
-      (width === '100%' || width === '100vw') &&
-      (!maxWidth || maxWidth === '100%' || maxWidth === '100vw');
-    const shouldBeFlushVertically =
-      (height === '100%' || height === '100vh') &&
-      (!maxHeight || maxHeight === '100%' || maxHeight === '100vh');
-    const xPosition = this._xPosition;
-    const xOffset = this._xOffset;
-    // RTL detection: read direction from the wrapper's computed style if possible.
-    const isRtl =
-      isBrowser && this._wrapper ? getComputedStyle(this._wrapper).direction === 'rtl' : false;
-
-    let marginLeft = '';
-    let marginRight = '';
-    let justifyContent = '';
-
-    if (shouldBeFlushHorizontally) {
-      justifyContent = 'flex-start';
-    } else if (xPosition === 'center') {
-      justifyContent = 'center';
-      if (isRtl) {
-        marginRight = xOffset;
-      } else {
-        marginLeft = xOffset;
+      // Create a wrapper child element with the CDK wrapper class. The brief's spec uses
+      // host.querySelector('.cdk-global-overlay-wrapper'), which requires a child element.
+      if (!wrapper) {
+        wrapper = host.ownerDocument.createElement('div');
+        wrapper.classList.add(wrapperClass);
+        // Move the pane into the wrapper, then attach the wrapper to the host.
+        wrapper.appendChild(pane);
+        host.appendChild(wrapper);
       }
-    } else if (isRtl) {
-      if (xPosition === 'left' || xPosition === 'end') {
-        justifyContent = 'flex-end';
-        marginLeft = xOffset;
-      } else if (xPosition === 'right' || xPosition === 'start') {
+    },
+
+    top(value = '') {
+      bottomOffset = '';
+      topOffset = value;
+      alignItems = 'flex-start';
+      return strategy;
+    },
+
+    left(value = '') {
+      xOffset = value;
+      xPosition = 'left';
+      return strategy;
+    },
+
+    bottom(value = '') {
+      topOffset = '';
+      bottomOffset = value;
+      alignItems = 'flex-end';
+      return strategy;
+    },
+
+    right(value = '') {
+      xOffset = value;
+      xPosition = 'right';
+      return strategy;
+    },
+
+    start(value = '') {
+      xOffset = value;
+      xPosition = 'start';
+      return strategy;
+    },
+
+    end(value = '') {
+      xOffset = value;
+      xPosition = 'end';
+      return strategy;
+    },
+
+    // Width sizing is managed via OverlayConfig in qwik-cdk; kept for API parity, no-op.
+    width() {
+      return strategy;
+    },
+
+    // Height sizing is managed via OverlayConfig in qwik-cdk; kept for API parity, no-op.
+    height() {
+      return strategy;
+    },
+
+    centerHorizontally(offset = '') {
+      strategy.left(offset);
+      xPosition = 'center';
+      return strategy;
+    },
+
+    centerVertically(offset = '') {
+      strategy.top(offset);
+      alignItems = 'center';
+      return strategy;
+    },
+
+    apply() {
+      // Since the overlay ref applies the strategy asynchronously, it could
+      // have been disposed before it ends up being applied. If that is the
+      // case, we shouldn't do anything.
+      if (!overlayRef || !overlayRef.overlayElement || !wrapper) {
+        return;
+      }
+
+      const paneStyles = overlayRef.overlayElement.style;
+      const wrapperStyles = wrapper.style;
+      // OverlayRef exposes `.config` as a public property; the handle interface only declares
+      // host/overlay elements, so fall back to `undefined` for non-OverlayRef stubs.
+      const config = (overlayRef as any).config as
+        | {
+            width?: string | number;
+            height?: string | number;
+            maxWidth?: string | number;
+            maxHeight?: string | number;
+          }
+        | undefined;
+      const width = config?.width;
+      const height = config?.height;
+      const maxWidth = config?.maxWidth;
+      const maxHeight = config?.maxHeight;
+      const shouldBeFlushHorizontally =
+        (width === '100%' || width === '100vw') &&
+        (!maxWidth || maxWidth === '100%' || maxWidth === '100vw');
+      const shouldBeFlushVertically =
+        (height === '100%' || height === '100vh') &&
+        (!maxHeight || maxHeight === '100%' || maxHeight === '100vh');
+      // RTL detection: read direction from the wrapper's computed style if possible.
+      const isRtl = isBrowser && wrapper ? getComputedStyle(wrapper).direction === 'rtl' : false;
+
+      let marginLeft = '';
+      let marginRight = '';
+      let justifyContent = '';
+
+      if (shouldBeFlushHorizontally) {
         justifyContent = 'flex-start';
+      } else if (xPosition === 'center') {
+        justifyContent = 'center';
+        if (isRtl) {
+          marginRight = xOffset;
+        } else {
+          marginLeft = xOffset;
+        }
+      } else if (isRtl) {
+        if (xPosition === 'left' || xPosition === 'end') {
+          justifyContent = 'flex-end';
+          marginLeft = xOffset;
+        } else if (xPosition === 'right' || xPosition === 'start') {
+          justifyContent = 'flex-start';
+          marginRight = xOffset;
+        }
+      } else if (xPosition === 'left' || xPosition === 'start') {
+        justifyContent = 'flex-start';
+        marginLeft = xOffset;
+      } else if (xPosition === 'right' || xPosition === 'end') {
+        justifyContent = 'flex-end';
         marginRight = xOffset;
       }
-    } else if (xPosition === 'left' || xPosition === 'start') {
-      justifyContent = 'flex-start';
-      marginLeft = xOffset;
-    } else if (xPosition === 'right' || xPosition === 'end') {
-      justifyContent = 'flex-end';
-      marginRight = xOffset;
-    }
 
-    paneStyles.position = this._cssPosition;
-    paneStyles.marginLeft = shouldBeFlushHorizontally ? '0' : marginLeft;
-    paneStyles.marginTop = shouldBeFlushVertically ? '0' : this._topOffset;
-    paneStyles.marginBottom = this._bottomOffset;
-    paneStyles.marginRight = shouldBeFlushHorizontally ? '0' : marginRight;
-    wrapperStyles.justifyContent = justifyContent;
-    wrapperStyles.alignItems = shouldBeFlushVertically ? 'flex-start' : this._alignItems;
-  }
+      paneStyles.position = cssPosition;
+      paneStyles.marginLeft = shouldBeFlushHorizontally ? '0' : marginLeft;
+      paneStyles.marginTop = shouldBeFlushVertically ? '0' : topOffset;
+      paneStyles.marginBottom = bottomOffset;
+      paneStyles.marginRight = shouldBeFlushHorizontally ? '0' : marginRight;
+      wrapperStyles.justifyContent = justifyContent;
+      wrapperStyles.alignItems = shouldBeFlushVertically ? 'flex-start' : alignItems;
+    },
 
-  /**
-   * Cleans up the DOM changes from the position strategy.
-   * @docs-private
-   */
-  dispose(): void {
-    if (this._isDisposed || !this._overlayRef) {
-      return;
-    }
-
-    const pane = this._overlayRef.overlayElement;
-    const host = this._overlayRef.hostElement;
-
-    if (this._wrapper) {
-      const wrapperStyles = this._wrapper.style;
-      wrapperStyles.justifyContent = '';
-      wrapperStyles.alignItems = '';
-
-      // Move pane back to the host before removing wrapper.
-      if (pane && host) {
-        host.appendChild(pane);
+    dispose() {
+      if (isDisposed || !overlayRef) {
+        return;
       }
 
-      this._wrapper.remove();
-      this._wrapper = null;
-    }
+      const pane = overlayRef.overlayElement;
+      const host = overlayRef.hostElement;
 
-    if (pane) {
-      const paneStyles = pane.style;
-      paneStyles.marginTop = '';
-      paneStyles.marginBottom = '';
-      paneStyles.marginLeft = '';
-      paneStyles.marginRight = '';
-      paneStyles.position = '';
-    }
+      if (wrapper) {
+        wrapper.style.justifyContent = '';
+        wrapper.style.alignItems = '';
 
-    this._overlayRef = null!;
-    this._isDisposed = true;
-  }
+        // Move pane back to the host before removing wrapper.
+        if (pane && host) {
+          host.appendChild(pane);
+        }
+
+        wrapper.remove();
+        wrapper = null;
+      }
+
+      if (pane) {
+        pane.style.marginTop = '';
+        pane.style.marginBottom = '';
+        pane.style.marginLeft = '';
+        pane.style.marginRight = '';
+        pane.style.position = '';
+      }
+
+      overlayRef = null;
+      isDisposed = true;
+    },
+  };
+
+  return strategy;
 }

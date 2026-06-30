@@ -13,78 +13,23 @@ import {supportsScrollBehavior} from '../../platform/public-api';
 import {getViewportSize, getViewportScrollPosition} from '../position/viewport-ruler';
 
 /**
- * Strategy that will prevent the user from scrolling while the overlay is visible.
+ * Strategy that prevents the user from scrolling while the overlay is visible.
+ *
+ * Uses the `cdk-global-scrollblock` class on `<html>` as a guard so a second
+ * concurrent block doesn't disturb the saved scroll position.
  */
-export class BlockScrollStrategy implements ScrollStrategy {
-  private _previousHTMLStyles = {top: '', left: ''};
-  private _previousScrollPosition: {top: number; left: number} | undefined;
-  private _isEnabled = false;
+export function createBlockScrollStrategy(): ScrollStrategy {
+  const previousHTMLStyles = {top: '', left: ''};
+  let previousScrollPosition: {top: number; left: number} | undefined;
+  let _isEnabled = false;
 
-  /** Attaches this scroll strategy to an overlay. */
-  attach() {}
-
-  /** Blocks page-level scroll while the attached overlay is open. */
-  enable() {
-    if (!isBrowser) return;
-    if (this._canBeEnabled()) {
-      const root = document.documentElement;
-
-      this._previousScrollPosition = getViewportScrollPosition();
-
-      // Cache the previous inline styles in case the user had set them.
-      this._previousHTMLStyles.left = root.style.left || '';
-      this._previousHTMLStyles.top = root.style.top || '';
-
-      // Note: we're using the `html` node, instead of the `body`, because the `body` may
-      // have the user agent margin, whereas the `html` is guaranteed not to have one.
-      root.style.left = coerceCssPixelValue(-this._previousScrollPosition.left);
-      root.style.top = coerceCssPixelValue(-this._previousScrollPosition.top);
-      root.classList.add('cdk-global-scrollblock');
-      this._isEnabled = true;
-    }
-  }
-
-  /** Unblocks page-level scroll while the attached overlay is open. */
-  disable() {
-    if (!isBrowser) return;
-    if (this._isEnabled) {
-      const html = document.documentElement;
-      const body = document.body;
-      const htmlStyle = html.style;
-      const bodyStyle = body.style;
-      const previousHtmlScrollBehavior = htmlStyle.scrollBehavior || '';
-      const previousBodyScrollBehavior = bodyStyle.scrollBehavior || '';
-
-      this._isEnabled = false;
-
-      htmlStyle.left = this._previousHTMLStyles.left;
-      htmlStyle.top = this._previousHTMLStyles.top;
-      html.classList.remove('cdk-global-scrollblock');
-
-      // Disable user-defined smooth scrolling temporarily while we restore the scroll position.
-      // See https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-behavior
-      if (supportsScrollBehavior()) {
-        htmlStyle.scrollBehavior = bodyStyle.scrollBehavior = 'auto';
-      }
-
-      if (isBrowser) {
-        window.scroll(this._previousScrollPosition!.left, this._previousScrollPosition!.top);
-      }
-
-      if (supportsScrollBehavior()) {
-        htmlStyle.scrollBehavior = previousHtmlScrollBehavior;
-        bodyStyle.scrollBehavior = previousBodyScrollBehavior;
-      }
-    }
-  }
-
-  private _canBeEnabled(): boolean {
+  function canBeEnabled(): boolean {
     // Since the scroll strategies can't be singletons, we have to use a global CSS class
     // (`cdk-global-scrollblock`) to make sure that we don't try to disable global
     // scrolling multiple times.
     const html = document.documentElement;
 
-    if (html.classList.contains('cdk-global-scrollblock') || this._isEnabled) {
+    if (html.classList.contains('cdk-global-scrollblock') || _isEnabled) {
       return false;
     }
 
@@ -99,4 +44,62 @@ export class BlockScrollStrategy implements ScrollStrategy {
     }
     return rootElement.scrollHeight > viewport.height || rootElement.scrollWidth > viewport.width;
   }
+
+  return {
+    /** Attaches this scroll strategy to an overlay. */
+    attach() {},
+
+    /** Blocks page-level scroll while the attached overlay is open. */
+    enable() {
+      if (!isBrowser) return;
+      if (canBeEnabled()) {
+        const root = document.documentElement;
+
+        previousScrollPosition = getViewportScrollPosition();
+
+        // Cache the previous inline styles in case the user had set them.
+        previousHTMLStyles.left = root.style.left || '';
+        previousHTMLStyles.top = root.style.top || '';
+
+        // Note: we're using the `html` node, instead of the `body`, because the `body` may
+        // have the user agent margin, whereas the `html` is guaranteed not to have one.
+        root.style.left = coerceCssPixelValue(-previousScrollPosition.left);
+        root.style.top = coerceCssPixelValue(-previousScrollPosition.top);
+        root.classList.add('cdk-global-scrollblock');
+        _isEnabled = true;
+      }
+    },
+
+    /** Unblocks page-level scroll while the attached overlay is open. */
+    disable() {
+      if (!isBrowser) return;
+      if (_isEnabled) {
+        const html = document.documentElement;
+        const body = document.body;
+        const htmlStyle = html.style;
+        const bodyStyle = body.style;
+        const previousHtmlScrollBehavior = htmlStyle.scrollBehavior || '';
+        const previousBodyScrollBehavior = bodyStyle.scrollBehavior || '';
+
+        _isEnabled = false;
+
+        htmlStyle.left = previousHTMLStyles.left;
+        htmlStyle.top = previousHTMLStyles.top;
+        html.classList.remove('cdk-global-scrollblock');
+
+        // Disable user-defined smooth scrolling temporarily while we restore the scroll position.
+        // See https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-behavior
+        if (supportsScrollBehavior()) {
+          htmlStyle.scrollBehavior = bodyStyle.scrollBehavior = 'auto';
+        }
+
+        window.scroll(previousScrollPosition!.left, previousScrollPosition!.top);
+
+        if (supportsScrollBehavior()) {
+          htmlStyle.scrollBehavior = previousHtmlScrollBehavior;
+          bodyStyle.scrollBehavior = previousBodyScrollBehavior;
+        }
+      }
+    },
+  };
 }

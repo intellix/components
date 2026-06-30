@@ -7,36 +7,40 @@
  */
 
 import {createContextId, useContext} from '@builder.io/qwik';
-import {NoopScrollStrategy} from './noop-scroll-strategy';
-import {BlockScrollStrategy} from './block-scroll-strategy';
-import {CloseScrollStrategy} from './close-scroll-strategy';
-import type {CloseScrollStrategyConfig} from './close-scroll-strategy';
-import {RepositionScrollStrategy} from './reposition-scroll-strategy';
-import type {RepositionScrollStrategyConfig} from './reposition-scroll-strategy';
+import type {ScrollStrategy} from './scroll-strategy';
+import {createNoopScrollStrategy} from './noop-scroll-strategy';
+import {createBlockScrollStrategy} from './block-scroll-strategy';
+import {createCloseScrollStrategy, type CloseScrollStrategyConfig} from './close-scroll-strategy';
+import {
+  createRepositionScrollStrategy,
+  type RepositionScrollStrategyConfig,
+} from './reposition-scroll-strategy';
 
 /**
  * Options for how an overlay will handle scrolling.
  *
- * This class acts as a factory for ScrollStrategy instances.
+ * This bag of factory functions is provided via context by `<QwikCdkRoot>`
+ * so consumers can pick a scroll strategy without importing each individual
+ * factory.
  */
-export class ScrollStrategyOptions {
+export interface ScrollStrategyOptions {
   /** Do nothing on scroll. */
-  noop = () => new NoopScrollStrategy();
-
+  noop(): ScrollStrategy;
   /** Block scrolling. */
-  block = () => new BlockScrollStrategy();
+  block(): ScrollStrategy;
+  /** Close the overlay as soon as the user scrolls. */
+  close(config?: CloseScrollStrategyConfig): ScrollStrategy;
+  /** Update the overlay's position on scroll. */
+  reposition(config?: RepositionScrollStrategyConfig): ScrollStrategy;
+}
 
-  /**
-   * Close the overlay as soon as the user scrolls.
-   * @param config Configuration to be used inside the scroll strategy.
-   */
-  close = (config?: CloseScrollStrategyConfig) => new CloseScrollStrategy(config);
-
-  /**
-   * Update the overlay's position on scroll.
-   * @param config Configuration to be used inside the scroll strategy.
-   */
-  reposition = (config?: RepositionScrollStrategyConfig) => new RepositionScrollStrategy(config);
+export function createScrollStrategyOptions(): ScrollStrategyOptions {
+  return {
+    noop: () => createNoopScrollStrategy(),
+    block: () => createBlockScrollStrategy(),
+    close: config => createCloseScrollStrategy(config),
+    reposition: config => createRepositionScrollStrategy(config),
+  };
 }
 
 export const SCROLL_STRATEGY_OPTIONS = createContextId<ScrollStrategyOptions>(

@@ -28,25 +28,29 @@ export {
   createDefaultOverlayContainer,
 } from './overlay-container';
 export type {OverlayContainerOptions} from './overlay-container';
-export {GlobalPositionStrategy} from './position/global-position-strategy';
-export {
-  FlexibleConnectedPositionStrategy,
-  STANDARD_DROPDOWN_BELOW_POSITIONS,
-  STANDARD_DROPDOWN_ADJACENT_POSITIONS,
-} from './position/flexible-connected-position-strategy';
+export type {GlobalPositionStrategy} from './position/global-position-strategy';
+export {createGlobalPositionStrategy} from './position/global-position-strategy';
 export type {
+  FlexibleConnectedPositionStrategy,
   FlexibleConnectedPositionStrategyOrigin,
   FlexibleOverlayPopoverLocation,
 } from './position/flexible-connected-position-strategy';
-export {OverlayPositionBuilder} from './position/overlay-position-builder';
-export {NoopScrollStrategy} from './scroll/noop-scroll-strategy';
-export {BlockScrollStrategy} from './scroll/block-scroll-strategy';
-export {CloseScrollStrategy} from './scroll/close-scroll-strategy';
-export type {CloseScrollStrategyConfig} from './scroll/close-scroll-strategy';
-export {RepositionScrollStrategy} from './scroll/reposition-scroll-strategy';
-export type {RepositionScrollStrategyConfig} from './scroll/reposition-scroll-strategy';
 export {
-  ScrollStrategyOptions,
+  createFlexibleConnectedPositionStrategy,
+  STANDARD_DROPDOWN_BELOW_POSITIONS,
+  STANDARD_DROPDOWN_ADJACENT_POSITIONS,
+} from './position/flexible-connected-position-strategy';
+export type {OverlayPositionBuilder} from './position/overlay-position-builder';
+export {createOverlayPositionBuilder} from './position/overlay-position-builder';
+export {createNoopScrollStrategy} from './scroll/noop-scroll-strategy';
+export {createBlockScrollStrategy} from './scroll/block-scroll-strategy';
+export {createCloseScrollStrategy} from './scroll/close-scroll-strategy';
+export type {CloseScrollStrategyConfig} from './scroll/close-scroll-strategy';
+export {createRepositionScrollStrategy} from './scroll/reposition-scroll-strategy';
+export type {RepositionScrollStrategyConfig} from './scroll/reposition-scroll-strategy';
+export type {ScrollStrategyOptions} from './scroll/scroll-strategy-options';
+export {
+  createScrollStrategyOptions,
   SCROLL_STRATEGY_OPTIONS,
   useScrollStrategyOptions,
 } from './scroll/scroll-strategy-options';

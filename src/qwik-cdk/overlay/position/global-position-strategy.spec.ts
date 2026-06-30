@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {GlobalPositionStrategy} from '../public-api';
+import {createGlobalPositionStrategy} from '../public-api';
 
 /** Build a minimal host+pane DOM stub and return a PositionStrategyOverlayHandle. */
 function makeRefStub(config?: Record<string, unknown>) {
@@ -26,7 +26,7 @@ describe('GlobalPositionStrategy', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     ref = makeRefStub();
-    strategy = new GlobalPositionStrategy();
+    strategy = createGlobalPositionStrategy();
     strategy.attach(ref);
   });
 
@@ -164,7 +164,7 @@ describe('GlobalPositionStrategy', () => {
 
   it('should reset horizontal position when width is 100%', () => {
     const refWithConfig = makeRefStub({width: '100%'});
-    const s = new GlobalPositionStrategy();
+    const s = createGlobalPositionStrategy();
     s.attach(refWithConfig);
     s.centerHorizontally('10px');
     s.apply();
@@ -182,7 +182,7 @@ describe('GlobalPositionStrategy', () => {
 
   it('should reset vertical position when height is 100%', () => {
     const refWithConfig = makeRefStub({height: '100%'});
-    const s = new GlobalPositionStrategy();
+    const s = createGlobalPositionStrategy();
     s.attach(refWithConfig);
     s.centerVertically('10px');
     s.apply();
@@ -200,7 +200,7 @@ describe('GlobalPositionStrategy', () => {
 
   it('should not reset horizontal position when width is 100% but maxWidth is set', () => {
     const refWithConfig = makeRefStub({width: '100%', maxWidth: '500px'});
-    const s = new GlobalPositionStrategy();
+    const s = createGlobalPositionStrategy();
     s.attach(refWithConfig);
     s.centerHorizontally('10px');
     s.apply();

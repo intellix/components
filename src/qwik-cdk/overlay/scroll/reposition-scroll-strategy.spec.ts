@@ -7,7 +7,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {RepositionScrollStrategy} from '../public-api';
+import {createRepositionScrollStrategy} from '../public-api';
 import type {OverlayRef} from '../public-api';
 
 /** Minimal OverlayRef stub for scroll strategy tests. */
@@ -34,7 +34,7 @@ describe('RepositionScrollStrategy', () => {
 
   beforeEach(() => {
     ref = makeRefStub();
-    strategy = new RepositionScrollStrategy();
+    strategy = createRepositionScrollStrategy();
     strategy.attach(ref);
   });
 
@@ -43,7 +43,7 @@ describe('RepositionScrollStrategy', () => {
   });
 
   it('should throw if attached to more than one overlay', () => {
-    const strategy2 = new RepositionScrollStrategy();
+    const strategy2 = createRepositionScrollStrategy();
     strategy2.attach(ref);
     expect(() => strategy2.attach(makeRefStub())).toThrow();
   });

@@ -6,26 +6,36 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {GlobalPositionStrategy} from './global-position-strategy';
 import {
-  FlexibleConnectedPositionStrategy,
+  createGlobalPositionStrategy,
+  type GlobalPositionStrategy,
+} from './global-position-strategy';
+import {
+  createFlexibleConnectedPositionStrategy,
+  type FlexibleConnectedPositionStrategy,
   type FlexibleConnectedPositionStrategyOrigin,
 } from './flexible-connected-position-strategy';
 
 /** Builder for overlay position strategy. */
-export class OverlayPositionBuilder {
+export interface OverlayPositionBuilder {
   /** Creates a global position strategy. */
-  global(): GlobalPositionStrategy {
-    return new GlobalPositionStrategy();
-  }
-
+  global(): GlobalPositionStrategy;
   /**
    * Creates a flexible position strategy.
    * @param origin Origin relative to which to position the overlay.
    */
   flexibleConnectedTo(
     origin: FlexibleConnectedPositionStrategyOrigin,
-  ): FlexibleConnectedPositionStrategy {
-    return new FlexibleConnectedPositionStrategy(origin);
-  }
+  ): FlexibleConnectedPositionStrategy;
+}
+
+export function createOverlayPositionBuilder(): OverlayPositionBuilder {
+  return {
+    global() {
+      return createGlobalPositionStrategy();
+    },
+    flexibleConnectedTo(origin) {
+      return createFlexibleConnectedPositionStrategy(origin);
+    },
+  };
 }

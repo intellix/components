@@ -2,7 +2,10 @@ import {createContextId, noSerialize, useContext, type Component} from '@builder
 import type {OverlayConfig} from './overlay-config';
 import {createOverlayRef, type OverlayRef} from './overlay-ref';
 import type {OverlayRegistry, OverlayEntry, OverlayEntryState} from './overlay-registry';
-import {OverlayPositionBuilder} from './position/overlay-position-builder';
+import {
+  createOverlayPositionBuilder,
+  type OverlayPositionBuilder,
+} from './position/overlay-position-builder';
 import type {IdGenerator} from '../a11y/id-generator';
 
 export interface Overlay {
@@ -17,7 +20,7 @@ export function useOverlay(): Overlay {
 }
 
 export function createOverlayService(registry: OverlayRegistry, idGen: IdGenerator): Overlay {
-  const positionBuilder = new OverlayPositionBuilder();
+  const positionBuilder = createOverlayPositionBuilder();
   return {
     create(component, props, config = {} as OverlayConfig) {
       const id = idGen.getId('cdk-overlay-');

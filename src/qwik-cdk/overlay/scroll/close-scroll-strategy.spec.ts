@@ -7,7 +7,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {CloseScrollStrategy} from '../public-api';
+import {createCloseScrollStrategy} from '../public-api';
 import type {OverlayRef} from '../public-api';
 
 /** Minimal OverlayRef stub for scroll strategy tests. */
@@ -36,7 +36,7 @@ describe('CloseScrollStrategy', () => {
 
   beforeEach(() => {
     ref = makeRefStub();
-    strategy = new CloseScrollStrategy();
+    strategy = createCloseScrollStrategy();
     strategy.attach(ref);
   });
 
@@ -45,7 +45,7 @@ describe('CloseScrollStrategy', () => {
   });
 
   it('should throw if attached to more than one overlay', () => {
-    const strategy2 = new CloseScrollStrategy();
+    const strategy2 = createCloseScrollStrategy();
     strategy2.attach(ref);
     expect(() => strategy2.attach(makeRefStub())).toThrow();
   });

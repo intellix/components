@@ -54,7 +54,17 @@ export type FlexibleOverlayPopoverLocation =
  * a basic dropdown is connecting the bottom-left corner of the origin to the top-left corner
  * of the overlay.
  */
-export class FlexibleConnectedPositionStrategy implements PositionStrategy {
+/**
+ * @docs-private
+ *
+ * The concrete impl is kept as a class because its 1400+ LOC of positioning
+ * math relies on dozens of mutually-recursive private methods that share a lot
+ * of state. Consumers should use the {@link createFlexibleConnectedPositionStrategy}
+ * factory and the {@link FlexibleConnectedPositionStrategy} interface; the
+ * impl is never exposed via context, never serialized, and never crosses a
+ * Qwik QRL boundary, so the class form is safe here.
+ */
+class _FlexibleConnectedPositionStrategyImpl implements PositionStrategy {
   /** The overlay to which this strategy is attached. */
   private _overlayRef!: PositionStrategyOverlayHandle;
 
@@ -1402,6 +1412,21 @@ function compareScrollVisibility(a: ScrollingVisibility, b: ScrollingVisibility)
     a.isOverlayClipped === b.isOverlayClipped &&
     a.isOverlayOutsideView === b.isOverlayOutsideView
   );
+}
+
+/**
+ * Public interface for the flexible-connected position strategy. Use
+ * {@link createFlexibleConnectedPositionStrategy} to obtain an instance.
+ */
+export type FlexibleConnectedPositionStrategy = _FlexibleConnectedPositionStrategyImpl;
+
+/**
+ * Creates a flexible-connected position strategy attached to the given origin.
+ */
+export function createFlexibleConnectedPositionStrategy(
+  origin: FlexibleConnectedPositionStrategyOrigin,
+): FlexibleConnectedPositionStrategy {
+  return new _FlexibleConnectedPositionStrategyImpl(origin);
 }
 
 export const STANDARD_DROPDOWN_BELOW_POSITIONS: ConnectedPosition[] = [
