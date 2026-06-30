@@ -9,7 +9,10 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {OverlayOutsideClickDispatcher} from '../public-api';
+import {
+  createOverlayOutsideClickDispatcher,
+  type OverlayOutsideClickDispatcher,
+} from '../public-api';
 
 /** Minimal OverlayRef stub for outside-click dispatcher tests. */
 function makeRef(overlayElement?: HTMLElement | null, predicate?: (e: Event) => boolean): any {
@@ -28,7 +31,7 @@ describe('OverlayOutsideClickDispatcher', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    dispatcher = new OverlayOutsideClickDispatcher();
+    dispatcher = createOverlayOutsideClickDispatcher();
   });
 
   afterEach(() => {

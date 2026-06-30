@@ -5,8 +5,9 @@ export {createIdGenerator, ID_GENERATOR, useIdGenerator} from './id-generator';
 export type {InteractivityChecker} from './interactivity-checker/interactivity-checker';
 export {createInteractivityChecker} from './interactivity-checker/interactivity-checker';
 export type {IsFocusableConfig} from './interactivity-checker/interactivity-checker';
+export type {InputModalityDetector} from './input-modality/input-modality-detector';
 export {
-  InputModalityDetector,
+  createInputModalityDetector,
   INPUT_MODALITY_DETECTOR,
   useInputModalityDetector,
   TOUCH_BUFFER_MS,

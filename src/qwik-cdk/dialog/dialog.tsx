@@ -14,11 +14,8 @@ import type {DialogConfig} from './dialog-config';
 import {createDialogRef, type DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';
 import type {Overlay, OverlayRef, OverlayRegistry, ScrollStrategy} from '../overlay/public-api';
-import {
-  createOverlayService,
-  OverlayKeyboardDispatcher,
-  OverlayOutsideClickDispatcher,
-} from '../overlay/public-api';
+import {createOverlayService} from '../overlay/public-api';
+import type {OverlayKeyboardDispatcher, OverlayOutsideClickDispatcher} from '../overlay/public-api';
 import {DIALOG_DATA} from './dialog-tokens';
 import type {IdGenerator} from '../a11y/id-generator';
 import {hasModifierKey} from '../keycodes/modifiers';

@@ -8,7 +8,7 @@
 
 import {createContextId, useContext} from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
-import {BaseOverlayDispatcher} from './base-overlay-dispatcher';
+import {type BaseOverlayDispatcher, canReceiveOverlayEvent} from './base-overlay-dispatcher';
 import type {OverlayRef} from '../overlay-ref';
 
 /** Per-overlay keyboard handler registration. */
@@ -17,63 +17,73 @@ export interface KeyboardHandlers {
 }
 
 /**
- * Service for dispatching keyboard events that land on the body to appropriate overlay ref,
- * if any. It maintains a list of attached overlays to determine best suited overlay based
- * on event target and order of overlay opens.
+ * Global keydown router. Routes events to the most-recently-added overlay
+ * that has a handler installed and whose `eventPredicate` admits the event.
  */
-export class OverlayKeyboardDispatcher extends BaseOverlayDispatcher {
-  private _cleanupKeydown: (() => void) | undefined;
-  private _handlers = new Map<OverlayRef, KeyboardHandlers>();
+export interface OverlayKeyboardDispatcher extends BaseOverlayDispatcher {
+  add(overlayRef: OverlayRef, handlers?: KeyboardHandlers): void;
+}
 
-  /** Add a new overlay to the list of attached overlay refs, optionally with explicit handlers. */
-  override add(overlayRef: OverlayRef, handlers?: KeyboardHandlers): void {
-    super.add(overlayRef);
+export function createOverlayKeyboardDispatcher(): OverlayKeyboardDispatcher {
+  const attachedOverlays: OverlayRef[] = [];
+  const handlers = new Map<OverlayRef, KeyboardHandlers>();
+  let cleanupKeydown: (() => void) | undefined;
+  let isAttached = false;
 
-    if (handlers) {
-      this._handlers.set(overlayRef, handlers);
-    }
-
-    // Lazily start dispatcher once first overlay is added.
-    if (!this._isAttached && isBrowser) {
-      document.addEventListener('keydown', this._keydownListener, true);
-      this._cleanupKeydown = () =>
-        document.removeEventListener('keydown', this._keydownListener, true);
-      this._isAttached = true;
-    }
-  }
-
-  /** Remove an overlay from the list of attached overlay refs. */
-  override remove(overlayRef: OverlayRef): void {
-    this._handlers.delete(overlayRef);
-    super.remove(overlayRef);
-  }
-
-  /** Detaches the global keyboard event listener. */
-  protected detach() {
-    if (this._isAttached) {
-      this._cleanupKeydown?.();
-      this._cleanupKeydown = undefined;
-      this._isAttached = false;
-    }
-  }
-
-  /** Keyboard event listener that will be attached to the document. */
-  private _keydownListener = (event: KeyboardEvent) => {
-    for (let i = this._attachedOverlays.length - 1; i >= 0; i--) {
+  const keydownListener = (event: KeyboardEvent) => {
+    for (let i = attachedOverlays.length - 1; i >= 0; i--) {
       // Dispatch the keydown event to the top overlay which has a keydown handler.
       // We want to target the most recent overlay, rather than trying to match where the event
       // came from, because some components might open an overlay but keep focus on a trigger
       // element (e.g. for select and autocomplete). We skip overlays without keydown handlers,
       // because we don't want overlays that don't handle keyboard events to block ones below them.
-      const ref = this._attachedOverlays[i];
-      const handlers = this._handlers.get(ref);
-      // Prefer the per-add handler; fall back to ref._keydownEvents for backwards compat.
-      const handler = handlers?.onKeydown ?? ref._keydownEvents;
-      if (handler && this.canReceiveKeyboardEvent(ref, event)) {
+      const ref = attachedOverlays[i];
+      const h = handlers.get(ref);
+      const handler = h?.onKeydown ?? ref._keydownEvents;
+      if (handler && canReceiveOverlayEvent(ref, event)) {
         handler(event);
         break;
       }
     }
+  };
+
+  function detach() {
+    if (isAttached) {
+      cleanupKeydown?.();
+      cleanupKeydown = undefined;
+      isAttached = false;
+    }
+  }
+
+  return {
+    _attachedOverlays: attachedOverlays,
+
+    add(overlayRef, h) {
+      // Ensure that we don't get the same overlay multiple times.
+      const idx = attachedOverlays.indexOf(overlayRef);
+      if (idx > -1) attachedOverlays.splice(idx, 1);
+      attachedOverlays.push(overlayRef);
+
+      if (h) handlers.set(overlayRef, h);
+
+      // Lazily start dispatcher once first overlay is added.
+      if (!isAttached && isBrowser) {
+        document.addEventListener('keydown', keydownListener, true);
+        cleanupKeydown = () => document.removeEventListener('keydown', keydownListener, true);
+        isAttached = true;
+      }
+    },
+
+    remove(overlayRef) {
+      handlers.delete(overlayRef);
+      const idx = attachedOverlays.indexOf(overlayRef);
+      if (idx > -1) attachedOverlays.splice(idx, 1);
+      if (attachedOverlays.length === 0) detach();
+    },
+
+    dispose() {
+      detach();
+    },
   };
 }
 

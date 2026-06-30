@@ -14,8 +14,8 @@ import {
   type OverlayEntry,
   OverlayContainerOutlet,
   type OverlayContainerOptions,
-  OverlayKeyboardDispatcher,
-  OverlayOutsideClickDispatcher,
+  createOverlayKeyboardDispatcher,
+  createOverlayOutsideClickDispatcher,
   NoopScrollStrategy,
 } from './overlay/public-api';
 import type {DialogConfig} from './dialog/dialog-config';
@@ -58,8 +58,8 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   // Construct browser-only dispatchers after hydration; clean up on teardown.
   useVisibleTask$(({cleanup}) => {
     const platform = createPlatform();
-    const kbd = new OverlayKeyboardDispatcher();
-    const ocd = new OverlayOutsideClickDispatcher(platform);
+    const kbd = createOverlayKeyboardDispatcher();
+    const ocd = createOverlayOutsideClickDispatcher(platform);
     internals.keyboardDispatcher = noSerialize(kbd);
     internals.outsideClickDispatcher = noSerialize(ocd);
     internals.dialogScrollStrategyFactory = noSerialize(() => new NoopScrollStrategy());

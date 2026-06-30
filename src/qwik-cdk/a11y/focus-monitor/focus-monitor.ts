@@ -8,7 +8,11 @@
 
 import {createContextId, useContext} from '@builder.io/qwik';
 import {createPlatform, type Platform} from '../../platform';
-import {InputModalityDetector, TOUCH_BUFFER_MS} from '../input-modality/input-modality-detector';
+import {
+  createInputModalityDetector,
+  type InputModalityDetector,
+  TOUCH_BUFFER_MS,
+} from '../input-modality/input-modality-detector';
 
 export type FocusOrigin = 'touch' | 'mouse' | 'keyboard' | 'program' | null;
 
@@ -113,7 +117,7 @@ export class FocusMonitor {
 
   constructor(
     platform: Platform = createPlatform(),
-    modalityDetector: InputModalityDetector = new InputModalityDetector(),
+    modalityDetector: InputModalityDetector = createInputModalityDetector(),
     detectionMode: FocusMonitorDetectionMode = FocusMonitorDetectionMode.IMMEDIATE,
   ) {
     this._platform = platform;

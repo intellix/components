@@ -10,8 +10,8 @@ import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import {component$, jsx, type NoSerialize} from '@builder.io/qwik';
 import {
   createOverlayService,
-  OverlayKeyboardDispatcher,
-  OverlayOutsideClickDispatcher,
+  createOverlayKeyboardDispatcher,
+  createOverlayOutsideClickDispatcher,
 } from '../overlay/public-api';
 import type {OverlayEntry, OverlayRegistry} from '../overlay/public-api';
 import {createIdGenerator} from '../a11y/id-generator';
@@ -52,8 +52,8 @@ function makeDialog(defaults: Record<string, unknown> = {}): DialogService {
   const openDialogs = {value: [] as readonly NoSerialize<DialogRef>[]} as Signal<
     readonly NoSerialize<DialogRef>[]
   >;
-  const keyboardDispatcher = new OverlayKeyboardDispatcher();
-  const outsideClickDispatcher = new OverlayOutsideClickDispatcher();
+  const keyboardDispatcher = createOverlayKeyboardDispatcher();
+  const outsideClickDispatcher = createOverlayOutsideClickDispatcher();
   return createDialogService({
     overlay,
     idGen,

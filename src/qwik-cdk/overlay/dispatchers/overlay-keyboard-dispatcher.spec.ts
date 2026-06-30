@@ -9,7 +9,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {OverlayKeyboardDispatcher} from '../public-api';
+import {createOverlayKeyboardDispatcher, type OverlayKeyboardDispatcher} from '../public-api';
 
 /** Minimal OverlayRef stub. */
 function makeRef(predicate?: (e: Event) => boolean): any {
@@ -26,7 +26,7 @@ describe('OverlayKeyboardDispatcher', () => {
   let dispatcher: OverlayKeyboardDispatcher;
 
   beforeEach(() => {
-    dispatcher = new OverlayKeyboardDispatcher();
+    dispatcher = createOverlayKeyboardDispatcher();
   });
 
   afterEach(() => {

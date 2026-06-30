@@ -50,13 +50,15 @@ export {
   SCROLL_STRATEGY_OPTIONS,
   useScrollStrategyOptions,
 } from './scroll/scroll-strategy-options';
+export type {OverlayKeyboardDispatcher} from './dispatchers/overlay-keyboard-dispatcher';
 export {
-  OverlayKeyboardDispatcher,
+  createOverlayKeyboardDispatcher,
   OVERLAY_KEYBOARD_DISPATCHER,
   useOverlayKeyboardDispatcher,
 } from './dispatchers/overlay-keyboard-dispatcher';
+export type {OverlayOutsideClickDispatcher} from './dispatchers/overlay-outside-click-dispatcher';
 export {
-  OverlayOutsideClickDispatcher,
+  createOverlayOutsideClickDispatcher,
   OVERLAY_OUTSIDE_CLICK_DISPATCHER,
   useOverlayOutsideClickDispatcher,
 } from './dispatchers/overlay-outside-click-dispatcher';

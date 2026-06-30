@@ -59,94 +59,116 @@ function getEventTarget<T extends EventTarget>(event: Event): T | null {
  * Detects the user's input modality (keyboard / mouse / touch).
  * Drop-in replacement for Angular CDK's InputModalityDetector — no DI, no RxJS.
  */
-export class InputModalityDetector {
-  /** Signal shim: consumers read `.modality.value`. */
-  readonly modality: {value: InputModality} = {value: null};
-
+export interface InputModalityDetector {
+  /** Signal-shim: consumers read `.modality.value`. */
+  readonly modality: {value: InputModality};
   /** The most recently detected input modality event target. */
-  _mostRecentTarget: HTMLElement | null = null;
-
+  _mostRecentTarget: HTMLElement | null;
   /** Convenience getter — matches CDK's `mostRecentModality`. */
-  get mostRecentModality(): InputModality {
-    return this.modality.value;
+  readonly mostRecentModality: InputModality;
+  /** Register a callback invoked whenever the modality changes. Returns an unsubscribe fn. */
+  onModalityChange(cb: (m: InputModality) => void): () => void;
+  /** Removes all event listeners. Call when the detector is no longer needed. */
+  destroy(): void;
+}
+
+export function createInputModalityDetector(
+  options?: InputModalityDetectorOptions,
+): InputModalityDetector {
+  const opts: InputModalityDetectorOptions = {ignoreKeys: DEFAULT_IGNORE_KEYS, ...options};
+  const modality: {value: InputModality} = {value: null};
+  let mostRecentTarget: HTMLElement | null = null;
+  let lastTouchMs = 0;
+  let onChangeCallbacks: Array<(m: InputModality) => void> = [];
+
+  function setModality(m: InputModality, target: EventTarget | null): void {
+    modality.value = m;
+    mostRecentTarget = target as HTMLElement | null;
+    onChangeCallbacks.forEach(cb => cb(m));
   }
 
-  private readonly _options: InputModalityDetectorOptions;
-  private _lastTouchMs = 0;
-  private _onChangeCallbacks: Array<(m: InputModality) => void> = [];
-
-  private _onKeydown = (event: KeyboardEvent) => {
-    if (this._options.ignoreKeys?.some(k => k === event.keyCode)) {
+  const onKeydown = (event: KeyboardEvent) => {
+    if (opts.ignoreKeys?.some(k => k === event.keyCode)) {
       return;
     }
-    this._setModality('keyboard', getEventTarget(event));
+    setModality('keyboard', getEventTarget(event));
   };
 
-  private _onMousedown = (event: MouseEvent) => {
-    if (Date.now() - this._lastTouchMs < TOUCH_BUFFER_MS) {
+  const onMousedown = (event: MouseEvent) => {
+    if (Date.now() - lastTouchMs < TOUCH_BUFFER_MS) {
       return;
     }
-    this._setModality(
+    setModality(
       isFakeMousedownFromScreenReader(event) ? 'keyboard' : 'mouse',
       getEventTarget(event),
     );
   };
 
-  private _onTouchstart = (event: TouchEvent) => {
+  const onTouchstart = (event: TouchEvent) => {
     if (isFakeTouchstartFromScreenReader(event)) {
-      this._setModality('keyboard', null);
+      setModality('keyboard', null);
       return;
     }
-    this._lastTouchMs = Date.now();
-    this._setModality('touch', getEventTarget(event));
+    lastTouchMs = Date.now();
+    setModality('touch', getEventTarget(event));
   };
 
-  private _listenerCleanups: Array<() => void> = [];
+  let listenerCleanups: Array<() => void> = [];
 
-  constructor(options?: InputModalityDetectorOptions) {
-    this._options = {ignoreKeys: DEFAULT_IGNORE_KEYS, ...options};
+  // Use typeof guard rather than `isBrowser` because the qwik optimizer's CSR
+  // library build inlines `isBrowser` to `true` and DCE strips the guard,
+  // leaving `document.addEventListener` unconditional and crashing during SSR.
+  if (typeof document !== 'undefined') {
+    const doc = document;
+    doc.addEventListener('keydown', onKeydown as EventListener, modalityEventListenerOptions);
+    doc.addEventListener('mousedown', onMousedown as EventListener, modalityEventListenerOptions);
+    doc.addEventListener('touchstart', onTouchstart as EventListener, modalityEventListenerOptions);
 
-    // Use typeof guard rather than `isBrowser` because the qwik optimizer's CSR
-    // library build inlines `isBrowser` to `true` and DCE strips the guard,
-    // leaving `document.addEventListener` unconditional and crashing during SSR.
-    if (typeof document !== 'undefined') {
-      const doc = document;
-      const onKeydown = this._onKeydown as EventListener;
-      const onMousedown = this._onMousedown as EventListener;
-      const onTouchstart = this._onTouchstart as EventListener;
-
-      doc.addEventListener('keydown', onKeydown, modalityEventListenerOptions);
-      doc.addEventListener('mousedown', onMousedown, modalityEventListenerOptions);
-      doc.addEventListener('touchstart', onTouchstart, modalityEventListenerOptions);
-
-      this._listenerCleanups = [
-        () => doc.removeEventListener('keydown', onKeydown, modalityEventListenerOptions),
-        () => doc.removeEventListener('mousedown', onMousedown, modalityEventListenerOptions),
-        () => doc.removeEventListener('touchstart', onTouchstart, modalityEventListenerOptions),
-      ];
-    }
+    listenerCleanups = [
+      () =>
+        doc.removeEventListener(
+          'keydown',
+          onKeydown as EventListener,
+          modalityEventListenerOptions,
+        ),
+      () =>
+        doc.removeEventListener(
+          'mousedown',
+          onMousedown as EventListener,
+          modalityEventListenerOptions,
+        ),
+      () =>
+        doc.removeEventListener(
+          'touchstart',
+          onTouchstart as EventListener,
+          modalityEventListenerOptions,
+        ),
+    ];
   }
 
-  /** Register a callback invoked whenever the modality changes. Returns an unsubscribe fn. */
-  onModalityChange(cb: (m: InputModality) => void): () => void {
-    this._onChangeCallbacks.push(cb);
-    return () => {
-      this._onChangeCallbacks = this._onChangeCallbacks.filter(c => c !== cb);
-    };
-  }
-
-  /** Removes all event listeners. Call when the detector is no longer needed. */
-  destroy(): void {
-    this._listenerCleanups.forEach(fn => fn());
-    this._listenerCleanups = [];
-    this._onChangeCallbacks = [];
-  }
-
-  private _setModality(m: InputModality, target: EventTarget | null): void {
-    this.modality.value = m;
-    this._mostRecentTarget = target as HTMLElement | null;
-    this._onChangeCallbacks.forEach(cb => cb(m));
-  }
+  return {
+    modality,
+    get _mostRecentTarget() {
+      return mostRecentTarget;
+    },
+    set _mostRecentTarget(v: HTMLElement | null) {
+      mostRecentTarget = v;
+    },
+    get mostRecentModality() {
+      return modality.value;
+    },
+    onModalityChange(cb) {
+      onChangeCallbacks.push(cb);
+      return () => {
+        onChangeCallbacks = onChangeCallbacks.filter(c => c !== cb);
+      };
+    },
+    destroy() {
+      listenerCleanups.forEach(fn => fn());
+      listenerCleanups = [];
+      onChangeCallbacks = [];
+    },
+  };
 }
 
 export const INPUT_MODALITY_DETECTOR = createContextId<InputModalityDetector>(

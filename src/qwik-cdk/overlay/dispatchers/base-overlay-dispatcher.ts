@@ -9,66 +9,21 @@
 import type {OverlayRef} from '../overlay-ref';
 
 /**
- * Service for dispatching events that land on the body to appropriate overlay ref,
- * if any. It maintains a list of attached overlays to determine best suited overlay based
- * on event target and order of overlay opens.
+ * Shared shape implemented by both `OverlayKeyboardDispatcher` and
+ * `OverlayOutsideClickDispatcher`. The base class hierarchy from CDK is
+ * collapsed into this interface plus the `canReceiveOverlayEvent` helper —
+ * factories inline the rest of the state per-dispatcher.
  */
-export abstract class BaseOverlayDispatcher {
-  /** Currently attached overlays in the order they were attached. */
-  _attachedOverlays: OverlayRef[] = [];
+export interface BaseOverlayDispatcher {
+  _attachedOverlays: readonly OverlayRef[];
+  remove(overlayRef: OverlayRef): void;
+  dispose(): void;
+}
 
-  protected _isAttached = false;
-
-  /** Dispose the dispatcher and detach the global listener. */
-  dispose(): void {
-    this.detach();
-  }
-
-  /** Add a new overlay to the list of attached overlay refs. */
-  add(overlayRef: OverlayRef): void {
-    // Ensure that we don't get the same overlay multiple times.
-    this.remove(overlayRef);
-    this._attachedOverlays.push(overlayRef);
-  }
-
-  /** Remove an overlay from the list of attached overlay refs. */
-  remove(overlayRef: OverlayRef): void {
-    const index = this._attachedOverlays.indexOf(overlayRef);
-
-    if (index > -1) {
-      this._attachedOverlays.splice(index, 1);
-    }
-
-    // Remove the global listener once there are no more overlays.
-    if (this._attachedOverlays.length === 0) {
-      this.detach();
-    }
-  }
-
-  /** Detaches the global event listener. */
-  protected abstract detach(): void;
-
-  /**
-   * Determines whether an overlay is allowed to receive a keyboard event.
-   * The caller is responsible for checking that a handler exists before calling this.
-   */
-  protected canReceiveKeyboardEvent(overlayRef: OverlayRef, event: Event): boolean {
-    if (overlayRef.eventPredicate) {
-      return overlayRef.eventPredicate(event);
-    }
-
-    return true;
-  }
-
-  /**
-   * Determines whether an overlay is allowed to receive a pointer event.
-   * The caller is responsible for checking that a handler exists before calling this.
-   */
-  protected canReceivePointerEvent(overlayRef: OverlayRef, event: Event): boolean {
-    if (overlayRef.eventPredicate) {
-      return overlayRef.eventPredicate(event);
-    }
-
-    return true;
-  }
+/**
+ * Lets an overlay opt out of receiving a routed event via its
+ * `eventPredicate` callback. Returns `true` when no predicate is set.
+ */
+export function canReceiveOverlayEvent(overlayRef: OverlayRef, event: Event): boolean {
+  return overlayRef.eventPredicate ? overlayRef.eventPredicate(event) : true;
 }

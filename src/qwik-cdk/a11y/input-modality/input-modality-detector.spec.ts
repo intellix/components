@@ -1,5 +1,5 @@
 import {describe, it, expect, afterEach} from 'vitest';
-import {InputModalityDetector} from '../public-api';
+import {createInputModalityDetector, type InputModalityDetector} from '../public-api';
 
 describe('InputModalityDetector', () => {
   let det: InputModalityDetector;
@@ -9,18 +9,18 @@ describe('InputModalityDetector', () => {
   });
 
   it('initial modality is null', () => {
-    det = new InputModalityDetector();
+    det = createInputModalityDetector();
     expect(det.modality.value).toBeNull();
   });
   it('mouse event sets modality to mouse', () => {
-    det = new InputModalityDetector();
+    det = createInputModalityDetector();
     document.body.dispatchEvent(
       new MouseEvent('mousedown', {bubbles: true, buttons: 1, detail: 1}),
     );
     expect(det.modality.value).toBe('mouse');
   });
   it('keyboard event sets modality to keyboard', () => {
-    det = new InputModalityDetector();
+    det = createInputModalityDetector();
     document.body.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key: 'Tab'}));
     expect(det.modality.value).toBe('keyboard');
   });
