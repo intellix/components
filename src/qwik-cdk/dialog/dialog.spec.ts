@@ -14,7 +14,7 @@ import {
   OverlayOutsideClickDispatcher,
 } from '../overlay/public-api';
 import type {OverlayEntry, OverlayRegistry} from '../overlay/public-api';
-import {_IdGenerator} from '../a11y/id-generator';
+import {createIdGenerator} from '../a11y/id-generator';
 import {createDialogService} from './dialog';
 import type {DialogService} from './dialog';
 import type {DialogRef} from './dialog-ref';
@@ -47,7 +47,7 @@ function makeRegistry(): OverlayRegistry {
 
 function makeDialog(defaults: Record<string, unknown> = {}): DialogService {
   const registry = makeRegistry();
-  const idGen = new _IdGenerator();
+  const idGen = createIdGenerator();
   const overlay = createOverlayService(registry, idGen);
   const openDialogs = {value: [] as readonly NoSerialize<DialogRef>[]} as Signal<
     readonly NoSerialize<DialogRef>[]

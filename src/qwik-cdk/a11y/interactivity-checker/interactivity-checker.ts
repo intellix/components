@@ -1,4 +1,4 @@
-import {Platform} from '../../platform';
+import {createPlatform, type Platform} from '../../platform';
 
 /**
  * Configuration for the isFocusable method.
@@ -18,133 +18,139 @@ export interface IsFocusableConfig {
  * Utility for checking the interactivity of an element, such as whether it is focusable or
  * tabbable.
  */
-export class InteractivityChecker {
-  private _platform: Platform;
+export interface InteractivityChecker {
+  isDisabled(element: HTMLElement): boolean;
+  isVisible(element: HTMLElement): boolean;
+  isTabbable(element: HTMLElement): boolean;
+  isFocusable(element: HTMLElement, config?: IsFocusableConfig): boolean;
+}
 
-  constructor(platform: Platform = new Platform()) {
-    this._platform = platform;
-  }
+export function createInteractivityChecker(
+  platform: Platform = createPlatform(),
+): InteractivityChecker {
+  const checker: InteractivityChecker = {
+    /**
+     * Gets whether an element is disabled.
+     *
+     * @param element Element to be checked.
+     * @returns Whether the element is disabled.
+     */
+    isDisabled(element: HTMLElement): boolean {
+      // This does not capture some cases, such as a non-form control with a disabled attribute or
+      // a form control inside of a disabled form, but should capture the most common cases.
+      return element.hasAttribute('disabled');
+    },
 
-  /**
-   * Gets whether an element is disabled.
-   *
-   * @param element Element to be checked.
-   * @returns Whether the element is disabled.
-   */
-  isDisabled(element: HTMLElement): boolean {
-    // This does not capture some cases, such as a non-form control with a disabled attribute or
-    // a form control inside of a disabled form, but should capture the most common cases.
-    return element.hasAttribute('disabled');
-  }
+    /**
+     * Gets whether an element is visible for the purposes of interactivity.
+     *
+     * This will capture states like `display: none` and `visibility: hidden`, but not things like
+     * being clipped by an `overflow: hidden` parent or being outside the viewport.
+     *
+     * @returns Whether the element is visible.
+     */
+    isVisible(element: HTMLElement): boolean {
+      // ssr-leak-ok: callers (FocusTrap, focus-monitor) only invoke this on real HTMLElements.
+      return hasGeometry(element) && getComputedStyle(element).visibility === 'visible';
+    },
 
-  /**
-   * Gets whether an element is visible for the purposes of interactivity.
-   *
-   * This will capture states like `display: none` and `visibility: hidden`, but not things like
-   * being clipped by an `overflow: hidden` parent or being outside the viewport.
-   *
-   * @returns Whether the element is visible.
-   */
-  isVisible(element: HTMLElement): boolean {
-    // ssr-leak-ok: callers (FocusTrap, focus-monitor) only invoke this on real HTMLElements.
-    return hasGeometry(element) && getComputedStyle(element).visibility === 'visible';
-  }
-
-  /**
-   * Gets whether an element can be reached via Tab key.
-   * Assumes that the element has already been checked with isFocusable.
-   *
-   * @param element Element to be checked.
-   * @returns Whether the element is tabbable.
-   */
-  isTabbable(element: HTMLElement): boolean {
-    // Nothing is tabbable on the server 😎
-    if (!this._platform.isBrowser) {
-      return false;
-    }
-
-    const frameElement = getFrameElement(getWindow(element));
-
-    if (frameElement) {
-      // Frame elements inherit their tabindex onto all child elements.
-      if (getTabIndexValue(frameElement) === -1) {
+    /**
+     * Gets whether an element can be reached via Tab key.
+     * Assumes that the element has already been checked with isFocusable.
+     *
+     * @param element Element to be checked.
+     * @returns Whether the element is tabbable.
+     */
+    isTabbable(element: HTMLElement): boolean {
+      // Nothing is tabbable on the server 😎
+      if (!platform.isBrowser) {
         return false;
       }
 
-      // Browsers disable tabbing to an element inside of an invisible frame.
-      if (!this.isVisible(frameElement)) {
+      const frameElement = getFrameElement(getWindow(element));
+
+      if (frameElement) {
+        // Frame elements inherit their tabindex onto all child elements.
+        if (getTabIndexValue(frameElement) === -1) {
+          return false;
+        }
+
+        // Browsers disable tabbing to an element inside of an invisible frame.
+        if (!checker.isVisible(frameElement)) {
+          return false;
+        }
+      }
+
+      let nodeName = element.nodeName.toLowerCase();
+      let tabIndexValue = getTabIndexValue(element);
+
+      if (element.hasAttribute('contenteditable')) {
+        return tabIndexValue !== -1;
+      }
+
+      if (nodeName === 'iframe' || nodeName === 'object') {
+        // The frame or object's content may be tabbable depending on the content, but it's
+        // not possibly to reliably detect the content of the frames. We always consider such
+        // elements as non-tabbable.
         return false;
       }
-    }
 
-    let nodeName = element.nodeName.toLowerCase();
-    let tabIndexValue = getTabIndexValue(element);
-
-    if (element.hasAttribute('contenteditable')) {
-      return tabIndexValue !== -1;
-    }
-
-    if (nodeName === 'iframe' || nodeName === 'object') {
-      // The frame or object's content may be tabbable depending on the content, but it's
-      // not possibly to reliably detect the content of the frames. We always consider such
-      // elements as non-tabbable.
-      return false;
-    }
-
-    // In iOS, the browser only considers some specific elements as tabbable.
-    if (this._platform.WEBKIT && this._platform.IOS && !isPotentiallyTabbableIOS(element)) {
-      return false;
-    }
-
-    if (nodeName === 'audio') {
-      // Audio elements without controls enabled are never tabbable, regardless
-      // of the tabindex attribute explicitly being set.
-      if (!element.hasAttribute('controls')) {
+      // In iOS, the browser only considers some specific elements as tabbable.
+      if (platform.WEBKIT && platform.IOS && !isPotentiallyTabbableIOS(element)) {
         return false;
       }
-      // Audio elements with controls are by default tabbable unless the
-      // tabindex attribute is set to `-1` explicitly.
-      return tabIndexValue !== -1;
-    }
 
-    if (nodeName === 'video') {
-      // For all video elements, if the tabindex attribute is set to `-1`, the video
-      // is not tabbable. Note: We cannot rely on the default `HTMLElement.tabIndex`
-      // property as that one is set to `-1` in Chrome, Edge and Safari v13.1. The
-      // tabindex attribute is the source of truth here.
-      if (tabIndexValue === -1) {
-        return false;
+      if (nodeName === 'audio') {
+        // Audio elements without controls enabled are never tabbable, regardless
+        // of the tabindex attribute explicitly being set.
+        if (!element.hasAttribute('controls')) {
+          return false;
+        }
+        // Audio elements with controls are by default tabbable unless the
+        // tabindex attribute is set to `-1` explicitly.
+        return tabIndexValue !== -1;
       }
-      // If the tabindex is explicitly set, and not `-1` (as per check before), the
-      // video element is always tabbable (regardless of whether it has controls or not).
-      if (tabIndexValue !== null) {
-        return true;
+
+      if (nodeName === 'video') {
+        // For all video elements, if the tabindex attribute is set to `-1`, the video
+        // is not tabbable. Note: We cannot rely on the default `HTMLElement.tabIndex`
+        // property as that one is set to `-1` in Chrome, Edge and Safari v13.1. The
+        // tabindex attribute is the source of truth here.
+        if (tabIndexValue === -1) {
+          return false;
+        }
+        // If the tabindex is explicitly set, and not `-1` (as per check before), the
+        // video element is always tabbable (regardless of whether it has controls or not).
+        if (tabIndexValue !== null) {
+          return true;
+        }
+        // Otherwise (when no explicit tabindex is set), a video is only tabbable if it
+        // has controls enabled. Firefox is special as videos are always tabbable regardless
+        // of whether there are controls or not.
+        return platform.FIREFOX || element.hasAttribute('controls');
       }
-      // Otherwise (when no explicit tabindex is set), a video is only tabbable if it
-      // has controls enabled. Firefox is special as videos are always tabbable regardless
-      // of whether there are controls or not.
-      return this._platform.FIREFOX || element.hasAttribute('controls');
-    }
 
-    return element.tabIndex >= 0;
-  }
+      return element.tabIndex >= 0;
+    },
 
-  /**
-   * Gets whether an element can be focused by the user.
-   *
-   * @param element Element to be checked.
-   * @param config The config object with options to customize this method's behavior
-   * @returns Whether the element is focusable.
-   */
-  isFocusable(element: HTMLElement, config?: IsFocusableConfig): boolean {
-    // Perform checks in order of left to most expensive.
-    // Again, naive approach that does not capture many edge cases and browser quirks.
-    return (
-      isPotentiallyFocusable(element) &&
-      !this.isDisabled(element) &&
-      (config?.ignoreVisibility || this.isVisible(element))
-    );
-  }
+    /**
+     * Gets whether an element can be focused by the user.
+     *
+     * @param element Element to be checked.
+     * @param config The config object with options to customize this method's behavior
+     * @returns Whether the element is focusable.
+     */
+    isFocusable(element: HTMLElement, config?: IsFocusableConfig): boolean {
+      // Perform checks in order of left to most expensive.
+      // Again, naive approach that does not capture many edge cases and browser quirks.
+      return (
+        isPotentiallyFocusable(element) &&
+        !checker.isDisabled(element) &&
+        (config?.ignoreVisibility || checker.isVisible(element))
+      );
+    },
+  };
+  return checker;
 }
 
 /**

@@ -5,15 +5,21 @@ export interface OverlayContainer {
   getContainerElement(): HTMLElement | null;
 }
 
-export class DefaultOverlayContainer implements OverlayContainer {
-  private el: HTMLElement | null = null;
-  getContainerElement(): HTMLElement | null {
-    if (!isBrowser) return null;
-    if (!this.el) {
-      this.el = document.querySelector<HTMLElement>('.cdk-overlay-container');
-    }
-    return this.el;
-  }
+/**
+ * Default container that looks up `.cdk-overlay-container` in the document and
+ * memoizes the result. SSR-safe — returns `null` on the server.
+ */
+export function createDefaultOverlayContainer(): OverlayContainer {
+  let el: HTMLElement | null = null;
+  return {
+    getContainerElement() {
+      if (!isBrowser) return null;
+      if (!el) {
+        el = document.querySelector<HTMLElement>('.cdk-overlay-container');
+      }
+      return el;
+    },
+  };
 }
 
 export const OVERLAY_CONTAINER = createContextId<OverlayContainer>('qwik-cdk/overlay-container');

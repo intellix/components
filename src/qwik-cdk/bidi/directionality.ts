@@ -6,20 +6,27 @@ export function isDirection(v: unknown): v is Direction {
   return v === 'ltr' || v === 'rtl';
 }
 
-/** Replacement for CDK's @Injectable Directionality. Carries a signal-backed value. */
-export class Directionality {
+/**
+ * Replacement for CDK's @Injectable Directionality. Carries a signal-backed value.
+ *
+ * Plain object built by `createDirectionality()`; the underlying `.value` is a
+ * Qwik-compatible signal-shim that consumers can read directly and mutate via
+ * `change()`. `<QwikCdkRoot>` should provide a real `useSignal()`-backed
+ * instance via context so reactivity flows through Qwik's tracker.
+ */
+export interface Directionality {
   readonly value: Signal<Direction>;
+  change(next: Direction): void;
+}
 
-  constructor(initial: Direction = 'ltr') {
-    // Using a plain object with a `value` field that mimics a Signal. The
-    // QwikCdkRoot will replace this with `useSignal()` when it constructs the
-    // context-provided instance.
-    this.value = {value: initial} as Signal<Direction>;
-  }
-
-  change(next: Direction): void {
-    (this.value as {value: Direction}).value = next;
-  }
+export function createDirectionality(initial: Direction = 'ltr'): Directionality {
+  const value = {value: initial} as Signal<Direction>;
+  return {
+    value,
+    change(next) {
+      (value as {value: Direction}).value = next;
+    },
+  };
 }
 
 export const DIRECTIONALITY = createContextId<Directionality>('qwik-cdk/directionality');

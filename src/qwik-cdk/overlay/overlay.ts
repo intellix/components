@@ -3,7 +3,7 @@ import type {OverlayConfig} from './overlay-config';
 import {createOverlayRef, type OverlayRef} from './overlay-ref';
 import type {OverlayRegistry, OverlayEntry, OverlayEntryState} from './overlay-registry';
 import {OverlayPositionBuilder} from './position/overlay-position-builder';
-import {_IdGenerator} from '../a11y/id-generator';
+import type {IdGenerator} from '../a11y/id-generator';
 
 export interface Overlay {
   create<P>(component: Component<P>, props: P, config?: OverlayConfig): OverlayRef;
@@ -16,7 +16,7 @@ export function useOverlay(): Overlay {
   return useContext(OVERLAY);
 }
 
-export function createOverlayService(registry: OverlayRegistry, idGen: _IdGenerator): Overlay {
+export function createOverlayService(registry: OverlayRegistry, idGen: IdGenerator): Overlay {
   const positionBuilder = new OverlayPositionBuilder();
   return {
     create(component, props, config = {} as OverlayConfig) {

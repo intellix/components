@@ -6,14 +6,14 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {DefaultOverlayContainer} from './public-api';
+import {createDefaultOverlayContainer, type OverlayContainer} from './public-api';
 
 describe('OverlayContainer', () => {
-  let container: DefaultOverlayContainer;
+  let container: OverlayContainer;
 
   beforeEach(() => {
     document.body.innerHTML = '';
-    container = new DefaultOverlayContainer();
+    container = createDefaultOverlayContainer();
   });
 
   afterEach(() => {

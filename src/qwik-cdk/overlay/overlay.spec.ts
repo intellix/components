@@ -13,7 +13,7 @@ import {component$, jsx} from '@builder.io/qwik';
 import type {Signal} from '@builder.io/qwik';
 import {createOverlayService, type OverlayConfig} from './public-api';
 import type {OverlayEntry, OverlayRegistry} from './public-api';
-import {_IdGenerator} from '../a11y/id-generator';
+import {createIdGenerator} from '../a11y/id-generator';
 
 // ---------------------------------------------------------------------------
 // Stub component — never rendered, just passed by reference.
@@ -40,7 +40,7 @@ function makeRegistry(): OverlayRegistry {
 
 function makeOverlay() {
   const registry = makeRegistry();
-  const idGen = new _IdGenerator();
+  const idGen = createIdGenerator();
   const overlay = createOverlayService(registry, idGen);
   return {overlay, registry, idGen};
 }

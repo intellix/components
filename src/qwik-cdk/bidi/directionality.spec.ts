@@ -1,13 +1,13 @@
 import {describe, it, expect} from 'vitest';
-import {Directionality, isDirection} from './public-api';
+import {createDirectionality, isDirection} from './public-api';
 
 describe('Directionality', () => {
   it('defaults to ltr', () => {
-    const d = new Directionality();
+    const d = createDirectionality();
     expect(d.value.value).toBe('ltr');
   });
   it('change() mutates the signal', () => {
-    const d = new Directionality();
+    const d = createDirectionality();
     d.change('rtl');
     expect(d.value.value).toBe('rtl');
   });

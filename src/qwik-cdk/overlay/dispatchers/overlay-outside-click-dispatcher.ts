@@ -8,7 +8,7 @@
 
 import {createContextId, useContext} from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
-import {Platform, _getEventTarget} from '../../platform/public-api';
+import {createPlatform, type Platform, _getEventTarget} from '../../platform/public-api';
 import {BaseOverlayDispatcher} from './base-overlay-dispatcher';
 import type {OverlayRef} from '../overlay-ref';
 
@@ -29,7 +29,7 @@ export class OverlayOutsideClickDispatcher extends BaseOverlayDispatcher {
   private _cleanups: (() => void)[] | undefined;
   private _handlers = new Map<OverlayRef, OutsideClickHandlers>();
 
-  constructor(private _platform: Platform = new Platform()) {
+  constructor(private _platform: Platform = createPlatform()) {
     super();
   }
 

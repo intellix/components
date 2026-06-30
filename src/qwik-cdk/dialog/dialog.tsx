@@ -20,7 +20,7 @@ import {
   OverlayOutsideClickDispatcher,
 } from '../overlay/public-api';
 import {DIALOG_DATA} from './dialog-tokens';
-import {_IdGenerator} from '../a11y/id-generator';
+import type {IdGenerator} from '../a11y/id-generator';
 import {hasModifierKey} from '../keycodes/modifiers';
 import {QWIK_CDK} from '../internals/internals';
 
@@ -99,13 +99,14 @@ export function useDialog(): Dialog {
   return {open$, close$, closeAll$, openDialogs: ctx.openDialogs};
 }
 
-function makeCtxIdGen(counter: Signal<number>): _IdGenerator {
-  // _IdGenerator's contract is just `getId(prefix): string` — fake the shape so
-  // createOverlayService can call it and we share the ctx counter signal so
-  // dialog and overlay IDs come from the same sequence.
-  const fake = Object.create(_IdGenerator.prototype) as _IdGenerator;
-  (fake as any).getId = (prefix: string) => `${prefix}${counter.value++}`;
-  return fake;
+function makeCtxIdGen(counter: Signal<number>): IdGenerator {
+  // Share the ctx counter signal so dialog and overlay IDs come from the same
+  // monotonic sequence.
+  return {
+    getId(prefix) {
+      return `${prefix}${counter.value++}`;
+    },
+  };
 }
 
 function makeCtxRegistry(entries: Signal<readonly any[]>): OverlayRegistry {
@@ -162,7 +163,7 @@ export interface DialogService {
  */
 export function createDialogService(deps: {
   overlay: Overlay;
-  idGen: _IdGenerator;
+  idGen: IdGenerator;
   defaults: Partial<DialogConfig>;
   openDialogs: Signal<readonly NoSerialize<DialogRef>[]>;
   keyboardDispatcher: OverlayKeyboardDispatcher;

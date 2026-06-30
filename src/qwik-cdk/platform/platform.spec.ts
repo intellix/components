@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {Platform, isBrowser} from './public-api';
+import {createPlatform, isBrowser} from './public-api';
 
 describe('Platform', () => {
   it('isBrowser truthy under happy-dom (test env)', () => {
@@ -7,7 +7,7 @@ describe('Platform', () => {
     expect(typeof isBrowser).toBe('boolean');
   });
   it('Platform instance fields are booleans', () => {
-    const p = new Platform();
+    const p = createPlatform();
     for (const key of [
       'isBrowser',
       'EDGE',

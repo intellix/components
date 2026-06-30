@@ -22,7 +22,11 @@ export {createOverlayRef} from './overlay-ref';
 export type {Overlay} from './overlay';
 export {OVERLAY, useOverlay, createOverlayService} from './overlay';
 export type {OverlayContainer} from './overlay-container';
-export {OVERLAY_CONTAINER, useOverlayContainer, DefaultOverlayContainer} from './overlay-container';
+export {
+  OVERLAY_CONTAINER,
+  useOverlayContainer,
+  createDefaultOverlayContainer,
+} from './overlay-container';
 export type {OverlayContainerOptions} from './overlay-container';
 export {GlobalPositionStrategy} from './position/global-position-strategy';
 export {

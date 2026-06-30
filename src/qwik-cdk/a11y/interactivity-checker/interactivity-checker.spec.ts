@@ -1,12 +1,12 @@
 import {describe, it, expect, beforeEach, vi, afterEach} from 'vitest';
-import {InteractivityChecker} from '../public-api';
+import {createInteractivityChecker} from '../public-api';
 
 describe('InteractivityChecker', () => {
   let checker: InteractivityChecker;
   let host: HTMLElement;
 
   beforeEach(() => {
-    checker = new InteractivityChecker();
+    checker = createInteractivityChecker();
     host = document.createElement('div');
     document.body.appendChild(host);
   });

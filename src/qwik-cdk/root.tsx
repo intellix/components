@@ -8,7 +8,7 @@ import {
   useVisibleTask$,
   type NoSerialize,
 } from '@builder.io/qwik';
-import {Platform} from './platform/platform';
+import {createPlatform} from './platform/platform';
 import type {Direction} from './bidi/directionality';
 import {
   type OverlayEntry,
@@ -57,7 +57,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
 
   // Construct browser-only dispatchers after hydration; clean up on teardown.
   useVisibleTask$(({cleanup}) => {
-    const platform = new Platform();
+    const platform = createPlatform();
     const kbd = new OverlayKeyboardDispatcher();
     const ocd = new OverlayOutsideClickDispatcher(platform);
     internals.keyboardDispatcher = noSerialize(kbd);

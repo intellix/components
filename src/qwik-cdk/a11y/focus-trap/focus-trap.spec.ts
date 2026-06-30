@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {FocusTrap} from './focus-trap';
-import {InteractivityChecker} from '../interactivity-checker/interactivity-checker';
+import {createInteractivityChecker} from '../interactivity-checker/interactivity-checker';
 
 describe('FocusTrap', () => {
   let host: HTMLElement;
@@ -9,7 +9,7 @@ describe('FocusTrap', () => {
   beforeEach(() => {
     host = document.createElement('div');
     document.body.appendChild(host);
-    checker = new InteractivityChecker();
+    checker = createInteractivityChecker();
   });
 
   afterEach(() => {

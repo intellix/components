@@ -1,4 +1,4 @@
-import {InteractivityChecker} from '../interactivity-checker/interactivity-checker';
+import type {InteractivityChecker} from '../interactivity-checker/interactivity-checker';
 
 /**
  * Class that allows for trapping focus within a DOM element.

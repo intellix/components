@@ -1,2 +1,7 @@
-export {Directionality, DIRECTIONALITY, useDirectionality, isDirection} from './directionality';
-export type {Direction} from './directionality';
+export type {Directionality, Direction} from './directionality';
+export {
+  createDirectionality,
+  DIRECTIONALITY,
+  useDirectionality,
+  isDirection,
+} from './directionality';

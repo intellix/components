@@ -1,5 +1,5 @@
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {Platform, FocusMonitor, InputModalityDetector} from '../public-api';
+import {createPlatform, FocusMonitor, InputModalityDetector} from '../public-api';
 
 describe('FocusMonitor', () => {
   let monitor: FocusMonitor;
@@ -7,7 +7,7 @@ describe('FocusMonitor', () => {
 
   beforeEach(() => {
     const det = new InputModalityDetector();
-    monitor = new FocusMonitor(new Platform(), det);
+    monitor = new FocusMonitor(createPlatform(), det);
     el = document.createElement('button');
     document.body.appendChild(el);
   });
