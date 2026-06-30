@@ -1,10 +1,9 @@
 import {describe, it, expect} from 'vitest';
-import {DialogRef, DialogConfig} from './public-api';
+import {createDialogRef, type DialogConfig} from './public-api';
 
 describe('DialogRef', () => {
   it('resolves closed promise with result when close() called', async () => {
-    const cfg = {};
-    cfg.id = 'd1';
+    const cfg: DialogConfig = {id: 'd1'};
     const overlayRef: any = {
       dispose() {},
       updatePosition() {},
@@ -14,7 +13,7 @@ describe('DialogRef', () => {
     };
     const isOpen: any = {value: true};
     const instance: any = {value: null};
-    const ref = new DialogRef(overlayRef, cfg, isOpen, instance);
+    const ref = createDialogRef({overlayRef, config: cfg, isOpen, componentInstance: instance});
     ref.close('done');
     await expect(ref.closed).resolves.toBe('done');
     expect(isOpen.value).toBe(false);

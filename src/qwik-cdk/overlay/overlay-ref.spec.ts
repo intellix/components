@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {OverlayRef} from './public-api';
+import {createOverlayRef} from './public-api';
 
 describe('OverlayRef', () => {
   it('updateSize sets px on width/height', () => {
@@ -17,7 +17,7 @@ describe('OverlayRef', () => {
         maxHeight: {value: undefined},
       },
     };
-    const ref = new OverlayRef({remove() {}} as any, entry);
+    const ref = createOverlayRef({registry: {remove() {}} as any, entry});
     ref.updateSize({width: 100, height: '50vh'});
     expect(entry.state.width.value).toBe('100px');
     expect(entry.state.height.value).toBe('50vh');

@@ -1,6 +1,6 @@
 import {createContextId, noSerialize, useContext, type Component} from '@builder.io/qwik';
 import type {OverlayConfig} from './overlay-config';
-import {OverlayRef} from './overlay-ref';
+import {createOverlayRef, type OverlayRef} from './overlay-ref';
 import type {OverlayRegistry, OverlayEntry, OverlayEntryState} from './overlay-registry';
 import {OverlayPositionBuilder} from './position/overlay-position-builder';
 import {_IdGenerator} from '../a11y/id-generator';
@@ -51,7 +51,12 @@ export function createOverlayService(registry: OverlayRegistry, idGen: _IdGenera
         config,
         state: state as unknown as OverlayEntryState,
       };
-      const ref = new OverlayRef(registry, entry, config.positionStrategy, config.scrollStrategy);
+      const ref = createOverlayRef({
+        registry,
+        entry,
+        positionStrategy: config.positionStrategy,
+        scrollStrategy: config.scrollStrategy,
+      });
       // Backref the ref so OverlayHost's useVisibleTask$ can drive lifecycle
       // (attach/detach + position-strategy.apply()). Avoids using a QRL closure
       // over `ref`, which the qwik optimizer extracts as a free identifier when

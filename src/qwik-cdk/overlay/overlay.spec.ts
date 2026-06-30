@@ -11,7 +11,7 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {component$, jsx} from '@builder.io/qwik';
 import type {Signal} from '@builder.io/qwik';
-import {createOverlayService, OverlayConfig, OverlayRef} from './public-api';
+import {createOverlayService, type OverlayConfig} from './public-api';
 import type {OverlayEntry, OverlayRegistry} from './public-api';
 import {_IdGenerator} from '../a11y/id-generator';
 
@@ -67,9 +67,13 @@ describe('Overlay (createOverlayService)', () => {
   // Ported: creation and registry management
   // ------------------------------------------------------------------ //
 
-  it('create() returns an OverlayRef instance', () => {
+  it('create() returns an OverlayRef-shaped handle', () => {
     const ref = overlay.create(StubComponent, {});
-    expect(ref).toBeInstanceOf(OverlayRef);
+    expect(typeof ref.dispose).toBe('function');
+    expect(typeof ref.updatePosition).toBe('function');
+    expect(typeof ref.updateSize).toBe('function');
+    expect(typeof ref.addPanelClass).toBe('function');
+    expect(typeof ref.removePanelClass).toBe('function');
   });
 
   it('create() pushes an entry into the registry', () => {

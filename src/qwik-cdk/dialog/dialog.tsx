@@ -11,7 +11,7 @@ import {
 } from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
 import type {DialogConfig} from './dialog-config';
-import {DialogRef} from './dialog-ref';
+import {createDialogRef, type DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';
 import type {Overlay, OverlayRef, OverlayRegistry, ScrollStrategy} from '../overlay/public-api';
 import {
@@ -173,26 +173,25 @@ export function createDialogService(deps: {
     openDialogs: deps.openDialogs,
 
     open<C, D, R>(component: Component<any>, config?: DialogConfig<D, R>): DialogRef<R, C> {
-      // SSR no-op: return a resolved fake ref so consumers don't hang
+      // SSR no-op: return a pre-closed ref so consumers don't hang on `.closed`.
+      // createDialogRef sees `isOpen.value === false` and resolves immediately.
       if (!isBrowser) {
         const isOpen = {value: false} as Signal<boolean>;
         const instance = {value: null} as Signal<C | null>;
         const fakeConfig = Object.assign({} as DialogConfig, deps.defaults, config ?? {});
         if (!fakeConfig.id) fakeConfig.id = 'cdk-dialog-ssr-noop';
-        const fake = new DialogRef<R, C>(
-          {
+        return createDialogRef<R, C>({
+          overlayRef: {
             dispose() {},
             updatePosition() {},
             updateSize() {},
             addPanelClass() {},
             removePanelClass() {},
-          } as any,
-          fakeConfig as any,
+          } as unknown as OverlayRef,
+          config: fakeConfig as DialogConfig<unknown, R>,
           isOpen,
-          instance,
-        );
-        (fake as any)._resolveClosed(undefined);
-        return fake;
+          componentInstance: instance,
+        });
       }
 
       const merged = Object.assign({} as DialogConfig, deps.defaults, config ?? {});
@@ -235,7 +234,12 @@ export function createDialogService(deps: {
         } as any,
       );
 
-      const ref = new DialogRef<R, C>(overlayRef, merged as any, isOpen, instance);
+      const ref = createDialogRef<R, C>({
+        overlayRef,
+        config: merged as DialogConfig<unknown, R>,
+        isOpen,
+        componentInstance: instance,
+      });
 
       // Register dispatcher handlers so user callbacks fire regardless of disableClose;
       // disableClose only suppresses the auto-close calls inside each handler.
