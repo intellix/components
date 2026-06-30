@@ -1,6 +1,9 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {FocusTrap} from './focus-trap';
-import {createInteractivityChecker} from '../interactivity-checker/interactivity-checker';
+import {createFocusTrap} from './focus-trap';
+import {
+  createInteractivityChecker,
+  type InteractivityChecker,
+} from '../interactivity-checker/interactivity-checker';
 
 describe('FocusTrap', () => {
   let host: HTMLElement;
@@ -18,7 +21,7 @@ describe('FocusTrap', () => {
 
   describe('constructor and attachAnchors', () => {
     it('should attach anchors by default', () => {
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
       expect(trap.hasAttached()).toBe(true);
       expect(host.previousSibling).not.toBeNull();
       expect(host.nextSibling).not.toBeNull();
@@ -26,7 +29,7 @@ describe('FocusTrap', () => {
     });
 
     it('should defer anchors when deferAnchors is true', () => {
-      const trap = new FocusTrap(host, checker, {deferAnchors: true});
+      const trap = createFocusTrap(host, checker, {deferAnchors: true});
       expect(trap.hasAttached()).toBe(false);
       expect(host.previousSibling).toBeNull();
       expect(host.nextSibling).toBeNull();
@@ -34,7 +37,7 @@ describe('FocusTrap', () => {
     });
 
     it('should attach anchors manually when attachAnchors is called', () => {
-      const trap = new FocusTrap(host, checker, {deferAnchors: true});
+      const trap = createFocusTrap(host, checker, {deferAnchors: true});
       expect(trap.hasAttached()).toBe(false);
       trap.attachAnchors();
       expect(trap.hasAttached()).toBe(true);
@@ -44,7 +47,7 @@ describe('FocusTrap', () => {
     });
 
     it('should create anchors with correct attributes', () => {
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
       const startAnchor = host.previousSibling as HTMLElement;
       const endAnchor = host.nextSibling as HTMLElement;
 
@@ -62,7 +65,7 @@ describe('FocusTrap', () => {
 
   describe('destroy', () => {
     it('should remove anchors from the DOM', () => {
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
       expect(host.previousSibling).not.toBeNull();
       expect(host.nextSibling).not.toBeNull();
 
@@ -74,7 +77,7 @@ describe('FocusTrap', () => {
     });
 
     it('should remove event listeners from anchors', () => {
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
       const startAnchor = host.previousSibling as HTMLElement;
       const endAnchor = host.nextSibling as HTMLElement;
 
@@ -90,13 +93,13 @@ describe('FocusTrap', () => {
 
   describe('enabled', () => {
     it('should be enabled by default', () => {
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
       expect(trap.enabled).toBe(true);
       trap.destroy();
     });
 
     it('should toggle tabindex on anchors when enabled changes', () => {
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
       const startAnchor = host.previousSibling as HTMLElement;
       const endAnchor = host.nextSibling as HTMLElement;
 
@@ -132,7 +135,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockImplementation(el => el.nodeName === 'BUTTON');
       vi.spyOn(checker, 'isTabbable').mockImplementation(el => el.nodeName === 'BUTTON');
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -159,7 +162,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockImplementation(el => el.nodeName === 'BUTTON');
       vi.spyOn(checker, 'isTabbable').mockImplementation(el => el.nodeName === 'BUTTON');
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -186,7 +189,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockImplementation(el => el.nodeName === 'BUTTON');
       vi.spyOn(checker, 'isTabbable').mockImplementation(el => el.nodeName === 'BUTTON');
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -215,7 +218,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockReturnValue(true);
       vi.spyOn(checker, 'isTabbable').mockReturnValue(true);
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -239,7 +242,7 @@ describe('FocusTrap', () => {
 
     it('should return false when no tabbable elements exist', () => {
       host.innerHTML = '';
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       const result = trap.focusFirstTabbableElement();
 
@@ -258,7 +261,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockReturnValue(true);
       vi.spyOn(checker, 'isTabbable').mockReturnValue(true);
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -285,7 +288,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockReturnValue(true);
       vi.spyOn(checker, 'isTabbable').mockReturnValue(true);
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -312,7 +315,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockReturnValue(true);
       vi.spyOn(checker, 'isTabbable').mockReturnValue(true);
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -348,7 +351,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockImplementation(el => el.nodeName === 'BUTTON');
       vi.spyOn(checker, 'isTabbable').mockImplementation(el => el.nodeName === 'BUTTON');
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -390,7 +393,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockReturnValue(true);
       vi.spyOn(checker, 'isTabbable').mockReturnValue(true);
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (
@@ -422,7 +425,7 @@ describe('FocusTrap', () => {
       vi.spyOn(checker, 'isFocusable').mockReturnValue(true);
       vi.spyOn(checker, 'isTabbable').mockReturnValue(true);
 
-      const trap = new FocusTrap(host, checker);
+      const trap = createFocusTrap(host, checker);
 
       // Mock focus to actually set activeElement in happy-dom
       const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (

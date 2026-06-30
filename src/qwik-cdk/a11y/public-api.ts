@@ -13,13 +13,15 @@ export {
   TOUCH_BUFFER_MS,
 } from './input-modality/input-modality-detector';
 export type {InputModality} from './input-modality/input-modality-detector';
+export type {FocusMonitor} from './focus-monitor/focus-monitor';
 export {
-  FocusMonitor,
+  createFocusMonitor,
   FOCUS_MONITOR,
   useFocusMonitor,
   FocusMonitorDetectionMode,
 } from './focus-monitor/focus-monitor';
 export type {FocusOrigin, FocusOptions} from './focus-monitor/focus-monitor';
-export {FocusTrap} from './focus-trap/focus-trap';
+export type {FocusTrap} from './focus-trap/focus-trap';
+export {createFocusTrap} from './focus-trap/focus-trap';
 export {useFocusTrap} from './focus-trap/use-focus-trap';
 export type {UseFocusTrapOptions, UseFocusTrapReturn} from './focus-trap/use-focus-trap';

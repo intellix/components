@@ -1,6 +1,6 @@
 import {type Signal, useSignal, useTask$} from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
-import {FocusTrap} from './focus-trap';
+import {createFocusTrap, type FocusTrap} from './focus-trap';
 import {createInteractivityChecker} from '../interactivity-checker/interactivity-checker';
 
 export interface UseFocusTrapOptions {
@@ -77,7 +77,7 @@ export function useFocusTrap(
 
     // Create the focus trap
     const checker = createInteractivityChecker();
-    const trap = new FocusTrap(element, checker, {
+    const trap = createFocusTrap(element, checker, {
       deferAnchors: options.deferAnchors,
     });
 
