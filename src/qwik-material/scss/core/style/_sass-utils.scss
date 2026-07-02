@@ -1,0 +1,45 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/style/sass-utils.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+
+@use 'sass:map';
+@use 'sass:meta';
+@use 'sass:string';
+
+/// Whether our theming API is using --sys- variables for color tokens.
+$use-system-color-variables: false;
+
+/// Whether our theming API is using --sys- variables for typography tokens.
+$use-system-typography-variables: false;
+
+/// Include content under the current selector (&) or the document root if there is no current
+/// selector.
+@mixin current-selector-or-root($root: html) {
+  @if & {
+    @content;
+  } @else {
+    #{$root} {
+      @content;
+    }
+  }
+}
+
+@function merge-all($maps...) {
+  $result: ();
+  @each $m in $maps {
+    $result: map.merge($result, $m);
+  }
+  @return $result;
+}
+
+@function deep-merge-all($maps...) {
+  $result: ();
+  @each $m in $maps {
+    $result: map.deep-merge($result, $m);
+  }
+  @return $result;
+}
+
+@function is-css-var-name($value) {
+  @return meta.type-of($value) == string and string.index($value, '--') == 1;
+}

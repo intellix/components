@@ -1,0 +1,14 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/tokens/m3.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+//
+// Provides: $sys-theme — a map of all M3 system tokens mapped to --mat-sys-* CSS variables.
+// Only the tokens referenced by the Dialog component are stubbed here.
+
+@forward './md-sys-color';
+@forward './md-sys-elevation';
+@forward './md-sys-motion';
+@forward './md-sys-shape';
+@forward './md-sys-state';
+@forward './md-sys-typescale';
+@forward './theme';

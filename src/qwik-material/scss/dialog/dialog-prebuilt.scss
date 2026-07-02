@@ -1,0 +1,8 @@
+// Prebuilt Material Dialog CSS entry.
+//
+// Emits: structural styles from dialog.scss + a default theme instantiation.
+// Consumers import via `@angular-community/qwik-material/dialog-prebuilt.css`.
+// For custom theming, consumers instead @use dialog-theme mixin from
+// `@angular-community/qwik-material/scss/dialog/_dialog-theme.scss`.
+
+@use './dialog';

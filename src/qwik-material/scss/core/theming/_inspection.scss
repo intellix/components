@@ -1,0 +1,32 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/theming/inspection.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+//
+// Provides the minimum symbols used by _dialog-theme.scss:
+//   - get-theme-version($theme) → 0 (always M2 path, since we don't ship a live theme)
+//   - theme-has($theme, $feature) → false
+
+@use 'sass:map';
+@use 'sass:meta';
+
+/// Gets the version number of a theme object. Returns 0 for unknown/stub themes.
+@function get-theme-version($theme) {
+  @if meta.type-of($theme) == map {
+    $internals: map.get($theme, _mat-theming-internals-do-not-access);
+    @if $internals {
+      $version: map.get($internals, theme-version);
+      @if $version != null {
+        @return $version;
+      }
+    }
+  }
+  @return 0;
+}
+
+/// Returns whether the theme has the given feature (color, typography, density).
+@function theme-has($theme, $feature) {
+  @if meta.type-of($theme) == map {
+    @return map.has-key($theme, $feature);
+  }
+  @return false;
+}

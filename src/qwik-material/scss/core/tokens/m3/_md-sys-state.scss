@@ -1,0 +1,13 @@
+// STUB: this file is a compile-time stand-in for
+// @angular/material/core/tokens/m3/md-sys-state.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+
+@function md-sys-state-values() {
+  @return (
+    drag-state-layer-opacity: 0.16,
+    focus-state-layer-opacity: 0.12,
+    hover-state-layer-opacity: 0.08,
+    pressed-state-layer-opacity: 0.12,
+  );
+}

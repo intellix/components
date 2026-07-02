@@ -1,0 +1,13 @@
+// STUB: this file is a compile-time stand-in for @angular/cdk.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+//
+// Provides: high-contrast mixin (used by dialog.scss to add forced-colors styles).
+// The stub emits a real @media (forced-colors: active) rule matching what the
+// CDK high-contrast mixin produces for target='active'.
+
+@mixin high-contrast($target: active, $encapsulation: null) {
+  @media (forced-colors: active) {
+    @content;
+  }
+}
