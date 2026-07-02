@@ -1,0 +1,56 @@
+{
+  "name": "@angular-community/qwik-material",
+  "version": "0.0.0",
+  "description": "Qwik port of @angular/material (starting with Dialog).",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint:no-ssr-leaks": "node ./scripts/lint-no-ssr-leaks.mjs"
+  },
+  "peerDependencies": {
+    "@builder.io/qwik": "^1.5.0",
+    "@angular-community/qwik-cdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@builder.io/qwik": "^1.5.0",
+    "@angular-community/qwik-cdk": "workspace:*",
+    "@types/node": "*",
+    "happy-dom": "*",
+    "sass": "*",
+    "typescript": "*",
+    "vite": "*",
+    "vite-plugin-dts": "*",
+    "vitest": "*"
+  },
+  "exports": {
+    ".": {
+      "qwik": "./index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./dialog": {
+      "qwik": "./dialog/index.ts",
+      "types": "./dist/dialog/index.d.ts",
+      "import": "./dist/dialog/index.js"
+    },
+    "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
+    "./scss/*": "./scss/*"
+  },
+  "files": [
+    "dist",
+    "scss",
+    "*.ts",
+    "*.tsx",
+    "**/*.ts",
+    "**/*.tsx",
+    "!**/*.spec.ts",
+    "!**/*.spec.tsx",
+    "!scripts"
+  ]
+}

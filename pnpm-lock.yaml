@@ -414,7 +414,7 @@ importers:
     devDependencies:
       '@angular-devkit/build-angular':
         specifier: 'catalog:'
-        version: 22.1.0-next.0(8dc5df47b1074ab7fcdabf51661a6941)
+        version: 22.1.0-next.0(e0804c7f8784edd9dfb703da9a9b3f7e)
       '@angular/cli':
         specifier: 'catalog:'
         version: 22.1.0-next.0(@types/node@22.19.21)(chokidar@5.0.0)(supports-color@10.2.2)
@@ -701,7 +701,7 @@ importers:
         version: 5.0.2(esbuild@0.28.1)(rollup@4.62.0)(supports-color@10.2.2)(typescript@6.0.2)(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.15))
       vitest:
         specifier: '*'
-        version: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(yaml@2.9.0)
 
   src/qwik-cdk-dev-app:
     dependencies:
@@ -721,6 +721,45 @@ importers:
       vite:
         specifier: '*'
         version: 7.3.5(@types/node@24.13.2)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+
+  src/qwik-cdk-parity-tests:
+    devDependencies:
+      '@playwright/test':
+        specifier: '*'
+        version: 1.61.1
+      typescript:
+        specifier: 6.0.2
+        version: 6.0.2
+
+  src/qwik-material:
+    devDependencies:
+      '@angular-community/qwik-cdk':
+        specifier: workspace:*
+        version: link:../qwik-cdk
+      '@builder.io/qwik':
+        specifier: ^1.5.0
+        version: 1.20.0(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+      '@types/node':
+        specifier: '*'
+        version: 22.19.21
+      happy-dom:
+        specifier: '*'
+        version: 20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      sass:
+        specifier: '*'
+        version: 1.101.0
+      typescript:
+        specifier: 6.0.2
+        version: 6.0.2
+      vite:
+        specifier: '*'
+        version: 7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite-plugin-dts:
+        specifier: '*'
+        version: 5.0.2(esbuild@0.28.1)(rollup@4.62.0)(supports-color@10.2.2)(typescript@6.0.2)(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.15))
+      vitest:
+        specifier: '*'
+        version: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(yaml@2.9.0)
 
   src/universal-app:
     dependencies:
@@ -3724,6 +3763,11 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
+  '@playwright/test@1.61.1':
+    resolution: {integrity: sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   '@pnpm/config.env-replace@1.1.0':
     resolution: {integrity: sha512-htyl8TWnKL7K/ESFa1oW2UB5lVDxuF5DpM7tBi6Hu2LNL3mWkIzNLG6N4zoCUP1lCKNxWy/3iu8mS8MvToGd6w==}
     engines: {node: '>=12.22.0'}
@@ -6362,6 +6406,11 @@ packages:
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -8713,6 +8762,16 @@ packages:
     resolution: {integrity: sha512-emEcLuomt2j03vxD54giVB4SxTjnsqkU692xZOZXHDVoYyypEm+b3jpiTcc+Cf+myooc+/Ly0z01jqeNHVgJGw==}
     engines: {node: '>=16.0.0'}
 
+  playwright-core@1.61.1:
+    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.61.1:
+    resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   portfinder@1.0.38:
     resolution: {integrity: sha512-rEwq/ZHlJIKw++XtLAO8PPuOQA/zaPJOZJ37BVuN97nLpMJeuDVLVGRwbFoBgLudgdTMP2hdRJP++H+8QOA3vg==}
     engines: {node: '>= 10.12'}
@@ -11032,13 +11091,13 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@angular-devkit/build-angular@22.1.0-next.0(8dc5df47b1074ab7fcdabf51661a6941)':
+  '@angular-devkit/build-angular@22.1.0-next.0(e0804c7f8784edd9dfb703da9a9b3f7e)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2201.0-next.0(chokidar@5.0.0)
       '@angular-devkit/build-webpack': 0.2201.0-next.0(chokidar@5.0.0)(webpack-dev-server@5.2.4(bufferutil@4.1.0)(tslib@2.8.1)(utf-8-validate@6.0.6)(webpack@5.107.2(esbuild@0.28.0)(postcss@8.5.15)))(webpack@5.107.2(esbuild@0.28.0)(postcss@8.5.15))
       '@angular-devkit/core': 22.1.0-next.0(chokidar@5.0.0)
-      '@angular/build': 22.1.0-next.0(9a8ee775229a403838c54d2c35ab87bc)
+      '@angular/build': 22.1.0-next.0(29890cad623b5b623b4902613d01de7e)
       '@angular/compiler-cli': 22.1.0-next.1(@angular/compiler@22.1.0-next.1)(typescript@6.0.2)
       '@babel/core': 7.29.7
       '@babel/generator': 7.29.7
@@ -11156,7 +11215,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@angular/build@22.1.0-next.0(9a8ee775229a403838c54d2c35ab87bc)':
+  '@angular/build@22.1.0-next.0(29890cad623b5b623b4902613d01de7e)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2201.0-next.0(chokidar@5.0.0)
@@ -11198,7 +11257,7 @@ snapshots:
       less: 4.6.4
       lmdb: 3.5.5
       postcss: 8.5.15
-      vitest: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(yaml@2.9.0)
     transitivePeerDependencies:
       - '@types/node'
       - chokidar
@@ -14397,6 +14456,10 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
+  '@playwright/test@1.61.1':
+    dependencies:
+      playwright: 1.61.1
+
   '@pnpm/config.env-replace@1.1.0': {}
 
   '@pnpm/crypto.hash@1000.2.2':
@@ -17464,6 +17527,9 @@ snapshots:
 
   fs.realpath@1.0.0: {}
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -20312,6 +20378,14 @@ snapshots:
       pvutils: 1.1.5
       tslib: 2.8.1
 
+  playwright-core@1.61.1: {}
+
+  playwright@1.61.1:
+    dependencies:
+      playwright-core: 1.61.1
+    optionalDependencies:
+      fsevents: 2.3.2
+
   portfinder@1.0.38(supports-color@10.2.2):
     dependencies:
       async: 3.2.6
@@ -22468,7 +22542,7 @@ snapshots:
       tsx: 4.22.4
       yaml: 2.9.0
 
-  vitest@4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)):
+  vitest@4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(yaml@2.9.0):
     dependencies:
       '@vitest/expect': 4.1.9
       '@vitest/mocker': 4.1.9(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(less@4.6.4)(sass@1.101.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
@@ -22495,7 +22569,17 @@ snapshots:
       '@types/node': 22.19.21
       happy-dom: 20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6)
     transitivePeerDependencies:
+      - jiti
+      - less
+      - lightningcss
       - msw
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - yaml
 
   void-elements@2.0.1: {}
 

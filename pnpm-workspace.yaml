@@ -19,6 +19,7 @@ packages:
   - src/material-moment-adapter
   - src/universal-app
   - src/youtube-player
+  - src/qwik-material
 
 catalog:
   '@angular-devkit/build-angular': 22.1.0-next.0
