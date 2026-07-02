@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Lint that flags direct browser-global access (document., window., navigator.,
 // getComputedStyle(, requestAnimationFrame() outside an `if (isBrowser)` guard
-// or a useVisibleTask$ callback in non-spec qwik-cdk files.
+// or a useVisibleTask$ callback in non-spec qwik-material files.
 
 import {readFile, readdir} from 'node:fs/promises';
 import {resolve, relative, join} from 'node:path';
