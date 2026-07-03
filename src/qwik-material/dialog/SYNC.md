@@ -3,6 +3,8 @@
 Tracks the sync state between this port and `src/material/dialog/` upstream.
 Every deviation from a verbatim copy is recorded here.
 
+Last synced from angular/components commit: <unsynced — initial port>
+
 ## Upstream sync state
 
 | File | Upstream path | Sync state | Notes |
@@ -12,6 +14,49 @@ Every deviation from a verbatim copy is recorded here.
 | `scss/dialog/_m2-dialog.scss` | `src/material/dialog/_m2-dialog.scss` | synced | byte-identical copy |
 | `scss/dialog/_m3-dialog.scss` | `src/material/dialog/_m3-dialog.scss` | synced | byte-identical copy |
 | `scss/dialog/_dialog-legacy-padding.scss` | `src/material/dialog/_dialog-legacy-padding.scss` | synced | byte-identical copy |
+
+## Synced TypeScript/TSX files
+
+Synced files (mapped from src/material/dialog/):
+- mat-dialog-config.ts ← dialog-config.ts (initial port, spec-driven)
+- mat-dialog-ref.ts ← dialog-ref.ts (initial port, spec-driven)
+- mat-dialog-container.tsx ← dialog-container.ts + dialog-container.html (initial port, spec-driven)
+- mat-dialog.ts ← dialog.ts (initial port, spec-driven)
+- mat-dialog-title.tsx ← dialog-content-directives.ts (MatDialogTitle portion)
+- mat-dialog-content.tsx ← dialog-content-directives.ts (MatDialogContent portion)
+- mat-dialog-actions.tsx ← dialog-content-directives.ts (MatDialogActions portion)
+- mat-dialog-close.tsx ← dialog-content-directives.ts (MatDialogClose portion)
+
+## Intentionally not ported
+
+- dialog-module.ts (NgModules don't exist in Qwik)
+- dialog-container.html (folded into mat-dialog-container.tsx JSX)
+- dialog.zone.spec.ts (NgZone-specific change-detection test — no Qwik analogue)
+- testing/dialog-harness.ts + dialog-opener.ts (harness deferred; separate project)
+
+## Open deviations
+
+Open deviations (from spec §10):
+- MatDialog.open(templateRef, …) removed (no TemplateRef in Qwik).
+- MatDialogConfig.viewContainerRef / injector / componentFactoryResolver removed.
+- MatDialogConfig.providers → MatDialogConfig.context (OverlayContextOverride[]).
+- MatDialogRef.afterOpened(): Observable → afterOpened: Promise<void>.
+- MatDialogRef.afterClosed(): Observable → afterClosed: Promise<R>.
+- MatDialogRef.beforeClosed(): Observable → beforeClosed: Promise<R>.
+- MatDialogRef.backdropClick(): Observable → MatDialogConfig.onBackdropClick$: QRL.
+- MatDialogRef.keydownEvents(): Observable → MatDialogConfig.onKeydown$: QRL.
+- MatDialog.afterOpened: Subject removed (derive from openDialogs signal).
+- MatDialog.afterAllClosed: Observable removed (derive from openDialogs.value.length === 0).
+- MatDialog.ngOnDestroy removed.
+- MatDialogContainer._animationStateChanged: EventEmitter removed (internal event).
+- MatDialogRef.componentRef: ComponentRef<T> removed.
+- MatDialogRef.componentInstance: T → componentInstance: Signal<T | null>.
+- NgModule MatDialogModule removed.
+- Content directives are Qwik components, not directives.
+- Angular Material core's _animationsDisabled() replaced by useAnimationsDisabled().
+- MatDialogContainer extends CdkDialogContainer → JSX composition.
+- MatDialogHarness deferred.
+- SCSS theming mixin (mat.dialog-theme) not exposed until qwik-material/core lands. Only structural + prebuilt CSS ships.
 
 ## Stub inventory
 
@@ -58,3 +103,7 @@ Each stub represents work deferred to a later qwik-material port. When the corre
 ## Prebuilt CSS deviation
 
 qwik-material's `dialog-prebuilt.css` currently ships **structural styles only** (from `dialog.scss`), NOT the theme mixin from `_dialog-theme.scss`. The theme mixin depends on the full Angular Material theming DSL which is out of scope until `qwik-material/core` lands. Consumers who need themed output must `@use` `_dialog-theme.scss` from `scss/dialog/` manually until a `qwik-material/core` prebuilt theme entry lands. This deviation will be echoed in Task 20's finalization.
+
+## Scenario port log (mat-dialog.spec.ts)
+
+Port lands in Task 16. This file will be updated with per-`it` status after that task. Total: <populated in Task 16>

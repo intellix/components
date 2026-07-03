@@ -61,8 +61,6 @@ export interface MatDialog {
   readonly openDialogs: Signal<readonly NoSerialize<MatDialogRef>[]>;
 }
 
-let _matDialogIdSeq = 0;
-
 export function useMatDialog(): MatDialog {
   const overlay = useOverlay();
   const keyboardDispatcher = useOverlayKeyboardDispatcher();
@@ -72,6 +70,7 @@ export function useMatDialog(): MatDialog {
 
   const matRefsById = useStore<Record<string, NoSerialize<MatDialogRef>>>({});
   const openDialogs = useSignal<readonly NoSerialize<MatDialogRef>[]>([]);
+  const idSeq = useStore<{n: number}>({n: 0});
 
   const open$ = $(
     <C, D, R>(
@@ -83,7 +82,7 @@ export function useMatDialog(): MatDialog {
         defaults,
         config ?? {},
       );
-      merged.id = merged.id ?? `mat-mdc-dialog-${_matDialogIdSeq++}`;
+      merged.id = merged.id ?? `mat-mdc-dialog-${idSeq.n++}`;
 
       if (!merged.scrollStrategy && scrollStrategyFactory) {
         merged.scrollStrategy = scrollStrategyFactory();
