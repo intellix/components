@@ -104,6 +104,14 @@ Each stub represents work deferred to a later qwik-material port. When the corre
 
 qwik-material's `dialog-prebuilt.css` currently ships **structural styles only** (from `dialog.scss`), NOT the theme mixin from `_dialog-theme.scss`. The theme mixin depends on the full Angular Material theming DSL which is out of scope until `qwik-material/core` lands. Consumers who need themed output must `@use` `_dialog-theme.scss` from `scss/dialog/` manually until a `qwik-material/core` prebuilt theme entry lands. This deviation will be echoed in Task 20's finalization.
 
-## Scenario port log (mat-dialog.spec.ts)
+## Scenario port log (mat-dialog-scenarios.spec.ts)
 
-Port lands in Task 16. This file will be updated with per-`it` status after that task. Total: <populated in Task 16>
+Source: `src/material/dialog/dialog.spec.ts` — 120 `it()` source lines (11 of those are inside
+`runContentElementTests()` which is called twice, giving 131 Angular test executions).
+
+- Ported (service-level assertions against `createMatDialogService`): 16
+- Skipped (DOM-render — deferred to Playwright): 77
+- Skipped (Angular-only: DI/TemplateRef/NgZone/ChangeDetection/SpyLocation/ngOnDestroy): 39
+- Extra Material-only tests (§5 fields + openDialogs signal tracking): 14
+- Total test nodes in mat-dialog-scenarios.spec.ts: 146 (30 pass + 116 skip)
+- Angular it() source count: 120
