@@ -114,4 +114,8 @@ Source: `src/material/dialog/dialog.spec.ts` — 120 `it()` source lines (11 of 
 - Skipped (Angular-only: DI/TemplateRef/NgZone/ChangeDetection/SpyLocation/ngOnDestroy): 39
 - Extra Material-only tests (§5 fields + openDialogs signal tracking): 14
 - Total test nodes in mat-dialog-scenarios.spec.ts: 146 (30 pass + 116 skip)
-- Angular it() source count: 120
+- Angular it() source count: 120 (131 executions counting the `runContentElementTests` double-call)
+
+Note: the 16 + 77 + 39 = 132 buckets vs. 131 expected Angular executions differ by 1 because
+"should be able to find a dialog by id" was split into two vitest cases (found + unknown-id),
+giving one extra ported node. Not double-counted; just a fine-grained expansion of one Angular test.
