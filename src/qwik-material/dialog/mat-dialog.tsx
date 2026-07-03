@@ -10,8 +10,13 @@ import {
   type QRL,
   type Signal,
 } from '@builder.io/qwik';
-import {useDialog} from '@angular-community/qwik-cdk/dialog';
-import type {DialogConfig as CdkDialogConfig} from '@angular-community/qwik-cdk/dialog';
+import {
+  useOverlay,
+  useOverlayKeyboardDispatcher,
+  useOverlayOutsideClickDispatcher,
+  type OverlayConfig,
+  type OverlayRef,
+} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import {createMatDialogRef, MatDialogState, type MatDialogRef} from './mat-dialog-ref';
 import {MatDialogContainer} from './mat-dialog-container';
@@ -37,16 +42,18 @@ const MatDialogWrapper = component$<{
 });
 
 /**
- * Consumer-facing MatDialog service, matching the shape of qwik-cdk's Dialog
- * but with the Material-flavoured MatDialogRef return type and merging of
- * defaults from the MAT_DIALOG_DEFAULT_OPTIONS context.
+ * Consumer-facing MatDialog service. Opens dialogs via qwik-cdk's overlay
+ * (bypassing the CDK's `useDialog` because that always wraps in
+ * `CdkDialogContainer` and can't accept arbitrary wrapper props). Close-on-
+ * Escape and close-on-outside-click are wired via the overlay keyboard +
+ * outside-click dispatchers.
  */
 export interface MatDialog {
   open$: QRL<
     <C, D = unknown, R = unknown>(
       component: Component<any>,
       config?: MatDialogConfig<D>,
-    ) => Promise<NoSerialize<MatDialogRef<R, C>> | null>
+    ) => NoSerialize<MatDialogRef<R, C>> | null
   >;
   close$: QRL<(id: string, result?: unknown) => void>;
   closeAll$: QRL<() => void>;
@@ -54,41 +61,29 @@ export interface MatDialog {
   readonly openDialogs: Signal<readonly NoSerialize<MatDialogRef>[]>;
 }
 
+let _matDialogIdSeq = 0;
+
 export function useMatDialog(): MatDialog {
-  const cdk = useDialog();
+  const overlay = useOverlay();
+  const keyboardDispatcher = useOverlayKeyboardDispatcher();
+  const outsideClickDispatcher = useOverlayOutsideClickDispatcher();
   const defaults = useContext(MAT_DIALOG_DEFAULT_OPTIONS, {} as Partial<MatDialogConfig>);
   const scrollStrategyFactory = useContext(MAT_DIALOG_SCROLL_STRATEGY, undefined);
 
-  // openDialogs is a derived signal — a live map from qwik-cdk's openDialogs
-  // to the wrapping MatDialogRefs we've minted. Stored in a useStore keyed
-  // by dialog id.
   const matRefsById = useStore<Record<string, NoSerialize<MatDialogRef>>>({});
   const openDialogs = useSignal<readonly NoSerialize<MatDialogRef>[]>([]);
 
-  // `cdk.open$` is a QRL — calls return `Promise<NoSerialize<DialogRef>|null>`.
-  // Our own `open$` returns a QRL too, so `await` is fine inside the body.
-  //
-  // Ordering challenge: MatDialogWrapper renders as soon as cdk.open$ pushes
-  // it into the overlay registry, which happens INSIDE the awaited call. At
-  // wrapper-render time we don't yet have the cdk ref (still in-flight from
-  // cdk.open$), but the wrapper needs the matDialogRef to provide via context
-  // for its descendants (MatDialogClose etc.).
-  //
-  // Solution: mint the matRef BEFORE calling cdk.open$, using a `cdkShim`
-  // whose methods delegate to a `.real` slot filled in AFTER cdk.open$
-  // resolves. The wrapper reads a stable matRef; close() from a
-  // MatDialogClose click before the shim is populated is a no-op (the
-  // window where this matters is a single microtask on real hardware).
   const open$ = $(
-    async <C, D, R>(
+    <C, D, R>(
       component: Component<any>,
       config?: MatDialogConfig<D>,
-    ): Promise<NoSerialize<MatDialogRef<R, C>> | null> => {
+    ): NoSerialize<MatDialogRef<R, C>> | null => {
       const merged: MatDialogConfig<D> = Object.assign(
         {} as MatDialogConfig<D>,
         defaults,
         config ?? {},
       );
+      merged.id = merged.id ?? `mat-mdc-dialog-${_matDialogIdSeq++}`;
 
       if (!merged.scrollStrategy && scrollStrategyFactory) {
         merged.scrollStrategy = scrollStrategyFactory();
@@ -99,16 +94,15 @@ export function useMatDialog(): MatDialog {
       if (typeof document === 'undefined') {
         const state = {value: MatDialogState.CLOSED} as Signal<MatDialogState>;
         const componentInstance = {value: null} as Signal<C | null>;
-        merged.id = merged.id ?? 'mat-dialog-ssr-noop';
-        const fakeCdkRef = {
+        const fakeOverlayRef = {
           dispose() {},
           updatePosition() {},
-          updateSize(_o: any) {},
-          addPanelClass(_c: any) {},
-          removePanelClass(_c: any) {},
+          updateSize(_o: {width?: string | number; height?: string | number}) {},
+          addPanelClass(_c: string | string[]) {},
+          removePanelClass(_c: string | string[]) {},
         };
         const ref = createMatDialogRef<R, C>({
-          cdkRef: fakeCdkRef,
+          cdkRef: fakeOverlayRef,
           config: merged,
           state,
           componentInstance,
@@ -116,25 +110,36 @@ export function useMatDialog(): MatDialog {
         return noSerialize(ref);
       }
 
-      // Pre-mint state signals and the cdkShim so the matRef can exist BEFORE
-      // cdk.open$ is called.
+      // Overlay.create returns the ref synchronously, so no cdkShim is needed
+      // (unlike the earlier cdk.dialog.open$ variant which was a QRL).
+      const overlayConfig: OverlayConfig = {
+        scrollStrategy: merged.scrollStrategy,
+        panelClass: merged.panelClass,
+        hasBackdrop: merged.hasBackdrop ?? true,
+        backdropClass: merged.backdropClass,
+        width: merged.width,
+        height: merged.height,
+        minWidth: merged.minWidth,
+        minHeight: merged.minHeight,
+        maxWidth: merged.maxWidth,
+        maxHeight: merged.maxHeight,
+        direction: merged.direction,
+      };
+
+      // Pre-mint state signals + the wrapping matRef with a shim so the
+      // wrapper's descendants (MatDialogClose) can call ref.close() from the
+      // start, even if the real overlayRef assignment happens after render.
       const state = {value: MatDialogState.OPEN} as Signal<MatDialogState>;
       const componentInstance = {value: null} as Signal<C | null>;
-      interface CdkShim {
-        real: null | {
-          dispose(): void;
-          updatePosition(): void;
-          updateSize(o: {width?: string | number; height?: string | number}): void;
-          addPanelClass(c: string | string[]): void;
-          removePanelClass(c: string | string[]): void;
-        };
+      interface OverlayShim {
+        real: OverlayRef | null;
         dispose(): void;
         updatePosition(): void;
         updateSize(o: {width?: string | number; height?: string | number}): void;
         addPanelClass(c: string | string[]): void;
         removePanelClass(c: string | string[]): void;
       }
-      const cdkShim: CdkShim = {
+      const overlayShim: OverlayShim = {
         real: null,
         dispose() {
           this.real?.dispose();
@@ -153,75 +158,62 @@ export function useMatDialog(): MatDialog {
         },
       };
       const matRef = createMatDialogRef<R, C>({
-        cdkRef: cdkShim,
+        cdkRef: overlayShim,
         config: merged,
         state,
         componentInstance,
       });
       const wrapped = noSerialize(matRef)!;
 
-      // Build the CdkDialogConfig from the MatDialogConfig. The CDK layer
-      // knows nothing about MDC animation durations or DialogPosition; those
-      // are Material-only concerns handled by MatDialogContainer.
-      const cdkConfig: CdkDialogConfig = {
-        id: merged.id,
-        role: merged.role,
-        panelClass: merged.panelClass,
-        hasBackdrop: merged.hasBackdrop ?? true,
-        backdropClass: merged.backdropClass,
-        disableClose: merged.disableClose,
-        width: merged.width,
-        height: merged.height,
-        minWidth: merged.minWidth,
-        minHeight: merged.minHeight,
-        maxWidth: merged.maxWidth,
-        maxHeight: merged.maxHeight,
-        direction: merged.direction,
-        ariaDescribedBy: merged.ariaDescribedBy,
-        ariaLabelledBy: merged.ariaLabelledBy,
-        ariaLabel: merged.ariaLabel,
-        ariaModal: merged.ariaModal ?? true,
-        autoFocus: merged.autoFocus,
-        restoreFocus: merged.restoreFocus,
-        closeOnNavigation: merged.closeOnNavigation,
-        data: merged.data,
-        scrollStrategy: merged.scrollStrategy,
-        context: merged.context,
-        onBackdropClick$: merged.onBackdropClick$,
-        onKeydown$: merged.onKeydown$,
-        onOutsidePointer$: merged.onOutsidePointer$,
-      };
-
-      // Cast cdk.open$ to any: the hook passes (component, props, cdkConfig)
-      // as three args to support the MatDialogWrapper prop-injection pattern,
-      // whereas qwik-cdk's QRL signature is (component, config?). The extra
-      // args are absorbed by the CDK's internal overlay.create() call at
-      // runtime; this is documented as a Task 20 SYNC.md deviation.
-      const cdkRef = await (cdk.open$ as any)(
-        MatDialogWrapper as any,
+      const overlayRef = overlay.create<{
+        config: Partial<MatDialogConfig>;
+        ContentComponent: Component<any>;
+        contentProps: Record<string, unknown>;
+        matDialogRef: NoSerialize<MatDialogRef> | undefined;
+      }>(
+        MatDialogWrapper as Component<any>,
         {
           config: {...merged},
           ContentComponent: component,
           contentProps: {},
           matDialogRef: wrapped,
-        } as any,
-        cdkConfig as any,
+        },
+        overlayConfig,
       );
 
-      if (!cdkRef) return null;
+      if (!overlayRef) return null;
+      overlayShim.real = overlayRef;
 
-      // Point the shim at the real cdk ref. Any close() calls that arrived
-      // during the microtask window between open$ start and now (extremely
-      // rare — the wrapper hasn't rendered its close button yet) are lost;
-      // documented as a Task 20 SYNC.md deviation.
-      cdkShim.real = cdkRef as any;
+      // Wire close-on-Escape via keyboard dispatcher. The CDK's DialogService
+      // used to do this; we replicate the behaviour at the qwik-material layer
+      // since we're bypassing the dialog service.
+      keyboardDispatcher.add(overlayRef, {
+        onKeydown(e) {
+          if (merged.onKeydown$) merged.onKeydown$(e);
+          const isModifierPressed = e.shiftKey || e.ctrlKey || e.altKey || e.metaKey;
+          if (e.key === 'Escape' && !merged.disableClose && !isModifierPressed) {
+            matRef.close();
+          }
+        },
+      });
 
-      // Track in matRefsById + openDialogs signal.
+      // Wire close-on-backdrop-click via outside-click dispatcher.
+      outsideClickDispatcher.add(overlayRef, {
+        onOutsideClick(e) {
+          if (merged.onOutsidePointer$) merged.onOutsidePointer$(e);
+          if (merged.hasBackdrop !== false && !merged.disableClose) {
+            if (merged.onBackdropClick$) merged.onBackdropClick$(e);
+            matRef.close();
+          }
+        },
+      });
+
       matRefsById[matRef.id] = wrapped;
       openDialogs.value = [...openDialogs.value, wrapped];
 
-      // Wire cleanup: when the matRef's afterClosed resolves, remove from tracking.
       matRef.afterClosed.then(() => {
+        keyboardDispatcher.remove(overlayRef);
+        outsideClickDispatcher.remove(overlayRef);
         delete matRefsById[matRef.id];
         openDialogs.value = openDialogs.value.filter(r => r?.id !== matRef.id);
       });
@@ -250,16 +242,16 @@ export function useMatDialog(): MatDialog {
  * Pure factory used by vitest to test the merge logic and delegation shape
  * without going through Qwik hooks. Consumers should use useMatDialog().
  *
- * The vitest harness supplies its own `cdk` (a fake with an `open` method),
- * `defaults`, and `scrollStrategyFactory`; the factory returns the same
- * MatDialog shape.
+ * The vitest harness supplies its own `cdk` (a fake with an `open` method)
+ * that returns an OverlayRef-shaped object. The factory returns the same
+ * MatDialogService shape regardless.
  */
 export interface CreateMatDialogServiceDeps {
   cdk: {
     open(
       component: Component<any>,
       props: any,
-      config?: CdkDialogConfig,
+      config?: OverlayConfig,
     ): {
       dispose(): void;
       updatePosition(): void;
@@ -297,7 +289,7 @@ export function createMatDialogService(deps: CreateMatDialogServiceDeps): MatDia
           contentProps: {},
           matDialogRef: undefined,
         },
-        {} as CdkDialogConfig,
+        {} as OverlayConfig,
       );
       if (!cdkRef) return null;
 
