@@ -708,6 +708,9 @@ importers:
       '@angular-community/qwik-cdk':
         specifier: workspace:*
         version: link:../qwik-cdk
+      '@angular-community/qwik-material':
+        specifier: workspace:*
+        version: link:../qwik-material
     devDependencies:
       '@builder.io/qwik':
         specifier: ^1.5.0
