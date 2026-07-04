@@ -8,10 +8,10 @@ const StubBody = component$<{msg?: string}>(() => jsx('div', {}, 'stub'));
 
 function makeStubCdk() {
   const disposed: string[] = [];
+  let idSeq = 0;
   return {
     disposed,
     open<C, D, R>(_c: any, _props: any, _cfg: any) {
-      let idSeq = 0;
       const id = `stub-cdk-${idSeq++}`;
       return {
         id,

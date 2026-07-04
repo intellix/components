@@ -67,9 +67,7 @@ export const MatDialogContainer = component$<MatDialogContainerProps>(({config, 
   useContextProvider(MAT_DIALOG_CONTAINER, containerApi);
 
   // Provide the ref and data for descendants.
-  if (matDialogRef) {
-    useContextProvider(MAT_DIALOG_REF, matDialogRef);
-  }
+  useContextProvider(MAT_DIALOG_REF, matDialogRef);
   useContextProvider(MAT_DIALOG_DATA, config.data);
 
   // Enter animation: opening → open after enterMs. Skip the timer if
