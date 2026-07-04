@@ -10,13 +10,13 @@ import {
   type QRL,
   type Signal,
 } from '@builder.io/qwik';
+import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import {
-  useOverlay,
-  useOverlayKeyboardDispatcher,
-  useOverlayOutsideClickDispatcher,
+  createOverlayService,
   type OverlayConfig,
   type OverlayRef,
 } from '@angular-community/qwik-cdk/overlay';
+import type {OverlayEntry, OverlayRegistry} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import {createMatDialogRef, MatDialogState, type MatDialogRef} from './mat-dialog-ref';
 import {MatDialogContainer} from './mat-dialog-container';
@@ -62,9 +62,10 @@ export interface MatDialog {
 }
 
 export function useMatDialog(): MatDialog {
-  const overlay = useOverlay();
-  const keyboardDispatcher = useOverlayKeyboardDispatcher();
-  const outsideClickDispatcher = useOverlayOutsideClickDispatcher();
+  // Consume the qwik-cdk umbrella so we share the overlay registry +
+  // dispatchers that <QwikCdkRoot> already installs. Matches the pattern used
+  // by qwik-cdk's own useDialog — see src/qwik-cdk/dialog/dialog.tsx.
+  const ctx = useContext(QWIK_CDK);
   const defaults = useContext(MAT_DIALOG_DEFAULT_OPTIONS, {} as Partial<MatDialogConfig>);
   const scrollStrategyFactory = useContext(MAT_DIALOG_SCROLL_STRATEGY, undefined);
 
@@ -108,6 +109,33 @@ export function useMatDialog(): MatDialog {
         });
         return noSerialize(ref);
       }
+
+      // Dispatchers are populated by <QwikCdkRoot>'s useVisibleTask$ after
+      // hydration; if they're not present yet we can't wire close behaviour,
+      // so treat as a no-op like the CDK's own useDialog does.
+      const keyboardDispatcher = ctx.keyboardDispatcher;
+      const outsideClickDispatcher = ctx.outsideClickDispatcher;
+      if (!keyboardDispatcher || !outsideClickDispatcher) return null;
+
+      // Build a thin idGen + registry that close over the shared ctx signals
+      // (same pattern as qwik-cdk's useDialog). This ensures MatDialog entries
+      // land in the same overlay container as any qwik-cdk Dialog entries.
+      const idGen = {
+        getId(prefix: string): string {
+          return `${prefix}${ctx.idCounter.value++}`;
+        },
+      };
+      const registry: OverlayRegistry = {
+        entries: ctx.entries,
+        push: e => {
+          ctx.entries.value = [...ctx.entries.value, e];
+        },
+        remove: id => {
+          ctx.entries.value = ctx.entries.value.filter(x => x.id !== id);
+        },
+        get: id => ctx.entries.value.find((x: OverlayEntry) => x.id === id),
+      };
+      const overlay = createOverlayService(registry, idGen);
 
       // Overlay.create returns the ref synchronously, so no cdkShim is needed
       // (unlike the earlier cdk.dialog.open$ variant which was a QRL).

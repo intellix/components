@@ -23,7 +23,7 @@ export const MAT_DIALOG_DEFAULT_OPTIONS = createContextId<Partial<MatDialogConfi
  * specify one. Provided by <QwikMaterialProvider matDialogScrollStrategyFactory={…}>.
  * Default: createBlockScrollStrategy() from qwik-cdk.
  */
-export const MAT_DIALOG_SCROLL_STRATEGY = createContextId<() => ScrollStrategy>(
+export const MAT_DIALOG_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
   'qwik-material/dialog-scroll-strategy',
 );
 
