@@ -119,3 +119,15 @@ Source: `src/material/dialog/dialog.spec.ts` — 120 `it()` source lines (11 of 
 Note: the 16 + 77 + 39 = 132 buckets vs. 131 expected Angular executions differ by 1 because
 "should be able to find a dialog by id" was split into two vitest cases (found + unknown-id),
 giving one extra ported node. Not double-counted; just a fine-grained expansion of one Angular test.
+
+## Class count
+
+Consumer-facing public API surface: **0 exported classes**. All types are
+`interface`s; all constructors are `create*` factories. `MatDialogState` is
+an `enum` (not a class). Verified by:
+
+    grep -nE "^export class" src/qwik-material/dialog/public-api.ts src/qwik-material/index.ts src/qwik-material/dialog/index.ts
+
+## Pipeline
+
+Run `pnpm test:qwik-material` from the repo root to verify the package.
