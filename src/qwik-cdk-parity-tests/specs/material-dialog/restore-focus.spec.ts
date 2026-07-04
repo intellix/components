@@ -30,8 +30,9 @@ test.describe('Material Dialog — restore focus', () => {
     });
     expect(focusInsideDialog).toBe(true);
 
-    // Close via MatDialogClose button (rendered as a <button> inside the body).
-    await page.locator('.mat-mdc-dialog-container button').first().click();
+    // Close via MatDialogClose (targeted by its host class); avoids ambiguity
+    // with the "Focus me" button that appears first in the body.
+    await page.locator('.mat-mdc-dialog-close').click();
 
     // Container must detach.
     await expect(container).toHaveCount(0, {timeout: 1000});
