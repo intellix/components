@@ -18,6 +18,59 @@ export default component$(() => {
       >
         open dialog
       </button>
+      <section>
+        <h2>Buttons</h2>
+        <ul>
+          <li>
+            <a href="/mat-button/text/">text</a>
+          </li>
+          <li>
+            <a href="/mat-button/filled/">filled</a>
+          </li>
+          <li>
+            <a href="/mat-button/elevated/">elevated</a>
+          </li>
+          <li>
+            <a href="/mat-button/outlined/">outlined</a>
+          </li>
+          <li>
+            <a href="/mat-button/tonal/">tonal</a>
+          </li>
+          <li>
+            <a href="/mat-button/text-link/">text-link</a>
+          </li>
+          <li>
+            <a href="/mat-button/filled-link/">filled-link</a>
+          </li>
+          <li>
+            <a href="/mat-button/disabled/">disabled</a>
+          </li>
+          <li>
+            <a href="/mat-button/disabled-interactive/">disabled-interactive</a>
+          </li>
+          <li>
+            <a href="/mat-button/color-primary/">color-primary</a>
+          </li>
+          <li>
+            <a href="/mat-button/color-accent/">color-accent</a>
+          </li>
+          <li>
+            <a href="/mat-button/color-warn/">color-warn</a>
+          </li>
+          <li>
+            <a href="/mat-button/icon-button/">icon-button</a>
+          </li>
+          <li>
+            <a href="/mat-button/fab/">fab</a>
+          </li>
+          <li>
+            <a href="/mat-button/fab-extended/">fab-extended</a>
+          </li>
+          <li>
+            <a href="/mat-button/mini-fab/">mini-fab</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
