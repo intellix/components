@@ -1,0 +1,48 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/focus-indicators/private.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+// (Button-specific additions are logged in src/qwik-material/button/SYNC.md — Task 16.)
+
+// Private sass variables that will be used as reference throughout component stylesheets.
+$default-border-width: 3px;
+$default-border-style: solid;
+$default-border-color: transparent;
+$default-border-radius: 4px;
+
+// Mixin that renders the focus indicator structural styles.
+@mixin strong-focus-indicators-structure() {
+  .mat-focus-indicator {
+    position: relative;
+
+    &::before {
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      position: absolute;
+      box-sizing: border-box;
+      pointer-events: none;
+      display: var(--mat-focus-indicator-display, none);
+      border-width: var(--mat-focus-indicator-border-width, #{$default-border-width});
+      border-style: var(--mat-focus-indicator-border-style, #{$default-border-style});
+      border-color: var(--mat-focus-indicator-border-color, #{$default-border-color});
+      border-radius: var(--mat-focus-indicator-border-radius, #{$default-border-radius});
+    }
+
+    &:focus-visible::before {
+      content: '';
+    }
+  }
+}
+
+@mixin strong-focus-indicators($config: ()) {
+  // No-op stub: real implementation would set CSS variables for focus indicators.
+}
+
+@mixin strong-focus-indicators-color($theme-or-color) {
+  // No-op stub.
+}
+
+@mixin strong-focus-indicators-theme($theme-or-color) {
+  // No-op stub.
+}

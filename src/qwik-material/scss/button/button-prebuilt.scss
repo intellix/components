@@ -1,0 +1,90 @@
+// Prebuilt Material Button CSS entry.
+//
+// Emits: structural styles from button.scss + fab.scss + icon-button.scss +
+// button-high-contrast.scss + a minimal set of M3 default values for the
+// `--mdc-*` and `--mat-*` custom properties the structural rules reference.
+// Consumers import via `@angular-community/qwik-material/button-prebuilt.css`.
+// For full custom theming, consumers should instead @use the *-theme mixins
+// from `@angular-community/qwik-material/scss/button/_*-theme.scss` once the
+// qwik-material/core theming DSL lands.
+
+@use './button';
+@use './fab';
+@use './icon-button';
+@use './button-high-contrast';
+
+// Minimal Material Design 3 defaults so a bare consumer sees a themed button.
+// Values sourced from @angular/material/button M3 tokens (M3 primary palette,
+// 40px container height, 20px pill shape, elevation 1 shadow on protected).
+// Every value can be overridden by the consumer at :root or on any ancestor
+// of the button.
+:root {
+  // Common system tokens
+  --mat-sys-primary: #6750a4;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-surface: #fef7ff;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-outline: rgba(0, 0, 0, 0.12);
+
+  // Text button (MatButton appearance="text", the default)
+  --mdc-text-button-container-height: 40px;
+  --mdc-text-button-container-shape: 20px;
+  --mdc-text-button-label-text-color: var(--mat-sys-primary);
+  --mdc-text-button-label-text-font: Roboto, "Helvetica Neue", sans-serif;
+  --mdc-text-button-label-text-size: 0.875rem;
+  --mdc-text-button-label-text-weight: 500;
+  --mdc-text-button-label-text-tracking: 0.0892857143em;
+  --mdc-text-button-disabled-label-text-color: rgba(0, 0, 0, 0.38);
+
+  // Filled button (MatButton appearance="filled")
+  --mdc-filled-button-container-color: var(--mat-sys-primary);
+  --mdc-filled-button-label-text-color: var(--mat-sys-on-primary);
+  --mdc-filled-button-container-height: 40px;
+  --mdc-filled-button-container-shape: 20px;
+  --mdc-filled-button-disabled-container-color: rgba(0, 0, 0, 0.12);
+  --mdc-filled-button-disabled-label-text-color: rgba(0, 0, 0, 0.38);
+
+  // Elevated button (MatButton appearance="elevated", MDC "protected")
+  --mdc-protected-button-container-color: var(--mat-sys-surface);
+  --mdc-protected-button-label-text-color: var(--mat-sys-primary);
+  --mdc-protected-button-container-height: 40px;
+  --mdc-protected-button-container-shape: 20px;
+  --mdc-protected-button-container-elevation-shadow:
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+  --mdc-protected-button-disabled-container-color: rgba(0, 0, 0, 0.12);
+  --mdc-protected-button-disabled-label-text-color: rgba(0, 0, 0, 0.38);
+
+  // Outlined button (MatButton appearance="outlined")
+  --mdc-outlined-button-outline-color: var(--mat-sys-outline);
+  --mdc-outlined-button-label-text-color: var(--mat-sys-primary);
+  --mdc-outlined-button-container-height: 40px;
+  --mdc-outlined-button-container-shape: 20px;
+  --mdc-outlined-button-outline-width: 1px;
+  --mdc-outlined-button-disabled-outline-color: rgba(0, 0, 0, 0.12);
+  --mdc-outlined-button-disabled-label-text-color: rgba(0, 0, 0, 0.38);
+
+  // Tonal button (MatButton appearance="tonal", Mat-specific)
+  --mat-tonal-button-container-color: #eaddff;
+  --mat-tonal-button-label-text-color: #21005d;
+
+  // FAB (MatFabButton / MatMiniFabButton)
+  --mdc-fab-container-color: var(--mat-sys-primary);
+  --mdc-fab-container-shape: 16px;
+  --mdc-fab-container-elevation-shadow:
+    0 3px 5px -1px rgba(0, 0, 0, 0.2),
+    0 6px 10px 0 rgba(0, 0, 0, 0.14),
+    0 1px 18px 0 rgba(0, 0, 0, 0.12);
+  --mdc-fab-icon-color: var(--mat-sys-on-primary);
+  --mdc-fab-icon-size: 24px;
+
+  // Icon button (MatIconButton)
+  --mdc-icon-button-icon-color: var(--mat-sys-on-surface);
+  --mdc-icon-button-icon-size: 24px;
+  --mdc-icon-button-state-layer-size: 40px;
+
+  // State layer opacities (govern the ripple-lite hover/focus/press feedback)
+  --mat-mdc-button-persistent-ripple-color: currentColor;
+  --mat-mdc-button-ripple-color: currentColor;
+}

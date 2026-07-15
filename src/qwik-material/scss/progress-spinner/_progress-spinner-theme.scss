@@ -1,0 +1,32 @@
+// STUB: this file is a compile-time stand-in for @angular/material/progress-spinner/progress-spinner-theme.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+// (Button-specific additions are logged in src/qwik-material/button/SYNC.md — Task 16.)
+
+@mixin base($theme) {
+  // No-op stub.
+}
+
+@mixin color($theme, $color-variant: null) {
+  // No-op stub.
+}
+
+@mixin typography($theme) {
+  // No-op stub.
+}
+
+@mixin density($theme) {
+  // No-op stub.
+}
+
+@function _define-overrides() {
+  @return ();
+}
+
+@mixin overrides($tokens: ()) {
+  // No-op stub.
+}
+
+@mixin theme($theme, $color-variant: null) {
+  // No-op stub.
+}
