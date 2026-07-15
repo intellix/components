@@ -3,7 +3,7 @@ import {qwikVite} from '@builder.io/qwik/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
 
-const entries = ['dialog'];
+const entries = ['dialog', 'button'];
 
 export default defineConfig({
   plugins: [
@@ -18,6 +18,7 @@ export default defineConfig({
         const path = await import('node:path');
         const sassEntries: [string, string][] = [
           ['scss/dialog/dialog-prebuilt.scss', 'dist/dialog-prebuilt.css'],
+          ['scss/button/button-prebuilt.scss', 'dist/button-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);
@@ -27,7 +28,11 @@ export default defineConfig({
             await fs.writeFile(path.resolve(__dirname, out), result.css, 'utf8');
           } catch (err: unknown) {
             const e = err as {code?: string; message?: string};
-            if (e?.code === 'ENOENT' || (e?.message ?? '').includes('does not exist')) {
+            if (
+              e?.code === 'ENOENT' ||
+              (e?.message ?? '').includes('does not exist') ||
+              (e?.message ?? '').includes('no such file or directory')
+            ) {
               console.warn(`[qwik-material] skipping ${src} — not yet present.`);
               continue;
             }

@@ -39,7 +39,13 @@
       "types": "./dist/dialog/index.d.ts",
       "import": "./dist/dialog/index.js"
     },
+    "./button": {
+      "qwik": "./button/index.ts",
+      "types": "./dist/button/index.d.ts",
+      "import": "./dist/button/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
+    "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
