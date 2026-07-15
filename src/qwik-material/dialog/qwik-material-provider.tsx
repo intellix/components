@@ -7,6 +7,8 @@ import {
   MAT_DIALOG_DEFAULT_OPTIONS,
   MAT_DIALOG_SCROLL_STRATEGY,
 } from './mat-dialog-tokens';
+import type {MatButtonConfig} from '../button/button-config';
+import {MAT_BUTTON_CONFIG} from '../button/button-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -15,6 +17,8 @@ export interface QwikMaterialProviderProps {
   matDialogScrollStrategyFactory?: () => ScrollStrategy;
   /** Disables all Material animations globally when true. */
   animationsDisabled?: boolean;
+  /** Defaults applied to every MatButton / MatIconButton / MatFabButton / MatMiniFabButton in this subtree. */
+  matButtonConfig?: MatButtonConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -29,6 +33,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
     noSerialize(props.matDialogScrollStrategyFactory ?? (() => createBlockScrollStrategy())),
   );
   useContextProvider(MAT_ANIMATIONS_DISABLED, animationsDisabled);
+  // MatButtonConfig is a plain object with primitive fields — no noSerialize needed.
+  // Buttons outside a provider get the DEFAULTS declared in each Mat*Button
+  // component; providing an empty object is equivalent to accepting all defaults.
+  useContextProvider(MAT_BUTTON_CONFIG, props.matButtonConfig ?? {});
 
   return <Slot />;
 });
