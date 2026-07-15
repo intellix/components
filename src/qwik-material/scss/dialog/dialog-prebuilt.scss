@@ -1,8 +1,35 @@
 // Prebuilt Material Dialog CSS entry.
 //
-// Emits: structural styles from dialog.scss + a default theme instantiation.
+// Emits: structural styles from dialog.scss + a minimal set of M3 default
+// values for the `--mat-*` custom properties the structural rules reference.
 // Consumers import via `@angular-community/qwik-material/dialog-prebuilt.css`.
-// For custom theming, consumers instead @use dialog-theme mixin from
-// `@angular-community/qwik-material/scss/dialog/_dialog-theme.scss`.
+// For full custom theming, consumers should instead @use the dialog-theme
+// mixin from `@angular-community/qwik-material/scss/dialog/_dialog-theme.scss`
+// once the qwik-material/core theming DSL lands.
 
 @use './dialog';
+
+// Minimal Material Design 3 defaults so a bare consumer sees a themed dialog.
+// Values sourced from @angular/material dialog M3 tokens (elevation 3 surface,
+// 28px corner radius, 150ms enter / 75ms exit animation). Every value can be
+// overridden by the consumer at :root or on any ancestor of the dialog host.
+:root {
+  --mat-sys-surface: #fef7ff;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
+  --mat-sys-corner-extra-large: 28px;
+  --mat-sys-headline-small-font: Roboto, "Helvetica Neue", sans-serif;
+  --mat-sys-headline-small-size: 1.5rem;
+  --mat-sys-headline-small-line-height: 2rem;
+  --mat-sys-headline-small-weight: 400;
+  --mat-sys-headline-small-tracking: 0;
+  --mat-sys-body-medium-font: Roboto, "Helvetica Neue", sans-serif;
+  --mat-sys-body-medium-size: 0.875rem;
+  --mat-sys-body-medium-line-height: 1.25rem;
+  --mat-sys-body-medium-weight: 400;
+  --mat-sys-body-medium-tracking: 0.015625em;
+
+  --mat-dialog-container-elevation-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2),
+    0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12);
+  --mat-dialog-transition-duration: 150ms;
+}
