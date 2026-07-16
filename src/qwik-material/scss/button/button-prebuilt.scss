@@ -105,3 +105,41 @@
   // M3 default is fully rounded (pill).
   --mat-sys-corner-full: 9999px;
 }
+
+// CSS-only click burst — a lightweight substitute for the JS ripple that
+// design spec §8 deviation #1 defers to a future qwik-cdk MatRipple primitive.
+//
+// Not click-position-aware (the burst always emanates from the button's
+// center), but gives visible feedback on click and keeps every button self-
+// contained with zero JS. Piggy-backs on the existing persistent-ripple span
+// via ::after so ::before (the hover/focus/pressed state layer) is untouched.
+.mat-mdc-button-base > .mat-mdc-button-persistent-ripple {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      circle at center,
+      currentColor 15%,
+      transparent 60%
+    );
+    opacity: 0;
+    transform: scale(0);
+    transform-origin: center;
+    pointer-events: none;
+  }
+}
+.mat-mdc-button-base:not(.mat-mdc-button-disabled):active > .mat-mdc-button-persistent-ripple::after {
+  animation: mat-mdc-button-click-burst 450ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes mat-mdc-button-click-burst {
+  0% {
+    opacity: 0.35;
+    transform: scale(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.5);
+  }
+}
