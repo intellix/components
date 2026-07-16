@@ -131,3 +131,16 @@ an `enum` (not a class). Verified by:
 ## Pipeline
 
 Run `pnpm test:qwik-material` from the repo root to verify the package.
+
+## Additions from qwik-material/button port
+
+The following stubs were added by the button port SCSS copy step (Task 2). They live alongside the dialog-port stubs listed above in `## Stub inventory`.
+
+| Stub path                                              | Upstream path                                                         |
+| ------------------------------------------------------ | --------------------------------------------------------------------- |
+| `scss/core/style/_layout-common.scss`                  | `@angular/material/core/style/layout-common`                          |
+| `scss/core/style/_vendor-prefixes.scss`                | `@angular/material/core/style/vendor-prefixes`                        |
+| `scss/core/style/_private.scss`                        | `@angular/material/core/style/private`                                |
+| `scss/core/focus-indicators/_private.scss`             | `@angular/material/core/focus-indicators/private`                     |
+| `scss/core/theming/_theming.scss`                      | `@angular/material/core/theming/theming`                              |
+| `scss/progress-spinner/_progress-spinner-theme.scss`   | `@angular/material/progress-spinner/progress-spinner-theme`           |
