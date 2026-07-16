@@ -19,6 +19,47 @@ export default component$(() => {
         open dialog
       </button>
       <section>
+        <h2>Dialogs</h2>
+        <ul>
+          <li>
+            <a href="/mat-dialog/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/aria-label/">aria-label</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/aria-labelledby/">aria-labelledby</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/aria-describedby/">aria-describedby</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/role-alertdialog/">role-alertdialog</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/disable-close/">disable-close</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/close-on-backdrop/">close-on-backdrop</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/close-on-escape/">close-on-escape</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/panel-class/">panel-class</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/has-actions/">has-actions</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/restore-focus/">restore-focus</a>
+          </li>
+          <li>
+            <a href="/mat-dialog/close-with-result/">close-with-result</a>
+          </li>
+        </ul>
+      </section>
+      <section>
         <h2>Buttons</h2>
         <ul>
           <li>
