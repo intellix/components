@@ -49,6 +49,9 @@ export default component$(() => {
             <a href="/mat-button/disabled-interactive/">disabled-interactive</a>
           </li>
           <li>
+            <a href="/mat-button/disabled-interactive-only/">disabled-interactive-only</a>
+          </li>
+          <li>
             <a href="/mat-button/color-primary/">color-primary</a>
           </li>
           <li>
