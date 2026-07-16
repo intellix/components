@@ -84,7 +84,24 @@
   --mdc-icon-button-icon-size: 24px;
   --mdc-icon-button-state-layer-size: 40px;
 
-  // State layer opacities (govern the ripple-lite hover/focus/press feedback)
+  // State layer opacities (govern the ripple-lite hover/focus/press feedback).
+  // Without these, the structural CSS falls back to `initial` (1.0) at
+  // computed-value time and the hover state layer becomes fully opaque —
+  // for a filled primary button, that overlays the button entirely with
+  // the on-primary color (usually white), obliterating the visible surface.
+  // M3 canonical values: hover 0.08, focus 0.12, pressed 0.12, dragged 0.16.
+  --mat-sys-hover-state-layer-opacity: 0.08;
+  --mat-sys-focus-state-layer-opacity: 0.12;
+  --mat-sys-pressed-state-layer-opacity: 0.12;
+  --mat-sys-dragged-state-layer-opacity: 0.16;
+
+  // Ripple color for the JS-ripple layer (currently a no-op since we ship
+  // CSS-only ripple-lite, but keeping for future qwik-cdk MatRipple wire-up).
   --mat-mdc-button-persistent-ripple-color: currentColor;
   --mat-mdc-button-ripple-color: currentColor;
+
+  // Full-corner shape token used by filled/elevated buttons via the shape
+  // fallback chain: `var(--mat-button-*-container-shape, var(--mat-sys-corner-full))`.
+  // M3 default is fully rounded (pill).
+  --mat-sys-corner-full: 9999px;
 }
