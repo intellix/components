@@ -44,8 +44,14 @@
       "types": "./dist/button/index.d.ts",
       "import": "./dist/button/index.js"
     },
+    "./card": {
+      "qwik": "./card/index.ts",
+      "types": "./dist/card/index.d.ts",
+      "import": "./dist/card/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
+    "./card-prebuilt.css": "./dist/card-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
