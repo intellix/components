@@ -19,8 +19,8 @@ export const MatDialogActions = component$<MatDialogActionsProps>(props => {
     .join(' ');
 
   return (
-    <div class={cls}>
+    <mat-dialog-actions class={cls}>
       <Slot />
-    </div>
+    </mat-dialog-actions>
   );
 });

@@ -22,7 +22,7 @@ export const MatDialogTitle = component$<MatDialogTitleProps>(props => {
   });
 
   return (
-    <h2 id={idSignal.value} class="mat-mdc-dialog-title mdc-dialog__title">
+    <h2 mat-dialog-title id={idSignal.value} class="mat-mdc-dialog-title mdc-dialog__title">
       <Slot />
     </h2>
   );

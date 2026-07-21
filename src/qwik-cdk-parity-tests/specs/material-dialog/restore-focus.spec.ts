@@ -19,20 +19,20 @@ test.describe('Material Dialog — restore focus', () => {
     await trigger.click();
 
     // Container must appear.
-    const container = page.locator('.mat-mdc-dialog-container');
+    const container = page.locator('mat-dialog-container.mat-mdc-dialog-container');
     await expect(container).toBeVisible();
 
     // Active element must be a descendant of the container.
     const focusInsideDialog = await page.evaluate(() => {
       const active = document.activeElement;
-      const cont = document.querySelector('.mat-mdc-dialog-container');
+      const cont = document.querySelector('mat-dialog-container.mat-mdc-dialog-container');
       return cont !== null && cont.contains(active);
     });
     expect(focusInsideDialog).toBe(true);
 
-    // Close via MatDialogClose (targeted by its host class); avoids ambiguity
-    // with the "Focus me" button that appears first in the body.
-    await page.locator('.mat-mdc-dialog-close').click();
+    // Close via MatDialogClose (targeted by its tag attribute + host class); avoids
+    // ambiguity with the "Focus me" button that appears first in the body.
+    await page.locator('button[mat-dialog-close].mat-mdc-dialog-close').click();
 
     // Container must detach.
     await expect(container).toHaveCount(0, {timeout: 1000});

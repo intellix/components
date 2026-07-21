@@ -19,6 +19,7 @@ export const MatDialogClose = component$<MatDialogCloseProps>(props => {
 
   return (
     <button
+      mat-dialog-close
       type="button"
       class="mat-mdc-dialog-close"
       aria-label={props.ariaLabel ?? 'Close dialog'}

@@ -1,7 +1,7 @@
 import {component$, Slot} from '@builder.io/qwik';
 
 export const MatDialogContent = component$(() => (
-  <div class="mat-mdc-dialog-content mdc-dialog__content">
+  <mat-dialog-content class="mat-mdc-dialog-content mdc-dialog__content">
     <Slot />
-  </div>
+  </mat-dialog-content>
 ));

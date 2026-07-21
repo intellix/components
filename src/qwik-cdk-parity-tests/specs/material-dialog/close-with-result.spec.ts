@@ -16,11 +16,11 @@ test.describe('Material Dialog — close with result', () => {
     await page.locator('button.open-button').click();
 
     // Dialog must appear.
-    const container = page.locator('.mat-mdc-dialog-container');
+    const container = page.locator('mat-dialog-container.mat-mdc-dialog-container');
     await expect(container).toBeVisible();
 
     // Click the MatDialogClose button (result="hello world").
-    await page.locator('.mat-mdc-dialog-container button').first().click();
+    await page.locator('mat-dialog-container button[mat-dialog-close]').first().click();
 
     // Container must detach.
     await expect(container).toHaveCount(0, {timeout: 1000});

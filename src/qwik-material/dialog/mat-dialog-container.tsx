@@ -117,7 +117,7 @@ export const MatDialogContainer = component$<MatDialogContainerProps>(({config, 
     .join(' ');
 
   return (
-    <div
+    <mat-dialog-container
       class={cls}
       tabIndex={-1}
       role={config.role ?? 'dialog'}
@@ -132,6 +132,6 @@ export const MatDialogContainer = component$<MatDialogContainerProps>(({config, 
           <Slot />
         </div>
       </div>
-    </div>
+    </mat-dialog-container>
   );
 });

@@ -6,9 +6,9 @@ import {test, expect} from '@playwright/test';
  * enough from CDK that structural parity is not meaningful here.
  */
 test.describe('Material Dialog — basic', () => {
-  test('opens with the MDC container class', async ({page}) => {
+  test('opens with the mat-dialog-container tag and the MDC container class', async ({page}) => {
     await page.goto('http://localhost:4173/mat-dialog/basic');
-    await expect(page.locator('.mat-mdc-dialog-container')).toBeVisible();
+    await expect(page.locator('mat-dialog-container.mat-mdc-dialog-container')).toBeVisible();
   });
 
   test('applies mdc-dialog--open once the enter animation completes', async ({page}) => {
@@ -19,7 +19,7 @@ test.describe('Material Dialog — basic', () => {
 
   test('has aria-modal=true and role=dialog by default', async ({page}) => {
     await page.goto('http://localhost:4173/mat-dialog/basic');
-    const container = page.locator('.mat-mdc-dialog-container');
+    const container = page.locator('mat-dialog-container.mat-mdc-dialog-container');
     await expect(container).toHaveAttribute('aria-modal', 'true');
     await expect(container).toHaveAttribute('role', 'dialog');
   });
