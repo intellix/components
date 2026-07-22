@@ -1,0 +1,47 @@
+// Prebuilt Material Card CSS entry.
+//
+// Emits: structural styles from card.scss + a minimal set of M3 default
+// values for the `--mdc-*` and `--mat-card-*` custom properties the
+// structural rules reference. Consumers import via
+// `@angular-community/qwik-material/card-prebuilt.css`.
+// For full custom theming, consumers should instead @use the *-theme mixins
+// from `@angular-community/qwik-material/scss/card/_card-theme.scss` once
+// the qwik-material/core theming DSL lands.
+
+@use './card';
+
+// Minimal Material Design 3 defaults so a bare consumer sees a themed card.
+// Values sourced from @angular/material/card M3 tokens. Every value can be
+// overridden by the consumer at :root or on any ancestor of the card.
+:root {
+  // Raised (elevated) — the default appearance
+  --mdc-elevated-card-container-color: var(--mat-sys-surface, #fef7ff);
+  --mdc-elevated-card-container-shape: 12px;
+  --mdc-elevated-card-container-elevation-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 3px 1px rgba(0, 0, 0, 0.15);
+
+  // Outlined
+  --mdc-outlined-card-container-color: var(--mat-sys-surface, #fef7ff);
+  --mdc-outlined-card-container-shape: 12px;
+  --mdc-outlined-card-outline-color: var(--mat-sys-outline, rgba(0, 0, 0, 0.12));
+  --mdc-outlined-card-outline-width: 1px;
+
+  // Filled (Mat-specific)
+  --mat-card-filled-container-color: color-mix(
+    in srgb,
+    var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87)) 5%,
+    transparent
+  );
+  --mat-card-filled-container-shape: 12px;
+
+  // Typography for title / subtitle
+  --mat-card-title-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-card-title-text-font: Roboto, "Helvetica Neue", sans-serif;
+  --mat-card-title-text-size: 1rem;
+  --mat-card-title-text-weight: 500;
+  --mat-card-subtitle-text-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-card-subtitle-text-font: Roboto, "Helvetica Neue", sans-serif;
+  --mat-card-subtitle-text-size: 0.875rem;
+  --mat-card-subtitle-text-weight: 400;
+}
