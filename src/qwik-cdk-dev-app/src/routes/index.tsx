@@ -115,6 +115,41 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Cards</h2>
+        <ul>
+          <li>
+            <a href="/mat-card/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-card/outlined/">outlined</a>
+          </li>
+          <li>
+            <a href="/mat-card/filled/">filled</a>
+          </li>
+          <li>
+            <a href="/mat-card/with-header/">with-header</a>
+          </li>
+          <li>
+            <a href="/mat-card/with-actions-start/">with-actions-start</a>
+          </li>
+          <li>
+            <a href="/mat-card/with-actions-end/">with-actions-end</a>
+          </li>
+          <li>
+            <a href="/mat-card/with-image/">with-image</a>
+          </li>
+          <li>
+            <a href="/mat-card/with-footer/">with-footer</a>
+          </li>
+          <li>
+            <a href="/mat-card/title-group/">title-group</a>
+          </li>
+          <li>
+            <a href="/mat-card/full-composed/">full-composed</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
