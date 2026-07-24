@@ -9,6 +9,8 @@ import {
 } from './mat-dialog-tokens';
 import type {MatButtonConfig} from '../button/button-config';
 import {MAT_BUTTON_CONFIG} from '../button/button-config';
+import type {MatCardConfig} from '../card/card-config';
+import {MAT_CARD_CONFIG} from '../card/card-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -19,6 +21,8 @@ export interface QwikMaterialProviderProps {
   animationsDisabled?: boolean;
   /** Defaults applied to every MatButton / MatIconButton / MatFabButton / MatMiniFabButton in this subtree. */
   matButtonConfig?: MatButtonConfig;
+  /** Defaults applied to every MatCard in this subtree. */
+  matCardConfig?: MatCardConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -37,6 +41,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // Buttons outside a provider get the DEFAULTS declared in each Mat*Button
   // component; providing an empty object is equivalent to accepting all defaults.
   useContextProvider(MAT_BUTTON_CONFIG, props.matButtonConfig ?? {});
+  // MatCardConfig is a plain object with primitive fields — no noSerialize needed.
+  // Cards outside a provider get the DEFAULTS declared in MatCard; providing
+  // an empty object is equivalent to accepting all defaults.
+  useContextProvider(MAT_CARD_CONFIG, props.matCardConfig ?? {});
 
   return <Slot />;
 });
