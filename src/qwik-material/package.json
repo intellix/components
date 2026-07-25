@@ -49,9 +49,15 @@
       "types": "./dist/card/index.d.ts",
       "import": "./dist/card/index.js"
     },
+    "./toolbar": {
+      "qwik": "./toolbar/index.ts",
+      "types": "./dist/toolbar/index.d.ts",
+      "import": "./dist/toolbar/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./card-prebuilt.css": "./dist/card-prebuilt.css",
+    "./toolbar-prebuilt.css": "./dist/toolbar-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

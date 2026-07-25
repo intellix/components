@@ -3,7 +3,7 @@ import {qwikVite} from '@builder.io/qwik/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
 
-const entries = ['dialog', 'button', 'card'];
+const entries = ['dialog', 'button', 'card', 'toolbar'];
 
 export default defineConfig({
   plugins: [
@@ -20,6 +20,7 @@ export default defineConfig({
           ['scss/dialog/dialog-prebuilt.scss', 'dist/dialog-prebuilt.css'],
           ['scss/button/button-prebuilt.scss', 'dist/button-prebuilt.css'],
           ['scss/card/card-prebuilt.scss', 'dist/card-prebuilt.css'],
+          ['scss/toolbar/toolbar-prebuilt.scss', 'dist/toolbar-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);
