@@ -1,0 +1,27 @@
+// Prebuilt Material Toolbar CSS entry — first pass, :root block added after
+// we verify which --mat-toolbar-* variable names the emitted CSS actually
+// references (same investigation approach as Card Task 2, which caught a
+// --mdc-*-card-* vs --mat-card-* mismatch in the design spec).
+@use './toolbar';
+
+// Minimal Material Design 3 defaults so a bare consumer sees a themed
+// toolbar. Values sourced from @angular/material/toolbar M3 tokens.
+// Variable names verified against dist/toolbar-prebuilt.css structural CSS
+// (`grep -oE "var\(--mat-toolbar-[a-z-]+" dist/toolbar-prebuilt.css | sort -u`).
+//
+// Note: the brief's suggested example included a `--mat-toolbar-title-text-color`
+// variable that does NOT appear in the emitted structural CSS and has no
+// corresponding token in upstream _m2-toolbar.scss / _m3-toolbar.scss (the
+// toolbar's title elements inherit color from `--mat-toolbar-container-text-color`
+// instead). It is omitted here since it wouldn't connect to anything.
+:root {
+  --mat-toolbar-container-background-color: var(--mat-sys-surface, #fef7ff);
+  --mat-toolbar-container-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-toolbar-title-text-font: Roboto, "Helvetica Neue", sans-serif;
+  --mat-toolbar-title-text-line-height: 1.5;
+  --mat-toolbar-title-text-size: 1.25rem;
+  --mat-toolbar-title-text-tracking: 0.0125em;
+  --mat-toolbar-title-text-weight: 500;
+  --mat-toolbar-standard-height: 64px;
+  --mat-toolbar-mobile-height: 56px;
+}
