@@ -150,6 +150,26 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Toolbars</h2>
+        <ul>
+          <li>
+            <a href="/mat-toolbar/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-toolbar/color-primary/">color-primary</a>
+          </li>
+          <li>
+            <a href="/mat-toolbar/color-accent/">color-accent</a>
+          </li>
+          <li>
+            <a href="/mat-toolbar/color-warn/">color-warn</a>
+          </li>
+          <li>
+            <a href="/mat-toolbar/multiple-rows/">multiple-rows</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });

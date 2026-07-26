@@ -5,6 +5,7 @@ import '@angular-community/qwik-cdk/overlay-prebuilt.css';
 import '@angular-community/qwik-material/dialog-prebuilt.css';
 import '@angular-community/qwik-material/button-prebuilt.css';
 import '@angular-community/qwik-material/card-prebuilt.css';
+import '@angular-community/qwik-material/toolbar-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>
