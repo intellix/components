@@ -13,7 +13,7 @@ and `src/qwik-material/card/SYNC.md`.
 | `toolbar/mat-toolbar-row.tsx`       | `src/material/toolbar/toolbar.ts` (MatToolbarRow) | ported     | Directive→component; renders <mat-toolbar-row>                                           |
 | `toolbar/toolbar-color.ts`          | `src/material/toolbar/toolbar.ts` (color input type) | ported  | Narrowed from `string \| null` to `'primary' \| 'accent' \| 'warn'` union                |
 | `toolbar/intrinsic-elements.d.ts`   | (qwik-material-specific)                          | new        | TS augmentation declaring 2 tag names as QwikIntrinsicElements['div']                    |
-| `scss/toolbar/toolbar.scss`         | `src/material/toolbar/toolbar.scss`               | synced     | byte-identical copy                                                                      |
+| `scss/toolbar/toolbar.scss`         | `src/material/toolbar/toolbar.scss`               | synced with one deviation | `@use '@angular/cdk'` rewritten to `@use '../cdk-stub' as cdk` — `@angular/cdk` isn't resolvable in this build; only `cdk.high-contrast` is called, and `_cdk-stub.scss` defines it. Same rewrite as dialog + card + button ports. |
 | `scss/toolbar/_toolbar-theme.scss`  | `src/material/toolbar/_toolbar-theme.scss`        | synced     | byte-identical copy                                                                      |
 | `scss/toolbar/_m2-toolbar.scss`     | `src/material/toolbar/_m2-toolbar.scss`           | synced     | byte-identical copy                                                                      |
 | `scss/toolbar/_m3-toolbar.scss`     | `src/material/toolbar/_m3-toolbar.scss`           | synced     | byte-identical copy                                                                      |
