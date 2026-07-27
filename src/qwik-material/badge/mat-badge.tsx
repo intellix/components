@@ -50,6 +50,10 @@ const DEFAULTS: MatBadgeConfig = {
  */
 let _idSeq = 0;
 
+function nextBadgeContentId(): string {
+  return `mat-badge-content-${_idSeq++}`;
+}
+
 export const MatBadge = component$<MatBadgeProps>(props => {
   const config = useContext(MAT_BADGE_CONFIG, DEFAULTS);
   const position = props.position ?? config.position ?? 'above after';
@@ -76,7 +80,7 @@ export const MatBadge = component$<MatBadgeProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
-  const badgeContentId = `mat-badge-content-${_idSeq++}`;
+  const badgeContentId = nextBadgeContentId();
 
   return (
     <span id={props.id} class={classes}>
