@@ -54,10 +54,16 @@
       "types": "./dist/toolbar/index.d.ts",
       "import": "./dist/toolbar/index.js"
     },
+    "./badge": {
+      "qwik": "./badge/index.ts",
+      "types": "./dist/badge/index.d.ts",
+      "import": "./dist/badge/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./card-prebuilt.css": "./dist/card-prebuilt.css",
     "./toolbar-prebuilt.css": "./dist/toolbar-prebuilt.css",
+    "./badge-prebuilt.css": "./dist/badge-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
