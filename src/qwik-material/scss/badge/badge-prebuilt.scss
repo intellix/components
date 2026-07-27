@@ -39,7 +39,7 @@
   --mat-badge-large-size-text-size: 0.688rem;
 
   // Shape + sizing — mirrors _m3-badge.scss's `base` token group
-  --mat-badge-container-shape: 9999px;
+  --mat-badge-container-shape: var(--mat-sys-corner-full, 9999px);
   --mat-badge-container-size: 16px;
   --mat-badge-container-padding: 0 4px;
   --mat-badge-container-offset: -12px 0;
