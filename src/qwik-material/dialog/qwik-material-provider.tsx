@@ -11,6 +11,8 @@ import type {MatButtonConfig} from '../button/button-config';
 import {MAT_BUTTON_CONFIG} from '../button/button-config';
 import type {MatCardConfig} from '../card/card-config';
 import {MAT_CARD_CONFIG} from '../card/card-config';
+import type {MatBadgeConfig} from '../badge/badge-config';
+import {MAT_BADGE_CONFIG} from '../badge/badge-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -23,6 +25,8 @@ export interface QwikMaterialProviderProps {
   matButtonConfig?: MatButtonConfig;
   /** Defaults applied to every MatCard in this subtree. */
   matCardConfig?: MatCardConfig;
+  /** Defaults applied to every MatBadge in this subtree. */
+  matBadgeConfig?: MatBadgeConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -45,6 +49,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // Cards outside a provider get the DEFAULTS declared in MatCard; providing
   // an empty object is equivalent to accepting all defaults.
   useContextProvider(MAT_CARD_CONFIG, props.matCardConfig ?? {});
+  // MatBadgeConfig is a plain object with primitive fields — no noSerialize needed.
+  // Badges outside a provider get the DEFAULTS declared in MatBadge; providing
+  // an empty object is equivalent to accepting all defaults.
+  useContextProvider(MAT_BADGE_CONFIG, props.matBadgeConfig ?? {});
 
   return <Slot />;
 });
