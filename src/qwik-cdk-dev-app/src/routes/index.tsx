@@ -170,6 +170,35 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Badges</h2>
+        <ul>
+          <li>
+            <a href="/mat-badge/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-badge/colors/">colors</a>
+          </li>
+          <li>
+            <a href="/mat-badge/sizes/">sizes</a>
+          </li>
+          <li>
+            <a href="/mat-badge/positions/">positions</a>
+          </li>
+          <li>
+            <a href="/mat-badge/no-overlap/">no-overlap</a>
+          </li>
+          <li>
+            <a href="/mat-badge/hidden/">hidden</a>
+          </li>
+          <li>
+            <a href="/mat-badge/disabled/">disabled</a>
+          </li>
+          <li>
+            <a href="/mat-badge/description/">description</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
