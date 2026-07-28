@@ -197,6 +197,9 @@ export default component$(() => {
           <li>
             <a href="/mat-badge/description/">description</a>
           </li>
+          <li>
+            <a href="/mat-badge/empty-content/">empty-content</a>
+          </li>
         </ul>
       </section>
     </main>
