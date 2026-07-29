@@ -34,6 +34,8 @@ export interface MatIconProps {
   svgNamespace?: string;
   /** Overrides the default aria-hidden='true'. Pass `false` for labeled decorative-icon-as-control usage. */
   'aria-hidden'?: boolean | 'true' | 'false';
+  /** aria-label for icons used as labeled controls (e.g., icon-only buttons). Pair with `aria-hidden={false}`. */
+  'aria-label'?: string;
   class?: string | ReadonlyArray<string>;
   id?: string;
 }
@@ -76,6 +78,7 @@ export const MatIcon = component$<MatIconProps>(props => {
         class={classes}
         role="img"
         aria-hidden={ariaHidden as never}
+        aria-label={props['aria-label']}
         data-mat-icon-type="svg"
         data-mat-icon-name={dataName}
         data-mat-icon-namespace={dataNamespace}
@@ -90,6 +93,7 @@ export const MatIcon = component$<MatIconProps>(props => {
       class={classes}
       role="img"
       aria-hidden={ariaHidden as never}
+      aria-label={props['aria-label']}
       data-mat-icon-type="font"
       data-mat-icon-name={dataName}
       data-mat-icon-namespace={dataNamespace}
