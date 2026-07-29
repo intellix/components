@@ -1,0 +1,22 @@
+// Icon prebuilt CSS. Wraps the port's icon.scss with :root defaults for every
+// --mat-icon-* and --mat-sys-* variable it emits. See design spec §5.
+//
+// The variable name below was verified against dist/icon-prebuilt.css's
+// compiled output, not copied blind from a suggested list. icon.scss's
+// `mat-icon { color: token-utils.slot(icon-color, $fallbacks) }` rule emits
+// a single token named `icon-color`, which token-utils.slot() renders as
+// `--mat-icon-color` (the `--mat-#{$token}` naming convention uses the raw
+// token name — there is no extra `icon-` prefix segment as the initial
+// candidate assumed). _m3-icon.scss's `get-tokens($theme, $color-variant:
+// null)` defaults `$color-variant` to null, so the token's real value is the
+// literal `inherit` (not a --mat-sys-* wrap) — this is upstream Angular
+// Material's actual default too: mat-icon inherits its color from context
+// unless a $color-variant is explicitly passed to icon-theme.color().
+@use './icon';
+
+:root {
+  // Icon color token (emitted by icon.scss's token-utils.slot(icon-color)).
+  // Matches upstream's real default: inherit color from the surrounding
+  // context rather than forcing a system color.
+  --mat-icon-color: inherit;
+}
