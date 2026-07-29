@@ -77,7 +77,7 @@ export const MatIcon = component$<MatIconProps>(props => {
         id={props.id}
         class={classes}
         role="img"
-        aria-hidden={ariaHidden as never}
+        aria-hidden={ariaHidden}
         aria-label={props['aria-label']}
         data-mat-icon-type="svg"
         data-mat-icon-name={dataName}
@@ -92,7 +92,7 @@ export const MatIcon = component$<MatIconProps>(props => {
       id={props.id}
       class={classes}
       role="img"
-      aria-hidden={ariaHidden as never}
+      aria-hidden={ariaHidden}
       aria-label={props['aria-label']}
       data-mat-icon-type="font"
       data-mat-icon-name={dataName}
