@@ -64,12 +64,18 @@
       "types": "./dist/icon/index.d.ts",
       "import": "./dist/icon/index.js"
     },
+    "./progress-bar": {
+      "qwik": "./progress-bar/index.ts",
+      "types": "./dist/progress-bar/index.d.ts",
+      "import": "./dist/progress-bar/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./card-prebuilt.css": "./dist/card-prebuilt.css",
     "./toolbar-prebuilt.css": "./dist/toolbar-prebuilt.css",
     "./badge-prebuilt.css": "./dist/badge-prebuilt.css",
     "./icon-prebuilt.css": "./dist/icon-prebuilt.css",
+    "./progress-bar-prebuilt.css": "./dist/progress-bar-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
