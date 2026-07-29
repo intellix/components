@@ -202,6 +202,35 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Icons</h2>
+        <ul>
+          <li>
+            <a href="/mat-icon/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-icon/font-icon/">font-icon</a>
+          </li>
+          <li>
+            <a href="/mat-icon/font-set/">font-set</a>
+          </li>
+          <li>
+            <a href="/mat-icon/svg-literal/">svg-literal</a>
+          </li>
+          <li>
+            <a href="/mat-icon/svg-named/">svg-named</a>
+          </li>
+          <li>
+            <a href="/mat-icon/colors/">colors</a>
+          </li>
+          <li>
+            <a href="/mat-icon/inline/">inline</a>
+          </li>
+          <li>
+            <a href="/mat-icon/aria-labeled/">aria-labeled</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
