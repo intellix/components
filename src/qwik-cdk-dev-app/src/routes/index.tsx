@@ -231,6 +231,35 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Progress bars</h2>
+        <ul>
+          <li>
+            <a href="/mat-progress-bar/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-progress-bar/determinate/">determinate</a>
+          </li>
+          <li>
+            <a href="/mat-progress-bar/indeterminate/">indeterminate</a>
+          </li>
+          <li>
+            <a href="/mat-progress-bar/buffer/">buffer</a>
+          </li>
+          <li>
+            <a href="/mat-progress-bar/query/">query</a>
+          </li>
+          <li>
+            <a href="/mat-progress-bar/colors/">colors</a>
+          </li>
+          <li>
+            <a href="/mat-progress-bar/animation-end/">animation-end</a>
+          </li>
+          <li>
+            <a href="/mat-progress-bar/aria-labeled/">aria-labeled</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });

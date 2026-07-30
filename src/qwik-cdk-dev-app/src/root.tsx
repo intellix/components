@@ -8,6 +8,7 @@ import '@angular-community/qwik-material/card-prebuilt.css';
 import '@angular-community/qwik-material/toolbar-prebuilt.css';
 import '@angular-community/qwik-material/badge-prebuilt.css';
 import '@angular-community/qwik-material/icon-prebuilt.css';
+import '@angular-community/qwik-material/progress-bar-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>
