@@ -15,6 +15,8 @@ import type {MatBadgeConfig} from '../badge/badge-config';
 import {MAT_BADGE_CONFIG} from '../badge/badge-config';
 import type {MatIconConfig} from '../icon/icon-config';
 import {MAT_ICON_CONFIG} from '../icon/icon-config';
+import type {MatProgressBarConfig} from '../progress-bar/progress-bar-config';
+import {MAT_PROGRESS_BAR_CONFIG} from '../progress-bar/progress-bar-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -31,6 +33,8 @@ export interface QwikMaterialProviderProps {
   matBadgeConfig?: MatBadgeConfig;
   /** Defaults applied to every MatIcon in this subtree. */
   matIconConfig?: MatIconConfig;
+  /** Defaults applied to every MatProgressBar in this subtree. */
+  matProgressBarConfig?: MatProgressBarConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -61,6 +65,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // Icons outside a provider get the DEFAULTS declared in MatIcon; providing
   // an empty object is equivalent to accepting all defaults.
   useContextProvider(MAT_ICON_CONFIG, props.matIconConfig ?? {});
+  // MatProgressBarConfig is a plain object with primitive fields — no noSerialize needed.
+  // Progress bars outside a provider get the DEFAULTS declared in MatProgressBar; providing
+  // an empty object is equivalent to accepting all defaults.
+  useContextProvider(MAT_PROGRESS_BAR_CONFIG, props.matProgressBarConfig ?? {});
 
   return <Slot />;
 });
