@@ -260,6 +260,35 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Progress spinners</h2>
+        <ul>
+          <li>
+            <a href="/mat-progress-spinner/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-progress-spinner/determinate/">determinate</a>
+          </li>
+          <li>
+            <a href="/mat-progress-spinner/indeterminate/">indeterminate</a>
+          </li>
+          <li>
+            <a href="/mat-progress-spinner/mat-spinner-alias/">mat-spinner-alias</a>
+          </li>
+          <li>
+            <a href="/mat-progress-spinner/colors/">colors</a>
+          </li>
+          <li>
+            <a href="/mat-progress-spinner/custom-diameter/">custom-diameter</a>
+          </li>
+          <li>
+            <a href="/mat-progress-spinner/custom-stroke/">custom-stroke</a>
+          </li>
+          <li>
+            <a href="/mat-progress-spinner/aria-labeled/">aria-labeled</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
