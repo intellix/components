@@ -2,7 +2,7 @@ import {component$, useContext, useSignal, useVisibleTask$, type QRL} from '@bui
 import type {MatProgressBarColor} from './progress-bar-color';
 import type {MatProgressBarMode} from './progress-bar-mode';
 import {MAT_PROGRESS_BAR_CONFIG, type MatProgressBarConfig} from './progress-bar-config';
-import {MAT_ANIMATIONS_DISABLED} from '../dialog/mat-dialog-tokens';
+import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 
 /**
  * Props for <MatProgressBar>. Renders <mat-progress-bar> custom element with
@@ -36,7 +36,7 @@ function clamp(v: number): number {
 
 export const MatProgressBar = component$<MatProgressBarProps>(props => {
   const config = useContext(MAT_PROGRESS_BAR_CONFIG, DEFAULTS);
-  const animationsDisabled = useContext(MAT_ANIMATIONS_DISABLED);
+  const animationsDisabled = useAnimationsDisabled();
 
   const color = props.color ?? config.color ?? 'primary';
   const mode = props.mode ?? config.mode ?? 'determinate';
