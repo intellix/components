@@ -289,6 +289,29 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Dividers</h2>
+        <ul>
+          <li>
+            <a href="/mat-divider/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-divider/vertical/">vertical</a>
+          </li>
+          <li>
+            <a href="/mat-divider/inset/">inset</a>
+          </li>
+          <li>
+            <a href="/mat-divider/vertical-inset/">vertical-inset</a>
+          </li>
+          <li>
+            <a href="/mat-divider/aria-labeled/">aria-labeled</a>
+          </li>
+          <li>
+            <a href="/mat-divider/list-context/">list-context</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
