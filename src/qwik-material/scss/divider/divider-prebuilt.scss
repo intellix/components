@@ -1,0 +1,13 @@
+// Divider prebuilt CSS. Wraps the port's divider.scss with :root defaults
+// for every --mat-divider-* variable it emits. See design spec §5.
+
+@use './divider';
+
+:root {
+  // M3 sys-color token referenced by _m3-divider.scss via slot(divider-color).
+  --mat-sys-outline-variant: #cac4d0;
+
+  // Divider-specific tokens (emitted by _m3-divider.scss's base + color).
+  --mat-divider-width: 1px;
+  --mat-divider-color: var(--mat-sys-outline-variant, #cac4d0);
+}
