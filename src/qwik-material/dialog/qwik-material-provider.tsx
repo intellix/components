@@ -17,6 +17,8 @@ import type {MatIconConfig} from '../icon/icon-config';
 import {MAT_ICON_CONFIG} from '../icon/icon-config';
 import type {MatProgressBarConfig} from '../progress-bar/progress-bar-config';
 import {MAT_PROGRESS_BAR_CONFIG} from '../progress-bar/progress-bar-config';
+import type {MatProgressSpinnerConfig} from '../progress-spinner/progress-spinner-config';
+import {MAT_PROGRESS_SPINNER_CONFIG} from '../progress-spinner/progress-spinner-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -35,6 +37,8 @@ export interface QwikMaterialProviderProps {
   matIconConfig?: MatIconConfig;
   /** Defaults applied to every MatProgressBar in this subtree. */
   matProgressBarConfig?: MatProgressBarConfig;
+  /** Defaults applied to every MatProgressSpinner / MatSpinner in this subtree. */
+  matProgressSpinnerConfig?: MatProgressSpinnerConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -69,6 +73,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // Progress bars outside a provider get the DEFAULTS declared in MatProgressBar; providing
   // an empty object is equivalent to accepting all defaults.
   useContextProvider(MAT_PROGRESS_BAR_CONFIG, props.matProgressBarConfig ?? {});
+  // MatProgressSpinnerConfig is a plain object with primitive fields — no noSerialize needed.
+  // Spinners outside a provider get the DEFAULTS declared in createSpinner; providing
+  // an empty object is equivalent to accepting all defaults.
+  useContextProvider(MAT_PROGRESS_SPINNER_CONFIG, props.matProgressSpinnerConfig ?? {});
 
   return <Slot />;
 });
