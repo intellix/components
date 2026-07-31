@@ -12,6 +12,7 @@ const entries = [
   'icon',
   'progress-bar',
   'progress-spinner',
+  'divider',
 ];
 
 export default defineConfig({
@@ -37,6 +38,7 @@ export default defineConfig({
             'scss/progress-spinner/progress-spinner-prebuilt.scss',
             'dist/progress-spinner-prebuilt.css',
           ],
+          ['scss/divider/divider-prebuilt.scss', 'dist/divider-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

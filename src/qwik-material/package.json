@@ -74,6 +74,11 @@
       "types": "./dist/progress-spinner/index.d.ts",
       "import": "./dist/progress-spinner/index.js"
     },
+    "./divider": {
+      "qwik": "./divider/index.ts",
+      "types": "./dist/divider/index.d.ts",
+      "import": "./dist/divider/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./card-prebuilt.css": "./dist/card-prebuilt.css",
@@ -82,6 +87,7 @@
     "./icon-prebuilt.css": "./dist/icon-prebuilt.css",
     "./progress-bar-prebuilt.css": "./dist/progress-bar-prebuilt.css",
     "./progress-spinner-prebuilt.css": "./dist/progress-spinner-prebuilt.css",
+    "./divider-prebuilt.css": "./dist/divider-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
