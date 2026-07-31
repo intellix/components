@@ -1,0 +1,21 @@
+// Progress spinner prebuilt CSS. Wraps the port's progress-spinner.scss with
+// :root defaults for every --mat-progress-spinner-* variable it emits. See
+// design spec §5.
+
+@use './progress-spinner';
+
+:root {
+  // M3 sys-color tokens.
+  --mat-sys-primary: #6750a4;
+
+  // Progress-spinner-specific tokens (emitted by _m3-progress-spinner.scss +
+  // progress-spinner.scss inline structural defaults).
+  // Note: --mat-progress-spinner-size is defined in _m3-progress-spinner.scss's
+  // token map but is never consumed via var() by progress-spinner.scss's
+  // structural rules (the spinner's diameter is applied via inline style
+  // bindings, not a CSS custom property lookup) — omitted here to avoid a
+  // phantom declaration.
+  --mat-progress-spinner-active-indicator-width: 4px;
+  --mat-progress-spinner-active-indicator-color: var(--mat-sys-primary, #6750a4);
+  --mat-progress-spinner-animation-multiplier: 1;
+}
