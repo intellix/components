@@ -19,6 +19,8 @@ import type {MatProgressBarConfig} from '../progress-bar/progress-bar-config';
 import {MAT_PROGRESS_BAR_CONFIG} from '../progress-bar/progress-bar-config';
 import type {MatProgressSpinnerConfig} from '../progress-spinner/progress-spinner-config';
 import {MAT_PROGRESS_SPINNER_CONFIG} from '../progress-spinner/progress-spinner-config';
+import type {MatDividerConfig} from '../divider/divider-config';
+import {MAT_DIVIDER_CONFIG} from '../divider/divider-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -39,6 +41,8 @@ export interface QwikMaterialProviderProps {
   matProgressBarConfig?: MatProgressBarConfig;
   /** Defaults applied to every MatProgressSpinner / MatSpinner in this subtree. */
   matProgressSpinnerConfig?: MatProgressSpinnerConfig;
+  /** Defaults applied to every MatDivider in this subtree. */
+  matDividerConfig?: MatDividerConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -77,6 +81,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // Spinners outside a provider get the DEFAULTS declared in createSpinner; providing
   // an empty object is equivalent to accepting all defaults.
   useContextProvider(MAT_PROGRESS_SPINNER_CONFIG, props.matProgressSpinnerConfig ?? {});
+  // MatDividerConfig is a plain object (currently empty) — no noSerialize needed.
+  // Dividers outside a provider get the DEFAULTS declared in MatDivider; providing
+  // an empty object is equivalent to accepting all defaults.
+  useContextProvider(MAT_DIVIDER_CONFIG, props.matDividerConfig ?? {});
 
   return <Slot />;
 });
