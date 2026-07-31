@@ -3,7 +3,16 @@ import {qwikVite} from '@builder.io/qwik/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
 
-const entries = ['dialog', 'button', 'card', 'toolbar', 'badge', 'icon', 'progress-bar'];
+const entries = [
+  'dialog',
+  'button',
+  'card',
+  'toolbar',
+  'badge',
+  'icon',
+  'progress-bar',
+  'progress-spinner',
+];
 
 export default defineConfig({
   plugins: [
@@ -24,6 +33,10 @@ export default defineConfig({
           ['scss/badge/badge-prebuilt.scss', 'dist/badge-prebuilt.css'],
           ['scss/icon/icon-prebuilt.scss', 'dist/icon-prebuilt.css'],
           ['scss/progress-bar/progress-bar-prebuilt.scss', 'dist/progress-bar-prebuilt.css'],
+          [
+            'scss/progress-spinner/progress-spinner-prebuilt.scss',
+            'dist/progress-spinner-prebuilt.css',
+          ],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

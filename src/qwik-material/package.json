@@ -69,6 +69,11 @@
       "types": "./dist/progress-bar/index.d.ts",
       "import": "./dist/progress-bar/index.js"
     },
+    "./progress-spinner": {
+      "qwik": "./progress-spinner/index.ts",
+      "types": "./dist/progress-spinner/index.d.ts",
+      "import": "./dist/progress-spinner/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./card-prebuilt.css": "./dist/card-prebuilt.css",
@@ -76,6 +81,7 @@
     "./badge-prebuilt.css": "./dist/badge-prebuilt.css",
     "./icon-prebuilt.css": "./dist/icon-prebuilt.css",
     "./progress-bar-prebuilt.css": "./dist/progress-bar-prebuilt.css",
+    "./progress-spinner-prebuilt.css": "./dist/progress-spinner-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
