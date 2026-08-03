@@ -8,11 +8,16 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * QwikIntrinsicElements['div'] — both are block-level container elements.
  * data-mode + inline style are covered by base HTMLAttributes, no widening
  * needed. See design spec §5 deviation #10.
+ *
+ * `mat-grid-list` additionally widens with `cols?: number` — upstream
+ * reflects `cols` as a host attribute via `[attr.cols]` (design spec §3.1),
+ * and `cols` is not part of the div attribute set. Same widening pattern as
+ * progress-bar/progress-spinner's `& {mode?: string}`.
  */
 declare module '@builder.io/qwik' {
   namespace QwikJSX {
     interface IntrinsicElements {
-      'mat-grid-list': QwikIntrinsicElements['div'];
+      'mat-grid-list': QwikIntrinsicElements['div'] & {cols?: number};
       'mat-grid-tile': QwikIntrinsicElements['div'];
     }
   }
