@@ -21,6 +21,8 @@ import type {MatProgressSpinnerConfig} from '../progress-spinner/progress-spinne
 import {MAT_PROGRESS_SPINNER_CONFIG} from '../progress-spinner/progress-spinner-config';
 import type {MatDividerConfig} from '../divider/divider-config';
 import {MAT_DIVIDER_CONFIG} from '../divider/divider-config';
+import type {MatGridListConfig} from '../grid-list/grid-list-config';
+import {MAT_GRID_LIST_CONFIG} from '../grid-list/grid-list-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -43,6 +45,8 @@ export interface QwikMaterialProviderProps {
   matProgressSpinnerConfig?: MatProgressSpinnerConfig;
   /** Defaults applied to every MatDivider in this subtree. */
   matDividerConfig?: MatDividerConfig;
+  /** Defaults applied to every MatGridList in this subtree. */
+  matGridListConfig?: MatGridListConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -85,6 +89,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // Dividers outside a provider get the DEFAULTS declared in MatDivider; providing
   // an empty object is equivalent to accepting all defaults.
   useContextProvider(MAT_DIVIDER_CONFIG, props.matDividerConfig ?? {});
+  // MatGridListConfig is a plain object (currently empty) — no noSerialize needed.
+  // Grid lists outside a provider get the CONFIG_DEFAULTS declared in MatGridList;
+  // providing an empty object is equivalent to accepting all defaults.
+  useContextProvider(MAT_GRID_LIST_CONFIG, props.matGridListConfig ?? {});
 
   return <Slot />;
 });
