@@ -1,0 +1,10 @@
+// Grid-list prebuilt CSS. Wraps the port's grid-list.scss with :root defaults
+// for every --mat-grid-list-* variable it emits. See design spec §4.
+
+@use './grid-list';
+
+:root {
+  --mat-grid-list-cols: 1;
+  --mat-grid-list-gutter: 1px;
+  --mat-grid-list-row-height: auto;
+}
