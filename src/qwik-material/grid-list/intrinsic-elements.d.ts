@@ -13,12 +13,19 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * reflects `cols` as a host attribute via `[attr.cols]` (design spec §3.1),
  * and `cols` is not part of the div attribute set. Same widening pattern as
  * progress-bar/progress-spinner's `& {mode?: string}`.
+ *
+ * `mat-grid-tile` additionally widens with `rowspan?: number` and
+ * `colspan?: number` — design spec §3.2 reflects both as host attributes
+ * (upstream's `[attr.rowspan]` / `[attr.colspan]`), and neither is part of
+ * the div attribute set. Same widening pattern as `mat-grid-list`'s
+ * `& {cols?: number}` above / progress-bar/progress-spinner's
+ * `& {mode?: string}`.
  */
 declare module '@builder.io/qwik' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-grid-list': QwikIntrinsicElements['div'] & {cols?: number};
-      'mat-grid-tile': QwikIntrinsicElements['div'];
+      'mat-grid-tile': QwikIntrinsicElements['div'] & {rowspan?: number; colspan?: number};
     }
   }
 }
