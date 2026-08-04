@@ -312,6 +312,32 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Grid lists</h2>
+        <ul>
+          <li>
+            <a href="/mat-grid-list/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-grid-list/ratio/">ratio</a>
+          </li>
+          <li>
+            <a href="/mat-grid-list/fit/">fit</a>
+          </li>
+          <li>
+            <a href="/mat-grid-list/spanning/">spanning</a>
+          </li>
+          <li>
+            <a href="/mat-grid-list/ratio-spanning/">ratio-spanning</a>
+          </li>
+          <li>
+            <a href="/mat-grid-list/gutter/">gutter</a>
+          </li>
+          <li>
+            <a href="/mat-grid-list/aria-labeled/">aria-labeled</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
