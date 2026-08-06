@@ -3,8 +3,6 @@
 // via TileCoordinator + TileStyler. Both are dropped entirely (spec §5
 // deviations #1 & #2) — CSS grid handles layout declaratively.
 
-@use './m3-grid-list';
-
 .mat-grid-list {
   display: grid;
   grid-template-columns: repeat(var(--mat-grid-list-cols, 1), 1fr);

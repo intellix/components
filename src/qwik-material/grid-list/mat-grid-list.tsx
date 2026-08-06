@@ -1,10 +1,6 @@
 import {component$, Slot, useContext, useContextProvider} from '@builder.io/qwik';
 import {MAT_GRID_LIST_CONFIG, type MatGridListConfig} from './grid-list-config';
-import {
-  MAT_GRID_LIST_INSTANCE,
-  type MatGridListInstance,
-  type MatGridListMode,
-} from './grid-list-context';
+import {MAT_GRID_LIST_INSTANCE, type MatGridListInstance} from './grid-list-context';
 
 /**
  * Props for <MatGridList>. Renders a <mat-grid-list> custom element as a
@@ -94,7 +90,7 @@ export const MatGridList = component$<MatGridListProps>(props => {
       id={props.id}
       class={classes}
       cols={instance.cols}
-      data-mode={instance.mode as MatGridListMode}
+      data-mode={instance.mode}
       style={style}
       role={props.role}
       aria-label={props['aria-label']}

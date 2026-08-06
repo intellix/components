@@ -51,7 +51,7 @@ Every deviation from a verbatim copy is recorded here. Companion to
 
 7. **`throw Error()` guards removed.** Four upstream dev-mode throws are dropped:
    - Missing `cols` — TypeScript makes `cols` a required prop; runtime falls back to `1` via `Math.max(1, ...)`.
-   - Invalid ratio (`"4:3:2"`) — parse yields `NaN`, browser silently ignores invalid `aspect-ratio`.
+   - Invalid ratio (`"4:"`, `":3"`, `"foo"`, `""`) — parse yields `NaN` for one or both components; browser silently ignores the resulting invalid `aspect-ratio` value. A well-formed prefix like `"4:3:2"` degrades to `"4:3"` (extra segments truncated by destructuring) — arguably reasonable behavior.
    - `colspan > cols` — CSS grid clamps and wraps; no crash.
    - Invalid CSS in `rowHeight` — browser silently ignores invalid `grid-auto-rows`.
 
@@ -65,7 +65,7 @@ Every deviation from a verbatim copy is recorded here. Companion to
    - `exportAs: 'matGridList'` / `'matGridTile'` — Angular template-ref concept, N/A.
    - `[attr.cols]` / `[attr.rowspan]` / `[attr.colspan]` host bindings — replaced by plain attribute passthrough on the custom element (same DOM shape).
 
-9. **`intrinsic-elements.d.ts` types `<mat-grid-list>` + `<mat-grid-tile>` as `QwikIntrinsicElements['div']`.** No custom-attribute widening needed — `data-mode`, `rowspan`, `colspan` are all covered by Qwik's base HTMLAttributes.
+9. **`intrinsic-elements.d.ts` widening for custom numeric attrs.** Both `<mat-grid-list>` and `<mat-grid-tile>` type as `QwikIntrinsicElements['div']` at the base, extended for the numeric attributes Qwik's `HTMLAttributes` doesn't cover: `<mat-grid-list>` gets `& {cols?: number}`, `<mat-grid-tile>` gets `& {rowspan?: number; colspan?: number}`. Mirrors the `progress-bar` / `progress-spinner` `& {mode?: string}` precedent. `data-mode` on `<mat-grid-list>` needs no widening — Qwik's base `HTMLAttributes` covers `data-*` attributes via its index signature.
 
 10. **First port with per-instance context.** `MAT_GRID_LIST_INSTANCE` is the first branch context in `qwik-material/` that flows from a parent component to its descendants (in addition to the global `MAT_GRID_LIST_CONFIG` provided by `QwikMaterialProvider`). Precedent for future container-with-children ports (tabs, stepper, etc.).
 
