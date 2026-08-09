@@ -1,0 +1,148 @@
+// qwik-material list styling — CSS-grid strategy.
+// Upstream uses MDC's flex-based positioning inherited from
+// _list-inherited-structure.scss (477 LOC), plus JS-driven modifier classes
+// (.mdc-list-item--with-leading-avatar, --with-leading-icon,
+// --with-trailing-meta, --with-two-lines, --with-three-lines) computed by
+// @ContentChildren + _updateItemLines. All of that is dropped entirely (spec
+// §5 deviations #1, #2, #7) — CSS grid handles layout, :has() selectors
+// handle line-count sizing.
+
+@use './m3-list';
+@use '../core/tokens/token-utils';
+
+$fallbacks: m3-list.get-tokens();
+
+// Container variants — flat block with vertical stacking of items.
+.mat-mdc-list,
+.mat-mdc-nav-list,
+.mat-mdc-action-list {
+  display: block;
+  padding: 8px 0;
+  margin: 0;
+  list-style: none;
+
+  &[aria-disabled='true'] .mat-mdc-list-item {
+    pointer-events: none;
+    opacity: 0.38;
+  }
+}
+
+// Subheader — section title above a group of items.
+.mat-mdc-subheader {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+  font-size: token-utils.slot(list-subheader-text-size, $fallbacks);
+  font-weight: 500;
+  color: var(--mat-list-list-item-supporting-text-color, rgba(0, 0, 0, 0.6));
+  margin: 0;
+}
+
+// List-item grid layout — slot children positioned by class regardless of
+// DOM order. Consumer writes slot components in any order.
+.mat-mdc-list-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-auto-rows: min-content;
+  align-items: center;
+  gap: 0 16px;
+  min-height: 48px;
+  padding: 0 16px;
+  color: var(--mat-list-list-item-label-text-color, rgba(0, 0, 0, 0.87));
+  font-size: token-utils.slot(list-item-label-text-size, $fallbacks);
+
+  &.mdc-list-item--activated {
+    background-color: rgba(0, 0, 0, 0.08);
+  }
+
+  &.mdc-list-item--disabled {
+    pointer-events: none;
+    opacity: 0.38;
+  }
+
+  // Slot section placement — leading (avatar/icon) in column 1 spanning
+  // all rows; primary content (title + lines) in column 2 flowing rows;
+  // trailing (meta) in column 3 spanning all rows.
+  .mat-mdc-list-item-avatar,
+  .mat-mdc-list-item-icon {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+
+  .mat-mdc-list-item-title,
+  .mat-mdc-list-item-line {
+    grid-column: 2;
+  }
+
+  .mat-mdc-list-item-meta {
+    grid-column: 3;
+    grid-row: 1 / -1;
+  }
+}
+
+// Title styling — primary text, single line max.
+.mat-mdc-list-item-title {
+  font-size: token-utils.slot(list-item-label-text-size, $fallbacks);
+  color: var(--mat-list-list-item-label-text-color, rgba(0, 0, 0, 0.87));
+  line-height: 1.5;
+}
+
+// Secondary line styling — supporting text.
+.mat-mdc-list-item-line {
+  font-size: token-utils.slot(list-item-supporting-text-size, $fallbacks);
+  color: var(--mat-list-list-item-supporting-text-color, rgba(0, 0, 0, 0.6));
+  line-height: 1.4;
+}
+
+// Leading avatar sizing — circular by default.
+.mat-mdc-list-item-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+// Leading icon sizing.
+.mat-mdc-list-item-icon {
+  width: 24px;
+  height: 24px;
+}
+
+// Trailing meta styling — smaller supporting text on the right.
+.mat-mdc-list-item-meta {
+  font-size: 12px;
+  color: var(--mat-list-list-item-supporting-text-color, rgba(0, 0, 0, 0.6));
+}
+
+// Line-count sizing via :has() — no JS, no @ContentChildren, no
+// _updateItemLines. Reacts naturally to slot content changes.
+// Baseline Late 2023 dependency (Chrome ≥ 105, Safari ≥ 15.4, Firefox ≥ 121).
+.mat-mdc-list-item:has(> .mat-mdc-list-item-line) {
+  min-height: 64px;
+  padding: 8px 16px;
+}
+
+.mat-mdc-list-item:has(> .mat-mdc-list-item-line ~ .mat-mdc-list-item-line) {
+  min-height: 88px;
+}
+
+// Anchor variant (nav-list items — MatListItem as='a').
+a.mat-mdc-list-item {
+  color: inherit;
+  text-decoration: none;
+}
+
+// Button variant (action-list items — MatListItem as='button').
+button.mat-mdc-list-item {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: inherit;
+  font: inherit;
+
+  &:disabled {
+    cursor: default;
+  }
+}

@@ -1,0 +1,25 @@
+// List prebuilt CSS. Wraps the port's list.scss with :root defaults for
+// every --mat-list-* variable it emits. See design spec §4.
+
+@use './list';
+
+:root {
+  --mat-list-list-item-label-text-color: rgba(0, 0, 0, 0.87);
+  --mat-list-list-item-supporting-text-color: rgba(0, 0, 0, 0.6);
+
+  // Reconciled against compiled dist/list-prebuilt.css (Step 7): the
+  // token-utils.slot(...) calls in list.scss look up `list-item-label-text-size`
+  // and `list-item-supporting-text-size`, which don't match _m3-list.scss's
+  // actual (differently-named) `list-list-item-label-text-size` /
+  // `list-list-item-supporting-text-size` keys, so no fallback is baked into
+  // the compiled var(). Defaults below come from those real M3 tokens
+  // (body-large-size / body-medium-size in _md-sys-typescale.scss).
+  --mat-list-item-label-text-size: 1rem;
+  --mat-list-item-supporting-text-size: 0.875rem;
+
+  // list-subheader-text-size has no M3 token at all — upstream _list-theme.scss
+  // notes "MDC does not have tokens for the subheader" and its M2-only branch
+  // styles the subheader with `label-large` (size 0.875rem). Reused as the
+  // default here since no M3 equivalent exists.
+  --mat-list-subheader-text-size: 0.875rem;
+}
