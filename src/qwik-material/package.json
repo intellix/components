@@ -84,6 +84,11 @@
       "types": "./dist/grid-list/index.d.ts",
       "import": "./dist/grid-list/index.js"
     },
+    "./list": {
+      "qwik": "./list/index.ts",
+      "types": "./dist/list/index.d.ts",
+      "import": "./dist/list/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./card-prebuilt.css": "./dist/card-prebuilt.css",
@@ -94,6 +99,7 @@
     "./progress-spinner-prebuilt.css": "./dist/progress-spinner-prebuilt.css",
     "./divider-prebuilt.css": "./dist/divider-prebuilt.css",
     "./grid-list-prebuilt.css": "./dist/grid-list-prebuilt.css",
+    "./list-prebuilt.css": "./dist/list-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
