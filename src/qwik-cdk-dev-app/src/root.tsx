@@ -12,6 +12,7 @@ import '@angular-community/qwik-material/progress-bar-prebuilt.css';
 import '@angular-community/qwik-material/progress-spinner-prebuilt.css';
 import '@angular-community/qwik-material/divider-prebuilt.css';
 import '@angular-community/qwik-material/grid-list-prebuilt.css';
+import '@angular-community/qwik-material/list-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>

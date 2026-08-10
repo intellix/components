@@ -338,6 +338,35 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Lists</h2>
+        <ul>
+          <li>
+            <a href="/mat-list/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-list/two-line/">two-line</a>
+          </li>
+          <li>
+            <a href="/mat-list/three-line/">three-line</a>
+          </li>
+          <li>
+            <a href="/mat-list/avatar/">avatar</a>
+          </li>
+          <li>
+            <a href="/mat-list/icon-meta/">icon-meta</a>
+          </li>
+          <li>
+            <a href="/mat-list/nav/">nav</a>
+          </li>
+          <li>
+            <a href="/mat-list/action/">action</a>
+          </li>
+          <li>
+            <a href="/mat-list/with-subheader/">with-subheader</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
