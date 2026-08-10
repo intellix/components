@@ -61,7 +61,7 @@ Each is a trivial `component$` that renders `<div class="<hooks>"><Slot /></div>
 .mat-mdc-list-item:has(> .mat-mdc-list-item-line ~ .mat-mdc-list-item-line) { min-height: 88px; }
 ```
 
-Consumer writes slot components in ANY DOM order — CSS grid places them by class. No `q:slot` needed.
+Leading (Avatar/Icon) and trailing (Meta) slot components can be written in ANY DOM order relative to primary content — CSS grid places them by class into columns 1/3, spanning all rows. Primary content (Title, Line) shares grid column 2 and stacks in DOM order, so Title must precede Line(s) to match Material's title-then-lines convention. No `q:slot` needed.
 
 **Family shape:**
 - `MatListConfig` — empty (parity with divider / grid-list).
@@ -188,7 +188,9 @@ export interface MatListItemProps {
 **Rendered DOM (default `as='div'`):**
 ```html
 <mat-list-item class="mat-mdc-list-item mdc-list-item" role="listitem">
-  <!-- slot components in any order — CSS grid places by class -->
+  <!-- leading/trailing slot components in any order; Title before Line(s) —
+       CSS grid places leading/trailing by class, but Title/Line share a
+       column and stack in DOM order -->
 </mat-list-item>
 ```
 

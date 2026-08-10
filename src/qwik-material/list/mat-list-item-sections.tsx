@@ -3,9 +3,13 @@ import {component$, Slot} from '@builder.io/qwik';
 /**
  * Shared props for the 5 slot components (Avatar, Icon, Title, Line, Meta).
  * Each is a trivial component$ wrapper rendering
- * <div class="<class-hooks>"><Slot /></div>. Consumer composes them as
- * children of <MatListItem> in ANY DOM order — CSS grid on
- * .mat-mdc-list-item places by class regardless of order.
+ * <div class="<class-hooks>"><Slot /></div>. Leading sections
+ * (Avatar/Icon) and trailing sections (Meta) can be composed in ANY DOM
+ * order relative to the primary content — CSS grid on .mat-mdc-list-item
+ * places them by class into columns 1 and 3 respectively, spanning all
+ * rows. Primary content (Title, Line) SHARES grid column 2 and stacks in
+ * DOM order — write Title before Line(s) to match Material's title-then-
+ * lines visual convention.
  *
  * Upstream ships these as [matListItem*] attribute directives; ported as
  * real components for Qwik ergonomics per spec §5 deviation #9. CSS class

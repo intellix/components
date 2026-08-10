@@ -39,9 +39,12 @@ $fallbacks: m3-list.get-tokens();
   margin: 0;
 }
 
-// List-item grid layout — slot children positioned by class regardless of
-// DOM order. Consumer writes slot components in any order.
+// List-item grid layout — leading/trailing slot children positioned by
+// class regardless of DOM order; primary content (title + lines) shares a
+// grid column and stacks in DOM order (title-first, per Material
+// convention).
 .mat-mdc-list-item {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: auto 1fr auto;
   grid-auto-rows: min-content;
