@@ -23,6 +23,8 @@ import type {MatDividerConfig} from '../divider/divider-config';
 import {MAT_DIVIDER_CONFIG} from '../divider/divider-config';
 import type {MatGridListConfig} from '../grid-list/grid-list-config';
 import {MAT_GRID_LIST_CONFIG} from '../grid-list/grid-list-config';
+import type {MatListConfig} from '../list/list-config';
+import {MAT_LIST_CONFIG} from '../list/list-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -47,6 +49,8 @@ export interface QwikMaterialProviderProps {
   matDividerConfig?: MatDividerConfig;
   /** Defaults applied to every MatGridList in this subtree. */
   matGridListConfig?: MatGridListConfig;
+  /** Defaults applied to every MatList / MatNavList / MatActionList / MatSubheader in this subtree. */
+  matListConfig?: MatListConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -93,6 +97,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // Grid lists outside a provider get the CONFIG_DEFAULTS declared in MatGridList;
   // providing an empty object is equivalent to accepting all defaults.
   useContextProvider(MAT_GRID_LIST_CONFIG, props.matGridListConfig ?? {});
+  // MatListConfig is a plain object (currently empty) — no noSerialize needed.
+  // Lists outside a provider get the CONFIG_DEFAULTS declared in MatList/
+  // MatNavList/MatActionList/MatSubheader; providing an empty object is
+  // equivalent to accepting all defaults.
+  useContextProvider(MAT_LIST_CONFIG, props.matListConfig ?? {});
 
   return <Slot />;
 });
