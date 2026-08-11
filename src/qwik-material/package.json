@@ -89,6 +89,11 @@
       "types": "./dist/list/index.d.ts",
       "import": "./dist/list/index.js"
     },
+    "./button-toggle": {
+      "qwik": "./button-toggle/index.ts",
+      "types": "./dist/button-toggle/index.d.ts",
+      "import": "./dist/button-toggle/index.js"
+    },
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./card-prebuilt.css": "./dist/card-prebuilt.css",
@@ -100,6 +105,7 @@
     "./divider-prebuilt.css": "./dist/divider-prebuilt.css",
     "./grid-list-prebuilt.css": "./dist/grid-list-prebuilt.css",
     "./list-prebuilt.css": "./dist/list-prebuilt.css",
+    "./button-toggle-prebuilt.css": "./dist/button-toggle-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
