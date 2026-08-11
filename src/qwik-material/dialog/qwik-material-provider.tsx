@@ -25,6 +25,8 @@ import type {MatGridListConfig} from '../grid-list/grid-list-config';
 import {MAT_GRID_LIST_CONFIG} from '../grid-list/grid-list-config';
 import type {MatListConfig} from '../list/list-config';
 import {MAT_LIST_CONFIG} from '../list/list-config';
+import type {MatButtonToggleConfig} from '../button-toggle/button-toggle-config';
+import {MAT_BUTTON_TOGGLE_CONFIG} from '../button-toggle/button-toggle-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -51,6 +53,8 @@ export interface QwikMaterialProviderProps {
   matGridListConfig?: MatGridListConfig;
   /** Defaults applied to every MatList / MatNavList / MatActionList / MatSubheader in this subtree. */
   matListConfig?: MatListConfig;
+  /** Defaults applied to every MatButtonToggleGroup / MatButtonToggle in this subtree. */
+  matButtonToggleConfig?: MatButtonToggleConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -102,6 +106,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // MatNavList/MatActionList/MatSubheader; providing an empty object is
   // equivalent to accepting all defaults.
   useContextProvider(MAT_LIST_CONFIG, props.matListConfig ?? {});
+  // MatButtonToggleConfig is a plain object (currently empty) — no noSerialize
+  // needed. Button toggles outside a provider get the CONFIG_DEFAULTS declared
+  // in MatButtonToggleGroup; providing an empty object is equivalent to
+  // accepting all defaults.
+  useContextProvider(MAT_BUTTON_TOGGLE_CONFIG, props.matButtonToggleConfig ?? {});
 
   return <Slot />;
 });
