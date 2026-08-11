@@ -1,0 +1,90 @@
+// qwik-material button-toggle styling — segmented control (standard appearance only).
+// Upstream ships two appearance variants (legacy + standard), ripple + state-layer
+// hooks, focus-indicator, pseudo-checkbox indicator, and vertical mode. All are
+// dropped entirely (spec §5 deviations #6, #7, #8) — this file ships the modern
+// standard appearance in horizontal mode only.
+//
+// `box-sizing: border-box` is EXPLICITLY set on both .mat-button-toggle and
+// .mat-button-toggle-button per the list-port lesson (Task 2 rewrite of list.scss
+// omitted it and Playwright caught 16px height regressions at final review).
+
+@use './m3-button-toggle';
+@use '../core/tokens/token-utils';
+
+$fallbacks: m3-button-toggle.get-tokens();
+
+// Segmented group container — horizontal row with unified border.
+.mat-button-toggle-group {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: stretch;
+  border-radius: token-utils.slot(
+    button-toggle-shape, $fallbacks, calc(var(--mat-button-toggle-height, 40px) / 2)
+  );
+  border: 1px solid var(--mat-button-toggle-divider-color, rgba(0, 0, 0, 0.12));
+  overflow: hidden;
+  background: var(--mat-button-toggle-background-color, transparent);
+
+  &[aria-disabled='true'] .mat-button-toggle {
+    pointer-events: none;
+    opacity: 0.38;
+  }
+}
+
+// Individual toggle host.
+.mat-button-toggle {
+  box-sizing: border-box;
+  display: inline-flex;
+  position: relative;
+  color: var(--mat-button-toggle-text-color, rgba(0, 0, 0, 0.87));
+  font-size: token-utils.slot(button-toggle-label-text-size, $fallbacks);
+  line-height: 1;
+  min-height: 40px;
+
+  // Divider between siblings.
+  & + .mat-button-toggle {
+    border-left: 1px solid var(--mat-button-toggle-divider-color, rgba(0, 0, 0, 0.12));
+  }
+
+  // Selected state — background fill; no checkmark indicator per spec §5
+  // deviation #7 (dropped MatPseudoCheckbox).
+  &.mat-button-toggle-checked {
+    background: var(--mat-button-toggle-selected-state-background-color, rgba(0, 0, 0, 0.08));
+    color: var(--mat-button-toggle-selected-state-text-color, rgba(0, 0, 0, 0.87));
+  }
+
+  // Individual-button disabled state (in addition to group-level cascade).
+  &[aria-disabled='true'] {
+    pointer-events: none;
+    opacity: 0.38;
+  }
+}
+
+// The actual clickable inner <button> — absorbs clicks; tabindex=-1 so Tab
+// navigates between hosts not into the inner button.
+.mat-button-toggle-button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  min-height: 100%;
+  min-width: 100%;
+  font: inherit;
+  color: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-button-toggle-focus-outline-color, rgba(0, 0, 0, 0.87));
+    outline-offset: -2px;
+  }
+}
+
+// Label wrapper — matches upstream class name for CSS-selector parity.
+.mat-button-toggle-label-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}

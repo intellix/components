@@ -1,0 +1,25 @@
+// Button toggle prebuilt CSS. Wraps the port's button-toggle.scss with :root
+// defaults for every --mat-button-toggle-* variable it emits. See design spec §4.
+
+@use './button-toggle';
+
+:root {
+  --mat-button-toggle-text-color: rgba(0, 0, 0, 0.87);
+  --mat-button-toggle-divider-color: rgba(0, 0, 0, 0.12);
+  --mat-button-toggle-selected-state-background-color: rgba(0, 0, 0, 0.08);
+  --mat-button-toggle-selected-state-text-color: rgba(0, 0, 0, 0.87);
+  --mat-button-toggle-focus-outline-color: rgba(0, 0, 0, 0.87);
+  --mat-button-toggle-background-color: transparent;
+  --mat-button-toggle-height: 40px;
+
+  // Shape + typography — button-toggle.scss's token-utils.slot(...) calls emit
+  // a nested var() fallback chain (--mat-button-toggle-* -> --mat-sys-* ->
+  // concrete literal), so both levels need a :root default. Values sourced
+  // from this repo's core/tokens/m3/_md-sys-shape.scss (corner-extra-large:
+  // 28px) and _md-sys-typescale.scss (label-large-size: 0.875rem), matching
+  // _m3-button-toggle.scss's get-tokens() mapping.
+  --mat-button-toggle-shape: var(--mat-sys-corner-extra-large, 28px);
+  --mat-button-toggle-label-text-size: var(--mat-sys-label-large-size, 0.875rem);
+  --mat-sys-corner-extra-large: 28px;
+  --mat-sys-label-large-size: 0.875rem;
+}
