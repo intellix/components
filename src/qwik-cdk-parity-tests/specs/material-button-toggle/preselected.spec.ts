@@ -13,8 +13,12 @@ test('material-button-toggle/preselected — SSR renders italic as checked WITHO
   const html = await response!.text();
 
   // The italic toggle's <mat-button-toggle> should carry mat-button-toggle-checked in the raw SSR HTML.
+  // Qwik wraps projected <Slot/> content in `<!--qv-->...<!--/qv-->` comment markers, so the label
+  // text is not immediately adjacent to the <span> tags — match loosely (but still structurally:
+  // checked toggle -> its <button> -> its label <span> -> "Italic" -> </span>) rather than requiring
+  // exact adjacency.
   const italicPattern =
-    /<mat-button-toggle[^>]*mat-button-toggle-checked[^>]*>[^<]*<button[^>]*>[^<]*<span[^>]*>Italic<\/span>/;
+    /<mat-button-toggle[^>]*mat-button-toggle-checked[^>]*>[\s\S]*?<button[^>]*>[\s\S]*?<span[^>]*>[\s\S]*?Italic[\s\S]*?<\/span>/;
   expect(html).toMatch(italicPattern);
 
   await page.waitForSelector('[data-scenario-ready]');
