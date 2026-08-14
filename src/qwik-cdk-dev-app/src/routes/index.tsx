@@ -367,6 +367,32 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Button toggles</h2>
+        <ul>
+          <li>
+            <a href="/mat-button-toggle/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-button-toggle/multi/">multi</a>
+          </li>
+          <li>
+            <a href="/mat-button-toggle/disabled-group/">disabled-group</a>
+          </li>
+          <li>
+            <a href="/mat-button-toggle/disabled-individual/">disabled-individual</a>
+          </li>
+          <li>
+            <a href="/mat-button-toggle/preselected/">preselected</a>
+          </li>
+          <li>
+            <a href="/mat-button-toggle/form-name/">form-name</a>
+          </li>
+          <li>
+            <a href="/mat-button-toggle/standalone/">standalone</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
