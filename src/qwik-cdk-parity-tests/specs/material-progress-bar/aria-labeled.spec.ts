@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-progress-bar/aria-labeled — <mat-progress-bar> carries aria-label="Uploading" alongside role="progressbar"', async ({
   page,
