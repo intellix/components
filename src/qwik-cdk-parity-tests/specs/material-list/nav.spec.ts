@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-list/nav — <mat-nav-list role="navigation">, 3 <a class="mat-mdc-list-item">, activated has aria-current="page"', async ({
   page,
