@@ -8,3 +8,5 @@ export {
   type MatPseudoCheckboxProps,
   type MatPseudoCheckboxState,
 } from './mat-pseudo-checkbox';
+
+export {MatInternalFormField, type MatInternalFormFieldProps} from './mat-internal-form-field';

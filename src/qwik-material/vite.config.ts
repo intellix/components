@@ -31,10 +31,7 @@ export default defineConfig({
         const fs = await import('node:fs/promises');
         const path = await import('node:path');
         const sassEntries: [string, string][] = [
-          [
-            'scss/core/selection/pseudo-checkbox/pseudo-checkbox-prebuilt.scss',
-            'dist/core-prebuilt.css',
-          ],
+          ['scss/core/core-prebuilt.scss', 'dist/core-prebuilt.css'],
           ['scss/dialog/dialog-prebuilt.scss', 'dist/dialog-prebuilt.css'],
           ['scss/button/button-prebuilt.scss', 'dist/button-prebuilt.css'],
           ['scss/card/card-prebuilt.scss', 'dist/card-prebuilt.css'],

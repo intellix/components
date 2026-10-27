@@ -57,3 +57,12 @@ rather than inventing a new one.
 ## Pipeline
 
 `pnpm test:qwik-material` at the repo root runs `build && vitest && lint:no-ssr-leaks && typecheck` for the whole qwik-material package, covering dialog + button + card + toolbar + badge + icon + progress-bar + progress-spinner + divider + grid-list + list + button-toggle + core.
+
+## MatInternalFormField (2026-10-27)
+
+- Source: `src/material/core/internal-form-field/internal-form-field.{ts,scss}`
+- Destination: `core/mat-internal-form-field.tsx`, `scss/core/internal-form-field/internal-form-field.scss` (byte-identical)
+- Renders `div[mat-internal-form-field].mdc-form-field.mat-internal-form-field`
+  (+ `mdc-form-field--align-end` for `labelPosition="before"`). Shared by
+  checkbox, radio and slide-toggle. Its CSS ships in `core-prebuilt.css`
+  (`scss/core/core-prebuilt.scss` now bundles pseudo-checkbox + internal form field).
