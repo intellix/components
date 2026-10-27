@@ -5,4 +5,5 @@ export type {QwikCdkRootProps} from './root';
 // (e.g. qwik-material) can reuse the same overlay registry + dispatchers
 // that <QwikCdkRoot> installs, rather than parallel state.
 export {QWIK_CDK} from './internals/internals';
+export {ensureCdkDispatchers} from './internals/ensure-dispatchers';
 export type {QwikCdkInternals} from './internals/internals';

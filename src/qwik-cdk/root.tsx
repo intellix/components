@@ -1,6 +1,5 @@
 import {
   component$,
-  noSerialize,
   Slot,
   useContextProvider,
   useSignal,
@@ -8,19 +7,16 @@ import {
   useVisibleTask$,
   type NoSerialize,
 } from '@builder.io/qwik';
-import {createPlatform} from './platform/platform';
 import type {Direction} from './bidi/directionality';
 import {
   type OverlayEntry,
   OverlayContainerOutlet,
   type OverlayContainerOptions,
-  createOverlayKeyboardDispatcher,
-  createOverlayOutsideClickDispatcher,
-  createNoopScrollStrategy,
 } from './overlay/public-api';
 import type {DialogConfig} from './dialog/dialog-config';
 import type {DialogRef} from './dialog/dialog-ref';
 import {QWIK_CDK, type QwikCdkInternals} from './internals/internals';
+import {ensureCdkDispatchers} from './internals/ensure-dispatchers';
 import {ID_GENERATOR_COUNTER} from './a11y/id-generator';
 
 export interface QwikCdkRootProps {
@@ -76,12 +72,8 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   // strategy) are overlay/dialog machinery anyway, which rule 7 and this
   // remediation explicitly scope out.
   useVisibleTask$(({cleanup}) => {
-    const platform = createPlatform();
-    const kbd = createOverlayKeyboardDispatcher();
-    const ocd = createOverlayOutsideClickDispatcher(platform);
-    internals.keyboardDispatcher = noSerialize(kbd);
-    internals.outsideClickDispatcher = noSerialize(ocd);
-    internals.dialogScrollStrategyFactory = noSerialize(() => createNoopScrollStrategy());
+    // May already exist if an overlay was opened before this task ran.
+    const {keyboardDispatcher: kbd, outsideClickDispatcher: ocd} = ensureCdkDispatchers(internals);
 
     cleanup(() => {
       kbd.dispose();

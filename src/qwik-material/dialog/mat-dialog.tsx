@@ -10,7 +10,7 @@ import {
   type QRL,
   type Signal,
 } from '@builder.io/qwik';
-import {QWIK_CDK} from '@angular-community/qwik-cdk';
+import {ensureCdkDispatchers, QWIK_CDK} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,
   createGlobalPositionStrategy,
@@ -120,12 +120,8 @@ export function useMatDialog(): MatDialog {
         return noSerialize(ref);
       }
 
-      // Dispatchers are populated by <QwikCdkRoot>'s useVisibleTask$ after
-      // hydration; if they're not present yet we can't wire close behaviour,
-      // so treat as a no-op like the CDK's own useDialog does.
-      const keyboardDispatcher = ctx.keyboardDispatcher;
-      const outsideClickDispatcher = ctx.outsideClickDispatcher;
-      if (!keyboardDispatcher || !outsideClickDispatcher) return null;
+      // Created on demand: <QwikCdkRoot>'s visible task may not have run yet.
+      const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
 
       // Build a thin idGen + registry that close over the shared ctx signals
       // (same pattern as qwik-cdk's useDialog). This ensures MatDialog entries

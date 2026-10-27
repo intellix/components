@@ -159,3 +159,12 @@ Implementation fix applied in this task:
   modifier keys are held, matching CDK dialog-ref.ts line 73 behaviour.
 
 Total: 37 ported / 54 skipped of 78 CDK source scenarios (+ 13 extra service-level tests).
+
+## Dispatchers created on demand (2026-10-27)
+
+`useDialog().open$` and `useMatDialog().open$` used to return `null` when
+`<QwikCdkRoot>`'s visible task had not yet created the overlay keyboard /
+outside-click dispatchers. Visible tasks run in no guaranteed order, so a
+dialog opened from another visible task intermittently never opened.
+`ensureCdkDispatchers()` (`internals/ensure-dispatchers.ts`) now creates them on
+first use; the root task reuses them and disposes them on teardown.

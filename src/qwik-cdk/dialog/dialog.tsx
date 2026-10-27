@@ -20,6 +20,7 @@ import {DIALOG_DATA} from './dialog-tokens';
 import type {IdGenerator} from '../a11y/id-generator';
 import {hasModifierKey} from '../keycodes/modifiers';
 import {QWIK_CDK} from '../internals/internals';
+import {ensureCdkDispatchers} from '../internals/ensure-dispatchers';
 
 /**
  * Consumer-facing dialog hook.
@@ -61,9 +62,7 @@ export function useDialog(): Dialog {
       config?: DialogConfig<D, R>,
     ): NoSerialize<DialogRef<R, C>> | null => {
       if (typeof window === 'undefined') return null;
-      const kbd = ctx.keyboardDispatcher;
-      const ocd = ctx.outsideClickDispatcher;
-      if (!kbd || !ocd) return null;
+      const {keyboardDispatcher: kbd, outsideClickDispatcher: ocd} = ensureCdkDispatchers(ctx);
 
       // Build a thin idGen + registry that close over the shared ctx signals.
       const idGen = makeCtxIdGen(ctx.idCounter);
