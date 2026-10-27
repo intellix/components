@@ -1,33 +1,33 @@
 /**
  * MatGridList scenario port from src/material/grid-list/grid-list.spec.ts.
  *
- * Upstream has ~50 `it()` blocks — heavy on @ContentChildren QueryList
- * + ngAfterContentChecked re-layout assertions using getComputedStyle to
- * probe absolute-position inline styles. All of that is moot in the port
- * because layout is pure CSS grid (spec §5 deviations #1 & #2).
- * Restructured:
+ * Upstream has ~50 `it()` blocks — heavy on @ContentChildren QueryList +
+ * ngAfterContentChecked re-layout assertions using getComputedStyle to probe
+ * absolute-position inline styles. This package's vitest setup doesn't run
+ * Qwik's render pipeline for any component (every `*.spec.tsx` here is a
+ * typeof/shape smoke test — see the sibling SYNC.md's "Pipeline" section),
+ * so DOM-rendered assertions aren't portable into vitest at all; they live
+ * in Playwright instead:
  *
- *   - Live sanity tests (5): typeof + context ids + config/instance
- *     shapes + props shape.
- *   - describe.skip DOM-rendered (7): container/tile rendering, rowHeight
- *     modes (fixed/ratio/fit), rowspan/colspan, gutter. Deferred to
- *     Playwright Task 9.
- *   - describe.skip Angular-only (3): NumberInput coercion,
- *     @ContentChildren QueryList / MAT_GRID_LIST DI, dev-mode throws.
- *     Deferred forever per spec §5 deviations #7 & #8.
+ *   - specs/material-grid-list/angular-parity.spec.ts — the gating Angular-
+ *     vs-Qwik DOM diff (7 scenarios: basic, fit, gutter, ratio,
+ *     ratio-spanning, spanning, aria-labeled).
+ *   - specs/material-grid-list/*.spec.ts — Qwik-only assertions per scenario.
  *
- * Real DOM assertions live in
- * src/qwik-cdk-parity-tests/specs/material-grid-list/*.spec.ts.
+ * The actual tile-positioning *algorithm* (TileCoordinator + TileStyler) is
+ * real unit-tested here, since it's pure TS with no Qwik dependency — see
+ * tile-coordinator.spec.ts and tile-styler.spec.ts.
  */
 import {describe, it, expect} from 'vitest';
 import {
   MAT_GRID_LIST_CONFIG,
-  MAT_GRID_LIST_INSTANCE,
-  MAT_GRID_LIST_INSTANCE_DEFAULTS,
+  MatGridAvatar,
   MatGridList,
   MatGridTile,
+  MatGridTileFooter,
+  MatGridTileHeader,
+  MatLine,
   type MatGridListConfig,
-  type MatGridListInstance,
   type MatGridListProps,
   type MatGridTileProps,
 } from './public-api';
@@ -40,32 +40,20 @@ describe('MatGridList — sanity', () => {
     expect(typeof MatGridTile).toBe('function');
   });
 
-  it('MAT_GRID_LIST_CONFIG carries the expected context id', () => {
+  it('MatGridTileHeader/Footer, MatGridAvatar and MatLine are exported', () => {
+    expect(typeof MatGridTileHeader).toBe('function');
+    expect(typeof MatGridTileFooter).toBe('function');
+    expect(typeof MatGridAvatar).toBe('function');
+    expect(typeof MatLine).toBe('function');
+  });
+
+  it('MAT_GRID_LIST_CONFIG carries the expected context id (currently unconsumed — see SYNC.md)', () => {
     expect(MAT_GRID_LIST_CONFIG.id).toBe('qwik-material/grid-list-config');
   });
 
-  it('MAT_GRID_LIST_INSTANCE carries the expected context id + full-shape defaults', () => {
-    expect(MAT_GRID_LIST_INSTANCE.id).toBe('qwik-material/grid-list-instance');
-    expect(MAT_GRID_LIST_INSTANCE_DEFAULTS).toEqual({
-      rowHeight: '1:1',
-      cols: 1,
-      mode: 'ratio',
-      ratioW: 1,
-      ratioH: 1,
-    });
-  });
-
-  it('MatGridListConfig accepts an empty object; MatGridListInstance accepts a full-shape object', () => {
+  it('MatGridListConfig accepts an empty object', () => {
     const cfg: MatGridListConfig = {};
-    const inst: MatGridListInstance = {
-      rowHeight: '4:3',
-      cols: 3,
-      mode: 'ratio',
-      ratioW: 4,
-      ratioH: 3,
-    };
     expect(cfg).toBeDefined();
-    expect(inst.mode).toBe('ratio');
   });
 
   it('MatGridListProps + MatGridTileProps accept full aria + class + id + role surface', () => {
@@ -93,24 +81,17 @@ describe('MatGridList — sanity', () => {
   });
 });
 
-describe.skip('MatGridList DOM-rendered scenarios — deferred to Playwright Task 9', () => {
-  it('renders <mat-grid-list> with class="mat-grid-list", cols attribute, data-mode attribute', () => {});
-  it('renders projected <mat-grid-tile> children as grid items', () => {});
-  it('rowHeight="100px" fixed mode — grid-auto-rows applied via --mat-grid-list-row-height', () => {});
-  it('rowHeight="4:3" ratio mode — tiles carry inline aspect-ratio', () => {});
-  it('rowHeight="fit" fit mode — grid-auto-rows: 1fr, fills container height', () => {});
-  it('rowspan/colspan — tile spans multiple cells via inline grid-column/grid-row', () => {});
-  it('gutterSize="8px" — gap applied to container', () => {});
-});
-
 describe.skip('MatGridList — Angular-only tests', () => {
   it('should coerce NumberInput attribute values via coerceNumberProperty', () => {
-    // Omitted — Qwik JSX passes numbers directly (spec §5 deviation #8).
+    // Omitted — Qwik JSX passes numbers directly (grid-list/SYNC.md deviation #5).
   });
   it('should enumerate tiles via @ContentChildren QueryList / MAT_GRID_LIST DI', () => {
-    // Replaced by per-instance MAT_GRID_LIST_INSTANCE context (spec §5 deviation #8).
+    // Replaced by reading JSX children directly — see jsx-children.ts and
+    // grid-list/SYNC.md deviation #1.
   });
-  it('should throw in dev-mode for missing cols / invalid ratio / oversized colspan', () => {
-    // Omitted — TypeScript makes cols required; browser silently ignores invalid CSS (spec §5 deviation #7).
+  it('should throw in dev-mode for missing cols / invalid ratio / invalid fixed-height CSS', () => {
+    // Omitted — TypeScript makes cols required; browser silently ignores
+    // invalid CSS (grid-list/SYNC.md deviation #6). Oversized colspan still
+    // throws (tile-coordinator.spec.ts covers it directly).
   });
 });
