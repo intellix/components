@@ -66,6 +66,7 @@ export function createFocusTrap(
     // ssr-leak-ok: FocusTrap constructed inside useFocusTrap's isBrowser-gated useTask$.
     const anchor = document.createElement('div');
     toggleAnchorTabIndex(enabled, anchor);
+    anchor.classList.add('cdk-visually-hidden');
     anchor.classList.add('cdk-focus-trap-anchor');
     anchor.setAttribute('aria-hidden', 'true');
     return anchor;

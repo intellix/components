@@ -1,8 +1,12 @@
 import {component$} from '@builder.io/qwik';
 import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatAutoOpen} from '../../../scenarios/_mat-template';
+import {MatAutoOpen, NgComponentHost} from '../../../scenarios/_mat-template';
 
-const Body = component$(() => <p>Panel classes applied</p>);
+const Body = component$<{class?: string}>(props => (
+  <NgComponentHost class={props.class}>
+    <p>Panel classes applied</p>
+  </NgComponentHost>
+));
 
 export default component$(() => (
   <QwikMaterialProvider>

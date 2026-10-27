@@ -4,12 +4,13 @@ import {
   MatDialogClose,
   useMatDialog,
 } from '@angular-community/qwik-material/dialog';
+import {NgComponentHost} from '../../../scenarios/_mat-template';
 
-const Body = component$(() => (
-  <>
+const Body = component$<{class?: string}>(props => (
+  <NgComponentHost class={props.class}>
     <button>Focus me</button>
     <MatDialogClose>Close</MatDialogClose>
-  </>
+  </NgComponentHost>
 ));
 
 const Trigger = component$(() => {

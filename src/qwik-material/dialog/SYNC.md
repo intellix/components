@@ -58,6 +58,73 @@ Open deviations (from spec §10):
 - MatDialogHarness deferred.
 - SCSS theming mixin (mat.dialog-theme) not exposed until qwik-material/core lands. Only structural + prebuilt CSS ships.
 
+## DOM parity remediation (2026-10-27)
+
+Driven by `docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md`
+and verified against `src/qwik-cdk-parity-tests/specs/material-dialog/angular-parity.spec.ts`.
+Upstream reference: `src/material/dialog/{dialog,dialog-container,dialog-content-directives,
+dialog-ref}.ts` at the commit this branch forked from.
+
+Fixed (DOM structure — previously-invented/incorrect, now matches upstream):
+- `MatDialogContainer`'s host now also carries the `cdk-dialog-container` class. Upstream's
+  `MatDialogContainer extends CdkDialogContainer`, so Angular merges both components' host
+  class bindings onto the one element (`mat-mdc-dialog-container mdc-dialog` +
+  `cdk-dialog-container`); the Qwik port composes via JSX instead of inheritance, so this class
+  has to be listed explicitly.
+- `aria-modal` default restored to upstream's `false` (was `true` — see qwik-cdk/dialog/SYNC.md,
+  same rationale: DOM parity overrides the earlier accepted deviation).
+- The overlay pane now gets `mat-mdc-dialog-panel` (`MatDialogRef`'s constructor calls
+  `_ref.addPanelClass('mat-mdc-dialog-panel')`; `useMatDialog().open$` now does the equivalent
+  `overlayRef.addPanelClass('mat-mdc-dialog-panel')` right after creating the overlay).
+- `useMatDialog().open$` now always opens with a fresh, centered `GlobalPositionStrategy`
+  (`createGlobalPositionStrategy().centerHorizontally().centerVertically()`), matching upstream
+  `MatDialog.open()` — which ignores any CDK-level `positionStrategy` and always builds its own.
+  Previously no `positionStrategy` was passed at all, so the overlay host never got
+  `cdk-global-overlay-wrapper` / centering styles. `MatDialogRef.updatePosition(position)` now
+  actually mutates this strategy (top/bottom/left/right or re-center) instead of being a no-op
+  passthrough to `cdkRef.updatePosition()`; `useMatDialog().open$` calls
+  `matRef.updatePosition(merged.position)` right after open, mirroring
+  `MatDialog.open()`'s `providers` callback.
+- `MatDialogContainer` now adds a `--mat-dialog-transition-duration` custom property while
+  animations are enabled (enter duration while opening/open, exit duration while closing),
+  matching `_startOpenAnimation()`/`_startExitAnimation()`'s `style.setProperty(...)` calls.
+- `MatDialogContainer` now calls `useFocusTrap` (qwik-cdk/a11y) — it previously did no focus
+  management at all. This is a **real behaviour fix**, not just a DOM-attribute fix: without it,
+  Material dialogs never auto-focused on open or restored focus on close (the
+  `specs/material-dialog/restore-focus.spec.ts` bug the task called out).
+- `MatDialogClose` no longer renders a default `aria-label="Close dialog"` or a
+  `class="mat-mdc-dialog-close"` — the real directive's host bindings are
+  `'[attr.aria-label]': 'ariaLabel || null'` (no default) and `'[attr.type]': 'type'` only; it
+  adds no class of its own (any styling comes from whatever other directive, e.g.
+  `mat-icon-button`, the consumer also applies).
+- `MatDialogWrapper` now passes `class="mat-mdc-dialog-component-host"` down to the content
+  component as a prop (mirroring `MatDialogContainer.attachComponentPortal()`'s
+  `ref.location.nativeElement.classList.add('mat-mdc-dialog-component-host')`). Qwik has no
+  implicit per-component host element for the content component to receive this class on, so the
+  content component must render its own root tag and apply the class itself — see the dev-app
+  scenario bodies (`NgComponentHost` in `src/qwik-cdk-dev-app/src/scenarios/_mat-template.tsx`).
+
+Fixed (real behaviour bugs, not just DOM — found via the pre-existing failing Qwik-only specs
+`specs/material-dialog/{backdrop-and-escape,close-with-result,restore-focus,animation}.spec.ts`):
+- **Escape / backdrop click did not close the dialog, and `afterClosed` never resolved.** Root
+  cause: `MatDialogRef.close()` set `state.value = MatDialogState.CLOSING` on a *plain*
+  `{value}` object, not a real Qwik signal (`createMatDialogRef` is called from inside a QRL,
+  where Qwik hooks like `useSignal`/`useTask$` can't run) — so `MatDialogContainer`'s exit-
+  animation `useTask$(({track}) => track(() => matDialogRef.state.value))` never re-ran; nothing
+  observed the write. Fixed by removing that reactive dependency entirely: `close()` now calls a
+  `requestClose` callback that `MatDialogContainer` installs on mount via a new internal
+  `[REGISTER_CLOSE_HANDLER]` method on `MatDialogRef` (same pattern as the existing
+  `[MARK_OPENED]`/`[MARK_CLOSED]` internal contract). The container's real `phase` signal (a
+  genuine `useSignal` local to that component) drives the exit animation + eventual
+  `[MARK_CLOSED]()` call directly, with no cross-QRL-boundary signal dependency.
+- Same root cause broke `OverlayRef.detachBackdrop()`'s effect on the rendered backdrop — see
+  qwik-cdk/overlay/SYNC.md's "Backdrop reactivity after mount" entry. `MatDialogRef.close()` now
+  calls `deps.cdkRef.detachBackdrop?.()` immediately (before delegating to `requestClose`),
+  mirroring upstream's `MatDialogRef.close()` → `_containerInstance._animationStateChanged`
+  ('closing') → `_ref.overlayRef.detachBackdrop()` chain (collapsed here since qwik-material
+  doesn't use RxJS): the backdrop starts fading out as soon as `close()` is called, independent
+  of the pane's own exit animation.
+
 ## Stub inventory
 
 Stubs are compile-time stand-ins for Angular Material (and CDK) internals that qwik-material has not yet ported. Each stub emits the minimum symbols needed for the dialog SCSS chain to compile; they do **NOT** reproduce upstream behavior. When the corresponding upstream module is eventually ported, the stub should be removed and its callers updated to `@use` the real module.

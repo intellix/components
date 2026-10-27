@@ -33,6 +33,7 @@ export interface QwikCdkRootProps {
 export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   // Reactive state (signals serialize cleanly across SSR→CSR resume).
   const entries = useSignal<readonly OverlayEntry[]>([]);
+  const overlayContainerCreated = useSignal(false);
   const openDialogs = useSignal<readonly NoSerialize<DialogRef>[]>([]);
   const direction = useSignal<Direction>(props.direction ?? 'ltr');
   const idCounter = useSignal(0);
@@ -45,6 +46,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   // Qwik serializes getter RESULTS, not the getters themselves.
   const internals = useStore<QwikCdkInternals>({
     entries,
+    overlayContainerCreated,
     openDialogs,
     direction,
     idCounter,

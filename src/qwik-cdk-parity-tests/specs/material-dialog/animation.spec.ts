@@ -1,7 +1,9 @@
 import {test, expect} from '@playwright/test';
 
+const QWIK_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
+
 /**
- * Single-side DOM assertions against the qwik-material dev-app at http://localhost:4173.
+ * Single-side DOM assertions against the qwik-material dev-app.
  * Covers the MDC enter/exit animation class lifecycle.
  *
  * NOTE: Animation timing is inherently racy. The `--opening` class may already have
@@ -14,7 +16,7 @@ test.describe('Material Dialog — animation classes', () => {
   test('mdc-dialog--open is set on the mat-dialog-container element after the enter animation', async ({
     page,
   }) => {
-    await page.goto('http://localhost:4173/mat-dialog/basic');
+    await page.goto(`${QWIK_URL}/mat-dialog/basic`);
     // Allow up to 500 ms for the enter animation to complete.
     await expect(page.locator('mat-dialog-container.mdc-dialog--open')).toBeVisible({
       timeout: 500,
@@ -22,7 +24,7 @@ test.describe('Material Dialog — animation classes', () => {
   });
 
   test('container detaches from the DOM after Escape closes the dialog', async ({page}) => {
-    await page.goto('http://localhost:4173/mat-dialog/basic');
+    await page.goto(`${QWIK_URL}/mat-dialog/basic`);
     // Wait for the dialog to open fully before triggering close.
     await expect(page.locator('mat-dialog-container.mdc-dialog--open')).toBeVisible({
       timeout: 500,

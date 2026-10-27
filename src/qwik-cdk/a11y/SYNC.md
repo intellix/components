@@ -88,3 +88,21 @@
     needs one shared instance across a subtree can still provide/read
     `FOCUS_MONITOR` manually, following the `noSerialize()` + reactive-store
     pattern in `qwik-cdk/root.tsx` (`internals.keyboardDispatcher`, etc.).
+
+### `FocusTrap` / `useFocusTrap`
+
+- Source: `src/cdk/a11y/focus-trap/focus-trap.ts`
+- Destination: `src/qwik-cdk/a11y/focus-trap/{focus-trap.ts,use-focus-trap.ts}`
+- Changes from CDK original:
+  - `FocusTrapFactory`/`ConfigurableFocusTrapFactory` collapsed into a single
+    `createFocusTrap(element, checker, options)` factory + the `useFocusTrap()` hook (no
+    Angular DI, no `ConfigurableFocusTrap` restore-on-destroy stack).
+  - Anchor creation (`_createAnchor`) ported verbatim, including the `cdk-visually-hidden` class
+    (fixed 2026-10-27 — was missing; see dialog/SYNC.md).
+  - 2026-10-27 (DOM parity remediation): `useFocusTrap`'s `autoCapture: boolean` option replaced
+    with `autoFocus: 'dialog' | 'first-tabbable' | 'first-heading' | string | boolean`, and a
+    `restoreFocus: boolean` option added. `applyAutoFocus()` in `use-focus-trap.ts` now
+    implements the same switch as upstream `CdkDialogContainer._trapFocus()` (including
+    `_forceFocus()`'s temporary `tabindex="-1"` + blur/mousedown cleanup for non-natively-
+    focusable targets), moved here from being dialog-specific since both `CdkDialogContainer`
+    and `MatDialogContainer` need it identically.

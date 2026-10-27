@@ -24,6 +24,16 @@ export interface QwikCdkInternals {
   /** Live registry of every open overlay; consumed by `<OverlayContainerOutlet>`. */
   entries: Signal<readonly OverlayEntry[]>;
 
+  /**
+   * Set the first time any overlay is ever created. Mirrors upstream
+   * `OverlayContainer.getContainerElement()`: the `.cdk-overlay-container`
+   * element is created lazily on first use and then kept in the DOM (even
+   * once empty) for the page's lifetime — it does not exist at all before
+   * the first overlay, and is never removed just because the last one
+   * detached.
+   */
+  overlayContainerCreated: Signal<boolean>;
+
   /** Currently open dialog handles, in open order. */
   openDialogs: Signal<readonly NoSerialize<DialogRef>[]>;
 

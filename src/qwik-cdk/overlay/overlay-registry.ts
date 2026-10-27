@@ -5,6 +5,8 @@ import type {OverlayRef} from './overlay-ref';
 export interface OverlayEntryState {
   panelClasses: Signal<readonly string[]>;
   backdropShowing: Signal<boolean>;
+  /** Set once `detachBackdrop()` is called — drives `pointer-events: none` on the backdrop. */
+  backdropDetached: Signal<boolean>;
   detached: Signal<boolean>;
   width: Signal<string | undefined>;
   height: Signal<string | undefined>;
@@ -20,6 +22,16 @@ export interface OverlayEntry {
   props: Record<string, unknown>;
   config: OverlayConfig;
   state: OverlayEntryState;
+  /**
+   * Whether this overlay renders via the native Popover API — mirrors CDK's
+   * `createOverlayRef` feature-detection (`'showPopover' in document.body`)
+   * combined with `config.usePopover`. Computed once at creation time (static
+   * for the overlay's lifetime), it drives the `popover="manual"` attribute
+   * and `cdk-overlay-popover` class on the host element.
+   */
+  usePopover: boolean;
+  /** Text direction applied to the host element's `dir` attribute. */
+  direction: 'ltr' | 'rtl';
   /**
    * Back-reference to the `OverlayRef` that owns this entry. Populated by
    * `createOverlayService` immediately after constructing the ref, before the
