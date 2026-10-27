@@ -77,3 +77,36 @@ diff is empty.
 2. Both dev-apps must expose matching routes (qwik-cdk: `src/qwik-cdk-dev-app/src/routes/dialog/<scenario>/`,
    Angular: `src/dev-app/dialog/` — see URL mismatch note above).
 3. Use `snapshot()` + `diffNodes()` from `lib/structural-diff.ts`.
+
+## qwik-material ↔ Angular Material DOM parity
+
+`specs/material-*/angular-parity.spec.ts` are the authoritative parity gate for
+qwik-material: the brand CSS consumers apply targets Angular Material's DOM, so
+the Qwik DOM must match it exactly (tags, nesting, classes, attributes, text).
+
+- **Angular side:** `src/dev-app/qwik-parity/<component>.ts` (a local, non-upstream
+  addition registered under `/qwik-parity` in `src/dev-app/routes.ts`). One
+  standalone component per scenario, each rendering inside `<div data-parity-root>`.
+- **Qwik side:** the existing `src/qwik-cdk-dev-app/src/routes/<route>/<scenario>/`
+  routes, with the compared content wrapped in `<div data-parity-root>`.
+- **Helper:** `lib/material-parity.ts` → `expectMaterialParity(browser, {route, scenario, steps})`
+  compares the initial DOM and again after every step (clicks, key presses).
+
+Normalization: Angular (`_ngcontent-*`, `ng-reflect-*`) and Qwik (`q:*`, `on:*`,
+comments) bookkeeping is stripped; digits in id-like attributes become `#`;
+transient `.mat-ripple-element` nodes are waited out.
+
+Angular scenarios bind inputs with `[prop]` syntax. Angular also copies a
+static-attribute input (`value="x"`) onto the host element, which a Qwik component
+cannot tell apart from a prop — that echo is a known, accepted difference.
+
+Running (no ibazel needed):
+
+```bash
+pnpm bazel run //src/dev-app:devserver                       # Angular, :4200
+pnpm -C src/qwik-cdk-dev-app build && pnpm -C src/qwik-cdk-dev-app preview   # Qwik, :4173
+pnpm -C src/qwik-cdk-parity-tests exec playwright test specs/material-button-toggle/angular-parity.spec.ts
+```
+
+Restart `preview` after every Qwik rebuild; rebuild the Angular side with
+`pnpm bazel build //src/dev-app:devserver` (the running server picks it up).

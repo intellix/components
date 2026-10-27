@@ -9,20 +9,22 @@ export default component$(() => {
 
   return (
     <>
-      <MatButtonToggleGroup
-        value={style.value}
-        onChange$={(v: unknown) => {
-          style.value = v as string | undefined;
-        }}
-        aria-label="Text style (middle disabled)"
-      >
-        <MatButtonToggle value="bold">Bold</MatButtonToggle>
-        <MatButtonToggle value="italic" disabled>
-          Italic
-        </MatButtonToggle>
-        <MatButtonToggle value="underline">Underline</MatButtonToggle>
-      </MatButtonToggleGroup>
-      <p>Selected: {style.value ?? '(none)'}</p>
+      <div data-parity-root>
+        <MatButtonToggleGroup
+          value={style.value}
+          onChange$={(v: unknown) => {
+            style.value = v as string | undefined;
+          }}
+          aria-label="Text style (middle disabled)"
+        >
+          <MatButtonToggle value="bold">Bold</MatButtonToggle>
+          <MatButtonToggle value="italic" disabled>
+            Italic
+          </MatButtonToggle>
+          <MatButtonToggle value="underline">Underline</MatButtonToggle>
+        </MatButtonToggleGroup>
+        <p>Selected: {style.value ?? '(none)'}</p>
+      </div>
       <main data-scenario-ready>ready</main>
     </>
   );

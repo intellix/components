@@ -317,5 +317,10 @@ export const DEV_APP_ROUTES: Routes = [
     path: 'examples',
     loadComponent: () => import('./examples-page/examples-page').then(m => m.ExamplesPage),
   },
+  {
+    // Local addition (not upstream) — see qwik-parity/BUILD.bazel.
+    path: 'qwik-parity',
+    loadChildren: () => import('./qwik-parity/routes').then(m => m.QWIK_PARITY_ROUTES),
+  },
   {path: '**', component: DevApp404},
 ];

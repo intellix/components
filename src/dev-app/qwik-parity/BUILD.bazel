@@ -1,0 +1,16 @@
+load("//tools:defaults.bzl", "ng_project")
+
+package(default_visibility = ["//visibility:public"])
+
+# Local addition (not upstream): Angular renderings of every qwik-material
+# dev-app scenario, served under /qwik-parity/<component>/<scenario> so
+# src/qwik-cdk-parity-tests can diff Angular vs Qwik DOM. See README.md.
+ng_project(
+    name = "qwik-parity",
+    srcs = glob(["**/*.ts"]),
+    deps = [
+        "//:node_modules/@angular/core",
+        "//:node_modules/@angular/router",
+        "//src/material/button-toggle",
+    ],
+)
