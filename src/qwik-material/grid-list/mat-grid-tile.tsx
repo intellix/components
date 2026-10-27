@@ -1,12 +1,21 @@
-import {component$, Slot, useContext} from '@builder.io/qwik';
-import {MAT_GRID_LIST_INSTANCE, MAT_GRID_LIST_INSTANCE_DEFAULTS} from './grid-list-context';
+import {component$, Slot, type JSXChildren, type JSXOutput} from '@builder.io/qwik';
 
 /**
  * Props for <MatGridTile>. Rendered as <mat-grid-tile> with an inner
- * .mat-grid-tile-content wrapper matching upstream's grid-tile.html for
- * CSS-selector parity. Computes its own grid-column/grid-row span from
- * rowspan/colspan, and (in ratio mode) an inline aspect-ratio from the
- * parent's ratio and its own span. See design spec §3.2 for rendered DOM.
+ * .mat-grid-tile-content wrapper matching upstream's grid-tile.html.
+ *
+ * Used two ways:
+ *   - Standalone (no <MatGridList> ancestor): renders with no position
+ *     style at all — matches upstream, which never calls `_setStyle` when
+ *     `_gridList` is absent (grid-tile.ts).
+ *   - Nested inside <MatGridList>: `<MatGridList>` reads this component's
+ *     *props* directly off its JSX children (rowspan/colspan/content/aria/…)
+ *     and renders the positioned `<mat-grid-tile>` itself via
+ *     `renderGridTile` below — this component's own render function never
+ *     actually runs in that case. See mat-grid-list.tsx's header comment for
+ *     why (Qwik strips `children` from every `component$`'s props; a parent
+ *     can't read a child `component$`'s children either way, so the parent
+ *     has to render the tile's final markup itself once it has the data).
  */
 export interface MatGridTileProps {
   /** Rows this tile spans. Default 1. */
@@ -21,44 +30,63 @@ export interface MatGridTileProps {
   id?: string;
 }
 
-export const MatGridTile = component$<MatGridTileProps>(props => {
-  // Read parent's layout state; SSR-safe fallback for standalone tiles.
-  const instance = useContext(MAT_GRID_LIST_INSTANCE, MAT_GRID_LIST_INSTANCE_DEFAULTS);
+/** Everything `renderGridTile` needs beyond the projected content. */
+export interface GridTileRenderProps {
+  id?: string;
+  class?: string | ReadonlyArray<string>;
+  rowspan: number;
+  colspan: number;
+  /** Inline position/size style. `undefined` for a standalone tile (no list). */
+  style?: Record<string, string>;
+  role?: string;
+  ariaLabel?: string;
+  ariaLabelledby?: string;
+  ariaDescribedby?: string;
+}
 
-  const rowspan = Math.max(1, Math.round(props.rowspan ?? 1));
-  const colspan = Math.max(1, Math.round(props.colspan ?? 1));
-
-  const classes = ['mat-grid-tile', props.class].filter(Boolean) as string[];
-
-  const style: Record<string, string> = {
-    'grid-column': `span ${colspan}`,
-    'grid-row': `span ${rowspan}`,
-  };
-
-  // Aspect-ratio only in ratio mode. Formula: parent ratio W:H, tile aspect
-  // = (colspan * W) / (rowspan * H). Gutter contribution to the aspect is
-  // ignored (sub-pixel at typical 1px gutter — visually indistinguishable).
-  if (instance.mode === 'ratio') {
-    const aspectW = colspan * instance.ratioW;
-    const aspectH = rowspan * instance.ratioH;
-    style['aspect-ratio'] = `${aspectW} / ${aspectH}`;
-  }
-
+/**
+ * Builds the `<mat-grid-tile>` markup shared by `MatGridTile` (standalone)
+ * and `MatGridList` (positioned, rendered inline — see mat-grid-list.tsx).
+ * One source of truth for the attribute/class/wrapper shape so the two call
+ * sites can't drift apart.
+ */
+export function renderGridTile(p: GridTileRenderProps, content: JSXChildren): JSXOutput {
+  const classes = ['mat-grid-tile', p.class].filter(Boolean) as string[];
   return (
     <mat-grid-tile
-      id={props.id}
+      id={p.id}
       class={classes}
-      rowspan={rowspan}
-      colspan={colspan}
-      style={style}
-      role={props.role}
-      aria-label={props['aria-label']}
-      aria-labelledby={props['aria-labelledby']}
-      aria-describedby={props['aria-describedby']}
+      rowspan={p.rowspan}
+      colspan={p.colspan}
+      style={p.style}
+      role={p.role}
+      aria-label={p.ariaLabel}
+      aria-labelledby={p.ariaLabelledby}
+      aria-describedby={p.ariaDescribedby}
     >
-      <div class="mat-grid-tile-content">
-        <Slot />
-      </div>
+      <div class="mat-grid-tile-content">{content}</div>
     </mat-grid-tile>
+  );
+}
+
+export const MatGridTile = component$<MatGridTileProps>(props => {
+  // Mirrors upstream's rowspan/colspan setters: Math.round only, no clamp —
+  // `<MatGridTile rowspan={0}>` really does reflect `rowspan="0"`, same as
+  // Angular's `[attr.rowspan]="rowspan"` host binding.
+  const rowspan = props.rowspan != null ? Math.round(props.rowspan) : 1;
+  const colspan = props.colspan != null ? Math.round(props.colspan) : 1;
+
+  return renderGridTile(
+    {
+      id: props.id,
+      class: props.class,
+      rowspan,
+      colspan,
+      role: props.role,
+      ariaLabel: props['aria-label'],
+      ariaLabelledby: props['aria-labelledby'],
+      ariaDescribedby: props['aria-describedby'],
+    },
+    <Slot />,
   );
 });

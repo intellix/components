@@ -1,38 +1,96 @@
-// qwik-material grid-list styling — CSS-grid strategy.
-// Upstream uses absolute positioning + JS-computed inline top/left/width/height
-// via TileCoordinator + TileStyler. Both are dropped entirely (spec §5
-// deviations #1 & #2) — CSS grid handles layout declaratively.
+@use '../core/style/list-common';
+@use '../core/style/layout-common';
+@use './m3-grid-list';
+@use '../core/tokens/token-utils';
+
+$fallbacks: m3-grid-list.get-tokens();
+
+// height of tile header or footer if it has one line
+$one-line-height: 48px;
+// height of tile header or footer if it has two lines
+$two-line-height: 68px;
+// side padding for text in tile headers and footers
+$text-padding: 16px;
 
 .mat-grid-list {
-  display: grid;
-  grid-template-columns: repeat(var(--mat-grid-list-cols, 1), 1fr);
-  gap: var(--mat-grid-list-gutter, 1px);
-
-  &[data-mode='fixed'] {
-    grid-auto-rows: var(--mat-grid-list-row-height, auto);
-  }
-
-  &[data-mode='ratio'] {
-    grid-auto-rows: min-content;
-  }
-
-  &[data-mode='fit'] {
-    grid-auto-rows: 1fr;
-  }
+  display: block;
+  position: relative;
 }
 
 .mat-grid-tile {
   display: block;
+  position: absolute;
   overflow: hidden;
-  min-width: 0;
-  min-height: 0;
 
-  .mat-grid-tile-content {
+  // Headers & footers
+  .mat-grid-tile-header,
+  .mat-grid-tile-footer {
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 0;
-    margin: 0;
+    height: $one-line-height;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.38);
+    overflow: hidden;
+    padding: 0 $text-padding;
+
+    // Positioning
+    position: absolute;
+    left: 0;
+    right: 0;
+
+    @include list-common.normalize-text();
+
+    &.mat-2-line {
+      height: $two-line-height;
+    }
   }
+
+  .mat-grid-list-text {
+    @include list-common.wrapper-base();
+  }
+
+  .mat-grid-tile-header {
+    top: 0;
+  }
+
+  .mat-grid-tile-footer {
+    bottom: 0;
+  }
+
+  .mat-grid-avatar {
+    padding-right: $text-padding;
+
+    [dir='rtl'] & {
+      padding-right: 0;
+      padding-left: $text-padding;
+    }
+
+    &:empty {
+      display: none;
+    }
+  }
+}
+
+.mat-grid-tile-header {
+  $secondary-token-name: token-utils.slot(grid-list-tile-header-secondary-text-size, $fallbacks);
+  font-size: token-utils.slot(grid-list-tile-header-primary-text-size, $fallbacks);
+  @include list-common.base(#{$secondary-token-name});
+}
+
+.mat-grid-tile-footer {
+  $secondary-token-name: token-utils.slot(grid-list-tile-footer-secondary-text-size, $fallbacks);
+  font-size: token-utils.slot(grid-list-tile-footer-primary-text-size, $fallbacks);
+  @include list-common.base(#{$secondary-token-name});
+}
+
+.mat-grid-tile-content {
+  @include layout-common.fill;
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+
+  padding: 0;
+  margin: 0;
 }

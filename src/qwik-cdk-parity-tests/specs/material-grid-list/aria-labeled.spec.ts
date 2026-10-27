@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-grid-list/aria-labeled — role="list" on container + role="listitem" + aria-label on tiles', async ({
   page,

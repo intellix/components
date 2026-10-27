@@ -1,10 +1,22 @@
-// Grid-list prebuilt CSS. Wraps the port's grid-list.scss with :root defaults
-// for every --mat-grid-list-* variable it emits. See design spec §4.
+// Grid-list prebuilt CSS. Wraps the synced grid-list.scss with :root
+// defaults for the --mat-grid-list-tile-header-*/-footer-* typography
+// variables it emits via token-utils.slot() (see
+// docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md).
+// Layout itself (position/top/left/width/height) is inline style computed by
+// <MatGridList> at render time (tile-coordinator.ts / tile-styler.ts), not CSS —
+// nothing to default here for that part.
+//
+// No scenario renders <MatGridTileHeader>/<MatGridTileFooter> yet (see
+// grid-list/SYNC.md), so these values are never exercised by a parity test;
+// they mirror the M3 body-large/body-medium stub values (1rem / 0.875rem —
+// see scss/core/tokens/m3/_md-sys-typescale.scss) so the font-size is
+// reasonable if/when a consumer uses them.
 
 @use './grid-list';
 
 :root {
-  --mat-grid-list-cols: 1;
-  --mat-grid-list-gutter: 1px;
-  --mat-grid-list-row-height: auto;
+  --mat-grid-list-tile-header-primary-text-size: 1rem;
+  --mat-grid-list-tile-header-secondary-text-size: 0.875rem;
+  --mat-grid-list-tile-footer-primary-text-size: 1rem;
+  --mat-grid-list-tile-footer-secondary-text-size: 0.875rem;
 }
