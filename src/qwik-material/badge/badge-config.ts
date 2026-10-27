@@ -14,7 +14,13 @@ export interface MatBadgeConfig {
   position?: MatBadgePosition;
   /** Default size. Defaults to 'medium' when unset. */
   size?: MatBadgeSize;
-  /** Default color. Defaults to 'primary' when unset. */
+  /**
+   * Default color. Note: upstream never applies `mat-badge-<color>` from
+   * this default — only an explicit per-instance `matBadgeColor` binding
+   * runs the class-adding setter (see `mat-badge.tsx`'s `color` prop doc /
+   * badge/SYNC.md). MatBadge preserves that quirk, so this field currently
+   * has no visible effect; kept for API-shape parity with upstream.
+   */
   color?: MatBadgeColor;
   /** Default overlap. Defaults to true when unset. */
   overlap?: boolean;

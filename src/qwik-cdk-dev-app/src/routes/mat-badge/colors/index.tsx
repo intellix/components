@@ -4,14 +4,14 @@ import {MatBadge} from '@angular-community/qwik-material/badge';
 export default component$(() => (
   <>
     <div data-parity-root>
-      <MatBadge content="3" color="primary">
-        <button>Primary</button>
+      <MatBadge as="button" content="3" color="primary">
+        Primary
       </MatBadge>
-      <MatBadge content="7" color="accent">
-        <button>Accent</button>
+      <MatBadge as="button" content="7" color="accent">
+        Accent
       </MatBadge>
-      <MatBadge content="9" color="warn">
-        <button>Warn</button>
+      <MatBadge as="button" content="9" color="warn">
+        Warn
       </MatBadge>
     </div>
     <main data-scenario-ready>ready</main>

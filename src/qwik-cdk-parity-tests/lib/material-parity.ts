@@ -20,7 +20,18 @@ import {diffNodes, type DomNode} from './structural-diff.js';
 const ANGULAR_URL = `${process.env['ANGULAR_URL'] ?? 'http://localhost:4200'}/qwik-parity`;
 const QWIK_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
-const IGNORE_ATTRS = ['ng-version', 'data-qwik', 'data-scenario-ready'];
+const IGNORE_ATTRS = [
+  'ng-version',
+  'data-qwik',
+  'data-scenario-ready',
+  // CDK AriaDescriber bookkeeping attribute (`[CDK_DESCRIBEDBY_HOST_ATTRIBUTE]`,
+  // src/cdk/a11y/aria-describer/aria-describer.ts). Its value encodes Angular's
+  // own APP_ID plus an app-global service-instance counter (e.g. "ng-1") —
+  // framework-internal bookkeeping with no cross-framework meaning, the same
+  // category as `_nghost-*`/`ng-reflect-*` above. Applies to any component that
+  // uses AriaDescriber, not just badge.
+  'cdk-describedby-host',
+];
 const IGNORE_ATTR_PREFIXES = [
   '_ngcontent-',
   '_nghost-',
@@ -135,6 +146,24 @@ export async function snapshotParityRoot(
         children: Node[];
         text?: string;
       };
+      // CDK's AriaDescriber mints ids shaped `cdk-describedby-message-<APP_ID>-<n>`
+      // (src/cdk/a11y/aria-describer/aria-describer.ts) — the APP_ID segment is a
+      // non-numeric, Angular-internal token (e.g. "ng") that a digit-only squash
+      // can't normalize away. Any id-bearing attribute can hold several
+      // space-delimited ids (aria-describedby, aria-labelledby, ...), so each
+      // token is normalized independently: a `cdk-describedby-message-*` token
+      // collapses to the bare prefix, everything else just gets its digits
+      // squashed as before. Applies to any component using AriaDescriber.
+      const CDK_DESCRIBEDBY_MESSAGE_PREFIX = 'cdk-describedby-message-';
+      const normalizeIdValue = (value: string): string =>
+        value
+          .split(/(\s+)/)
+          .map(token =>
+            token.startsWith(CDK_DESCRIBEDBY_MESSAGE_PREFIX)
+              ? 'cdk-describedby-message'
+              : token.replace(/\d+/g, '#'),
+          )
+          .join('');
       const walk = (el: Element): Node => {
         const classes = Array.from(el.classList)
           .filter(c => !opts.ignoreClasses.includes(c))
@@ -154,7 +183,7 @@ export async function snapshotParityRoot(
             if (decls.length) attrs[name] = decls.join('; ');
             continue;
           }
-          attrs[name] = opts.idAttrs.includes(name) ? attr.value.replace(/\d+/g, '#') : attr.value;
+          attrs[name] = opts.idAttrs.includes(name) ? normalizeIdValue(attr.value) : attr.value;
         }
         const elementChildren = Array.from(el.children);
         const node: Node = {

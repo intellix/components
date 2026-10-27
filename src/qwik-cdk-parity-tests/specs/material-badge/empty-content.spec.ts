@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-badge/empty-content — auto-hide when content is empty or whitespace; visible when content is 0', async ({
   page,
@@ -8,7 +8,7 @@ test('material-badge/empty-content — auto-hide when content is empty or whites
   await page.goto(`${BASE_URL}/mat-badge/empty-content/`);
   await page.waitForSelector('[data-scenario-ready]');
 
-  const badges = page.locator('span.mat-badge');
+  const badges = page.locator('button.mat-badge');
   await expect(badges).toHaveCount(3);
 
   await expect(badges.nth(0)).toBeAttached();

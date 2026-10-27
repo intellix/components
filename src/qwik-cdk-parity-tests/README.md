@@ -94,7 +94,11 @@ the Qwik DOM must match it exactly (tags, nesting, classes, attributes, text).
 
 Normalization: Angular (`_ngcontent-*`, `ng-reflect-*`) and Qwik (`q:*`, `on:*`,
 comments) bookkeeping is stripped; digits in id-like attributes become `#`;
-transient `.mat-ripple-element` nodes are waited out.
+transient `.mat-ripple-element` nodes are waited out. CDK `AriaDescriber`'s own
+bookkeeping attribute (`cdk-describedby-host`) is fully ignored, and any
+`cdk-describedby-message-<APP_ID>-<n>` id token (its value bakes in Angular's
+APP_ID, which a digit-only squash can't normalize) collapses to the bare
+`cdk-describedby-message` prefix — see `material-parity.ts`.
 
 Directive selector attributes that the consumer writes (`matFab`,
 `mat-card-avatar`, `matListItemTitle`, …) are ignored — see
