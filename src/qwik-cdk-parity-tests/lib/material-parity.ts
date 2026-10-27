@@ -210,6 +210,13 @@ export async function snapshotParityRoot(
   );
 }
 
+/** Resolves after two animation frames, letting pending renders flush. */
+function settle(page: Page): Promise<unknown> {
+  return page.evaluate(
+    () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+}
+
 async function open(browser: Browser, url: string): Promise<Page> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
@@ -247,6 +254,9 @@ export async function expectMaterialParity(browser: Browser, s: ParityScenario):
     for (const step of s.steps ?? []) {
       await step.run(angular);
       await step.run(qwik);
+      // Angular's coalesced change detection (and Qwik's signal flush) can
+      // land a frame or two after the interaction; snapshot after both settle.
+      await Promise.all([settle(angular), settle(qwik)]);
       await compare(step.name);
     }
   } finally {
