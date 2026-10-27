@@ -3,7 +3,10 @@
  *
  * Strategy: direct-class tests — no Angular TestBed, no ComponentPortal.
  * Tests exercise GlobalPositionStrategy's fluent API + apply() by asserting on
- * the `_wrapper` element's inline styles directly (no computed styles needed).
+ * the host element's inline styles directly (no computed styles needed).
+ * Matches upstream exactly: the wrapper class/styles are applied directly to
+ * `hostElement` (no extra child wrapper element — see
+ * docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md).
  * DOM-render and Angular-only scenarios are it.skip() with reasons.
  */
 
@@ -36,20 +39,17 @@ describe('GlobalPositionStrategy', () => {
   });
 
   // ------------------------------------------------------------------ //
-  // Basic wrapper creation
+  // Basic host class
   // ------------------------------------------------------------------ //
 
-  it('wraps the overlay pane in a cdk-global-overlay-wrapper element on attach', () => {
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper');
-    expect(wrapper).toBeTruthy();
+  it('adds the cdk-global-overlay-wrapper class to the host element on attach', () => {
+    expect(ref.hostElement.classList.contains('cdk-global-overlay-wrapper')).toBe(true);
   });
 
   it('centerHorizontally applies margin-left auto on apply', () => {
     strategy.centerHorizontally();
     strategy.apply();
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
-    expect(wrapper).toBeTruthy();
-    expect(wrapper.style.justifyContent).toBe('center');
+    expect(ref.hostElement.style.justifyContent).toBe('center');
   });
 
   // ------------------------------------------------------------------ //
@@ -61,14 +61,14 @@ describe('GlobalPositionStrategy', () => {
     strategy.apply();
 
     const paneStyles = ref.overlayElement.style;
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
+    const host = ref.hostElement;
 
     expect(paneStyles.marginTop).toBe('10px');
     expect(paneStyles.marginLeft).toBe('40px');
     expect(paneStyles.marginBottom).toBe('');
     expect(paneStyles.marginRight).toBe('');
-    expect(wrapper.style.justifyContent).toBe('flex-start');
-    expect(wrapper.style.alignItems).toBe('flex-start');
+    expect(host.style.justifyContent).toBe('flex-start');
+    expect(host.style.alignItems).toBe('flex-start');
   });
 
   it('should position the element to the (bottom, right) with an offset', () => {
@@ -76,30 +76,30 @@ describe('GlobalPositionStrategy', () => {
     strategy.apply();
 
     const paneStyles = ref.overlayElement.style;
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
+    const host = ref.hostElement;
 
     expect(paneStyles.marginTop).toBe('');
     expect(paneStyles.marginLeft).toBe('');
     expect(paneStyles.marginBottom).toBe('70px');
     expect(paneStyles.marginRight).toBe('15em');
-    expect(wrapper.style.justifyContent).toBe('flex-end');
-    expect(wrapper.style.alignItems).toBe('flex-end');
+    expect(host.style.justifyContent).toBe('flex-end');
+    expect(host.style.alignItems).toBe('flex-end');
   });
 
   it('should not set any alignment by default (no position call before apply)', () => {
     strategy.apply();
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
-    expect(wrapper.style.justifyContent).toBe('');
-    expect(wrapper.style.alignItems).toBe('');
+    const host = ref.hostElement;
+    expect(host.style.justifyContent).toBe('');
+    expect(host.style.alignItems).toBe('');
   });
 
   it('should center the element', () => {
     strategy.centerHorizontally().centerVertically();
     strategy.apply();
 
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
-    expect(wrapper.style.justifyContent).toBe('center');
-    expect(wrapper.style.alignItems).toBe('center');
+    const host = ref.hostElement;
+    expect(host.style.justifyContent).toBe('center');
+    expect(host.style.alignItems).toBe('center');
   });
 
   it('should center the element with an offset', () => {
@@ -107,14 +107,14 @@ describe('GlobalPositionStrategy', () => {
     strategy.apply();
 
     const paneStyles = ref.overlayElement.style;
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
+    const host = ref.hostElement;
 
     expect(paneStyles.marginLeft).toBe('10px');
     expect(paneStyles.marginTop).toBe('15px');
     expect(paneStyles.marginRight).toBe('');
     expect(paneStyles.marginBottom).toBe('');
-    expect(wrapper.style.justifyContent).toBe('center');
-    expect(wrapper.style.alignItems).toBe('center');
+    expect(host.style.justifyContent).toBe('center');
+    expect(host.style.alignItems).toBe('center');
   });
 
   it('should make the element position: static on apply', () => {
@@ -130,14 +130,14 @@ describe('GlobalPositionStrategy', () => {
     strategy.apply();
 
     const paneStyles = ref.overlayElement.style;
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
+    const host = ref.hostElement;
 
     expect(paneStyles.marginTop).toBe('10px');
     expect(paneStyles.marginLeft).toBe('40%');
     expect(paneStyles.marginBottom).toBe('');
     expect(paneStyles.marginRight).toBe('');
-    expect(wrapper.style.justifyContent).toBe('flex-start');
-    expect(wrapper.style.alignItems).toBe('flex-start');
+    expect(host.style.justifyContent).toBe('flex-start');
+    expect(host.style.alignItems).toBe('flex-start');
   });
 
   it('should not throw when attempting to apply after the strategy has been disposed', () => {
@@ -150,11 +150,13 @@ describe('GlobalPositionStrategy', () => {
     strategy.apply();
 
     const pane = ref.overlayElement;
+    const host = ref.hostElement;
     strategy.dispose();
 
     expect(pane.style.marginTop).toBeFalsy();
     expect(pane.style.marginLeft).toBeFalsy();
     expect(pane.style.position).toBeFalsy();
+    expect(host.classList.contains('cdk-global-overlay-wrapper')).toBe(false);
   });
 
   // ------------------------------------------------------------------ //
@@ -170,13 +172,11 @@ describe('GlobalPositionStrategy', () => {
     s.apply();
 
     const paneStyles = refWithConfig.overlayElement.style;
-    const wrapper = refWithConfig.hostElement.querySelector(
-      '.cdk-global-overlay-wrapper',
-    ) as HTMLElement;
+    const host = refWithConfig.hostElement;
 
     // Browser normalizes '0' to '0px' on assignment.
     expect(paneStyles.marginLeft).toBe('0px');
-    expect(wrapper.style.justifyContent).toBe('flex-start');
+    expect(host.style.justifyContent).toBe('flex-start');
     s.dispose();
   });
 
@@ -188,13 +188,11 @@ describe('GlobalPositionStrategy', () => {
     s.apply();
 
     const paneStyles = refWithConfig.overlayElement.style;
-    const wrapper = refWithConfig.hostElement.querySelector(
-      '.cdk-global-overlay-wrapper',
-    ) as HTMLElement;
+    const host = refWithConfig.hostElement;
 
     // Browser normalizes '0' to '0px' on assignment.
     expect(paneStyles.marginTop).toBe('0px');
-    expect(wrapper.style.alignItems).toBe('flex-start');
+    expect(host.style.alignItems).toBe('flex-start');
     s.dispose();
   });
 
@@ -206,12 +204,10 @@ describe('GlobalPositionStrategy', () => {
     s.apply();
 
     const paneStyles = refWithConfig.overlayElement.style;
-    const wrapper = refWithConfig.hostElement.querySelector(
-      '.cdk-global-overlay-wrapper',
-    ) as HTMLElement;
+    const host = refWithConfig.hostElement;
 
     expect(paneStyles.marginLeft).toBe('10px');
-    expect(wrapper.style.justifyContent).toBe('center');
+    expect(host.style.justifyContent).toBe('center');
     s.dispose();
   });
 
@@ -224,11 +220,11 @@ describe('GlobalPositionStrategy', () => {
     strategy.apply();
 
     const paneStyles = ref.overlayElement.style;
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
+    const host = ref.hostElement;
 
     expect(paneStyles.marginLeft).toBe('40px');
     expect(paneStyles.marginRight).toBe('');
-    expect(wrapper.style.justifyContent).toBe('flex-start');
+    expect(host.style.justifyContent).toBe('flex-start');
   });
 
   it('should position the overlay to the end (ltr)', () => {
@@ -236,15 +232,15 @@ describe('GlobalPositionStrategy', () => {
     strategy.apply();
 
     const paneStyles = ref.overlayElement.style;
-    const wrapper = ref.hostElement.querySelector('.cdk-global-overlay-wrapper') as HTMLElement;
+    const host = ref.hostElement;
 
     expect(paneStyles.marginRight).toBe('60px');
     expect(paneStyles.marginLeft).toBe('');
-    expect(wrapper.style.justifyContent).toBe('flex-end');
+    expect(host.style.justifyContent).toBe('flex-end');
   });
 
   it.skip('should invert justify-content when using left in RTL', () => {
-    // SKIP: DOM-render — RTL detection reads getComputedStyle(wrapper).direction,
+    // SKIP: DOM-render — RTL detection reads getComputedStyle(host).direction,
     // which requires CSS cascade / dir attribute set on an ancestor. happy-dom
     // does not propagate computed direction from DOM attributes.
   });
@@ -268,7 +264,8 @@ describe('GlobalPositionStrategy', () => {
   });
 
   it.skip('should remove the parent wrapper from the DOM on dispose', () => {
-    // SKIP: DOM-render — requires attaching to a real overlay container.
-    // dispose() is already tested via "should clean up" above.
+    // SKIP: N/A — qwik-cdk no longer creates a parent wrapper (matches
+    // upstream, which adds the wrapper class directly to hostElement).
+    // dispose() cleanup is covered by "should clean up after itself" above.
   });
 });

@@ -24,9 +24,22 @@ export function createOverlayService(registry: OverlayRegistry, idGen: IdGenerat
   return {
     create(component, props, config = {} as OverlayConfig) {
       const id = idGen.getId('cdk-overlay-');
+      // Mirrors `createOverlayRef`'s feature-detection + default in upstream
+      // src/cdk/overlay/overlay.ts: popovers are used whenever the browser
+      // supports the Popover API, unless the overlay opts out explicitly.
+      const popoverSupported = typeof document !== 'undefined' && 'showPopover' in document.body;
+      const usePopover = popoverSupported ? (config.usePopover ?? true) : false;
+      const direction: 'ltr' | 'rtl' =
+        (typeof config.direction === 'string' ? config.direction : config.direction?.value.value) ??
+        'ltr';
+      // Mirrors upstream `OverlayConfig`'s class-level default
+      // (`backdropClass = 'cdk-overlay-dark-backdrop'`), which qwik-cdk's
+      // plain-data config interface can't express as a field default.
+      const backdropClass = config.backdropClass ?? 'cdk-overlay-dark-backdrop';
       const state = {
         panelClasses: signalOf<readonly string[]>(toArr(config.panelClass)),
         backdropShowing: signalOf(false),
+        backdropDetached: signalOf(false),
         detached: signalOf(false),
         width: signalOf(
           typeof config.width === 'string'
@@ -51,8 +64,10 @@ export function createOverlayService(registry: OverlayRegistry, idGen: IdGenerat
         id,
         Component: component,
         props: props as Record<string, unknown>,
-        config,
+        config: {...config, backdropClass},
         state: state as unknown as OverlayEntryState,
+        usePopover,
+        direction,
       };
       const ref = createOverlayRef({
         registry,
@@ -66,10 +81,9 @@ export function createOverlayService(registry: OverlayRegistry, idGen: IdGenerat
       // the closure lives outside a component$ — see ./overlay-host.tsx.
       entry.ref = noSerialize(ref);
       registry.push(entry);
-      // Trigger backdrop-show after attach via microtask (matches CDK animation timing)
-      queueMicrotask(() => {
-        entry.state.backdropShowing.value = !!config.hasBackdrop;
-      });
+      // Backdrop fade-in is triggered from `OverlayRef._onAttached()` (once a
+      // real `OverlayHost` has mounted and registered its visual callbacks),
+      // not here — see overlay-ref.ts.
       return ref;
     },
     position() {

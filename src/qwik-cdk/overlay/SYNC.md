@@ -113,7 +113,8 @@ Skipped (DOM-render — geometry APIs return zeros in happy-dom; math covered by
 ### global-position-strategy.spec.ts (15 ported / 9 skipped of ~30 total CDK scenarios)
 
 Ported (direct DOM element assertion via host/pane stubs):
-- wraps overlay pane in cdk-global-overlay-wrapper element on attach
+- adds cdk-global-overlay-wrapper class to the host element on attach (2026-10-27: matches
+  upstream exactly — no longer a separate child wrapper, see "DOM parity remediation" above)
 - centerHorizontally applies margin-left auto on apply
 - position to (top, left) with offset
 - position to (bottom, right) with offset
@@ -139,7 +140,8 @@ Skipped (deferred — width()/height() are no-ops in qwik-cdk):
 - take width/height from overlay config (via position strategy)
 - update overlay size when setting through position strategy
 
-Skipped (DOM-render — requires real overlay container):
+Skipped (N/A as of 2026-10-27 — qwik-cdk no longer creates a parent wrapper; the vitest spec's
+"should clean up after itself when disposed" test covers dispose() cleanup directly):
 - remove parent wrapper from DOM on dispose
 
 ---
@@ -267,3 +269,61 @@ Skipped (Angular-only — ComponentPortal and ApplicationRef.tick()):
 | overlay-keyboard-dispatcher.spec.ts | 9 | 6 | 11 |
 | overlay-outside-click-dispatcher.spec.ts | 10 | 9 | 16 |
 | **Total** | **99** | **63** | **~275+** |
+
+---
+
+## DOM parity remediation (2026-10-27)
+
+Driven by `docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md`
+and verified against `src/qwik-cdk-parity-tests/specs/cdk-dialog/angular-parity.spec.ts` +
+`specs/material-dialog/angular-parity.spec.ts`. Upstream reference: `src/cdk/overlay/overlay.ts`,
+`overlay-ref.ts`, `backdrop-ref.ts`, `position/global-position-strategy.ts` at the commit this
+branch forked from (`a9e5967ae`).
+
+Fixed (previously invented structure, now matches upstream):
+- **Host element**: dropped the invented `div.cdk-overlay-host[data-overlay-id]`. The host now
+  carries `class="cdk-overlay-popover"` + `popover="manual"` when the Popover API is available
+  (feature-detected via `'showPopover' in document.body`, same as `createOverlayRef`), plus
+  `dir="ltr"`/`"rtl"`. `GlobalPositionStrategy.attach()` adds `cdk-global-overlay-wrapper` to this
+  SAME host element (no extra child wrapper — see below).
+- **Pane**: gets `id="cdk-overlay-N"` (the overlay's own id) and `cdk-overlay-pane`; no longer
+  missing `position: static` (now applied via `GlobalPositionStrategy.apply()` once attached).
+- **Backdrop**: `OverlayConfig.backdropClass` now defaults to `'cdk-overlay-dark-backdrop'` when
+  not supplied (`createOverlayService.create()`), matching the upstream `OverlayConfig` class
+  default that qwik-cdk's plain-data interface couldn't express.
+- **`GlobalPositionStrategy`**: no longer creates a child `.cdk-global-overlay-wrapper` div and
+  moves the pane into it. It now adds the wrapper class directly to `handle.hostElement` and
+  reads/writes its styles there, matching upstream exactly. `global-position-strategy.spec.ts`
+  updated to assert on `ref.hostElement` instead of a child wrapper lookup.
+- **Position-strategy attach timing**: `OverlayRef._onAttached()` now calls
+  `positionStrategy.attach(ref)` itself (previously `createOverlayRef()` called `attach()` at
+  construction time, before `OverlayHost` had rendered real host/pane DOM nodes — `handle
+  .hostElement`/`handle.overlayElement` were always `null` at that point, so the strategy's
+  `attach()` silently no-opped and `apply()` could never do anything).
+- **`OverlayContainerOutlet`**: the `.cdk-overlay-container` element now follows upstream
+  `OverlayContainer.getContainerElement()`'s lazy-create-once-then-keep-forever lifecycle instead
+  of unmounting whenever the open-overlay count reaches zero. A new `overlayContainerCreated`
+  signal on `QwikCdkInternals` (set the first time any overlay is pushed to the registry) gates
+  this; before the first overlay, the container doesn't exist at all, matching Angular.
+- **Backdrop reactivity after mount**: `OverlayEntryState`'s fields (`backdropShowing`,
+  `backdropDetached`, `panelClasses`, size fields) are plain `{value}` carriers, not real Qwik
+  signals — the entry is built inside a QRL (`createOverlayService.create()`), where Qwik hooks
+  can't run, so nothing observes a later `.value` write. This was invisible for state set *before*
+  `OverlayHost`'s first render (the common case), but broke `OverlayRef.detachBackdrop()` (new —
+  see below), which fires well after mount. Fixed by having `OverlayHost` own real
+  `useSignal()`s for `backdropShowing`/`backdropDetached`, registered with the `OverlayRef` via a
+  new third `_onAttached(host, pane, visuals)` parameter (`OverlayVisualCallbacks`). The backdrop
+  fade-in (previously a bare `queueMicrotask` in `create()`) moved into `_onAttached()` so it goes
+  through the same real-signal path. **Not** generalised to the other `OverlayEntryState` fields
+  (`panelClasses`, size) — no current scenario calls `addPanelClass`/`updateSize` after initial
+  open, so they remain correct-on-first-render-only; a future consumer that does call them
+  post-open from outside the component tree would hit the same non-reactivity bug.
+- **`OverlayRef.detachBackdrop()`**: new method, mirroring upstream. Fades/detaches the backdrop
+  independently of the rest of the overlay (`detach()` now calls it too, as upstream does).
+  Needed so Material dialogs — which delay the pane's own removal for an exit animation — can
+  start the backdrop fading immediately on close, before the pane's animation finishes.
+
+Open deviations (unchanged by this pass):
+- `addPanelClass`/`updateSize` called on an `OverlayRef` *after* its `OverlayHost` has mounted
+  don't reactively update the rendered pane (see above) — no scenario currently exercises this,
+  so it's left as a known gap rather than fixed here.

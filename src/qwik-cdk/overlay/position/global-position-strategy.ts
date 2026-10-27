@@ -45,13 +45,6 @@ export function createGlobalPositionStrategy(): GlobalPositionStrategy {
   let xOffset = '';
   let isDisposed = false;
 
-  /**
-   * The wrapper element created inside hostElement. CDK adds `wrapperClass` directly to
-   * `hostElement`, but the brief's spec uses `host.querySelector('.cdk-global-overlay-wrapper')`
-   * which requires a child element, so qwik-cdk creates a child wrapper instead.
-   */
-  let wrapper: HTMLElement | null = null;
-
   const strategy: GlobalPositionStrategy = {
     attach(handle) {
       overlayRef = handle;
@@ -61,15 +54,9 @@ export function createGlobalPositionStrategy(): GlobalPositionStrategy {
       const pane = handle.overlayElement;
       if (!host || !pane) return;
 
-      // Create a wrapper child element with the CDK wrapper class. The brief's spec uses
-      // host.querySelector('.cdk-global-overlay-wrapper'), which requires a child element.
-      if (!wrapper) {
-        wrapper = host.ownerDocument.createElement('div');
-        wrapper.classList.add(wrapperClass);
-        // Move the pane into the wrapper, then attach the wrapper to the host.
-        wrapper.appendChild(pane);
-        host.appendChild(wrapper);
-      }
+      // Matches upstream exactly: the wrapper class is added directly to the
+      // overlay's own host element (no extra child wrapper div).
+      host.classList.add(wrapperClass);
     },
 
     top(value = '') {
@@ -136,12 +123,12 @@ export function createGlobalPositionStrategy(): GlobalPositionStrategy {
       // Since the overlay ref applies the strategy asynchronously, it could
       // have been disposed before it ends up being applied. If that is the
       // case, we shouldn't do anything.
-      if (!overlayRef || !overlayRef.overlayElement || !wrapper) {
+      if (!overlayRef || !overlayRef.overlayElement || !overlayRef.hostElement) {
         return;
       }
 
       const paneStyles = overlayRef.overlayElement.style;
-      const wrapperStyles = wrapper.style;
+      const hostStyles = overlayRef.hostElement.style;
       // OverlayRef exposes `.config` as a public property; the handle interface only declares
       // host/overlay elements, so fall back to `undefined` for non-OverlayRef stubs.
       const config = (overlayRef as any).config as
@@ -162,8 +149,10 @@ export function createGlobalPositionStrategy(): GlobalPositionStrategy {
       const shouldBeFlushVertically =
         (height === '100%' || height === '100vh') &&
         (!maxHeight || maxHeight === '100%' || maxHeight === '100vh');
-      // RTL detection: read direction from the wrapper's computed style if possible.
-      const isRtl = isBrowser && wrapper ? getComputedStyle(wrapper).direction === 'rtl' : false;
+      // RTL detection: read direction from the host's computed style if possible.
+      const isRtl = isBrowser
+        ? getComputedStyle(overlayRef.hostElement).direction === 'rtl'
+        : false;
 
       let marginLeft = '';
       let marginRight = '';
@@ -199,8 +188,8 @@ export function createGlobalPositionStrategy(): GlobalPositionStrategy {
       paneStyles.marginTop = shouldBeFlushVertically ? '0' : topOffset;
       paneStyles.marginBottom = bottomOffset;
       paneStyles.marginRight = shouldBeFlushHorizontally ? '0' : marginRight;
-      wrapperStyles.justifyContent = justifyContent;
-      wrapperStyles.alignItems = shouldBeFlushVertically ? 'flex-start' : alignItems;
+      hostStyles.justifyContent = justifyContent;
+      hostStyles.alignItems = shouldBeFlushVertically ? 'flex-start' : alignItems;
     },
 
     dispose() {
@@ -211,17 +200,10 @@ export function createGlobalPositionStrategy(): GlobalPositionStrategy {
       const pane = overlayRef.overlayElement;
       const host = overlayRef.hostElement;
 
-      if (wrapper) {
-        wrapper.style.justifyContent = '';
-        wrapper.style.alignItems = '';
-
-        // Move pane back to the host before removing wrapper.
-        if (pane && host) {
-          host.appendChild(pane);
-        }
-
-        wrapper.remove();
-        wrapper = null;
+      if (host) {
+        host.classList.remove(wrapperClass);
+        host.style.justifyContent = '';
+        host.style.alignItems = '';
       }
 
       if (pane) {
