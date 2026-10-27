@@ -2,19 +2,20 @@
  * MatList scenario port from src/material/list/list.spec.ts.
  *
  * Upstream has ~40 `it()` blocks — heavy on @ContentChildren QueryList
- * inspection + _updateItemLines + cdkObserveContent behavior verification.
- * All of that is moot in the port because layout is pure CSS grid + :has()
- * (spec §5 deviations #1, #2). Restructured:
+ * inspection + _updateItemLines + cdkObserveContent behavior verification,
+ * none of which has a Qwik SSR equivalent to unit-test directly (Qwik has
+ * no content-query API, and `createDOM(<Component$/>)` hangs the vitest
+ * worker in this project — see mat-button-scenarios.spec.tsx's note).
+ * Restructured:
  *
- *   - Live sanity tests (7): typeof + MAT_LIST_CONFIG.id + config +
- *     props shape acceptance for all 10 components.
- *   - describe.skip DOM-rendered (8): container variants + polymorphic
- *     item + slot components + CSS grid layout + :has() sizing.
- *     Deferred to Playwright Task 11.
- *   - describe.skip Angular-only (4): BooleanInput/NumberInput coercion,
- *     @ContentChildren + _updateItemLines + cdkObserveContent,
- *     MatListBase/MatListItemBase inheritance, ripple/focus-manager/state
- *     layer. Deferred forever per spec §5.
+ *   - Live sanity tests: typeof + MAT_LIST_CONFIG.id + config +
+ *     props shape acceptance for all 10 components, matching the CURRENT
+ *     API (named-prop sections on MatListItem — see mat-list-item.tsx's
+ *     doc comment for why nested children aren't used).
+ *   - describe.skip DOM-rendered: deferred to Playwright.
+ *   - describe.skip Angular-only: deferred forever per the remediation
+ *     design doc's "Qwik primitives are unrestricted" / no-lifecycle-hooks
+ *     reality.
  *
  * Real DOM assertions live in
  * src/qwik-cdk-parity-tests/specs/material-list/*.spec.ts.
@@ -22,6 +23,8 @@
 import {describe, it, expect} from 'vitest';
 import {
   MAT_LIST_CONFIG,
+  MAT_LIST_BASE_STATE,
+  MAT_LIST_BASE_STATE_DEFAULTS,
   MatList,
   MatNavList,
   MatActionList,
@@ -33,12 +36,15 @@ import {
   MatListItemLine,
   MatListItemMeta,
   type MatListConfig,
+  type MatListBaseState,
   type MatListProps,
   type MatNavListProps,
   type MatActionListProps,
   type MatSubheaderProps,
   type MatListItemProps,
   type MatListItemSectionProps,
+  type MatListItemAvatarProps,
+  type MatListItemIconProps,
 } from './public-api';
 
 describe('MatList surface — sanity', () => {
@@ -62,6 +68,12 @@ describe('MatList surface — sanity', () => {
   it('MatListConfig accepts an empty object', () => {
     const cfg: MatListConfig = {};
     expect(cfg).toBeDefined();
+  });
+
+  it('MAT_LIST_BASE_STATE carries the expected context id and non-interactive default', () => {
+    expect(MAT_LIST_BASE_STATE.id).toBe('qwik-material/list-base-state');
+    const defaults: MatListBaseState = MAT_LIST_BASE_STATE_DEFAULTS;
+    expect(defaults.isNonInteractive).toBe(true);
   });
 
   it('MatListProps + MatNavListProps + MatActionListProps accept aria + role + disabled + class + id', () => {
@@ -91,11 +103,17 @@ describe('MatList surface — sanity', () => {
     expect(actionProps.class).toBe('my-actions');
   });
 
-  it('MatListItemProps accepts as / href / activated / disabled + aria + role', () => {
+  it('MatListItemProps accepts as / href / activated / disabled / lines + the named section props', () => {
     const divProps: MatListItemProps = {
       role: 'listitem',
       class: 'item',
       id: 'i1',
+      avatar: <MatListItemAvatar />,
+      icon: <MatListItemIcon />,
+      title: <MatListItemTitle>Inbox</MatListItemTitle>,
+      lineContent: [<MatListItemLine key="l1">a</MatListItemLine>],
+      meta: <MatListItemMeta>128</MatListItemMeta>,
+      lines: 2,
     };
     const anchorProps: MatListItemProps = {
       as: 'a',
@@ -111,6 +129,7 @@ describe('MatList surface — sanity', () => {
       id: 'delete',
     };
     expect(divProps.role).toBe('listitem');
+    expect(divProps.lines).toBe(2);
     expect(anchorProps.as).toBe('a');
     expect(anchorProps.href).toBe('/inbox');
     expect(anchorProps.activated).toBe(true);
@@ -118,8 +137,9 @@ describe('MatList surface — sanity', () => {
     expect(buttonProps.disabled).toBe(true);
   });
 
-  it('MatSubheaderProps accepts aria + class + id (no role, no disabled)', () => {
+  it('MatSubheaderProps accepts as + aria + class + id', () => {
     const props: MatSubheaderProps = {
+      as: 'div',
       'aria-label': 'Section header',
       'aria-labelledby': 'section-title',
       'aria-describedby': 'section-desc',
@@ -127,15 +147,24 @@ describe('MatList surface — sanity', () => {
       id: 'sh1',
     };
     expect(props['aria-label']).toBe('Section header');
+    expect(props.as).toBe('div');
   });
 
-  it('MatListItemSectionProps accepts class + id (shared by all 5 slot components)', () => {
+  it('MatListItemSectionProps accepts class + style + id (shared by all 5 section components)', () => {
     const props: MatListItemSectionProps = {
       class: 'my-avatar',
+      style: {background: 'red'},
       id: 'avatar-1',
     };
     expect(props.class).toBe('my-avatar');
     expect(props.id).toBe('avatar-1');
+  });
+
+  it('MatListItemAvatarProps / MatListItemIconProps accept as + style', () => {
+    const avatarProps: MatListItemAvatarProps = {as: 'img', src: '/a.png', alt: 'Alice'};
+    const iconProps: MatListItemIconProps = {as: 'span', style: 'color: red'};
+    expect(avatarProps.as).toBe('img');
+    expect(iconProps.as).toBe('span');
   });
 
   it('MatListItemProps.as union covers exactly div/a/button', () => {
@@ -148,28 +177,37 @@ describe('MatList surface — sanity', () => {
   });
 });
 
-describe.skip('MatList DOM-rendered scenarios — deferred to Playwright Task 11', () => {
-  it('MatList renders <mat-list> with class ladder + role passthrough', () => {});
-  it('MatNavList renders <mat-nav-list role="navigation">', () => {});
-  it('MatActionList renders <mat-action-list role="group">', () => {});
-  it('MatListItem polymorphism: as="div" → <mat-list-item>; as="a" href → <a href>; as="button" → <button>', () => {});
+describe.skip('MatList DOM-rendered scenarios — see Playwright specs instead', () => {
+  it('MatList renders <mat-list> with class ladder + role passthrough + aria-disabled="false" default', () => {});
+  it('MatNavList renders <mat-nav-list role="navigation">; its items get mat-mdc-list-item-interactive', () => {});
+  it('MatActionList renders <mat-action-list role="group">; its items get mat-mdc-list-item-interactive', () => {});
+  it('MatListItem polymorphism: as="div" → <mat-list-item>; as="a" href → <a href>; as="button" → <button type="button">', () => {});
   it('MatListItem activated on <a> emits aria-current="page"; on <div> does not', () => {});
-  it('slot components (Avatar/Icon/Title/Line/Meta) render <div> with class hooks', () => {});
-  it('CSS grid layout: avatar left, title/lines center, meta right (Playwright bounding-box)', () => {});
-  it(':has() line-count sizing: 1/2/3 lines → 48/64/88px min-height', () => {});
+  it('MatListItem derives leading/trailing/line-count classes from the avatar/icon/title/lineContent/meta/lines props', () => {});
+  it('section components (Avatar/Icon/Title/Line/Meta) render their own host element with the upstream class hooks, no wrapper', () => {});
 });
 
 describe.skip('MatList — Angular-only tests', () => {
   it('should coerce BooleanInput/NumberInput attribute values', () => {
-    // Omitted — Qwik JSX passes booleans/numbers directly (spec §5 deviation #10).
+    // Omitted — Qwik JSX passes booleans/numbers directly.
   });
   it('should enumerate slot content via @ContentChildren + _updateItemLines + cdkObserveContent', () => {
-    // Replaced by CSS :has() selectors (spec §5 deviation #2).
+    // Qwik has no content-query equivalent — MatListItem instead takes the
+    // avatar/icon/title/lineContent/meta sections as named props (see
+    // mat-list-item.tsx's doc comment: reading `children` directly causes
+    // Qwik's SSR renderer to stash the original nodes into a hidden
+    // `<q:template>` sibling instead of rendering them, and a bare
+    // `<Slot>` can't redistribute children into a NEW wrapper element —
+    // confirmed empirically against this Qwik version before choosing
+    // this design).
   });
   it('should inherit from MatListBase / MatListItemBase abstract classes', () => {
-    // Collapsed to plain component$ wrappers (spec §5 deviation #10).
+    // Collapsed to plain component$ wrappers + a small MAT_LIST_BASE_STATE
+    // context for the one piece of inherited state items actually need
+    // (container interactivity).
   });
   it('should integrate ripple / focus-manager / MDC state layer', () => {
-    // All out of scope (spec §5 deviations #1, #4, #7).
+    // Out of scope — no interaction steps in this component's
+    // angular-parity.spec.ts; ripple DOM is a future qwik-cdk primitive.
   });
 });
