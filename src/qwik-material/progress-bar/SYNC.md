@@ -10,7 +10,7 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 
 | File | Upstream path | Sync state | Notes |
 | --- | --- | --- | --- |
-| `progress-bar/mat-progress-bar.tsx` | `src/material/progress-bar/progress-bar.ts` (MatProgressBar component + progress-bar.html template) | ported | Directive→component$; JSX template inlined; transitionend handler moved into useVisibleTask$ (reads props at fire time) |
+| `progress-bar/mat-progress-bar.tsx` | `src/material/progress-bar/progress-bar.ts` (MatProgressBar component + progress-bar.html template) | ported | Directive→component$; JSX template inlined; transitionend handler wired lazily via `useOn()` (reads props at fire time) — see deviation 2 |
 | `progress-bar/progress-bar-color.ts` | `src/material/progress-bar/progress-bar.ts` (ThemePalette narrowing) | ported | Narrowed to `'primary' | 'accent' | 'warn'` union |
 | `progress-bar/progress-bar-mode.ts` | `src/material/progress-bar/progress-bar.ts` (ProgressBarMode type) | ported | Verbatim 4-value union |
 | `progress-bar/progress-bar-config.ts` | `src/material/progress-bar/progress-bar.ts` (MatProgressBarDefaultOptions) | ported | InjectionToken→createContextId; folded into QwikMaterialProvider.matProgressBarConfig |
@@ -31,18 +31,18 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 ## Deviations from upstream
 
 1. **`<mat-progress-bar>` custom-element tag preserved.** Emitted via `intrinsic-elements.d.ts` JSX augmentation, widened to include the `mode` custom attribute (mirrors upstream's `[attr.mode]` host binding). Consistent with the CMS-parity constraint.
-2. **`animationEnd: EventEmitter<{value: number}>` Output** → `onAnimationEnd$?: QRL<(value: number) => void>` prop, attached via `useVisibleTask$` + `addEventListener('transitionend')`. Filtered exactly like upstream's `_transitionendHandler`: target's classList contains `mdc-linear-progress__primary-bar` AND `mode ∈ {determinate, buffer}`.
+2. **`animationEnd: EventEmitter<{value: number}>` Output** → `onAnimationEnd$?: QRL<(value: number) => void>` prop, attached via `useOn('transitionend', ...)` (updated 2026-10-27, lazy-interactions remediation, rule 7 — no per-instance `useVisibleTask$` for interaction/measuring plumbing in components that appear many times per page; previously wired via `useVisibleTask$` + `addEventListener`, which loaded+ran its handler chunk on every resumed instance regardless of whether a transition ever fired). `transitionend` bubbles, so a host-level `useOn()` listener sees the same bubbled events the old host-level `addEventListener` call did — `useOn()` attaches a serialized `on:transitionend` reference to the component's own host (`<mat-progress-bar>`) at SSR time, and qwikloader loads/runs the handler only the first time a transition actually completes on it (e.g. never for an `indeterminate`/`query` bar). Filtered exactly like upstream's `_transitionendHandler`: target's classList contains `mdc-linear-progress__primary-bar` AND `mode ∈ {determinate, buffer}`. No `hostRef`/`ref` plumbing needed — `useOn()`'s handler would receive the host element as its second argument if required, but the filter only needs `event.target`.
 3. **`_getAnimationsState()` `di-disabled` branch** replaced by `animationsDisabled = useAnimationsDisabled()` helper (established at Dialog port) which calls `useContext(MAT_ANIMATIONS_DISABLED, _ANIMATIONS_ENABLED_DEFAULT)` with a frozen `{value: false}` fallback — required to avoid a `QError_notFoundContext` (Code 13) SSR crash when the component renders outside a `<QwikMaterialProvider>` ancestor.
 4. **`.mat-progress-bar-reduced-motion` class omitted.** Upstream's constructor detects reduced-motion via `_getAnimationsState()`. The port relies on the SCSS's own `@media (prefers-reduced-motion: reduce)` selectors to handle motion-reduced rendering. No client-side matchMedia.
 5. **`MAT_PROGRESS_BAR_LOCATION` context omitted.** SSR-hostile Safari SPA-nav workaround; irrelevant to Qwik's resume model.
-6. **`Renderer2` / `NgZone.runOutsideAngular` / `ChangeDetectorRef` omitted.** Qwik's reactivity + `useVisibleTask$` cover the same ground.
+6. **`Renderer2` / `NgZone.runOutsideAngular` / `ChangeDetectorRef` omitted.** Qwik's reactivity + `useOn()` cover the same ground.
 7. **`ProgressAnimationEnd` interface omitted.** Its only field (`{value: number}`) is inlined into the QRL signature.
 8. **`ThemePalette` narrowed** to `MatProgressBarColor = 'primary' | 'accent' | 'warn'`.
 9. **`numberAttribute` transform omitted.** Port accepts JSX `number` and clamps at render time via top-level `clamp()`.
 10. **`MAT_PROGRESS_BAR_CONFIG` folded into `QwikMaterialProvider.matProgressBarConfig`.** 8th `useContextProvider` call.
 11. **Three explicit aria-* passthrough props** (`aria-label` / `aria-labelledby` / `aria-describedby`) declared on `MatProgressBarProps` and forwarded to `<mat-progress-bar>`. Icon-precedent adjudication.
 12. **`intrinsic-elements.d.ts` widens `<mat-progress-bar>` to `QwikIntrinsicElements['div'] & {mode?: string}`.** The `mode` custom attribute mirrors upstream's `[attr.mode]` host binding. Same widening pattern as Icon's `fontIcon` attr.
-13. **`useVisibleTask$` transitionend handler reads live prop values via the Qwik props proxy at fire time**, not render-time-derived locals. Ensures mid-animation `mode` swaps are respected in the filter.
+13. **`useOn('transitionend', ...)` handler reads live prop values via the Qwik props proxy at fire time**, not render-time-derived locals. Ensures mid-animation `mode` swaps are respected in the filter.
 
 ## Stub inventory delta
 
