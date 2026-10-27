@@ -17,7 +17,12 @@ export default component$(() => (
         </MatGridList>
       </div>
     </div>
-    <style>{`.fit-host > .fit-grid { height: 100%; }`}</style>
+    {/* Qwik SSR HTML-escapes text content inside <style> (">" becomes
+         "&gt;"), which breaks a child-combinator selector when the browser
+         parses it. A descendant selector sidesteps the escaping entirely
+         and is equivalent here (.fit-grid is .fit-host's only descendant
+         with that class). */}
+    <style>{`.fit-host .fit-grid { height: 100%; }`}</style>
     <main data-scenario-ready>ready</main>
   </>
 ));
