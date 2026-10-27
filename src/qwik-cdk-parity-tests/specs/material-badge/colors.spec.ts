@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-badge/colors — 3 wrappers with distinct mat-badge-{primary,accent,warn} classes', async ({
   page,
@@ -8,7 +8,7 @@ test('material-badge/colors — 3 wrappers with distinct mat-badge-{primary,acce
   await page.goto(`${BASE_URL}/mat-badge/colors/`);
   await page.waitForSelector('[data-scenario-ready]');
 
-  const badges = page.locator('span.mat-badge');
+  const badges = page.locator('button.mat-badge');
   await expect(badges).toHaveCount(3);
 
   await expect(badges.nth(0)).toHaveClass(/mat-badge-primary/);
