@@ -1,4 +1,7 @@
-@use '@angular/cdk';
+// STUB: '@angular/cdk' replaced with local stub for build compatibility.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+@use '../cdk-stub' as cdk;
 
 // Renders a circle indicator when Windows Hich Constrast mode (HCM) is enabled. In some
 // situations, such as a selected option, the list item communicates the selected state by changing
