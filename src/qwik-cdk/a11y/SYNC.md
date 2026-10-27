@@ -53,4 +53,22 @@
   - Dropped `coerceElement` — `monitor()` and `stopMonitoring()` accept `HTMLElement` only.
   - Inlined `_getEventTarget` and `_getShadowRoot` helpers.
   - `_onFocus` and `_onBlur` made public for direct triggering in tests (happy-dom does not fire focus events reliably).
-  - Added `FOCUS_MONITOR` context and `useFocusMonitor()` hook.
+  - Added `FOCUS_MONITOR` context (for manual sharing — see below) and a
+    `useFocusMonitor(hostRef, {checkChildren})` convenience hook (qwik-material
+    button consumes it, 2026-10-27): mirrors `inject(FocusMonitor)` +
+    `ngAfterViewInit`'s `monitor(el, checkChildren)` + `ngOnDestroy`'s
+    `stopMonitoring(el)`, applying/clearing the `cdk-*-focused` classes.
+    Deliberately does *not* read `FOCUS_MONITOR` from context itself: a
+    `FocusMonitor` is a closure full of functions, and capturing a
+    context-resolved one into a `useVisibleTask$` from the component's render
+    scope crashes SSR serialization (Qwik must serialize anything the task's
+    closure captures from the outer scope; functions aren't serializable —
+    "Code(3)"). The hook instead creates a fresh `FocusMonitor` *inside* its
+    own task (a plain top-level import, like `createFocusTrap`/
+    `createOverlayKeyboardDispatcher` elsewhere in this package), so only the
+    import reference crosses the `$` boundary. Each consumer gets its own
+    engine; the resulting DOM is identical to one shared instance, just with
+    one extra set of `document` listeners per consumer. Something that truly
+    needs one shared instance across a subtree can still provide/read
+    `FOCUS_MONITOR` manually, following the `noSerialize()` + reactive-store
+    pattern in `qwik-cdk/root.tsx` (`internals.keyboardDispatcher`, etc.).

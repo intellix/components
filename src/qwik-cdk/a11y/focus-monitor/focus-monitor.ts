@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {createContextId, useContext} from '@builder.io/qwik';
+import {createContextId, type Signal, useVisibleTask$} from '@builder.io/qwik';
 import {createPlatform, type Platform} from '../../platform';
 import {
   createInputModalityDetector,
@@ -348,8 +348,48 @@ export function createFocusMonitor(
   return monitor;
 }
 
+/**
+ * Context token for components that want to share one `FocusMonitor`
+ * instance (mirroring upstream's `providedIn: 'root'`). Nothing provides
+ * this by default — see `useFocusMonitor()` below for why the convenience
+ * hook doesn't read it directly.
+ */
 export const FOCUS_MONITOR = createContextId<FocusMonitor>('qwik-cdk/focus-monitor');
 
-export function useFocusMonitor(): FocusMonitor {
-  return useContext(FOCUS_MONITOR);
+/** Options for {@link useFocusMonitor}. */
+export interface UseFocusMonitorOptions {
+  /** Forwarded to `FocusMonitor.monitor()` — upstream's `checkChildren` arg. */
+  checkChildren?: boolean;
+}
+
+/**
+ * Qwik hook mirroring `MatButtonBase`-style FocusMonitor wiring
+ * (`inject(FocusMonitor)` + `ngAfterViewInit`'s `monitor(el, checkChildren)`
+ * + `ngOnDestroy`'s `stopMonitoring(el)`): applies/clears the `cdk-focused` /
+ * `cdk-touch-focused` / `cdk-keyboard-focused` / `cdk-mouse-focused` /
+ * `cdk-program-focused` classes on `hostRef.value` as the user interacts.
+ *
+ * Deliberately does *not* read `FOCUS_MONITOR` from context in the
+ * component's render body: a `FocusMonitor` is a closure full of functions,
+ * and Qwik must serialize anything a `useVisibleTask$` closure captures from
+ * the outer render scope — capturing a context-resolved `FocusMonitor` that
+ * way crashes SSR ("Code(3)"). Creating the engine fresh *inside* the task
+ * (a plain top-level import, like `createPlatform()`/`createFocusTrap()`
+ * elsewhere in this package) sidesteps that: only the import reference
+ * crosses the `$` boundary, not a captured instance. Each consumer gets its
+ * own engine; consumers that truly need one shared instance across a
+ * subtree can still provide/read `FOCUS_MONITOR` manually, following the
+ * `noSerialize()` + reactive-store pattern in `qwik-cdk/root.tsx`.
+ */
+export function useFocusMonitor(
+  hostRef: Signal<Element | undefined>,
+  options: UseFocusMonitorOptions = {},
+): void {
+  useVisibleTask$(({cleanup}) => {
+    const host = hostRef.value as HTMLElement | undefined;
+    if (!host) return;
+    const monitor = createFocusMonitor();
+    monitor.monitor(host, options.checkChildren ?? false);
+    cleanup(() => monitor.destroy());
+  });
 }
