@@ -10,21 +10,27 @@ export default component$(() => (
   <>
     <div data-parity-root>
       <MatList role="list">
-        <MatListItem>
-          <MatListItemTitle>Message from Alice</MatListItemTitle>
-          <MatListItemLine>Subject line here</MatListItemLine>
-          <MatListItemLine>Preview text of the message body</MatListItemLine>
-        </MatListItem>
-        <MatListItem>
-          <MatListItemTitle>Message from Bob</MatListItemTitle>
-          <MatListItemLine>Different subject</MatListItemLine>
-          <MatListItemLine>Different preview</MatListItemLine>
-        </MatListItem>
-        <MatListItem>
-          <MatListItemTitle>Message from Carol</MatListItemTitle>
-          <MatListItemLine>Third subject</MatListItemLine>
-          <MatListItemLine>Third preview</MatListItemLine>
-        </MatListItem>
+        <MatListItem
+          title={<MatListItemTitle>Message from Alice</MatListItemTitle>}
+          lineContent={[
+            <MatListItemLine key="a1">Subject line here</MatListItemLine>,
+            <MatListItemLine key="a2">Preview text of the message body</MatListItemLine>,
+          ]}
+        />
+        <MatListItem
+          title={<MatListItemTitle>Message from Bob</MatListItemTitle>}
+          lineContent={[
+            <MatListItemLine key="b1">Different subject</MatListItemLine>,
+            <MatListItemLine key="b2">Different preview</MatListItemLine>,
+          ]}
+        />
+        <MatListItem
+          title={<MatListItemTitle>Message from Carol</MatListItemTitle>}
+          lineContent={[
+            <MatListItemLine key="c1">Third subject</MatListItemLine>,
+            <MatListItemLine key="c2">Third preview</MatListItemLine>,
+          ]}
+        />
       </MatList>
     </div>
     <main data-scenario-ready>ready</main>

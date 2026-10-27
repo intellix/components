@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-list/basic — <mat-list> with 4 items, role="list", ~48px min-height per item', async ({
   page,
@@ -16,8 +16,12 @@ test('material-list/basic — <mat-list> with 4 items, role="list", ~48px min-he
   const items = page.locator('mat-list-item');
   await expect(items).toHaveCount(4);
   await expect(items.first()).toHaveClass(/mat-mdc-list-item/);
+  await expect(items.first()).toHaveClass(/mat-mdc-list-item-single-line/);
+  await expect(items.first()).toHaveClass(/mdc-list-item--with-one-line/);
+  await expect(items.first()).toHaveAttribute('aria-disabled', 'false');
 
-  // Item min-height ≈ 48px (single-line default). Tolerance ±3px.
+  // Item height ≈ 48px (single-line default, from
+  // `.mdc-list-item--with-one-line`'s explicit `height`). Tolerance ±3px.
   const firstBox = await items.first().boundingBox();
   expect(firstBox).not.toBeNull();
   expect(Math.abs(firstBox!.height - 48)).toBeLessThan(4);

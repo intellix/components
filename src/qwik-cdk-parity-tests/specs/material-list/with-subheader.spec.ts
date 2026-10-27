@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-list/with-subheader — 2 subheaders + 1 divider + 4 items rendered in correct order', async ({
   page,
@@ -8,7 +8,10 @@ test('material-list/with-subheader — 2 subheaders + 1 divider + 4 items render
   await page.goto(`${BASE_URL}/mat-list/with-subheader/`);
   await page.waitForSelector('[data-scenario-ready]');
 
-  const subheaders = page.locator('mat-subheader');
+  // MatSubheader renders the host element itself (default <div>, matching
+  // upstream's `[mat-subheader]` attribute directive) — no `<mat-subheader>`
+  // custom tag is invented. See list/SYNC.md.
+  const subheaders = page.locator('.mat-mdc-subheader');
   await expect(subheaders).toHaveCount(2);
   await expect(subheaders.nth(0)).toHaveText('Inbox');
   await expect(subheaders.nth(1)).toHaveText('Archive');
