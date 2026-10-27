@@ -35,7 +35,7 @@ export interface MatButtonToggleGroupState {
   name: string;
   /** Child's click handler. Group routes to onChange$ (single mode) or
    *  onValuesChange$ (multi mode) internally. */
-  onToggle: QRL<(itemValue: unknown, checked: boolean) => void>;
+  onToggle: QRL<(itemValue: unknown, checked: boolean, at?: number) => void>;
   /** True only for MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS (no real
    *  <MatButtonToggleGroup> ancestor). <MatButtonToggle> reads this boolean
    *  (NOT a reference-identity check on `onToggle`) to detect standalone

@@ -132,3 +132,14 @@ reference `@angular/cdk` (grep-confirmed) — no stub additions needed there.
 ## Pipeline
 
 `pnpm test:qwik-material` at the repo root runs `build && vitest && lint:no-ssr-leaks && typecheck` for the whole qwik-material package, covering dialog + button + card + toolbar + badge + icon + progress-bar + progress-spinner + divider + grid-list + list + button-toggle + core.
+
+## Rapid clicks while handlers load (2026-10-27)
+
+Upstream mutates its `SelectionModel` synchronously on click. In Qwik, clicks
+fired before the handler chunks load can resume in any order, and a controlled
+group only sees its new `values` after the consumer's callback round-trips. The
+group therefore keeps the selection it last emitted (`pendingValues`, reset when
+`values` changes), resolves the consumer callback before computing, and in
+single-select mode ignores clicks older (by `event.timeStamp`) than the one that
+produced the current selection. Covered by
+`qwik-cdk-parity-tests/specs/material-button-toggle/rapid-clicks.spec.ts`.

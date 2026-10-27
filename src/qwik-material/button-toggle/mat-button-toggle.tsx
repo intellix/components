@@ -145,7 +145,7 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
-  const onClick$ = $(async () => {
+  const onClick$ = $(async (event: Event) => {
     // Re-read live state inside the closure — a sibling's click can cause
     // this toggle to re-render (context change) without its own primitives
     // changing, leaving a stale captured value if we used the outer-scope
@@ -159,10 +159,10 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
     }
     if (live.mode === 'single') {
       // Radio semantics — always select; never deselect by re-clicking.
-      await live.onToggle(props.value, true);
+      await live.onToggle(props.value, true, event.timeStamp);
     } else {
       const liveChecked = live.values.includes(props.value);
-      await live.onToggle(props.value, !liveChecked);
+      await live.onToggle(props.value, !liveChecked, event.timeStamp);
     }
   });
 

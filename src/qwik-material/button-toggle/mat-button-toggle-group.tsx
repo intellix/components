@@ -5,6 +5,7 @@ import {
   useContext,
   useContextProvider,
   useSignal,
+  useTask$,
   type QRL,
 } from '@builder.io/qwik';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
@@ -101,19 +102,50 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
   const name = props.name ?? autoName.value;
   const groupDisabled = props.disabled ?? false;
 
+  // Multi-select selection this group last emitted but the consumer has not
+  // yet fed back as `values`. Toggles fired before that round-trip re-renders
+  // the group (e.g. two quick clicks while the handler chunk is still loading)
+  // would otherwise each start from the same stale `values` and drop the
+  // earlier change; upstream updates its SelectionModel synchronously.
+  const pendingValues = useSignal<readonly unknown[] | undefined>(undefined);
+  useTask$(({track}) => {
+    track(() => props.values);
+    pendingValues.value = undefined;
+  });
+
   // Route-once QRL that children fire — internally forks by mode. Captured
   // props are re-resolved each render, so mode switches and callback swaps
   // just work.
-  const onToggle = $((itemValue: unknown, checked: boolean) => {
+  // Event time of the click that produced the current single selection.
+  const lastSelectedAt = useSignal(-1);
+
+  const onToggle = $(async (itemValue: unknown, checked: boolean, at?: number) => {
     if (mode === 'single') {
+      // Clicks can resume out of order while chunks load; the latest click
+      // (by event time) wins, as it would with upstream's synchronous model.
+      await onChange$?.resolve();
+      if (at !== undefined) {
+        if (at < lastSelectedAt.value) return;
+        lastSelectedAt.value = at;
+      }
       // Radio semantics: clicking a toggle always selects it (upstream
       // `_onButtonClick`: `newChecked = isSingleSelector() ? true : ...` —
       // re-clicking the already-selected toggle in single mode is a no-op,
       // it never deselects). `checked` is passed through defensively.
       onChange$?.(checked ? itemValue : undefined);
     } else {
-      const current = propValues ?? [];
-      const next = checked ? [...current, itemValue] : current.filter(v => v !== itemValue);
+      // Load the consumer callback *before* reading the selection: queued
+      // toggles can resume in any order while chunks load, so each one must
+      // compute from the latest pending selection and emit synchronously —
+      // the last to run then emits the complete set. Toggle against that
+      // selection rather than the child's `checked`, which was derived from
+      // the same possibly-stale props.
+      await onValuesChange$?.resolve();
+      const current = pendingValues.value ?? propValues ?? [];
+      const next = current.includes(itemValue)
+        ? current.filter(v => v !== itemValue)
+        : [...current, itemValue];
+      pendingValues.value = next;
       onValuesChange$?.(next);
     }
   });
