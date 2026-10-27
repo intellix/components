@@ -1,8 +1,11 @@
-import {component$, Slot, useContext, $, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, useSignal, $, type QRL} from '@builder.io/qwik';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
+import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
+import {disabledAttr} from './internal/disabled-attr';
+import {useFocusMonitor} from '@angular-community/qwik-cdk/a11y';
 
 export interface MatIconButtonProps {
   color?: MatButtonColor;
@@ -10,6 +13,11 @@ export interface MatIconButtonProps {
   disableRipple?: boolean;
   disabledInteractive?: boolean;
   href?: string;
+  /**
+   * Native <button> type attribute. Ignored when href is set. Unset by
+   * default — matches upstream, which never binds a `type`, so the attribute
+   * is only rendered when the caller passes one explicitly.
+   */
   type?: 'button' | 'submit' | 'reset';
   onClick$?: QRL<(e: MouseEvent) => void>;
   ariaLabel?: string;
@@ -61,9 +69,21 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
     </>
   );
 
+  const hostRef = useSignal<Element>();
+  useRippleLoader(hostRef);
+  useFocusMonitor(hostRef, {checkChildren: true});
+  // Icon buttons are the one family upstream configures with `centered: true`
+  // (icon-button.ts constructor, after the MatButtonBase super() call).
+  const rippleAttrs = rippleLoaderHostAttrs({
+    className: 'mat-mdc-button-ripple',
+    centered: true,
+    disabled: props.disableRipple || props.disabled,
+  });
+
   if (isAnchor) {
     return (
       <a
+        ref={hostRef}
         href={props.href}
         id={props.id}
         class={classes}
@@ -73,6 +93,7 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
         aria-describedby={props.ariaDescribedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
+        {...rippleAttrs}
       >
         {children}
       </a>
@@ -81,15 +102,17 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
 
   return (
     <button
-      type={props.type ?? 'button'}
+      ref={hostRef}
+      type={props.type}
       id={props.id}
       class={classes}
-      disabled={nativelyDisabled || undefined}
+      disabled={disabledAttr(nativelyDisabled)}
       aria-disabled={props.disabled && disabledInteractive ? 'true' : undefined}
       aria-label={props.ariaLabel}
       aria-describedby={props.ariaDescribedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
+      {...rippleAttrs}
     >
       {children}
     </button>

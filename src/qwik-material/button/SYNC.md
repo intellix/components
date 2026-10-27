@@ -8,12 +8,14 @@ Every deviation from a verbatim copy is recorded here. Companion to
 
 | File                                          | Upstream path                                                       | Sync state | Notes                                                                                     |
 | --------------------------------------------- | ------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
-| `button/mat-button.tsx`                       | `src/material/button/button.ts` + `button.html`                     | ported     | Directive→component; APPEARANCE_CLASSES lifted to `button-appearance.ts`; anchor via href |
-| `button/mat-icon-button.tsx`                  | `src/material/button/icon-button.ts` + `icon-button.html`           | ported     | Directive→component; MatIconAnchor alias dropped                                          |
-| `button/mat-fab-button.tsx`                   | `src/material/button/fab.ts` (MatFabButton half)                    | ported     | Directive→component; MAT_FAB_DEFAULT_OPTIONS folded into MAT_BUTTON_CONFIG                |
-| `button/mat-mini-fab-button.tsx`              | `src/material/button/fab.ts` (MatMiniFabButton half)                | ported     | Directive→component; MatMiniFabAnchor alias dropped                                       |
+| `button/mat-button.tsx`                       | `src/material/button/button.ts` + `button.html`                     | ported     | Directive→component; APPEARANCE_CLASSES lifted to `button-appearance.ts`; anchor via href; ripple-loader + FocusMonitor wired (see below) |
+| `button/mat-icon-button.tsx`                  | `src/material/button/icon-button.ts` + `icon-button.html`           | ported     | Directive→component; MatIconAnchor alias dropped; ripple-loader + FocusMonitor wired       |
+| `button/mat-fab-button.tsx`                   | `src/material/button/fab.ts` (MatFabButton half)                    | ported     | Directive→component; MAT_FAB_DEFAULT_OPTIONS folded into MAT_BUTTON_CONFIG; ripple-loader + FocusMonitor wired |
+| `button/mat-mini-fab-button.tsx`              | `src/material/button/fab.ts` (MatMiniFabButton half)                | ported     | Directive→component; MatMiniFabAnchor alias dropped; ripple-loader + FocusMonitor wired     |
 | `button/button-config.ts`                     | `src/material/button/button-base.ts` (config interface)             | ported     | ThemePalette narrowed to MatButtonColor                                                   |
 | `button/button-appearance.ts`                 | `src/material/button/button-base.ts` (appearance type + map)        | ported     | Map converted to Record for zero-runtime lookup                                           |
+| `button/internal/ripple-loader.ts`            | `src/material/core/private/ripple-loader.ts` (MatRippleLoader)       | ported     | `rippleLoaderHostAttrs()` (SSR attrs) + `useRippleLoader()` (client lazy-span insertion); see deviation 1 |
+| `button/internal/disabled-attr.ts`            | n/a (Qwik JSX typing workaround)                                     | new        | Renders `disabled="true"` like Angular's `[attr.disabled]` boolean stringification — see deviation 11 |
 | `scss/button/button.scss`                     | `src/material/button/button.scss`                                   | synced     | byte-identical copy                                                                       |
 | `scss/button/fab.scss`                        | `src/material/button/fab.scss`                                      | synced     | byte-identical copy                                                                       |
 | `scss/button/icon-button.scss`                | `src/material/button/icon-button.scss`                              | synced     | byte-identical copy                                                                       |
@@ -33,8 +35,8 @@ Every deviation from a verbatim copy is recorded here. Companion to
 
 ## Deviations from upstream
 
-1. **No JS ripple.** CSS-only state layer via the persistent-ripple `<span>` + existing MDC SCSS `::before` transitions. Follow-up: port `MatRipple` as a first-class qwik-cdk primitive, then wire buttons through it.
-2. **No FocusMonitor integration.** `:focus-visible` covers keyboard-only state-layer visibility. Follow-up: consume `useFocusMonitor` when a use-case needs mouse / keyboard / program focus discrimination.
+1. **No JS ripple *animation*.** The static ripple-loader contract (lazy `.mat-ripple` span insertion + `mat-ripple-loader-*` host attributes) is ported — see `internal/ripple-loader.ts` — but the actual click-ripple grow/fade animation (`MatRipple`/`RippleRenderer`) is not; the state layer stays CSS-only via the persistent-ripple `<span>` + MDC SCSS `::before` transitions. Follow-up: port `MatRipple` as a first-class qwik-cdk primitive for the animation itself.
+2. **FocusMonitor integration uses a per-component engine, not a DI singleton.** `useFocusMonitor(hostRef, {checkChildren})` (added to `qwik-cdk/a11y`) creates its own `FocusMonitor` instance inside a `useVisibleTask$` rather than injecting one shared instance — capturing a context-resolved `FocusMonitor` (a closure full of functions) into a `useVisibleTask$` from the component's render scope crashes SSR serialization ("Code(3)"), so each consumer gets a fresh engine instead (same pattern as `useFocusTrap`/`qwik-cdk/root.tsx`'s dispatchers). DOM output (the `cdk-*-focused` classes) is identical either way; only extra `document` listeners are the cost. `FOCUS_MONITOR`/`createFocusMonitor` stay exported for anyone who wants to wire a truly shared instance manually via the `noSerialize()` + reactive-store pattern in `root.tsx`.
 3. **No `showProgress` prop or `[progressIndicator]` slot.** Deferred per scope decision 2026-07-15.
 4. **No icon-position slot.** No `<Slot name="icon"/>` before or `<Slot name="icon-end"/>` after the label. Consumers place icons in the default slot at v1.
 5. **No `tabIndex` prop.** Qwik JSX forwards `tabIndex` as a standard HTML attribute via the JSX props of the underlying `<button>` / `<a>`.
@@ -43,6 +45,7 @@ Every deviation from a verbatim copy is recorded here. Companion to
 8. **`MAT_FAB_DEFAULT_OPTIONS` folded into `MAT_BUTTON_CONFIG`.** Upstream has a separate injection token for FAB's default color. Qwik-material collapses this into the single `MatButtonConfig.color` field.
 9. **`matButtonConfig` field on `QwikMaterialProviderProps`.** Consistent with the dialog port's pattern of gathering component defaults on the single provider.
 10. **No `_animationsDisabled` propagation to `.mat-animation-noopable` class.** Rely on the browser's `prefers-reduced-motion: reduce` for now. Follow-up if that's insufficient.
+11. **`disabled` attribute rendered via a typed `boolean`-shaped lie (`internal/disabled-attr.ts`).** Upstream's `[attr.disabled]="_getDisabledAttribute()"` binding writes the literal string `disabled="true"` (Angular's attribute renderer stringifies a bound `true`), not the standard empty-string HTML boolean-attribute form (`disabled=""`) Qwik's natively-typed `disabled?: boolean` JSX prop produces. `disabledAttr()` returns the real runtime string through a `boolean | undefined` cast so the DOM matches Angular's exactly while staying inside Qwik's attribute type.
 
 ## Stub inventory delta
 

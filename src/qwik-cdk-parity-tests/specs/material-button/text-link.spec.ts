@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-button/text-link — renders <a> instead of <button>', async ({page}) => {
   await page.goto(`${BASE_URL}/mat-button/text-link/`);
