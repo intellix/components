@@ -3,7 +3,9 @@ import {MatToolbar} from '@angular-community/qwik-material/toolbar';
 
 export default component$(() => (
   <>
-    <MatToolbar>My Application</MatToolbar>
+    <div data-parity-root>
+      <MatToolbar>My Application</MatToolbar>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

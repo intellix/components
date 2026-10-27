@@ -8,11 +8,13 @@ import {
 
 export default component$(() => (
   <>
-    <MatCard>
-      <MatCardTitle>With footer</MatCardTitle>
-      <MatCardContent>Card with a footer element below the content.</MatCardContent>
-      <MatCardFooter>Footer text</MatCardFooter>
-    </MatCard>
+    <div data-parity-root>
+      <MatCard>
+        <MatCardTitle>With footer</MatCardTitle>
+        <MatCardContent>Card with a footer element below the content.</MatCardContent>
+        <MatCardFooter>Footer text</MatCardFooter>
+      </MatCard>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

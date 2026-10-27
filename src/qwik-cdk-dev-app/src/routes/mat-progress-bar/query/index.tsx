@@ -3,7 +3,9 @@ import {MatProgressBar} from '@angular-community/qwik-material/progress-bar';
 
 export default component$(() => (
   <>
-    <MatProgressBar mode="query" />
+    <div data-parity-root>
+      <MatProgressBar mode="query" />
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

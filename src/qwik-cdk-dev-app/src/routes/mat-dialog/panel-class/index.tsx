@@ -6,6 +6,7 @@ const Body = component$(() => <p>Panel classes applied</p>);
 
 export default component$(() => (
   <QwikMaterialProvider>
+    <div data-parity-root></div>
     <MatAutoOpen
       Body={Body}
       config={{hasBackdrop: true, panelClass: ['my-panel-a', 'my-panel-b']}}

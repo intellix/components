@@ -3,7 +3,9 @@ import {MatButton} from '@angular-community/qwik-material/button';
 
 export default component$(() => (
   <>
-    <MatButton appearance="tonal">Tonal button</MatButton>
+    <div data-parity-root>
+      <MatButton appearance="tonal">Tonal button</MatButton>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

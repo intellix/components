@@ -19,6 +19,7 @@ const Body = component$(() => (
 
 export default component$(() => (
   <QwikMaterialProvider>
+    <div data-parity-root></div>
     <MatAutoOpen Body={Body} config={{hasBackdrop: true}} />
   </QwikMaterialProvider>
 ));

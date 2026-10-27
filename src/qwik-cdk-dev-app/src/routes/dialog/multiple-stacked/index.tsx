@@ -8,5 +8,10 @@ export default component$(() => {
     await dialog.open$(ScenarioBody, {id: 'a', hasBackdrop: true} as any);
     await dialog.open$(ScenarioBody, {id: 'b', hasBackdrop: true} as any);
   });
-  return <main data-scenario-ready>ready</main>;
+  return (
+    <>
+      <div data-parity-root></div>
+      <main data-scenario-ready>ready</main>
+    </>
+  );
 });

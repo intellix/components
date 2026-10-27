@@ -6,6 +6,7 @@ const DescribedBody = component$(() => <p id="my-desc">Description</p>);
 
 export default component$(() => (
   <QwikMaterialProvider>
+    <div data-parity-root></div>
     <MatAutoOpen Body={DescribedBody} config={{hasBackdrop: true, ariaDescribedBy: 'my-desc'}} />
   </QwikMaterialProvider>
 ));

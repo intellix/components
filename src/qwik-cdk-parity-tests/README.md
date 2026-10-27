@@ -96,6 +96,11 @@ Normalization: Angular (`_ngcontent-*`, `ng-reflect-*`) and Qwik (`q:*`, `on:*`,
 comments) bookkeeping is stripped; digits in id-like attributes become `#`;
 transient `.mat-ripple-element` nodes are waited out.
 
+Directive selector attributes that the consumer writes (`matFab`,
+`mat-card-avatar`, `matListItemTitle`, …) are ignored — see
+`CONSUMER_SELECTOR_ATTRS`. Attributes Material's own templates emit (`matripple`,
+`mat-ripple-loader-*`) are compared and must be reproduced.
+
 Angular scenarios bind inputs with `[prop]` syntax. Angular also copies a
 static-attribute input (`value="x"`) onto the host element, which a Qwik component
 cannot tell apart from a prop — that echo is a known, accepted difference.
@@ -107,6 +112,9 @@ pnpm bazel run //src/dev-app:devserver                       # Angular, :4200
 pnpm -C src/qwik-cdk-dev-app build && pnpm -C src/qwik-cdk-dev-app preview   # Qwik, :4173
 pnpm -C src/qwik-cdk-parity-tests exec playwright test specs/material-button-toggle/angular-parity.spec.ts
 ```
+
+`ANGULAR_URL` / `QWIK_URL` env vars override the default origins (e.g. a second
+Qwik preview on another port from a git worktree, sharing one Angular server).
 
 Restart `preview` after every Qwik rebuild; rebuild the Angular side with
 `pnpm bazel build //src/dev-app:devserver` (the running server picks it up).

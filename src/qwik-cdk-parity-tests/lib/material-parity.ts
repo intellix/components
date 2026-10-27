@@ -17,8 +17,8 @@ import {diffNodes, type DomNode} from './structural-diff.js';
  * have digits replaced with `#`, because Angular's counters are app-global.
  */
 
-const ANGULAR_URL = 'http://localhost:4200/qwik-parity';
-const QWIK_URL = 'http://localhost:4173';
+const ANGULAR_URL = `${process.env['ANGULAR_URL'] ?? 'http://localhost:4200'}/qwik-parity`;
+const QWIK_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 const IGNORE_ATTRS = ['ng-version', 'data-qwik', 'data-scenario-ready'];
 const IGNORE_ATTR_PREFIXES = [
@@ -31,6 +31,49 @@ const IGNORE_ATTR_PREFIXES = [
   'on-window:',
 ];
 const IGNORE_CLASSES = ['ng-star-inserted'];
+/**
+ * Directive selector attributes the *consumer* writes in an Angular template
+ * (`<button matFab>`, `<img mat-card-avatar>`). Which spelling appears depends
+ * on the consumer's template, so they are not part of the component's DOM
+ * contract. Attributes Material's own templates emit (e.g. `matripple`) are
+ * NOT listed here and must be reproduced.
+ */
+const CONSUMER_SELECTOR_ATTRS = [
+  'matbutton',
+  'mat-button',
+  'mat-flat-button',
+  'mat-raised-button',
+  'mat-stroked-button',
+  'matfab',
+  'mat-fab',
+  'matminifab',
+  'mat-mini-fab',
+  'maticonbutton',
+  'mat-icon-button',
+  'matbadge',
+  'mat-card-avatar',
+  'mat-card-image',
+  'mat-card-sm-image',
+  'mat-card-md-image',
+  'mat-card-lg-image',
+  'mat-card-xl-image',
+  'mat-list-item',
+  'matlistitemavatar',
+  'matlistitemicon',
+  'matlistitemmeta',
+  'matlistitemtitle',
+  'matlistitemline',
+  'mat-subheader',
+  'matsubheader',
+  'mat-dialog-close',
+  'matdialogclose',
+  'mat-dialog-title',
+  'matdialogtitle',
+  'mat-dialog-content',
+  'matdialogcontent',
+  'mat-dialog-actions',
+  'matdialogactions',
+];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
   'id',
@@ -63,6 +106,11 @@ export interface ParityScenario {
    * `[data-parity-root]` (it is what `open()` waits for).
    */
   rootSelector?: string;
+  /**
+   * Skip the pre-step comparison. For content that appears asynchronously on
+   * both sides (auto-opening dialogs), the first step waits for it instead.
+   */
+  skipInitialCompare?: boolean;
 }
 
 /** Captures the `[data-parity-root]` subtree as a normalized DomNode. */
@@ -97,6 +145,15 @@ export async function snapshotParityRoot(
           if (name === 'class') continue;
           if (opts.ignoreAttrs.includes(name)) continue;
           if (opts.ignoreAttrPrefixes.some(p => name.startsWith(p))) continue;
+          if (name === 'style') {
+            // Browser-parsed, sorted declarations: order/format-insensitive.
+            const style = (el as HTMLElement).style;
+            const decls = Array.from(style)
+              .map(prop => `${prop}: ${style.getPropertyValue(prop)}`)
+              .sort();
+            if (decls.length) attrs[name] = decls.join('; ');
+            continue;
+          }
           attrs[name] = opts.idAttrs.includes(name) ? attr.value.replace(/\d+/g, '#') : attr.value;
         }
         const elementChildren = Array.from(el.children);
@@ -116,7 +173,7 @@ export async function snapshotParityRoot(
       return walk(root);
     },
     {
-      ignoreAttrs: IGNORE_ATTRS,
+      ignoreAttrs: [...IGNORE_ATTRS, ...CONSUMER_SELECTOR_ATTRS],
       ignoreAttrPrefixes: IGNORE_ATTR_PREFIXES,
       ignoreClasses: IGNORE_CLASSES,
       idAttrs: ID_ATTRS,
@@ -128,7 +185,7 @@ async function open(browser: Browser, url: string): Promise<Page> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.goto(url);
-  await page.waitForSelector('[data-parity-root]');
+  await page.waitForSelector('[data-parity-root]', {state: 'attached'});
   return page;
 }
 
@@ -137,10 +194,19 @@ export async function expectMaterialParity(browser: Browser, s: ParityScenario):
   const angular = await open(browser, `${ANGULAR_URL}/${s.route}/${s.scenario}`);
   const qwik = await open(browser, `${QWIK_URL}/${s.route}/${s.scenario}/`);
   // Qwik resumes lazily; make sure the scenario's own readiness marker exists.
-  await qwik.waitForSelector('[data-scenario-ready]');
+  await qwik.waitForSelector('[data-scenario-ready]', {state: 'attached'});
 
   try {
     const compare = async (label: string) => {
+      // A custom root (e.g. the overlay container) may not exist until a step
+      // creates it; then both sides must agree that it is absent.
+      const root = s.rootSelector ?? '[data-parity-root]';
+      const [aCount, qCount] = [
+        await angular.locator(root).count(),
+        await qwik.locator(root).count(),
+      ];
+      expect(qCount, `${s.route}/${s.scenario} [${label}] count of ${root}`).toBe(aCount);
+      if (aCount === 0) return;
       const diffs = diffNodes(
         await snapshotParityRoot(angular, s.rootSelector),
         await snapshotParityRoot(qwik, s.rootSelector),
@@ -148,7 +214,7 @@ export async function expectMaterialParity(browser: Browser, s: ParityScenario):
       expect(diffs, `${s.route}/${s.scenario} [${label}]\n${diffs.join('\n')}`).toEqual([]);
     };
 
-    await compare('initial');
+    if (!s.skipInitialCompare) await compare('initial');
     for (const step of s.steps ?? []) {
       await step.run(angular);
       await step.run(qwik);

@@ -3,7 +3,9 @@ import {MatProgressBar} from '@angular-community/qwik-material/progress-bar';
 
 export default component$(() => (
   <>
-    <MatProgressBar value={25} aria-label="Uploading" />
+    <div data-parity-root>
+      <MatProgressBar value={25} aria-label="Uploading" />
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

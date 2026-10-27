@@ -3,7 +3,9 @@ import {MatIcon} from '@angular-community/qwik-material/icon';
 
 export default component$(() => (
   <>
-    <MatIcon inline>home</MatIcon>
+    <div data-parity-root>
+      <MatIcon inline>home</MatIcon>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

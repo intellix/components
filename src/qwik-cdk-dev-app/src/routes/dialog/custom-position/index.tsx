@@ -9,5 +9,10 @@ export default component$(() => {
     const pos = createGlobalPositionStrategy().top('10px').left('20px');
     await dialog.open$(ScenarioBody, {hasBackdrop: true, positionStrategy: pos} as any);
   });
-  return <main data-scenario-ready>ready</main>;
+  return (
+    <>
+      <div data-parity-root></div>
+      <main data-scenario-ready>ready</main>
+    </>
+  );
 });

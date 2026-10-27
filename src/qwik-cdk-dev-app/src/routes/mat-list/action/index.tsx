@@ -3,17 +3,19 @@ import {MatActionList, MatListItem, MatListItemTitle} from '@angular-community/q
 
 export default component$(() => (
   <>
-    <MatActionList>
-      <MatListItem as="button">
-        <MatListItemTitle>Save</MatListItemTitle>
-      </MatListItem>
-      <MatListItem as="button">
-        <MatListItemTitle>Duplicate</MatListItemTitle>
-      </MatListItem>
-      <MatListItem as="button" disabled>
-        <MatListItemTitle>Delete</MatListItemTitle>
-      </MatListItem>
-    </MatActionList>
+    <div data-parity-root>
+      <MatActionList>
+        <MatListItem as="button">
+          <MatListItemTitle>Save</MatListItemTitle>
+        </MatListItem>
+        <MatListItem as="button">
+          <MatListItemTitle>Duplicate</MatListItemTitle>
+        </MatListItem>
+        <MatListItem as="button" disabled>
+          <MatListItemTitle>Delete</MatListItemTitle>
+        </MatListItem>
+      </MatActionList>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

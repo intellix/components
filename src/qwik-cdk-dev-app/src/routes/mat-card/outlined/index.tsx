@@ -3,10 +3,12 @@ import {MatCard, MatCardTitle, MatCardContent} from '@angular-community/qwik-mat
 
 export default component$(() => (
   <>
-    <MatCard appearance="outlined">
-      <MatCardTitle>Outlined card</MatCardTitle>
-      <MatCardContent>Outlined appearance — border instead of shadow.</MatCardContent>
-    </MatCard>
+    <div data-parity-root>
+      <MatCard appearance="outlined">
+        <MatCardTitle>Outlined card</MatCardTitle>
+        <MatCardContent>Outlined appearance — border instead of shadow.</MatCardContent>
+      </MatCard>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

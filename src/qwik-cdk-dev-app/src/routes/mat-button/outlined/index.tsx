@@ -3,7 +3,9 @@ import {MatButton} from '@angular-community/qwik-material/button';
 
 export default component$(() => (
   <>
-    <MatButton appearance="outlined">Outlined button</MatButton>
+    <div data-parity-root>
+      <MatButton appearance="outlined">Outlined button</MatButton>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

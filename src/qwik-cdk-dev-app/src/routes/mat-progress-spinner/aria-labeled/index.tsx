@@ -3,7 +3,9 @@ import {MatProgressSpinner} from '@angular-community/qwik-material/progress-spin
 
 export default component$(() => (
   <>
-    <MatProgressSpinner value={25} aria-label="Loading" />
+    <div data-parity-root>
+      <MatProgressSpinner value={25} aria-label="Loading" />
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

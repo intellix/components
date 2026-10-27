@@ -3,9 +3,11 @@ import {MatButton} from '@angular-community/qwik-material/button';
 
 export default component$(() => (
   <>
-    <MatButton disabled disabledInteractive>
-      Disabled interactive
-    </MatButton>
+    <div data-parity-root>
+      <MatButton disabled disabledInteractive>
+        Disabled interactive
+      </MatButton>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

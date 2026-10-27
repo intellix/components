@@ -3,7 +3,9 @@ import {MatFabButton} from '@angular-community/qwik-material/button';
 
 export default component$(() => (
   <>
-    <MatFabButton ariaLabel="Add">+</MatFabButton>
+    <div data-parity-root>
+      <MatFabButton ariaLabel="Add">+</MatFabButton>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

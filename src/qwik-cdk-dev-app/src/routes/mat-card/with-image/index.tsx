@@ -8,13 +8,15 @@ import {
 
 export default component$(() => (
   <>
-    <MatCard>
-      <MatCardImage src="https://placehold.co/600x200" alt="Cover" />
-      <MatCardTitle>With image</MatCardTitle>
-      <MatCardContent>
-        MatCardImage renders an &lt;img&gt; with the mat-mdc-card-image + mdc-card__media classes.
-      </MatCardContent>
-    </MatCard>
+    <div data-parity-root>
+      <MatCard>
+        <MatCardImage src="https://placehold.co/600x200" alt="Cover" />
+        <MatCardTitle>With image</MatCardTitle>
+        <MatCardContent>
+          MatCardImage renders an &lt;img&gt; with the mat-mdc-card-image + mdc-card__media classes.
+        </MatCardContent>
+      </MatCard>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

@@ -33,7 +33,9 @@ const Runner = component$(() => {
 
 export default component$(() => (
   <QwikMaterialProvider>
-    <Runner />
+    <div data-parity-root>
+      <Runner />
+    </div>
     <main data-scenario-ready>ready</main>
   </QwikMaterialProvider>
 ));

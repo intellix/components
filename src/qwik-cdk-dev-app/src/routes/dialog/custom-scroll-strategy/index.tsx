@@ -9,5 +9,10 @@ export default component$(() => {
     const scroll = createBlockScrollStrategy();
     await dialog.open$(ScenarioBody, {hasBackdrop: true, scrollStrategy: scroll} as any);
   });
-  return <main data-scenario-ready>ready</main>;
+  return (
+    <>
+      <div data-parity-root></div>
+      <main data-scenario-ready>ready</main>
+    </>
+  );
 });

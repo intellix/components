@@ -43,5 +43,10 @@ export const AutoOpen = component$<AutoOpenProps>(props => {
   useVisibleTask$(async () => {
     await dialog.open$(props.Body ?? ScenarioBody, props.config);
   });
-  return <main data-scenario-ready>ready</main>;
+  return (
+    <>
+      <div data-parity-root></div>
+      <main data-scenario-ready>ready</main>
+    </>
+  );
 });

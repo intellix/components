@@ -3,10 +3,12 @@ import {MatToolbar, MatToolbarRow} from '@angular-community/qwik-material/toolba
 
 export default component$(() => (
   <>
-    <MatToolbar multipleRows>
-      <MatToolbarRow>First row</MatToolbarRow>
-      <MatToolbarRow>Second row</MatToolbarRow>
-    </MatToolbar>
+    <div data-parity-root>
+      <MatToolbar multipleRows>
+        <MatToolbarRow>First row</MatToolbarRow>
+        <MatToolbarRow>Second row</MatToolbarRow>
+      </MatToolbar>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

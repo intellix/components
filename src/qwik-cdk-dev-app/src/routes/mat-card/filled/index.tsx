@@ -3,12 +3,14 @@ import {MatCard, MatCardTitle, MatCardContent} from '@angular-community/qwik-mat
 
 export default component$(() => (
   <>
-    <MatCard appearance="filled">
-      <MatCardTitle>Filled card</MatCardTitle>
-      <MatCardContent>
-        Filled appearance — subtle tinted background, no shadow, no border.
-      </MatCardContent>
-    </MatCard>
+    <div data-parity-root>
+      <MatCard appearance="filled">
+        <MatCardTitle>Filled card</MatCardTitle>
+        <MatCardContent>
+          Filled appearance — subtle tinted background, no shadow, no border.
+        </MatCardContent>
+      </MatCard>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

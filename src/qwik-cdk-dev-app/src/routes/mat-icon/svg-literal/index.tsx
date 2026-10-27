@@ -5,7 +5,9 @@ const HOME_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 8
 
 export default component$(() => (
   <>
-    <MatIcon svgLiteral={HOME_SVG} />
+    <div data-parity-root>
+      <MatIcon svgLiteral={HOME_SVG} />
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

@@ -10,8 +10,11 @@ export default component$(() => {
     await dialog.open$(ScenarioBody, {hasBackdrop: true, restoreFocus: true} as any);
   });
   return (
-    <main data-scenario-ready>
-      <button class="restore-trigger">trigger</button>
-    </main>
+    <>
+      <div data-parity-root>
+        <button class="restore-trigger">trigger</button>
+      </div>
+      <main data-scenario-ready>ready</main>
+    </>
   );
 });

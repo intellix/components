@@ -26,7 +26,9 @@ const Trigger = component$(() => {
 
 export default component$(() => (
   <QwikMaterialProvider>
-    <Trigger />
+    <div data-parity-root>
+      <Trigger />
+    </div>
     <main data-scenario-ready>ready</main>
   </QwikMaterialProvider>
 ));

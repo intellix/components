@@ -14,15 +14,17 @@ export default component$(() => {
 
   return (
     <>
-      <MatProgressBar
-        value={value.value}
-        onAnimationEnd$={$((v: number) => {
-          fired.value = true;
-          console.log('animationEnd', v);
-        })}
-      />
-      <div data-animation-end={fired.value ? 'fired' : 'pending'}>
-        {fired.value ? 'fired' : 'pending'}
+      <div data-parity-root>
+        <MatProgressBar
+          value={value.value}
+          onAnimationEnd$={$((v: number) => {
+            fired.value = true;
+            console.log('animationEnd', v);
+          })}
+        />
+        <div data-animation-end={fired.value ? 'fired' : 'pending'}>
+          {fired.value ? 'fired' : 'pending'}
+        </div>
       </div>
       <main data-scenario-ready>ready</main>
     </>

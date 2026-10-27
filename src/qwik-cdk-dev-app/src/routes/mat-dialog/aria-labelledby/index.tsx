@@ -11,6 +11,7 @@ const LabelledBody = component$(() => (
 
 export default component$(() => (
   <QwikMaterialProvider>
+    <div data-parity-root></div>
     <MatAutoOpen Body={LabelledBody} config={{hasBackdrop: true}} />
   </QwikMaterialProvider>
 ));

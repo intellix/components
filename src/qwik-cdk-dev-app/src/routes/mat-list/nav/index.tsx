@@ -3,17 +3,19 @@ import {MatNavList, MatListItem, MatListItemTitle} from '@angular-community/qwik
 
 export default component$(() => (
   <>
-    <MatNavList>
-      <MatListItem as="a" href="/inbox">
-        <MatListItemTitle>Inbox</MatListItemTitle>
-      </MatListItem>
-      <MatListItem as="a" href="/sent" activated>
-        <MatListItemTitle>Sent</MatListItemTitle>
-      </MatListItem>
-      <MatListItem as="a" href="/drafts">
-        <MatListItemTitle>Drafts</MatListItemTitle>
-      </MatListItem>
-    </MatNavList>
+    <div data-parity-root>
+      <MatNavList>
+        <MatListItem as="a" href="/inbox">
+          <MatListItemTitle>Inbox</MatListItemTitle>
+        </MatListItem>
+        <MatListItem as="a" href="/sent" activated>
+          <MatListItemTitle>Sent</MatListItemTitle>
+        </MatListItem>
+        <MatListItem as="a" href="/drafts">
+          <MatListItemTitle>Drafts</MatListItemTitle>
+        </MatListItem>
+      </MatNavList>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

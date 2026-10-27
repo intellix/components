@@ -8,14 +8,16 @@ import {
 
 export default component$(() => (
   <>
-    <MatCard>
-      <MatCardTitle>Actions align=end</MatCardTitle>
-      <MatCardContent>Actions row aligned to the end.</MatCardContent>
-      <MatCardActions align="end">
-        <button type="button">Cancel</button>
-        <button type="button">Confirm</button>
-      </MatCardActions>
-    </MatCard>
+    <div data-parity-root>
+      <MatCard>
+        <MatCardTitle>Actions align=end</MatCardTitle>
+        <MatCardContent>Actions row aligned to the end.</MatCardContent>
+        <MatCardActions align="end">
+          <button type="button">Cancel</button>
+          <button type="button">Confirm</button>
+        </MatCardActions>
+      </MatCard>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));

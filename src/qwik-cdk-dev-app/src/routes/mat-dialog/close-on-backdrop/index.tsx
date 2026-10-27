@@ -6,6 +6,7 @@ const Body = component$(() => <p>Click outside to close</p>);
 
 export default component$(() => (
   <QwikMaterialProvider>
+    <div data-parity-root></div>
     <MatAutoOpen Body={Body} config={{hasBackdrop: true}} />
   </QwikMaterialProvider>
 ));

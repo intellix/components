@@ -3,9 +3,11 @@ import {MatButton} from '@angular-community/qwik-material/button';
 
 export default component$(() => (
   <>
-    <MatButton appearance="filled" href="/about">
-      Filled link
-    </MatButton>
+    <div data-parity-root>
+      <MatButton appearance="filled" href="/about">
+        Filled link
+      </MatButton>
+    </div>
     <main data-scenario-ready>ready</main>
   </>
 ));
