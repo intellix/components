@@ -21,6 +21,7 @@ import {
 import type {DialogConfig} from './dialog/dialog-config';
 import type {DialogRef} from './dialog/dialog-ref';
 import {QWIK_CDK, type QwikCdkInternals} from './internals/internals';
+import {ID_GENERATOR_COUNTER} from './a11y/id-generator';
 
 export interface QwikCdkRootProps {
   dialogDefaults?: Partial<DialogConfig>;
@@ -54,6 +55,12 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   });
 
   useContextProvider(QWIK_CDK, internals);
+  // Shared counter backing qwik-material's `mat-button-toggle-N` /
+  // `mat-button-toggle-group-N` ids (and any future consumer of
+  // `useIdGenerator()`) on the same monotonic sequence as `cdk-dialog-N` /
+  // `cdk-overlay-N` — see id-generator.ts for why this is a plain
+  // `Signal<number>` rather than a closure-bearing `IdGenerator` object.
+  useContextProvider(ID_GENERATOR_COUNTER, idCounter);
 
   // Construct browser-only dispatchers after hydration; clean up on teardown.
   useVisibleTask$(({cleanup}) => {

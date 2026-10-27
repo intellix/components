@@ -27,7 +27,11 @@ export interface MatButtonToggleGroupState {
   values: readonly unknown[];
   /** Group-level disabled — cascades to every child. */
   disabled: boolean;
-  /** Form-control name for hidden inputs. Empty string = no hidden input. */
+  /** Form-control name, mirrored onto the inner `<button>` of every
+   *  single-select child (upstream `_getButtonName()`). Always a real
+   *  string — auto-generated via the id generator when the consumer doesn't
+   *  provide one, matching upstream's `_name = inject(_IdGenerator).getId(...)`
+   *  field initializer. */
   name: string;
   /** Child's click handler. Group routes to onChange$ (single mode) or
    *  onValuesChange$ (multi mode) internally. */
@@ -37,6 +41,20 @@ export interface MatButtonToggleGroupState {
    *  (NOT a reference-identity check on `onToggle`) to detect standalone
    *  usage — see Task 11 Playwright regression findings below. */
   standalone: boolean;
+  /**
+   * Single-select roving-tabindex bootstrap: upstream picks the first
+   * non-disabled toggle as the sole tabbable one whenever nothing is
+   * selected yet (`_setSelectionByValue`'s trailing "need at least one
+   * enabled toggle to always be focusable" pass, run from a `QueryList` the
+   * Qwik port has no equivalent of). Qwik children render in document order
+   * within one synchronous SSR/CSR pass, so a plain (non-reactive) mutable
+   * flag — reset to a fresh object every time the group recomputes state —
+   * lets the first non-disabled child claim the slot and every later
+   * sibling see it's taken. Irrelevant once something is selected: each
+   * child then derives tabIndex straight from its own `checked`, exactly
+   * mirroring upstream's `_clearSelection`/`_selectValue` invariant.
+   */
+  fallbackTabIndexClaimed: {value: boolean};
 }
 
 /**
@@ -89,4 +107,5 @@ export const MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS: MatButtonToggleGroupState =
     // No-op — standalone toggle owns its own local state via useSignal.
   }),
   standalone: true,
+  fallbackTabIndexClaimed: {value: true},
 };

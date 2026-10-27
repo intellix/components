@@ -9,7 +9,23 @@
 - Changes from CDK original:
   - Removed `@Service()` decorator and all Angular DI (`inject`, `APP_ID`).
   - Simplified to a plain class with an incrementing `counter` (no per-prefix map, no `_appId` infix, no `randomize` flag).
-  - Added `ID_GENERATOR` context and `useIdGenerator()` hook for Qwik DI.
+  - Added `ID_GENERATOR_COUNTER` context (a plain `Signal<number>`, not the
+    `IdGenerator` object itself — a closure-bearing value put through
+    `useContextProvider` needs `noSerialize()`, which goes `undefined` across
+    the SSR→resume boundary until a client-only `useVisibleTask$` repopulates
+    it; too late for an id that must already be in the SSR HTML) and
+    `useIdGenerator()` hook for Qwik DI, consumed first by
+    `qwik-material/button-toggle` (2026-10-27 remediation) for
+    `mat-button-toggle-N` / `mat-button-toggle-group-N` ids. `<QwikCdkRoot>`
+    provides it backed by the same counter signal used for `cdk-dialog-N` /
+    `cdk-overlay-N`, so every id family shares one monotonic sequence
+    app-wide, closer to upstream's actual singleton `_IdGenerator` service
+    (upstream itself keeps a separate counter *per prefix* via a `Map` — this
+    port keeps the earlier simplification of one global counter for all
+    prefixes, which is unobservable to consumers since prefixes never
+    collide and the qwik-material parity harness normalizes id digits away).
+    A caller without a `<QwikCdkRoot>` ancestor (e.g. an isolated unit test)
+    falls back to a private counter.
 
 ### `InteractivityChecker`
 
