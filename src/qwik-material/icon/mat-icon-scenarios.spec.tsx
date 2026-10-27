@@ -133,10 +133,13 @@ describe.skip('MatIcon — Angular-only tests', () => {
     // MAT_ICON_LOCATION + ngAfterViewChecked omitted — §6 deviation #5.
   });
   it('should register a font-set class alias', () => {
-    // registerFontClassAlias omitted — §6 deviation #7.
+    // registerFontClassAlias + classNameForFontAlias omitted — §6 deviation #7 (no alias map).
   });
   it('should set the default font-set class via setDefaultFontSetClass', () => {
-    // setDefaultFontSetClass omitted — §6 deviation #7.
+    // No registry method — but its *effect* is reproduced via
+    // MatIconConfig.fontSet (provider-configurable) falling back to
+    // MAT_ICON_DEFAULT_FONT_SET_CLASS. Covered by the mat-icon Playwright
+    // parity specs (font-icon, basic, …), not here — see SYNC.md deviation #7.
   });
   it('should look up a font-set alias via classNameForFontAlias', () => {
     // classNameForFontAlias omitted — §6 deviation #7.
