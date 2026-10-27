@@ -1,16 +1,38 @@
-import {component$, useVisibleTask$} from '@builder.io/qwik';
+import {component$, Slot, useVisibleTask$} from '@builder.io/qwik';
 import type {Component} from '@builder.io/qwik';
 import {useContext} from '@builder.io/qwik';
 import {useMatDialog, MAT_DIALOG_DATA} from '@angular-community/qwik-material/dialog';
 import type {MatDialogConfig} from '@angular-community/qwik-material/dialog';
 
-export const MatScenarioBody = component$(() => (
-  <div class="mat-scenario-body">Material scenario body</div>
+/**
+ * None of the Angular Material dialog scenario bodies
+ * (src/dev-app/qwik-parity/dialog.ts) declare a `selector`, so Angular's
+ * ComponentPortal falls back to `<ng-component>` as their host tag — still
+ * stamped with `mat-mdc-dialog-component-host` by `MatDialogContainer`
+ * (the `display:flex` fix; see `MatDialogWrapper` in
+ * qwik-material/dialog/mat-dialog.tsx, which passes that class down as
+ * `props.class`). Every scenario body below forwards it onto this shared
+ * host tag, mirroring what a consumer's own component would render.
+ */
+export const NgComponentHost = component$<{class?: string}>(props => (
+  <ng-component class={props.class}>
+    <Slot />
+  </ng-component>
 ));
 
-export const MatDataBody = component$(() => {
+export const MatScenarioBody = component$<{class?: string}>(props => (
+  <NgComponentHost class={props.class}>
+    <div class="mat-scenario-body">Material scenario body</div>
+  </NgComponentHost>
+));
+
+export const MatDataBody = component$<{class?: string}>(props => {
   const data = useContext(MAT_DIALOG_DATA) as {msg: string};
-  return <div class="mat-scenario-body">{data.msg}</div>;
+  return (
+    <NgComponentHost class={props.class}>
+      <div class="mat-scenario-body">{data.msg}</div>
+    </NgComponentHost>
+  );
 });
 
 export interface MatAutoOpenProps<D = unknown> {

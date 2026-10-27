@@ -4,9 +4,12 @@ import {
   MatDialogClose,
   useMatDialog,
 } from '@angular-community/qwik-material/dialog';
+import {NgComponentHost} from '../../../scenarios/_mat-template';
 
-const Body = component$(() => (
-  <MatDialogClose result="hello world">Close with result</MatDialogClose>
+const Body = component$<{class?: string}>(props => (
+  <NgComponentHost class={props.class}>
+    <MatDialogClose result="hello world">Close with result</MatDialogClose>
+  </NgComponentHost>
 ));
 
 const Runner = component$(() => {
