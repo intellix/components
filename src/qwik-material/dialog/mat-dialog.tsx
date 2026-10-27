@@ -13,6 +13,7 @@ import {
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,
+  createGlobalPositionStrategy,
   type OverlayConfig,
   type OverlayRef,
 } from '@angular-community/qwik-cdk/overlay';
@@ -36,7 +37,16 @@ const MatDialogWrapper = component$<{
 }>(({config, ContentComponent, contentProps, matDialogRef}) => {
   return (
     <MatDialogContainer config={config} matDialogRef={matDialogRef}>
-      <ContentComponent {...(contentProps as any)} />
+      {/*
+        Mirrors `MatDialogContainer.attachComponentPortal()`'s
+        `ref.location.nativeElement.classList.add('mat-mdc-dialog-component-host')`:
+        Angular's ComponentPortal always creates a host element for the
+        attached component and the container stamps this class onto it (the
+        display:flex fix documented there). Qwik has no implicit per-component
+        host element, so the content component itself must render its own
+        root tag and apply this class — see the dev-app scenario bodies.
+      */}
+      <ContentComponent {...(contentProps as any)} class="mat-mdc-dialog-component-host" />
     </MatDialogContainer>
   );
 });
@@ -128,6 +138,7 @@ export function useMatDialog(): MatDialog {
       const registry: OverlayRegistry = {
         entries: ctx.entries,
         push: e => {
+          ctx.overlayContainerCreated.value = true;
           ctx.entries.value = [...ctx.entries.value, e];
         },
         remove: id => {
@@ -136,6 +147,14 @@ export function useMatDialog(): MatDialog {
         get: id => ctx.entries.value.find((x: OverlayEntry) => x.id === id),
       };
       const overlay = createOverlayService(registry, idGen);
+
+      // Mirrors upstream MatDialog.open(): always opens with a fresh,
+      // centered GlobalPositionStrategy (ignoring any CDK-level override —
+      // MatDialog has no positionStrategy field on its config), later
+      // adjusted by matRef.updatePosition(merged.position) below.
+      const positionStrategy = createGlobalPositionStrategy()
+        .centerHorizontally()
+        .centerVertically();
 
       // Overlay.create returns the ref synchronously, so no cdkShim is needed
       // (unlike the earlier cdk.dialog.open$ variant which was a QRL).
@@ -151,6 +170,7 @@ export function useMatDialog(): MatDialog {
         maxWidth: merged.maxWidth,
         maxHeight: merged.maxHeight,
         direction: merged.direction,
+        positionStrategy,
       };
 
       // Pre-mint state signals + the wrapping matRef with a shim so the
@@ -165,6 +185,7 @@ export function useMatDialog(): MatDialog {
         updateSize(o: {width?: string | number; height?: string | number}): void;
         addPanelClass(c: string | string[]): void;
         removePanelClass(c: string | string[]): void;
+        detachBackdrop(): void;
       }
       const overlayShim: OverlayShim = {
         real: null,
@@ -183,12 +204,16 @@ export function useMatDialog(): MatDialog {
         removePanelClass(c) {
           this.real?.removePanelClass(c);
         },
+        detachBackdrop() {
+          this.real?.detachBackdrop();
+        },
       };
       const matRef = createMatDialogRef<R, C>({
         cdkRef: overlayShim,
         config: merged,
         state,
         componentInstance,
+        positionStrategy,
       });
       const wrapped = noSerialize(matRef)!;
 
@@ -210,6 +235,11 @@ export function useMatDialog(): MatDialog {
 
       if (!overlayRef) return null;
       overlayShim.real = overlayRef;
+      // Mirrors `MatDialogRef`'s constructor: `_ref.addPanelClass('mat-mdc-dialog-panel')`.
+      overlayRef.addPanelClass('mat-mdc-dialog-panel');
+      // Mirrors `MatDialog.open()`'s `providers` callback:
+      // `dialogRef.updatePosition(config?.position)`.
+      matRef.updatePosition(merged.position);
 
       // Wire close-on-Escape via keyboard dispatcher. The CDK's DialogService
       // used to do this; we replicate the behaviour at the qwik-material layer

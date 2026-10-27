@@ -18,11 +18,13 @@ export const MatDialogClose = component$<MatDialogCloseProps>(props => {
   });
 
   return (
+    // Matches the real MatDialogClose directive's host bindings exactly:
+    // `'[attr.aria-label]': 'ariaLabel || null'` (no default) and
+    // `'[attr.type]': 'type'` (defaults to 'button') — no class of its own.
     <button
       mat-dialog-close
       type="button"
-      class="mat-mdc-dialog-close"
-      aria-label={props.ariaLabel ?? 'Close dialog'}
+      aria-label={props.ariaLabel ?? undefined}
       disabled={props.disabled}
       onClick$={onClick$}
     >
