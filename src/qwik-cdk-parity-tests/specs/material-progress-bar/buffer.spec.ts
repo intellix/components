@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-progress-bar/buffer — mode="buffer" value=30 bufferValue=65, buffer-dots div present, buffer-bar flex-basis=65%', async ({
   page,

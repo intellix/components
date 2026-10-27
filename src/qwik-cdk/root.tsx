@@ -65,6 +65,16 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   useContextProvider(ID_GENERATOR_COUNTER, idCounter);
 
   // Construct browser-only dispatchers after hydration; clean up on teardown.
+  //
+  // This `useVisibleTask$` is exempt from the lazy-interactions remediation's
+  // rule 7 ("no per-instance `useVisibleTask$` for interaction plumbing in
+  // components that appear many times per page"): `<QwikCdkRoot>` is a
+  // once-per-app singleton wrapper (one instance total, typically mounted
+  // near the document root), not a repeated widget like a button or
+  // button-toggle that multiplies this cost per occurrence. The dispatchers
+  // it builds (keyboard routing, outside-click routing, dialog scroll
+  // strategy) are overlay/dialog machinery anyway, which rule 7 and this
+  // remediation explicitly scope out.
   useVisibleTask$(({cleanup}) => {
     const platform = createPlatform();
     const kbd = createOverlayKeyboardDispatcher();

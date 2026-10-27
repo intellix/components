@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, useSignal, $, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type QRL} from '@builder.io/qwik';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
@@ -6,7 +6,7 @@ import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
-import {useFocusMonitor} from '@angular-community/qwik-cdk/a11y';
+import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 
 export interface MatFabProps {
   /** When true, renders the extended FAB variant (wider, label visible). */
@@ -45,6 +45,10 @@ export const MatFabButton = component$<MatFabProps>(props => {
   const isAnchor = props.href != null;
   const nativelyDisabled = !!props.disabled && !disabledInteractive;
 
+  // See mat-button.tsx for the full rationale — same lazy useOn()-based
+  // replacement for the old useVisibleTask$-based useFocusMonitor.
+  const focusOrigin = useFocusOrigin();
+
   const classes = [
     'mat-mdc-button-base',
     'mdc-fab',
@@ -56,6 +60,11 @@ export const MatFabButton = component$<MatFabProps>(props => {
     props.disabled && 'mat-mdc-button-disabled',
     disabledInteractive && 'mat-mdc-button-disabled-interactive',
     props.disableRipple && 'mat-mdc-button-ripple-disabled',
+    focusOrigin.value && 'cdk-focused',
+    focusOrigin.value === 'touch' && 'cdk-touch-focused',
+    focusOrigin.value === 'keyboard' && 'cdk-keyboard-focused',
+    focusOrigin.value === 'mouse' && 'cdk-mouse-focused',
+    focusOrigin.value === 'program' && 'cdk-program-focused',
     props.class,
   ].filter(Boolean) as string[];
 
@@ -68,6 +77,12 @@ export const MatFabButton = component$<MatFabProps>(props => {
     if (props.onClick$) props.onClick$(e);
   });
 
+  // Returns a signal (not a side effect) — see ripple-loader.ts's
+  // useRippleLoader() doc comment: this component's focus classes above
+  // ALSO come from a signal, so the ripple span/attribute must too, or an
+  // unrelated focus-triggered re-render would clobber an imperative mutation.
+  const rippleInitialized = useRippleLoader();
+
   const children = (
     <>
       <PersistentRipple isFab={true} />
@@ -76,12 +91,10 @@ export const MatFabButton = component$<MatFabProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
+      {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
     </>
   );
 
-  const hostRef = useSignal<Element>();
-  useRippleLoader(hostRef);
-  useFocusMonitor(hostRef, {checkChildren: true});
   // FAB/mini-FAB extend MatButtonBase directly (no MatIconButton-style extra
   // configureRipple({centered: true}) call) — same className, no centered.
   const rippleAttrs = rippleLoaderHostAttrs({
@@ -92,7 +105,6 @@ export const MatFabButton = component$<MatFabProps>(props => {
   if (isAnchor) {
     return (
       <a
-        ref={hostRef}
         href={props.href}
         id={props.id}
         class={classes}
@@ -103,6 +115,7 @@ export const MatFabButton = component$<MatFabProps>(props => {
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
         {...rippleAttrs}
+        mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >
         {children}
       </a>
@@ -111,7 +124,6 @@ export const MatFabButton = component$<MatFabProps>(props => {
 
   return (
     <button
-      ref={hostRef}
       type={props.type}
       id={props.id}
       class={classes}
@@ -122,6 +134,7 @@ export const MatFabButton = component$<MatFabProps>(props => {
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
       {...rippleAttrs}
+      mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
     >
       {children}
     </button>

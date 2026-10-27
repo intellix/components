@@ -1,4 +1,4 @@
-import {component$, useContext, useSignal, useVisibleTask$, type QRL} from '@builder.io/qwik';
+import {$, component$, useContext, useOn, type QRL} from '@builder.io/qwik';
 import type {MatProgressBarColor} from './progress-bar-color';
 import type {MatProgressBarMode} from './progress-bar-mode';
 import {MAT_PROGRESS_BAR_CONFIG, type MatProgressBarConfig} from './progress-bar-config';
@@ -58,35 +58,41 @@ export const MatProgressBar = component$<MatProgressBarProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
-  const hostRef = useSignal<Element>();
-
-  useVisibleTask$(({cleanup}) => {
-    const el = hostRef.value;
-    if (!el) return;
-    const handler = (event: TransitionEvent) => {
-      // Filter to the primary bar's own transitionend (children bubble).
+  // Upstream `ngAfterViewInit()`'s `renderer.listen(elementRef, 'transitionend',
+  // this._transitionendHandler)` — always attached eagerly there (it no-ops
+  // internally when nobody subscribed to `animationEnd`), firing
+  // `onAnimationEnd$` only for the primary bar's own transitionend
+  // (`transitionend` bubbles, so children firing it is expected and
+  // filtered below) in determinate/buffer mode.
+  //
+  // `useOn()` is the lazy, per-instance replacement (rule 7 of the
+  // lazy-interactions remediation: no per-instance `useVisibleTask$` for
+  // interaction/measuring plumbing in components that appear many times per
+  // page): it attaches a serialized `on:transitionend` reference to this
+  // component's own host element at SSR time, and qwikloader loads/runs the
+  // handler chunk only the first time a transition actually completes on
+  // this element — e.g. never at all for an `indeterminate`/`query` bar, or
+  // one whose `value` never changes after first paint. No `hostRef`/`ref` is
+  // needed: the handler receives the host element as its second argument
+  // (unused here — the filtering only needs `event.target`).
+  useOn(
+    'transitionend',
+    $((event: TransitionEvent) => {
       const target = event.target as HTMLElement | null;
       if (!target || !target.classList.contains('mdc-linear-progress__primary-bar')) return;
-      // Read LIVE prop values via the Qwik props proxy — this handler may fire
-      // long after this useVisibleTask$ callback ran, and mode/value/callback
-      // may have changed. props.X stays current across renders.
+      // Read LIVE prop values via the Qwik props proxy — this handler may
+      // fire long after render, and mode/value/callback may have changed.
+      // props.X stays current across renders.
       const currentMode = props.mode ?? config.mode ?? 'determinate';
       if (currentMode !== 'determinate' && currentMode !== 'buffer') return;
       const cb = props.onAnimationEnd$;
       if (!cb) return;
       cb(clamp(props.value ?? 0));
-    };
-    // Cast to HTMLElement: Qwik's Ref<EL> type forces hostRef to be
-    // Signal<Element | undefined>, but Element's addEventListener overloads
-    // use ElementEventMap, which (unlike HTMLElementEventMap) omits
-    // 'transitionend'. <mat-progress-bar> is an HTMLElement at runtime.
-    (el as HTMLElement).addEventListener('transitionend', handler);
-    cleanup(() => (el as HTMLElement).removeEventListener('transitionend', handler));
-  });
+    }),
+  );
 
   return (
     <mat-progress-bar
-      ref={hostRef}
       id={props.id}
       class={classes}
       role="progressbar"

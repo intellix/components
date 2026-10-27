@@ -69,25 +69,44 @@
   - Dropped `coerceElement` — `monitor()` and `stopMonitoring()` accept `HTMLElement` only.
   - Inlined `_getEventTarget` and `_getShadowRoot` helpers.
   - `_onFocus` and `_onBlur` made public for direct triggering in tests (happy-dom does not fire focus events reliably).
-  - Added `FOCUS_MONITOR` context (for manual sharing — see below) and a
-    `useFocusMonitor(hostRef, {checkChildren})` convenience hook (qwik-material
-    button consumes it, 2026-10-27): mirrors `inject(FocusMonitor)` +
-    `ngAfterViewInit`'s `monitor(el, checkChildren)` + `ngOnDestroy`'s
-    `stopMonitoring(el)`, applying/clearing the `cdk-*-focused` classes.
-    Deliberately does *not* read `FOCUS_MONITOR` from context itself: a
-    `FocusMonitor` is a closure full of functions, and capturing a
-    context-resolved one into a `useVisibleTask$` from the component's render
-    scope crashes SSR serialization (Qwik must serialize anything the task's
-    closure captures from the outer scope; functions aren't serializable —
-    "Code(3)"). The hook instead creates a fresh `FocusMonitor` *inside* its
-    own task (a plain top-level import, like `createFocusTrap`/
-    `createOverlayKeyboardDispatcher` elsewhere in this package), so only the
-    import reference crosses the `$` boundary. Each consumer gets its own
-    engine; the resulting DOM is identical to one shared instance, just with
-    one extra set of `document` listeners per consumer. Something that truly
-    needs one shared instance across a subtree can still provide/read
-    `FOCUS_MONITOR` manually, following the `noSerialize()` + reactive-store
-    pattern in `qwik-cdk/root.tsx` (`internals.keyboardDispatcher`, etc.).
+  - Added `FOCUS_MONITOR` context for manual sharing (see below).
+  - **2026-10-27 (button-toggle port):** added `useFocusOrigin()`
+    (`focus-origin/focus-origin.ts`) — a lazy, `useOn()`-based,
+    per-component replacement that doesn't use this engine at all (two DOM
+    native signals — `pointerdown` + `focusin`/`focusout` — instead of the
+    full `InputModalityDetector` + `FocusMonitor` algorithm). First consumed
+    by `qwik-material/button-toggle`.
+  - **2026-10-27 (lazy-interactions remediation, rule 7 — no per-instance
+    `useVisibleTask$` for interaction plumbing in components that appear
+    many times per page):** removed the `useFocusMonitor(hostRef,
+    {checkChildren})` convenience hook that used to live here. It had
+    mirrored `inject(FocusMonitor)` + `ngAfterViewInit`'s `monitor(el,
+    checkChildren)` + `ngOnDestroy`'s `stopMonitoring(el)` by creating a
+    fresh `FocusMonitor` inside a `useVisibleTask$` (deliberately *not*
+    reading `FOCUS_MONITOR` from context itself, since a `FocusMonitor` is a
+    closure full of functions and capturing a context-resolved one into a
+    `useVisibleTask$` from the component's render scope crashes SSR
+    serialization — "Code(3)"; creating it fresh inside the task sidestepped
+    that, the same pattern `createFocusTrap`/`createOverlayKeyboardDispatcher`
+    use elsewhere in this package). That sidestep fixed the SSR crash but not
+    the eagerness: the task still ran on every resumed instance regardless of
+    whether the user ever focused the element, loading its JS chunk
+    unconditionally. Its only consumers (`qwik-material/button`,
+    `mat-icon-button`, `mat-fab-button`, `mat-mini-fab-button`) switched to
+    `useFocusOrigin()` instead — same rendered `cdk-*-focused` classes (see
+    button/SYNC.md deviation 2), zero eager JS. With no remaining consumers,
+    the hook was deleted outright rather than reimplemented lazily on top of
+    this engine: there is no way to lazily call `FocusMonitor.monitor()`
+    without *also* deferring the call itself to a first interaction — at
+    which point the result is just `useFocusOrigin()` with extra
+    indirection, not a meaningfully different primitive. `createFocusMonitor`
+    / `FocusMonitor` / `FOCUS_MONITOR` stay exported for a caller that
+    genuinely needs the full engine — e.g. `focusVia()` (programmatic focus
+    with an explicit origin, which `useFocusOrigin()` has no equivalent for)
+    or one shared instance across a subtree via the `noSerialize()` +
+    reactive-store pattern in `qwik-cdk/root.tsx`
+    (`internals.keyboardDispatcher`, etc.) — just not as a per-instance
+    convenience hook.
 
 ### `FocusTrap` / `useFocusTrap`
 

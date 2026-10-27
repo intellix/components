@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-progress-bar/basic — <mat-progress-bar> with default determinate mode, primary color, aria-valuenow=50, 3-div inner template', async ({
   page,

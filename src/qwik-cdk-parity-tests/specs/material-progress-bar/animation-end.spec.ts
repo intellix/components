@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-progress-bar/animation-end — onAnimationEnd$ QRL fires on primary-bar transitionend, sets data-animation-end="fired"', async ({
   page,
