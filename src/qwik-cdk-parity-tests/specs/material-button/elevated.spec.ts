@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-button/elevated — renders with mdc-button--raised + mat-mdc-raised-button', async ({
   page,
