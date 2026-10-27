@@ -59,7 +59,14 @@ passes**, plus its vitest suite and its Qwik-only Playwright specs.
    classes) must appear the same way after the same interaction. Ripple element
    animation itself is out of scope; the static ripple containers/attributes are
    not.
-7. **Update the record.** Each component's `SYNC.md` loses the deviations that
+7. **Keep it resumable.** No per-instance `useVisibleTask$` for interaction
+   plumbing (focus monitoring, ripple loading, keyboard handling): a page with
+   many components would eagerly download and run their code. Use `useOn` /
+   `useOnDocument` / `on*$` handlers so code loads on first interaction —
+   the same reason upstream's `MatRippleLoader` is lazy. Focus origin can be
+   derived on the host: `pointerdown` records mouse/touch, then `focusin`
+   resolves keyboard via `:focus-visible`, else program.
+8. **Update the record.** Each component's `SYNC.md` loses the deviations that
    are fixed and states the upstream commit synced. Existing Qwik-only Playwright
    specs and vitest specs that asserted the drifted DOM are updated to the
    Angular DOM.
