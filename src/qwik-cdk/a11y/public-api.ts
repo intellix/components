@@ -17,7 +17,6 @@ export type {FocusMonitor} from './focus-monitor/focus-monitor';
 export {
   createFocusMonitor,
   FOCUS_MONITOR,
-  useFocusMonitor,
   FocusMonitorDetectionMode,
 } from './focus-monitor/focus-monitor';
 export type {FocusOrigin, FocusOptions} from './focus-monitor/focus-monitor';
