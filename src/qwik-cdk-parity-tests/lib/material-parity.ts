@@ -56,10 +56,20 @@ export interface ParityScenario {
   scenario: string;
   /** Interactions; DOM is re-compared after each one. */
   steps?: ParityStep[];
+  /**
+   * Subtree to compare. Defaults to `[data-parity-root]`. Overlay-based
+   * components (dialog) pass `.cdk-overlay-container`, which both apps create
+   * under <body> once something opens; the page itself must still render a
+   * `[data-parity-root]` (it is what `open()` waits for).
+   */
+  rootSelector?: string;
 }
 
 /** Captures the `[data-parity-root]` subtree as a normalized DomNode. */
-export async function snapshotParityRoot(page: Page): Promise<DomNode> {
+export async function snapshotParityRoot(
+  page: Page,
+  rootSelector = '[data-parity-root]',
+): Promise<DomNode> {
   // Transient ripple elements are timing-dependent; wait them out.
   await page
     .waitForFunction(() => !document.querySelector('.mat-ripple-element'), undefined, {
@@ -67,7 +77,7 @@ export async function snapshotParityRoot(page: Page): Promise<DomNode> {
     })
     .catch(() => {});
 
-  return page.locator('[data-parity-root]').evaluate(
+  return page.locator(rootSelector).evaluate(
     (root: Element, opts) => {
       type Node = {
         tag: string;
@@ -131,7 +141,10 @@ export async function expectMaterialParity(browser: Browser, s: ParityScenario):
 
   try {
     const compare = async (label: string) => {
-      const diffs = diffNodes(await snapshotParityRoot(angular), await snapshotParityRoot(qwik));
+      const diffs = diffNodes(
+        await snapshotParityRoot(angular, s.rootSelector),
+        await snapshotParityRoot(qwik, s.rootSelector),
+      );
       expect(diffs, `${s.route}/${s.scenario} [${label}]\n${diffs.join('\n')}`).toEqual([]);
     };
 
