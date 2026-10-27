@@ -23,7 +23,7 @@ describe('MAT_BUTTON_TOGGLE_GROUP_STATE', () => {
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE.id).toBe('qwik-material/button-toggle-group-state');
   });
 
-  it('MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS has all 7 fields with sensible values', () => {
+  it('MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS has all 8 fields with sensible values', () => {
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.mode).toBe('single');
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.value).toBeUndefined();
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.values).toEqual([]);
@@ -31,6 +31,7 @@ describe('MAT_BUTTON_TOGGLE_GROUP_STATE', () => {
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.name).toBe('');
     expect(typeof MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle).toBe('function');
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.standalone).toBe(true);
+    expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.fallbackTabIndexClaimed).toEqual({value: true});
   });
 
   it('MatButtonToggleGroupState accepts a well-formed object', () => {
@@ -42,6 +43,7 @@ describe('MAT_BUTTON_TOGGLE_GROUP_STATE', () => {
       name: 'perms',
       onToggle: MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle,
       standalone: false,
+      fallbackTabIndexClaimed: {value: false},
     };
     expect(inst.mode).toBe('multi');
     expect(inst.values).toEqual(['a', 'b']);

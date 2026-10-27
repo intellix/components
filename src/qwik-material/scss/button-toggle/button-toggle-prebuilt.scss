@@ -1,25 +1,81 @@
-// Button toggle prebuilt CSS. Wraps the port's button-toggle.scss with :root
-// defaults for every --mat-button-toggle-* variable it emits. See design spec §4.
+// Button toggle prebuilt CSS. Wraps the port's (now upstream-synced)
+// button-toggle.scss with :root defaults for every --mat-button-toggle-* /
+// --mat-sys-* variable it emits, following the same reconciliation approach
+// as the original Task 2 pass (recompile, add whatever var() names are still
+// unresolved, repeat). See design spec §4 and SYNC.md.
+//
+// Selected-state colors are M3-ish literals (secondary-container /
+// on-secondary-container) rather than a live theme — this port has no
+// runtime theming system, same as every other qwik-material prebuilt file.
+// Consumers that also render <MatPseudoCheckbox> need
+// `@angular-community/qwik-material/core-prebuilt.css` too; button-toggle's
+// own `.mat-button-toggle-appearance-standard .mat-pseudo-checkbox { --mat-
+// pseudo-checkbox-minimal-selected-checkmark-color: ... }` override means
+// core's :root default for that variable is never the one actually used
+// inside a button-toggle, so it isn't duplicated here.
 
 @use './button-toggle';
 
 :root {
-  --mat-button-toggle-text-color: rgba(0, 0, 0, 0.87);
-  --mat-button-toggle-divider-color: rgba(0, 0, 0, 0.12);
-  --mat-button-toggle-selected-state-background-color: rgba(0, 0, 0, 0.08);
-  --mat-button-toggle-selected-state-text-color: rgba(0, 0, 0, 0.87);
-  --mat-button-toggle-focus-outline-color: rgba(0, 0, 0, 0.87);
+  // ─── button-toggle (standard appearance) ───
   --mat-button-toggle-background-color: transparent;
+  --mat-button-toggle-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-button-toggle-state-layer-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-button-toggle-divider-color: var(--mat-sys-outline, rgba(0, 0, 0, 0.12));
+  --mat-button-toggle-selected-state-background-color: var(
+    --mat-sys-secondary-container, #e8def8
+  );
+  --mat-button-toggle-selected-state-text-color: var(
+    --mat-sys-on-secondary-container, #1d192b
+  );
+  --mat-button-toggle-disabled-state-background-color: transparent;
+  --mat-button-toggle-disabled-state-text-color: rgba(0, 0, 0, 0.38);
+  --mat-button-toggle-disabled-selected-state-background-color: rgba(0, 0, 0, 0.12);
+  --mat-button-toggle-disabled-selected-state-text-color: rgba(0, 0, 0, 0.38);
+  --mat-button-toggle-hover-state-layer-opacity: var(--mat-sys-hover-state-layer-opacity, 0.04);
+  --mat-button-toggle-focus-state-layer-opacity: var(--mat-sys-focus-state-layer-opacity, 0.12);
   --mat-button-toggle-height: 40px;
-
-  // Shape + typography — button-toggle.scss's token-utils.slot(...) calls emit
-  // a nested var() fallback chain (--mat-button-toggle-* -> --mat-sys-* ->
-  // concrete literal), so both levels need a :root default. Values sourced
-  // from this repo's core/tokens/m3/_md-sys-shape.scss (corner-extra-large:
-  // 28px) and _md-sys-typescale.scss (label-large-size: 0.875rem), matching
-  // _m3-button-toggle.scss's get-tokens() mapping.
   --mat-button-toggle-shape: var(--mat-sys-corner-extra-large, 28px);
+  --mat-button-toggle-label-text-font: var(--mat-sys-label-large-font, inherit);
+  --mat-button-toggle-label-text-line-height: var(
+    --mat-sys-label-large-line-height, 1.25rem
+  );
   --mat-button-toggle-label-text-size: var(--mat-sys-label-large-size, 0.875rem);
+  --mat-button-toggle-label-text-tracking: var(--mat-sys-label-large-tracking, 0.1px);
+  --mat-button-toggle-label-text-weight: var(--mat-sys-label-large-weight, 500);
+
+  // ─── button-toggle (legacy tokens — upstream still computes these as the
+  // BASE rule on .mat-button-toggle-standalone/.mat-button-toggle-group
+  // before the higher-specificity -appearance-standard rule overrides most
+  // of them; "legacy" here means M2's pre-"standard-appearance" variant,
+  // not a deprecated/removed feature) ───
+  --mat-button-toggle-legacy-text-color: rgba(0, 0, 0, 0.87);
+  --mat-button-toggle-legacy-state-layer-color: rgba(0, 0, 0, 0.12);
+  --mat-button-toggle-legacy-label-text-font: inherit;
+  --mat-button-toggle-legacy-label-text-size: 1rem;
+  --mat-button-toggle-legacy-label-text-line-height: 1.5;
+  --mat-button-toggle-legacy-label-text-weight: 400;
+  --mat-button-toggle-legacy-label-text-tracking: normal;
+  --mat-button-toggle-legacy-selected-state-text-color: rgba(0, 0, 0, 0.87);
+  --mat-button-toggle-legacy-selected-state-background-color: rgba(0, 0, 0, 0.12);
+  --mat-button-toggle-legacy-disabled-state-text-color: rgba(0, 0, 0, 0.38);
+  --mat-button-toggle-legacy-disabled-state-background-color: #ffffff;
+  --mat-button-toggle-legacy-disabled-selected-state-background-color: rgba(0, 0, 0, 0.12);
+  --mat-button-toggle-legacy-focus-state-layer-opacity: 1;
+  --mat-button-toggle-legacy-height: 36px;
+  --mat-button-toggle-legacy-shape: 2px;
+
+  // ─── --mat-sys-* system tokens button-toggle's m3 tokens resolve through ───
   --mat-sys-corner-extra-large: 28px;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-outline: rgba(0, 0, 0, 0.12);
+  --mat-sys-secondary-container: #e8def8;
+  --mat-sys-on-secondary-container: #1d192b;
+  --mat-sys-hover-state-layer-opacity: 0.04;
+  --mat-sys-focus-state-layer-opacity: 0.12;
+  --mat-sys-label-large-font: inherit;
+  --mat-sys-label-large-line-height: 1.25rem;
   --mat-sys-label-large-size: 0.875rem;
+  --mat-sys-label-large-tracking: 0.1px;
+  --mat-sys-label-large-weight: 500;
 }

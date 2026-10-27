@@ -2,23 +2,28 @@
  * MatButtonToggle scenario port from src/material/button-toggle/button-toggle.spec.ts.
  *
  * Upstream has ~60+ `it()` blocks — heavy on SelectionModel internals,
- * EventEmitter.emit() assertions, FocusMonitor origin tracking, keyboard
- * arrow-key handlers, ripple, and Angular Forms (CVA) integration. All
- * of that is moot in the port (spec §5 deviations #1-#9). Restructured:
+ * EventEmitter.emit() assertions, and Angular Forms (CVA) integration.
+ * `createDOM()` hangs this package's vitest worker (see mat-button's own
+ * scenario-port comment for the same finding), so no DOM-render tests are
+ * attempted here either way. Restructured:
  *
  *   - Live sanity tests (7): typeof + context ids + DEFAULTS shape +
  *     no-op onToggle safety + mode union + props shapes.
  *   - describe.skip DOM-rendered (7): group + child roles, single-mode
- *     toggle + deselect, multi-mode toggle, group-level disabled,
- *     individual disabled, form-name hidden input. Deferred to
- *     Playwright Task 9 + verified live at Task 11.
- *   - describe.skip Angular-only (4): CVA, SelectionModel, FocusMonitor
- *     + arrow keys, ripple + PseudoCheckbox + IdGenerator + niche flags.
- *     Deferred forever per spec §5.
+ *     toggle + roving tabindex, multi-mode toggle, group-level disabled,
+ *     individual disabled, keyboard arrow-key nav, name/form participation,
+ *     FocusMonitor classes, pseudo-checkbox + ripple + focus-overlay spans.
+ *     Deferred to the Playwright specs below (2026-10-27 DOM-parity
+ *     remediation re-port — these are now IMPLEMENTED, just verified via a
+ *     real browser instead of vitest).
+ *   - describe.skip Angular-only (2): CVA, SelectionModel. Deferred forever
+ *     — Qwik has no forms system / RxJS collections equivalent (spec §5
+ *     deviations #1, #2 in SYNC.md's "earlier deviations" history).
  *
- * Real DOM assertions live in
- * src/qwik-cdk-parity-tests/specs/material-button-toggle/*.spec.ts,
- * verified against a running Chromium preview in Task 11.
+ * Real DOM + behavior assertions live in
+ * src/qwik-cdk-parity-tests/specs/material-button-toggle/*.spec.ts
+ * (Qwik-only DOM specs) and angular-parity.spec.ts (Angular-vs-Qwik DOM
+ * diffing — the authoritative parity gate).
  */
 import {describe, it, expect} from 'vitest';
 import {
@@ -45,7 +50,7 @@ describe('MatButtonToggle surface — sanity', () => {
     expect(cfg).toBeDefined();
   });
 
-  it('MAT_BUTTON_TOGGLE_GROUP_STATE carries expected id + DEFAULTS has all 7 fields', () => {
+  it('MAT_BUTTON_TOGGLE_GROUP_STATE carries expected id + DEFAULTS has all 8 fields', () => {
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE.id).toBe('qwik-material/button-toggle-group-state');
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS).toEqual({
       mode: 'single',
@@ -55,6 +60,7 @@ describe('MatButtonToggle surface — sanity', () => {
       name: '',
       onToggle: MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle,
       standalone: true,
+      fallbackTabIndexClaimed: {value: true},
     });
     expect(typeof MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle).toBe('function');
   });
@@ -106,7 +112,6 @@ describe('MatButtonToggle surface — sanity', () => {
       name: 'style-override',
       'aria-label': 'Bold',
       'aria-labelledby': 'bold-heading',
-      'aria-describedby': 'bold-desc',
       class: 'my-toggle',
     };
     expect(groupProps.values).toEqual(['read', 'write']);
@@ -114,27 +119,26 @@ describe('MatButtonToggle surface — sanity', () => {
   });
 });
 
-describe.skip('MatButtonToggle DOM-rendered scenarios — deferred to Playwright Task 9', () => {
-  it('MatButtonToggleGroup renders <mat-button-toggle-group> with role="radiogroup" in single mode + role="group" + mat-button-toggle-group-multiple class in multi mode', () => {});
-  it('MatButtonToggle in single-mode group renders role="radio" + aria-checked; in multi mode renders role="checkbox" + aria-checked; standalone renders role="button" + aria-pressed', () => {});
-  it('Clicking a MatButtonToggle in single mode fires onChange$(value); clicking currently-selected toggle fires onChange$(undefined)', () => {});
+describe.skip('MatButtonToggle DOM-rendered scenarios — verified via Playwright', () => {
+  it('MatButtonToggleGroup renders <mat-button-toggle-group> with role="radiogroup" + mat-button-toggle-group-appearance-standard in single mode, role="group" in multi mode (no "-multiple" class — not an upstream class)', () => {});
+  it('MatButtonToggle in single-mode group renders role="radio" + aria-checked; in multi mode AND standalone renders role="button" + aria-pressed (upstream: role is radio|button only, never checkbox)', () => {});
+  it('Single-select roving tabindex: selected toggle (or first enabled, if none selected) gets tabindex=0, every other single-select sibling gets tabindex=-1; multi-select and standalone toggles stay tabindex=0', () => {});
+  it('Clicking a MatButtonToggle in single mode fires onChange$(value); re-clicking the already-selected toggle is a no-op (radio semantics — never deselects)', () => {});
   it('Clicking a MatButtonToggle in multi mode adds/removes from values array via onValuesChange$', () => {});
-  it('Group-level disabled cascades: all children reflect aria-disabled="true" and are non-interactive', () => {});
-  it('Individual-button disabled reflects aria-disabled="true" on that button only; group and siblings unaffected', () => {});
-  it('name prop on group: checked toggles emit <input name value>; unchecked do not', () => {});
+  it('Arrow-key navigation (single-select group only): Left/Up and Right/Down move the roving tabindex + selection to the next non-disabled toggle, wrapping around; Space/Enter activate the focused toggle', () => {});
+  it('Group-level disabled: every child gets the native `disabled` attribute on its inner <button> (no aria-disabled on the outer host — disabledInteractive not ported)', () => {});
+  it("Individual-button disabled: only that toggle's inner <button> gets `disabled`; group and siblings unaffected", () => {});
+  it("name on group: single-select mode mirrors group.name (auto-generated via the id generator when omitted) onto every inner <button>'s `name` attribute; multi-select/standalone use the toggle's own `name` prop or omit it. No hidden <input> is ever rendered — upstream has none", () => {});
+  it('FocusMonitor: focusing a toggle via Tab sets cdk-focused + cdk-keyboard-focused on the outer host; mouse-driven focus sets cdk-mouse-focused instead; blur clears all of them', () => {});
+  it('Grouped toggles (single AND multi mode) render a .mat-button-toggle-checkbox-wrapper > <mat-pseudo-checkbox appearance="minimal" state="checked"> (state is always "checked" — visibility is CSS-driven by the ancestor .mat-button-toggle-checked, not the pseudo-checkbox\'s own state); standalone toggles render neither', () => {});
+  it('Every toggle renders a .mat-button-toggle-focus-overlay span and a matripple .mat-ripple.mat-button-toggle-ripple span as the last two host children', () => {});
 });
 
-describe.skip('MatButtonToggle — Angular-only tests', () => {
+describe.skip('MatButtonToggle — Angular-only tests (deferred forever)', () => {
   it('should implement ControlValueAccessor (writeValue / registerOnChange / setDisabledState)', () => {
-    // Omitted — Qwik has no forms system (spec §5 deviation #1).
+    // Omitted — Qwik has no forms system (earlier spec §5 deviation #1).
   });
   it('should manage selection via SelectionModel + .selected / .deselect / .toggle API', () => {
-    // Replaced by plain arrays + context (spec §5 deviation #2).
-  });
-  it('should use FocusMonitor + roving tabindex + arrow-key navigation', () => {
-    // Native Tab per button; no arrow keys (spec §5 deviations #4, #5).
-  });
-  it('should integrate ripple + MatPseudoCheckbox + _IdGenerator + legacy appearance + vertical + hideIndicator + disabledInteractive', () => {
-    // All out of scope (spec §5 deviations #6, #7, #8).
+    // Replaced by plain arrays + context (earlier spec §5 deviation #2).
   });
 });

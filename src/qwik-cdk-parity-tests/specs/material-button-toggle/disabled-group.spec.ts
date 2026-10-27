@@ -1,8 +1,8 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
-test('material-button-toggle/disabled-group — group aria-disabled=true, all children unclickable + opacity 0.38', async ({
+test('material-button-toggle/disabled-group — group aria-disabled=true; every child button carries the native `disabled` attribute + pointer-events:none', async ({
   page,
 }) => {
   await page.goto(`${BASE_URL}/mat-button-toggle/disabled-group/`);
@@ -12,19 +12,27 @@ test('material-button-toggle/disabled-group — group aria-disabled=true, all ch
   await expect(group).toHaveAttribute('aria-disabled', 'true');
 
   const toggles = page.locator('mat-button-toggle');
+  const buttons = page.locator('mat-button-toggle button.mat-button-toggle-button');
   for (let i = 0; i < 3; i++) {
-    const opacity = await toggles.nth(i).evaluate(el => getComputedStyle(el).opacity);
-    expect(parseFloat(opacity)).toBeCloseTo(0.38, 1);
+    await expect(toggles.nth(i)).toHaveClass(/mat-button-toggle-disabled/);
+    // Native `disabled` on the inner <button> (no aria-disabled anywhere —
+    // disabledInteractive, the only upstream path to aria-disabled, isn't
+    // ported) is what actually blocks interaction and is what screen
+    // readers pick up on.
+    await expect(buttons.nth(i)).toBeDisabled();
+    // Upstream `.mat-button-toggle-disabled { pointer-events: none; ... }`
+    // — no opacity override.
+    const pe = await toggles.nth(i).evaluate(el => getComputedStyle(el).pointerEvents);
+    expect(pe).toBe('none');
   }
 
   // Preselected "bold" (index 0) — verify it's still shown as checked SSR-side.
-  await expect(toggles.nth(0)).toHaveAttribute('aria-checked', 'true');
+  await expect(buttons.nth(0)).toHaveAttribute('aria-checked', 'true');
 
-  // Attempt to click "italic" — should be no-op (pointer-events: none).
-  // Playwright's click bypasses pointer-events by default, so use a force check:
-  const italicBox = await toggles.nth(1).locator('button').boundingBox();
-  expect(italicBox).not.toBeNull();
-  // Direct evaluate to verify pointer-events computed style.
-  const pe = await toggles.nth(1).evaluate(el => getComputedStyle(el).pointerEvents);
-  expect(pe).toBe('none');
+  // Clicking is a no-op while disabled (pointer-events: none also blocks a
+  // real pointer, but assert on state directly since Playwright's click
+  // bypasses pointer-events by default).
+  await buttons.nth(1).click({force: true});
+  await expect(buttons.nth(1)).toHaveAttribute('aria-checked', 'false');
+  await expect(buttons.nth(0)).toHaveAttribute('aria-checked', 'true');
 });

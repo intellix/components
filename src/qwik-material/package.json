@@ -34,6 +34,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./core": {
+      "qwik": "./core/index.ts",
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
     "./dialog": {
       "qwik": "./dialog/index.ts",
       "types": "./dist/dialog/index.d.ts",
@@ -94,6 +99,7 @@
       "types": "./dist/button-toggle/index.d.ts",
       "import": "./dist/button-toggle/index.js"
     },
+    "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
     "./card-prebuilt.css": "./dist/card-prebuilt.css",
