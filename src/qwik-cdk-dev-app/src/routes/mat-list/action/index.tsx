@@ -5,15 +5,9 @@ export default component$(() => (
   <>
     <div data-parity-root>
       <MatActionList>
-        <MatListItem as="button">
-          <MatListItemTitle>Save</MatListItemTitle>
-        </MatListItem>
-        <MatListItem as="button">
-          <MatListItemTitle>Duplicate</MatListItemTitle>
-        </MatListItem>
-        <MatListItem as="button" disabled>
-          <MatListItemTitle>Delete</MatListItemTitle>
-        </MatListItem>
+        <MatListItem as="button" title={<MatListItemTitle>Save</MatListItemTitle>} />
+        <MatListItem as="button" title={<MatListItemTitle>Duplicate</MatListItemTitle>} />
+        <MatListItem as="button" disabled title={<MatListItemTitle>Delete</MatListItemTitle>} />
       </MatActionList>
     </div>
     <main data-scenario-ready>ready</main>

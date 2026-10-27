@@ -11,27 +11,27 @@ export default component$(() => (
   <>
     <div data-parity-root>
       <MatList role="list">
-        <MatListItem>
-          <MatListItemAvatar>
-            <div style={{width: '100%', height: '100%', background: '#f44336'}} />
-          </MatListItemAvatar>
-          <MatListItemTitle>Alice Smith</MatListItemTitle>
-          <MatListItemLine>alice@example.com</MatListItemLine>
-        </MatListItem>
-        <MatListItem>
-          <MatListItemAvatar>
-            <div style={{width: '100%', height: '100%', background: '#4caf50'}} />
-          </MatListItemAvatar>
-          <MatListItemTitle>Bob Jones</MatListItemTitle>
-          <MatListItemLine>bob@example.com</MatListItemLine>
-        </MatListItem>
-        <MatListItem>
-          <MatListItemAvatar>
-            <div style={{width: '100%', height: '100%', background: '#2196f3'}} />
-          </MatListItemAvatar>
-          <MatListItemTitle>Carol Davis</MatListItemTitle>
-          <MatListItemLine>carol@example.com</MatListItemLine>
-        </MatListItem>
+        <MatListItem
+          avatar={
+            <MatListItemAvatar style={{width: '100%', height: '100%', background: '#f44336'}} />
+          }
+          title={<MatListItemTitle>Alice Smith</MatListItemTitle>}
+          lineContent={<MatListItemLine>alice@example.com</MatListItemLine>}
+        />
+        <MatListItem
+          avatar={
+            <MatListItemAvatar style={{width: '100%', height: '100%', background: '#4caf50'}} />
+          }
+          title={<MatListItemTitle>Bob Jones</MatListItemTitle>}
+          lineContent={<MatListItemLine>bob@example.com</MatListItemLine>}
+        />
+        <MatListItem
+          avatar={
+            <MatListItemAvatar style={{width: '100%', height: '100%', background: '#2196f3'}} />
+          }
+          title={<MatListItemTitle>Carol Davis</MatListItemTitle>}
+          lineContent={<MatListItemLine>carol@example.com</MatListItemLine>}
+        />
       </MatList>
     </div>
     <main data-scenario-ready>ready</main>

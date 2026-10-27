@@ -11,33 +11,33 @@ export default component$(() => (
   <>
     <div data-parity-root>
       <MatList role="list">
-        <MatListItem>
-          <MatListItemIcon>
-            <div
+        <MatListItem
+          icon={
+            <MatListItemIcon
               style={{width: '100%', height: '100%', background: '#f44336', borderRadius: '4px'}}
             />
-          </MatListItemIcon>
-          <MatListItemTitle>Inbox</MatListItemTitle>
-          <MatListItemMeta>128</MatListItemMeta>
-        </MatListItem>
-        <MatListItem>
-          <MatListItemIcon>
-            <div
+          }
+          title={<MatListItemTitle>Inbox</MatListItemTitle>}
+          meta={<MatListItemMeta>128</MatListItemMeta>}
+        />
+        <MatListItem
+          icon={
+            <MatListItemIcon
               style={{width: '100%', height: '100%', background: '#4caf50', borderRadius: '4px'}}
             />
-          </MatListItemIcon>
-          <MatListItemTitle>Sent</MatListItemTitle>
-          <MatListItemMeta>42</MatListItemMeta>
-        </MatListItem>
-        <MatListItem>
-          <MatListItemIcon>
-            <div
+          }
+          title={<MatListItemTitle>Sent</MatListItemTitle>}
+          meta={<MatListItemMeta>42</MatListItemMeta>}
+        />
+        <MatListItem
+          icon={
+            <MatListItemIcon
               style={{width: '100%', height: '100%', background: '#2196f3', borderRadius: '4px'}}
             />
-          </MatListItemIcon>
-          <MatListItemTitle>Drafts</MatListItemTitle>
-          <MatListItemMeta>7</MatListItemMeta>
-        </MatListItem>
+          }
+          title={<MatListItemTitle>Drafts</MatListItemTitle>}
+          meta={<MatListItemMeta>7</MatListItemMeta>}
+        />
       </MatList>
     </div>
     <main data-scenario-ready>ready</main>
