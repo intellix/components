@@ -39,7 +39,8 @@ const pressEscape = (name = 'press Escape'): ParityStep => ({
 
 const clickBackdrop = (name = 'click backdrop'): ParityStep => ({
   name,
-  run: (page: Page) => page.locator('.cdk-overlay-backdrop').click({force: true}),
+  run: (page: Page) =>
+    page.locator('.cdk-overlay-backdrop').click({position: {x: 5, y: 5}, force: true}),
 });
 
 test.describe('cdk-dialog — Angular DOM parity', () => {
