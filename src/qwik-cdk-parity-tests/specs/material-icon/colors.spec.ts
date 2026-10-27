@@ -1,6 +1,8 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+// Overridable so this spec can target a per-worktree Qwik preview port, same
+// convention as lib/material-parity.ts's QWIK_URL.
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-icon/colors — 3 mat-icon nodes with distinct .mat-{primary,accent,warn} classes and no .mat-icon-no-color', async ({
   page,

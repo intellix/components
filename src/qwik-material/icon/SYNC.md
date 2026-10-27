@@ -6,13 +6,26 @@ Every deviation from a verbatim copy is recorded here. Companion to
 `src/qwik-material/card/SYNC.md`, `src/qwik-material/toolbar/SYNC.md`, and
 `src/qwik-material/badge/SYNC.md`.
 
+**2026-10-27 DOM-parity remediation.** `specs/material-icon/angular-parity.spec.ts`
+(diffed against `src/material/icon/icon.ts` + `icon-registry.ts` behavior, live
+in the Angular dev-app) found three drifts, all fixed — see the updated
+deviations #7 and new #14 below:
+1. No default font-set class was ever applied (Deviation #7 below previously
+   dropped `MatIconRegistry.getDefaultFontSetClass()`'s effect entirely instead
+   of folding it in) — font-mode icons rendered with zero font-set class.
+2. `fontIcon`-derived class (`_updateFontIconClasses`'s `elem.classList.add(this.fontIcon)`
+   when the resolved font-set isn't `mat-ligature-font`) was never reproduced.
+3. SVG-mode icons never got `MatIconRegistry._setSvgAttributes`'s
+   `fit`/`height`/`width`/`preserveAspectRatio`/`focusable` on the root `<svg>`.
+
 ## Upstream sync state
 
 | File | Upstream path | Sync state | Notes |
 | --- | --- | --- | --- |
 | `icon/mat-icon.tsx` | `src/material/icon/icon.ts` (MatIcon component) | ported | Directive→component$; two mutually-exclusive JSX branches for font vs. SVG mode; registry omitted |
 | `icon/icon-color.ts` | `src/material/icon/icon.ts` (ThemePalette narrowing) | ported | Narrowed to `'primary' | 'accent' | 'warn'` union |
-| `icon/icon-config.ts` | `src/material/icon/icon.ts` (MatIconDefaultOptions) | ported | InjectionToken→createContextId; folded into QwikMaterialProvider.matIconConfig |
+| `icon/icon-config.ts` | `src/material/icon/icon.ts` (MatIconDefaultOptions) + `icon-registry.ts` (`_defaultFontSetClass`) | ported | InjectionToken→createContextId; folded into QwikMaterialProvider.matIconConfig; exports `MAT_ICON_DEFAULT_FONT_SET_CLASS` (upstream registry's built-in default) |
+| `icon/icon-svg-attrs.ts` | `src/material/icon/icon-registry.ts` (`_setSvgAttributes`) | ported (string-surgery, new file) | No live `SVGElement` to `setAttribute` on with `dangerouslySetInnerHTML` — stitches the same 5 attributes into the literal's opening `<svg>` tag instead |
 | `scss/icon/icon.scss` | `src/material/icon/icon.scss` | synced | byte-identical copy — no `@use '@angular/cdk'` present, unlike badge/toolbar/dialog port SCSS which needed the cdk-stub rewrite |
 | `scss/icon/_icon-theme.scss` | `src/material/icon/_icon-theme.scss` | synced | byte-identical copy |
 | `scss/icon/_m2-icon.scss` | `src/material/icon/_m2-icon.scss` | synced | byte-identical copy |
@@ -21,7 +34,12 @@ Every deviation from a verbatim copy is recorded here. Companion to
 
 ## Removed upstream files
 
-- `icon-registry.ts` → entire 741-LOC MatIconRegistry service omitted (§Deviations #2)
+- `icon-registry.ts` → the `MatIconRegistry` *service* (XHR loading, icon-sets,
+  `addSvgIcon*`, `getNamedSvgIcon`, aliasing) is still omitted (§Deviations #2),
+  but two pieces of its state that are directly observable in rendered DOM —
+  the default font-set class and `_setSvgAttributes`'s sizing attrs — are now
+  reproduced without a registry object (see `icon-config.ts` /
+  `icon-svg-attrs.ts` above).
 - `icon-module.ts` → Qwik has no module concept
 - `fake-svgs.ts` → test-only SVG payloads for registry unit tests; no registry, no need
 - `testing/` (MatIconTestingModule + FakeMatIconRegistry) → registry stubs; no registry, no need
@@ -36,13 +54,32 @@ Every deviation from a verbatim copy is recorded here. Companion to
 4. **DomSanitizer omitted.** `svgLiteral` set via `dangerouslySetInnerHTML` and trusted verbatim.
 5. **`MAT_ICON_LOCATION` context + `ngAfterViewChecked` FuncIRI path-prepending omitted.** Safari workaround for base-tag pages; SSR-hostile.
 6. **`ErrorHandler` injection omitted.** No icon-fetch errors possible without a registry.
-7. **`registerFontClassAlias` + `setDefaultFontSetClass` + `classNameForFontAlias` omitted.** Folded into `MAT_ICON_CONFIG.fontSet`.
+7. **`registerFontClassAlias` + `classNameForFontAlias` omitted; `setDefaultFontSetClass` folded into config, not omitted.** There is no alias map (no scenario needs one). But the *effect* of `setDefaultFontSetClass` — the font-set class ladder applied when a `<mat-icon>` has no explicit `fontSet` — is real rendered DOM and is reproduced: `MatIconConfig.fontSet` (provider-configurable, same as before) now falls back to the upstream registry's own built-in default, `MAT_ICON_DEFAULT_FONT_SET_CLASS = 'material-icons mat-ligature-font'`, when neither the prop nor the config is set, instead of silently applying no class at all. Per `_updateFontIconClasses`, this resolved class list may contain multiple space-separated classes; the explicit `fontSet` *prop* (and `data-mat-icon-namespace`) still only ever reflects one, pre-cleaned token — the registry-style default is class-ladder-only and never attribute-visible, matching upstream's split between the `[attr.data-mat-icon-namespace]` host binding and `getDefaultFontSetClass()`. Additionally, when the resolved font-set classes do **not** include `mat-ligature-font`, `fontIcon` is now also added as a class (non-ligature fonts render per-icon glyphs via a CSS class) — previously omitted outright.
 8. **RxJS `Subscription` lifecycle omitted.**
 9. **`MAT_ICON_CONFIG` folded into `QwikMaterialProvider.matIconConfig`.** 7th `useContextProvider` call.
 10. **`_cleanupFontValue` (trim + first space-separated token)** applied at prop-resolution time, not per-setter as upstream does.
 11. **Font-mode vs. SVG-mode via two JSX branches.** `dangerouslySetInnerHTML` and `<Slot />` are mutually exclusive; `svgLiteral` wins if both provided.
 12. **`aria-hidden='true'` default via prop merge** (`props['aria-hidden'] ?? 'true'`) instead of upstream's constructor-time `setAttribute`.
 13. **`aria-label` prop added to `MatIconProps`.** User-adjudicated during Task 9: spec §7.2's `aria-labeled/` route demonstrates `<MatIcon aria-label="Home">` for icons used as labeled controls, but §2.3's original prop list did not declare `aria-label`. Extension forwards `aria-label={props['aria-label']}` on both JSX branches so labeled icons carry the a11y attribute in the emitted DOM.
+14. **`_setSvgAttributes` reproduced via string surgery, not DOM mutation.** Upstream calls `svg.setAttribute('fit', '')` / `'height', '100%'` / `'width', '100%'` / `'preserveAspectRatio', 'xMidYMid meet'` / `'focusable', 'false'` on the live `SVGElement` it parsed from the registered literal, on top of whatever the literal already carries (`viewBox`, `aria-hidden`, …). Since `svgLiteral` is set via `dangerouslySetInnerHTML` (no live element to mutate, and it must behave identically at SSR and in the browser), `icon-svg-attrs.ts`'s `withIconSvgAttributes()` inserts the same 5 attributes into the opening `<svg>` tag's markup instead, overwriting any pre-existing occurrence of one of them and leaving every other attribute untouched. `IconOptions.viewBox` (upstream's optional override, tied to the now-omitted registry) is not reproduced — the literal's own `viewBox` passes through unchanged.
+
+## Qwik dev-app wiring
+
+`src/qwik-cdk-dev-app/src/routes/mat-icon/layout.tsx` wraps every `/mat-icon/*`
+scenario in `<QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>`,
+mirroring the Angular dev-app's effective default (`DevAppLayout.toggleM3` →
+`MatIconRegistry.setDefaultFontSetClass('material-symbols-outlined')`,
+`src/dev-app/dev-app/dev-app-layout.ts`, in effect by default since
+`m3Enabled` defaults to `true`). No other route tree uses `<MatIcon>` yet, so
+this is scoped to `mat-icon/` rather than the dev-app root.
+
+`src/qwik-cdk-dev-app/src/routes/mat-icon/svg-literal/index.tsx` now passes
+`svgName="home"` to `<MatIcon svgLiteral={HOME_SVG} />`. This is a scenario
+fix, not a component fix: the Angular mirror
+(`src/dev-app/qwik-parity/icon.ts` `IconSvgLiteral`) registers the literal via
+`iconRegistry.addSvgIconLiteral('home', ...)`, so Angular's `MatIcon` renders
+`data-mat-icon-name="home"`. The Qwik route previously passed an anonymous
+literal with no name; it now mirrors the Angular registration.
 
 ## Stub inventory delta
 
