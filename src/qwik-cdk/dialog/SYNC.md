@@ -27,15 +27,29 @@ Open deviations:
   signal on the Dialog service (avoid RxJS, surface in idiomatic shape).
 - Dialog: `afterAllClosed: Observable` → `<QwikCdkRoot onAllDialogsClosed$>` callback (same).
 
-- DialogConfig: `autoFocus` ('first-tabbable' | 'first-heading' | string selectors)
-  simplified to a boolean — any non-false value calls useFocusTrap with autoCapture: true.
-  The fine-grained selector strategy will require enhancing useFocusTrap (deferred).
-- DialogConfig: `restoreFocus: false` opt-out not yet supported — useFocusTrap always
-  restores when autoCapture is true.
-- DialogConfig: `ariaModal` component-level default changed from `false` (Angular CDK)
-  to `true` (qwik-cdk). CdkDialogContainer applies `aria-modal={config.ariaModal ?? true}`.
-  Most modal dialogs benefit from `aria-modal="true"` (AT focus restricted to the dialog
-  subtree); the conservative `false` CDK default required explicit opt-in for the common case.
+Fixed 2026-10-27 (DOM parity remediation — see
+docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md; these
+previously-accepted deviations are undone, DOM parity overrides the earlier judgment calls):
+- DialogConfig: `ariaModal` default restored to upstream's `false` (was `true`).
+  `CdkDialogContainer` applies `aria-modal={config.ariaModal ?? false}`.
+- DialogConfig.autoFocus: `useFocusTrap` (qwik-cdk/a11y) now takes the full
+  `'dialog' | 'first-tabbable' | 'first-heading' | string selector | boolean` union — matching
+  CDK's `_trapFocus()` switch exactly, including `_forceFocus()`'s temporary `tabindex="-1"` for
+  non-natively-focusable targets (e.g. `'first-heading'` landing on an `<h2>`). `autoFocus` is no
+  longer simplified to a boolean.
+- DialogConfig.restoreFocus: `restoreFocus: false` now actually opts out (passed through to
+  `useFocusTrap({restoreFocus: config.restoreFocus !== false})`). String/`HTMLElement` values are
+  still treated as "restore" (truthy) rather than restoring to that specific target — CDK's
+  fine-grained restore-target selection is not ported.
+- `CdkDialogContainer` now renders `<cdk-dialog-container>` (was a plain `<div>`), has
+  `id={config.id}`, and no longer echoes `panelClass` onto its own class list (that belongs on
+  the overlay *pane*, not the container — see qwik-cdk/overlay/SYNC.md).
+- `Dialog.open()` (via `createDialogService`) now defaults `positionStrategy` to a centered
+  `GlobalPositionStrategy` when the caller doesn't supply one, matching upstream
+  `Dialog._getOverlayConfig()`. Previously no default was applied at all, so every dialog's
+  overlay host never got `cdk-global-overlay-wrapper` / centering styles.
+- Focus trap anchors now carry `cdk-visually-hidden` (in addition to `cdk-focus-trap-anchor`),
+  matching `FocusTrap._createAnchor()`.
 
 Scenario port log (dialog.spec.ts) — 38 ported / 53 skipped of 78 CDK source scenarios
 (plus 13 extra service-level tests added beyond direct CDK equivalents):

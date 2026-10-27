@@ -14,7 +14,7 @@ import type {DialogConfig} from './dialog-config';
 import {createDialogRef, type DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';
 import type {Overlay, OverlayRef, OverlayRegistry, ScrollStrategy} from '../overlay/public-api';
-import {createOverlayService} from '../overlay/public-api';
+import {createOverlayService, createGlobalPositionStrategy} from '../overlay/public-api';
 import type {OverlayKeyboardDispatcher, OverlayOutsideClickDispatcher} from '../overlay/public-api';
 import {DIALOG_DATA} from './dialog-tokens';
 import type {IdGenerator} from '../a11y/id-generator';
@@ -67,7 +67,7 @@ export function useDialog(): Dialog {
 
       // Build a thin idGen + registry that close over the shared ctx signals.
       const idGen = makeCtxIdGen(ctx.idCounter);
-      const registry = makeCtxRegistry(ctx.entries);
+      const registry = makeCtxRegistry(ctx.entries, ctx.overlayContainerCreated);
       const overlay = createOverlayService(registry, idGen);
 
       const service = createDialogService({
@@ -106,10 +106,14 @@ function makeCtxIdGen(counter: Signal<number>): IdGenerator {
   };
 }
 
-function makeCtxRegistry(entries: Signal<readonly any[]>): OverlayRegistry {
+function makeCtxRegistry(
+  entries: Signal<readonly any[]>,
+  overlayContainerCreated: Signal<boolean>,
+): OverlayRegistry {
   return {
     entries,
     push: e => {
+      overlayContainerCreated.value = true;
       entries.value = [...entries.value, e];
     },
     remove: id => {
@@ -208,6 +212,13 @@ export function createDialogService(deps: {
       if (!merged.scrollStrategy && deps.dialogScrollStrategyFactory) {
         merged.scrollStrategy = deps.dialogScrollStrategyFactory();
       }
+      // Mirrors upstream `Dialog._getOverlayConfig()`: defaults to a
+      // centered GlobalPositionStrategy when the caller doesn't supply one.
+      if (!merged.positionStrategy) {
+        merged.positionStrategy = createGlobalPositionStrategy()
+          .centerHorizontally()
+          .centerVertically();
+      }
 
       const isOpen = {value: true} as Signal<boolean>;
       const instance = {value: null} as Signal<C | null>;
@@ -227,6 +238,7 @@ export function createDialogService(deps: {
           minHeight: merged.minHeight,
           maxWidth: merged.maxWidth,
           maxHeight: merged.maxHeight,
+          direction: merged.direction,
           positionStrategy: merged.positionStrategy,
           scrollStrategy: merged.scrollStrategy,
         } as any,
