@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, Type} from '@angular/core';
+import {afterNextRender, ChangeDetectorRef, Component, Type} from '@angular/core';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
 
 // Each scenario mirrors src/qwik-cdk-dev-app/src/routes/mat-progress-bar/<name>/index.tsx.
@@ -92,12 +92,14 @@ export class ProgressBarAnimationEnd {
   fired = false;
 
   constructor(private _changeDetectorRef: ChangeDetectorRef) {
-    // Kick the value from 0 to 100 on next tick to trigger a transition, mirroring the
-    // Qwik route's useVisibleTask$(() => queueMicrotask(() => value.value = 100)).
-    queueMicrotask(() => {
-      this.value = 100;
-      this._changeDetectorRef.markForCheck();
-    });
+    // Kick the value from 0 to 100 once the bar has rendered at 0, mirroring the
+    // Qwik route's useVisibleTask$ + queueMicrotask, so a CSS transition runs.
+    afterNextRender(() =>
+      setTimeout(() => {
+        this.value = 100;
+        this._changeDetectorRef.markForCheck();
+      }),
+    );
   }
 
   onAnimationEnd(): void {

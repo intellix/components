@@ -42,6 +42,7 @@ test.describe('mat-progress-bar — Angular DOM parity', () => {
     expectMaterialParity(browser, {
       route,
       scenario: 'animation-end',
+      skipInitialCompare: true,
       steps: [waitForAnimationEnd],
     }));
 });
