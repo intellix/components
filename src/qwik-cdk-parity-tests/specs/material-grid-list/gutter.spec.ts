@@ -1,13 +1,21 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
-test('material-grid-list/gutter — gutterSize="16px" is applied as CSS gap', async ({page}) => {
+test('material-grid-list/gutter — gutterSize="16px" offsets tiles by 16px (not a CSS `gap`)', async ({
+  page,
+}) => {
   await page.goto(`${BASE_URL}/mat-grid-list/gutter/`);
   await page.waitForSelector('[data-scenario-ready]');
 
-  const list = page.locator('mat-grid-list');
-  const gap = await list.evaluate(el => getComputedStyle(el).gap);
-  // Computed gap may be reported as "16px" or "16px 16px" depending on browser.
-  expect(gap).toContain('16px');
+  // Upstream has no `gap` — TileStyler bakes the gutter into each tile's
+  // calc()'d top/left/width/height. Verify it via the actual rendered gap
+  // between two adjacent tiles' boxes.
+  const tiles = page.locator('mat-grid-tile');
+  const firstBox = await tiles.nth(0).boundingBox();
+  const secondBox = await tiles.nth(1).boundingBox();
+  expect(firstBox).not.toBeNull();
+  expect(secondBox).not.toBeNull();
+  const horizontalGap = secondBox!.x - (firstBox!.x + firstBox!.width);
+  expect(Math.abs(horizontalGap - 16)).toBeLessThan(2);
 });

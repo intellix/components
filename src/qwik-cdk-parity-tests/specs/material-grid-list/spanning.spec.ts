@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 test('material-grid-list/spanning — 2x2 hero tile has ~2x width and ~2x height of a single-cell tile', async ({
   page,
