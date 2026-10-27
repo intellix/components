@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, useSignal, $, type QRL} from '@builder.io/qwik';
 import {
   APPEARANCE_CLASSES,
   type MatButtonAppearance,
@@ -8,6 +8,9 @@ import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
 import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
+import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
+import {disabledAttr} from './internal/disabled-attr';
+import {useFocusMonitor} from '@angular-community/qwik-cdk/a11y';
 
 export interface MatButtonProps {
   /** Appearance variant. Default 'text' (or provider's defaultAppearance). */
@@ -22,7 +25,11 @@ export interface MatButtonProps {
   disabledInteractive?: boolean;
   /** When set, renders <a href> instead of <button>. Click is prevented if disabled. */
   href?: string;
-  /** Native <button> type. Ignored when href is set. Default 'button'. */
+  /**
+   * Native <button> type attribute. Ignored when href is set. Unset by
+   * default — matches upstream, which never binds a `type`, so the attribute
+   * is only rendered when the caller passes one explicitly.
+   */
   type?: 'button' | 'submit' | 'reset';
   onClick$?: QRL<(e: MouseEvent) => void>;
   ariaLabel?: string;
@@ -66,9 +73,18 @@ export const MatButton = component$<MatButtonProps>(props => {
     if (props.onClick$) props.onClick$(e);
   });
 
+  const hostRef = useSignal<Element>();
+  useRippleLoader(hostRef);
+  useFocusMonitor(hostRef, {checkChildren: true});
+  const rippleAttrs = rippleLoaderHostAttrs({
+    className: 'mat-mdc-button-ripple',
+    disabled: props.disableRipple || props.disabled,
+  });
+
   if (isAnchor) {
     return (
       <a
+        ref={hostRef}
         href={props.href}
         id={props.id}
         class={classes}
@@ -78,6 +94,7 @@ export const MatButton = component$<MatButtonProps>(props => {
         aria-describedby={props.ariaDescribedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
+        {...rippleAttrs}
       >
         <PersistentRipple isFab={false} />
         <span class="mdc-button__label">
@@ -91,15 +108,17 @@ export const MatButton = component$<MatButtonProps>(props => {
 
   return (
     <button
-      type={props.type ?? 'button'}
+      ref={hostRef}
+      type={props.type}
       id={props.id}
       class={classes}
-      disabled={nativelyDisabled || undefined}
+      disabled={disabledAttr(nativelyDisabled)}
       aria-disabled={props.disabled && disabledInteractive ? 'true' : undefined}
       aria-label={props.ariaLabel}
       aria-describedby={props.ariaDescribedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
+      {...rippleAttrs}
     >
       <PersistentRipple isFab={false} />
       <span class="mdc-button__label">

@@ -16,8 +16,15 @@
  * Categories:
  *  • DOM-rendered scenarios  (~22 stubs) → deferred to Playwright Task 15
  *  • Angular-only            (~5 stubs)  → TestBed / Renderer2 / ApplicationRef
- *  • Ripple JS animation     (~3 stubs)  → deferred to future qwik-cdk MatRipple primitive
- *  • FocusMonitor            (~1 stub)   → deferred to future CDK focus-monitor port
+ *  • Ripple JS animation     (~3 stubs)  → static ripple-loader contract (attrs
+ *    + lazily-inserted `.mat-ripple` span) ported, see `internal/ripple-loader.ts`
+ *    and `specs/material-button/angular-parity.spec.ts`; the click *animation*
+ *    itself (a first-class qwik-cdk MatRipple primitive) is still deferred.
+ *  • FocusMonitor            (~1 stub)   → ported via `qwik-cdk/a11y`'s
+ *    `useFocusMonitor(hostRef, {checkChildren})` hook, called directly from
+ *    mat-button.tsx and friends; origin-discrimination is exercised by the
+ *    angular-parity "keyboard focus" scenario, not here (DOM-render tests
+ *    hang this vitest worker — see file header).
  *
  * Real DOM assertions live in the Task 15 Playwright specs once the dev-app
  * button route is wired up.

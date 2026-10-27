@@ -1,9 +1,12 @@
-import {component$, Slot, useContext, $} from '@builder.io/qwik';
+import {component$, Slot, useContext, useSignal, $} from '@builder.io/qwik';
 import type {MatFabProps} from './mat-fab-button';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
 import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
+import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
+import {disabledAttr} from './internal/disabled-attr';
+import {useFocusMonitor} from '@angular-community/qwik-cdk/a11y';
 
 // Mini-FAB has no 'extended' prop; everything else matches MatFabProps.
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -56,9 +59,20 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
     </>
   );
 
+  const hostRef = useSignal<Element>();
+  useRippleLoader(hostRef);
+  useFocusMonitor(hostRef, {checkChildren: true});
+  // Mini-FAB extends MatButtonBase directly, same as MatFabButton: no
+  // MatIconButton-style configureRipple({centered: true}) call.
+  const rippleAttrs = rippleLoaderHostAttrs({
+    className: 'mat-mdc-button-ripple',
+    disabled: props.disableRipple || props.disabled,
+  });
+
   if (isAnchor) {
     return (
       <a
+        ref={hostRef}
         href={props.href}
         id={props.id}
         class={classes}
@@ -68,6 +82,7 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
         aria-describedby={props.ariaDescribedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
+        {...rippleAttrs}
       >
         {children}
       </a>
@@ -76,15 +91,17 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
 
   return (
     <button
-      type={props.type ?? 'button'}
+      ref={hostRef}
+      type={props.type}
       id={props.id}
       class={classes}
-      disabled={nativelyDisabled || undefined}
+      disabled={disabledAttr(nativelyDisabled)}
       aria-disabled={props.disabled && disabledInteractive ? 'true' : undefined}
       aria-label={props.ariaLabel}
       aria-describedby={props.ariaDescribedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
+      {...rippleAttrs}
     >
       {children}
     </button>
