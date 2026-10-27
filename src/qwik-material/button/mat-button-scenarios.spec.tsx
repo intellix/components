@@ -21,10 +21,12 @@
  *    and `specs/material-button/angular-parity.spec.ts`; the click *animation*
  *    itself (a first-class qwik-cdk MatRipple primitive) is still deferred.
  *  • FocusMonitor            (~1 stub)   → ported via `qwik-cdk/a11y`'s
- *    `useFocusMonitor(hostRef, {checkChildren})` hook, called directly from
- *    mat-button.tsx and friends; origin-discrimination is exercised by the
- *    angular-parity "keyboard focus" scenario, not here (DOM-render tests
- *    hang this vitest worker — see file header).
+ *    `useFocusOrigin()` hook (lazy, `useOn()`-based — no per-instance
+ *    `useVisibleTask$`, 2026-10-27 lazy-interactions remediation; supersedes
+ *    the earlier `useFocusMonitor(hostRef, {checkChildren})`), called
+ *    directly from mat-button.tsx and friends; origin-discrimination is
+ *    exercised by the angular-parity "keyboard focus" scenario, not here
+ *    (DOM-render tests hang this vitest worker — see file header).
  *
  * Real DOM assertions live in the Task 15 Playwright specs once the dev-app
  * button route is wired up.

@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, useSignal, $, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type QRL} from '@builder.io/qwik';
 import {
   APPEARANCE_CLASSES,
   type MatButtonAppearance,
@@ -10,7 +10,7 @@ import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
-import {useFocusMonitor} from '@angular-community/qwik-cdk/a11y';
+import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 
 export interface MatButtonProps {
   /** Appearance variant. Default 'text' (or provider's defaultAppearance). */
@@ -53,6 +53,19 @@ export const MatButton = component$<MatButtonProps>(props => {
   const isAnchor = props.href != null;
   const nativelyDisabled = !!props.disabled && !disabledInteractive;
 
+  // Upstream `ngAfterViewInit(): this._focusMonitor.monitor(this._elementRef,
+  // true)`. `useFocusOrigin()` is the lazy, useOn()-based replacement (see
+  // qwik-cdk/a11y/focus-origin/focus-origin.ts): it attaches `on:pointerdown`
+  // / `on:focusin` / `on:focusout` references to this component's own host
+  // element (the <a>/<button> below) at SSR time — no JS loads or runs until
+  // one of those events actually fires, unlike the old `useVisibleTask$`-based
+  // `useFocusMonitor` (which loaded+ran eagerly on every resumed instance,
+  // see button/SYNC.md deviation 2). `focusin` bubbles, covering focus
+  // landing on a descendant for free (upstream's `checkChildren: true`) —
+  // moot here since none of PersistentRipple/FocusIndicator/TouchTarget's
+  // spans are focusable, but harmless.
+  const focusOrigin = useFocusOrigin();
+
   const classes = [
     'mat-mdc-button-base',
     'mdc-button',
@@ -61,6 +74,17 @@ export const MatButton = component$<MatButtonProps>(props => {
     props.disabled && 'mat-mdc-button-disabled',
     disabledInteractive && 'mat-mdc-button-disabled-interactive',
     props.disableRipple && 'mat-mdc-button-ripple-disabled',
+    // Focus-origin classes — upstream FocusMonitor sets these directly via
+    // classList, bypassing Angular's change detection. Derived declaratively
+    // from `focusOrigin` (a real Qwik signal) here instead, same pattern as
+    // qwik-material/button-toggle/mat-button-toggle.tsx: Qwik's `class` prop
+    // replaces `className` wholesale on every render, so anything set
+    // outside this array wouldn't survive an unrelated re-render anyway.
+    focusOrigin.value && 'cdk-focused',
+    focusOrigin.value === 'touch' && 'cdk-touch-focused',
+    focusOrigin.value === 'keyboard' && 'cdk-keyboard-focused',
+    focusOrigin.value === 'mouse' && 'cdk-mouse-focused',
+    focusOrigin.value === 'program' && 'cdk-program-focused',
     props.class,
   ].filter(Boolean) as string[];
 
@@ -73,9 +97,15 @@ export const MatButton = component$<MatButtonProps>(props => {
     if (props.onClick$) props.onClick$(e);
   });
 
-  const hostRef = useSignal<Element>();
-  useRippleLoader(hostRef);
-  useFocusMonitor(hostRef, {checkChildren: true});
+  // Lazy, useOn()-based replacement for the old `useVisibleTask$`-based
+  // ripple loader (see internal/ripple-loader.ts) — attaches to this
+  // component's own host element, same as `useFocusOrigin()` above. Returns
+  // a signal (not a side effect) for the same reason `useFocusOrigin()`
+  // does: this component re-renders when focus changes, and that
+  // reconciles the WHOLE vnode tree, so the ripple span + its host attribute
+  // must come from the same declarative render rather than be mutated
+  // imperatively (see useRippleLoader()'s doc comment).
+  const rippleInitialized = useRippleLoader();
   const rippleAttrs = rippleLoaderHostAttrs({
     className: 'mat-mdc-button-ripple',
     disabled: props.disableRipple || props.disabled,
@@ -84,7 +114,6 @@ export const MatButton = component$<MatButtonProps>(props => {
   if (isAnchor) {
     return (
       <a
-        ref={hostRef}
         href={props.href}
         id={props.id}
         class={classes}
@@ -95,6 +124,7 @@ export const MatButton = component$<MatButtonProps>(props => {
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
         {...rippleAttrs}
+        mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >
         <PersistentRipple isFab={false} />
         <span class="mdc-button__label">
@@ -102,13 +132,13 @@ export const MatButton = component$<MatButtonProps>(props => {
         </span>
         <FocusIndicator />
         <TouchTarget />
+        {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
       </a>
     );
   }
 
   return (
     <button
-      ref={hostRef}
       type={props.type}
       id={props.id}
       class={classes}
@@ -119,6 +149,7 @@ export const MatButton = component$<MatButtonProps>(props => {
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
       {...rippleAttrs}
+      mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
     >
       <PersistentRipple isFab={false} />
       <span class="mdc-button__label">
@@ -126,6 +157,7 @@ export const MatButton = component$<MatButtonProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
+      {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
     </button>
   );
 });

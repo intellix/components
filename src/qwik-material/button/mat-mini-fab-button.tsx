@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, useSignal, $} from '@builder.io/qwik';
+import {component$, Slot, useContext, $} from '@builder.io/qwik';
 import type {MatFabProps} from './mat-fab-button';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
@@ -6,7 +6,7 @@ import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
-import {useFocusMonitor} from '@angular-community/qwik-cdk/a11y';
+import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 
 // Mini-FAB has no 'extended' prop; everything else matches MatFabProps.
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -26,6 +26,10 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
   const isAnchor = props.href != null;
   const nativelyDisabled = !!props.disabled && !disabledInteractive;
 
+  // See mat-button.tsx for the full rationale — same lazy useOn()-based
+  // replacement for the old useVisibleTask$-based useFocusMonitor.
+  const focusOrigin = useFocusOrigin();
+
   const classes = [
     'mat-mdc-button-base',
     'mdc-fab',
@@ -36,6 +40,11 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
     props.disabled && 'mat-mdc-button-disabled',
     disabledInteractive && 'mat-mdc-button-disabled-interactive',
     props.disableRipple && 'mat-mdc-button-ripple-disabled',
+    focusOrigin.value && 'cdk-focused',
+    focusOrigin.value === 'touch' && 'cdk-touch-focused',
+    focusOrigin.value === 'keyboard' && 'cdk-keyboard-focused',
+    focusOrigin.value === 'mouse' && 'cdk-mouse-focused',
+    focusOrigin.value === 'program' && 'cdk-program-focused',
     props.class,
   ].filter(Boolean) as string[];
 
@@ -48,6 +57,12 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
     if (props.onClick$) props.onClick$(e);
   });
 
+  // Returns a signal (not a side effect) — see ripple-loader.ts's
+  // useRippleLoader() doc comment: this component's focus classes above
+  // ALSO come from a signal, so the ripple span/attribute must too, or an
+  // unrelated focus-triggered re-render would clobber an imperative mutation.
+  const rippleInitialized = useRippleLoader();
+
   const children = (
     <>
       <PersistentRipple isFab={true} />
@@ -56,12 +71,10 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
+      {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
     </>
   );
 
-  const hostRef = useSignal<Element>();
-  useRippleLoader(hostRef);
-  useFocusMonitor(hostRef, {checkChildren: true});
   // Mini-FAB extends MatButtonBase directly, same as MatFabButton: no
   // MatIconButton-style configureRipple({centered: true}) call.
   const rippleAttrs = rippleLoaderHostAttrs({
@@ -72,7 +85,6 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
   if (isAnchor) {
     return (
       <a
-        ref={hostRef}
         href={props.href}
         id={props.id}
         class={classes}
@@ -83,6 +95,7 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
         {...rippleAttrs}
+        mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >
         {children}
       </a>
@@ -91,7 +104,6 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
 
   return (
     <button
-      ref={hostRef}
       type={props.type}
       id={props.id}
       class={classes}
@@ -102,6 +114,7 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
       {...rippleAttrs}
+      mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
     >
       {children}
     </button>
