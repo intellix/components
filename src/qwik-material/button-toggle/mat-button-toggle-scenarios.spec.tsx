@@ -45,7 +45,7 @@ describe('MatButtonToggle surface — sanity', () => {
     expect(cfg).toBeDefined();
   });
 
-  it('MAT_BUTTON_TOGGLE_GROUP_STATE carries expected id + DEFAULTS has all 6 fields', () => {
+  it('MAT_BUTTON_TOGGLE_GROUP_STATE carries expected id + DEFAULTS has all 7 fields', () => {
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE.id).toBe('qwik-material/button-toggle-group-state');
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS).toEqual({
       mode: 'single',
@@ -54,6 +54,7 @@ describe('MatButtonToggle surface — sanity', () => {
       disabled: false,
       name: '',
       onToggle: MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle,
+      standalone: true,
     });
     expect(typeof MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle).toBe('function');
   });

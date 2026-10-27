@@ -1,4 +1,12 @@
-import {$, component$, Slot, useContext, useContextProvider, type QRL} from '@builder.io/qwik';
+import {
+  $,
+  component$,
+  Slot,
+  useContext,
+  useContextProvider,
+  useSignal,
+  type QRL,
+} from '@builder.io/qwik';
 import {MAT_BUTTON_TOGGLE_CONFIG, type MatButtonToggleConfig} from './button-toggle-config';
 import {
   MAT_BUTTON_TOGGLE_GROUP_STATE,
@@ -78,15 +86,26 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
 
   // Derive state fresh each render — Qwik's fine-grained reactivity re-runs
   // this component when consumer-owned value/values signals change.
-  const state: MatButtonToggleGroupState = {
+  const nextState: MatButtonToggleGroupState = {
     mode,
     value: mode === 'single' ? propValue : undefined,
     values: mode === 'multi' ? (propValues ?? []) : [],
     disabled: props.disabled ?? false,
     name: props.name ?? '',
     onToggle,
+    standalone: false,
   };
-  useContextProvider(MAT_BUTTON_TOGGLE_GROUP_STATE, state);
+  // Published via a Signal (not a plain object) so <MatButtonToggle>
+  // descendants reactively re-render when this state changes on a later
+  // render. useContextProvider() with a freshly-built plain object every
+  // render does NOT notify existing context consumers in Qwik — only
+  // replacing a Signal's `.value` does. useStore() remains disallowed per
+  // project constraints; useSignal() satisfies the same "reactive context"
+  // requirement instead. See button-toggle-group-state.ts + Task 11
+  // Playwright regression findings.
+  const stateSignal = useSignal<MatButtonToggleGroupState>(nextState);
+  stateSignal.value = nextState;
+  useContextProvider(MAT_BUTTON_TOGGLE_GROUP_STATE, stateSignal);
 
   const classes = [
     'mat-button-toggle-group',

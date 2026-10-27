@@ -27,13 +27,23 @@ export interface MatButtonToggleProps {
 }
 
 export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
-  // Read parent state; SSR-safe fallback for standalone toggles.
-  const state = useContext(MAT_BUTTON_TOGGLE_GROUP_STATE, MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS);
+  // Read parent state; SSR-safe fallback for standalone toggles. The
+  // context carries a Signal<MatButtonToggleGroupState> (not the state
+  // object directly) — see button-toggle-group-state.ts for why context
+  // reactivity requires a Signal wrapper. Dereference `.value` to read the
+  // current group state.
+  const stateSignal = useContext(MAT_BUTTON_TOGGLE_GROUP_STATE, {
+    value: MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS,
+  });
+  const state = stateSignal.value;
 
-  // Standalone detection — identity check on the no-op onToggle. If the
-  // context returned the DEFAULTS, this toggle is not inside a group; own
-  // local checked state via useSignal (initial value: false).
-  const isStandalone = state.onToggle === MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle;
+  // Standalone detection — the DEFAULTS fallback carries `standalone: true`.
+  // If the context returned the DEFAULTS, this toggle is not inside a
+  // group; own local checked state via useSignal (initial value: false).
+  // (NOT a reference-identity check on `onToggle` — QRL-bearing fallback
+  // objects are not guaranteed to preserve reference identity across the
+  // SSR-to-resume boundary. See Task 11 Playwright regression findings.)
+  const isStandalone = state.standalone;
   const localChecked = useSignal(false);
 
   // Compute effective checked state.
@@ -57,14 +67,27 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
   // Form-name: individual name overrides group name.
   const effectiveName = props.name ?? state.name;
 
-  // Click handler — routes through parent's onToggle QRL when grouped,
-  // or flips local signal when standalone.
+  // Click handler — routes through parent's onToggle QRL when grouped, or
+  // flips local signal when standalone.
+  //
+  // Recomputes disabled/standalone/checked fresh from `state` INSIDE the
+  // closure rather than reusing the outer-scope `effectiveDisabled` /
+  // `isStandalone` / `checked` primitives captured at render time. Task 11
+  // Playwright regression: in a multi-select group, a toggle that is
+  // re-rendered by a SIBLING's click (context change) without its OWN
+  // `checked` value changing can end up with a stale captured `checked`
+  // primitive in its `onClick$` QRL scope, while `state` (object-typed,
+  // reached through the context Signal) stays live — recomputing every
+  // primitive from `state` at invocation time sidesteps the mismatch.
   const onClick$ = $(async () => {
-    if (effectiveDisabled) return;
-    if (isStandalone) {
+    const currentDisabled = state.disabled || (props.disabled ?? false);
+    if (currentDisabled) return;
+    if (state.standalone) {
       localChecked.value = !localChecked.value;
     } else {
-      await state.onToggle(props.value, !checked);
+      const currentChecked =
+        state.mode === 'single' ? state.value === props.value : state.values.includes(props.value);
+      await state.onToggle(props.value, !currentChecked);
     }
   });
 
