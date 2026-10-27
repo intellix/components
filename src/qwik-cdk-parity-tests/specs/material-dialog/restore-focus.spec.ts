@@ -1,13 +1,15 @@
 import {test, expect} from '@playwright/test';
 
+const QWIK_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
+
 /**
- * Single-side DOM assertions against the qwik-material dev-app at http://localhost:4173.
+ * Single-side DOM assertions against the qwik-material dev-app.
  * Covers the restoreFocus option: focus should move into the dialog on open and return
  * to the trigger element on close.
  */
 test.describe('Material Dialog — restore focus', () => {
   test('focus enters the dialog on open and returns to the trigger on close', async ({page}) => {
-    await page.goto('http://localhost:4173/mat-dialog/restore-focus');
+    await page.goto(`${QWIK_URL}/mat-dialog/restore-focus`);
 
     // The route renders a manual trigger; wait for it to be ready.
     await page.waitForSelector('[data-scenario-ready]');
@@ -30,9 +32,12 @@ test.describe('Material Dialog — restore focus', () => {
     });
     expect(focusInsideDialog).toBe(true);
 
-    // Close via MatDialogClose (targeted by its tag attribute + host class); avoids
-    // ambiguity with the "Focus me" button that appears first in the body.
-    await page.locator('button[mat-dialog-close].mat-mdc-dialog-close').click();
+    // Close via MatDialogClose, matched by its visible text. The real
+    // MatDialogClose directive adds no class of its own (fixed 2026-10-27 —
+    // see qwik-material/dialog/SYNC.md), so a class-based selector can't
+    // disambiguate it from the "Focus me" button that appears first in the
+    // body; text matching works regardless of binding/class details.
+    await page.getByRole('button', {name: 'Close', exact: true}).click();
 
     // Container must detach.
     await expect(container).toHaveCount(0, {timeout: 1000});

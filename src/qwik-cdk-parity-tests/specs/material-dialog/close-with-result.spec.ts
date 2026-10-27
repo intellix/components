@@ -1,13 +1,15 @@
 import {test, expect} from '@playwright/test';
 
+const QWIK_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
+
 /**
- * Single-side DOM assertions against the qwik-material dev-app at http://localhost:4173.
+ * Single-side DOM assertions against the qwik-material dev-app.
  * Covers the dialog close-with-result flow: the value passed to MatDialogClose[result]
  * must be surfaced in the page after the dialog closes.
  */
 test.describe('Material Dialog — close with result', () => {
   test('emits the close result to the opener', async ({page}) => {
-    await page.goto('http://localhost:4173/mat-dialog/close-with-result');
+    await page.goto(`${QWIK_URL}/mat-dialog/close-with-result`);
 
     // Wait for the page to be ready.
     await page.waitForSelector('[data-scenario-ready]');
