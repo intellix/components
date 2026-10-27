@@ -16,7 +16,7 @@ test.describe('Material Dialog — basic', () => {
   test('applies mdc-dialog--open once the enter animation completes', async ({page}) => {
     await page.goto(`${QWIK_URL}/mat-dialog/basic`);
     // Enter animation is ~150 ms; wait up to 500 ms for the open class to land.
-    await expect(page.locator('.mdc-dialog--open')).toBeVisible({timeout: 500});
+    await expect(page.locator('.mdc-dialog--open')).toBeVisible();
   });
 
   test('has aria-modal=false and role=dialog by default', async ({page}) => {

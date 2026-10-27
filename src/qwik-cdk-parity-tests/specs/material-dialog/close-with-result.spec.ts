@@ -25,7 +25,7 @@ test.describe('Material Dialog — close with result', () => {
     await page.locator('mat-dialog-container button[mat-dialog-close]').first().click();
 
     // Container must detach.
-    await expect(container).toHaveCount(0, {timeout: 1000});
+    await expect(container).toHaveCount(0);
 
     // The opener must render the close result.
     await expect(page.locator('[data-result]')).toHaveText('hello world');

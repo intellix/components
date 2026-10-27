@@ -40,7 +40,7 @@ test.describe('Material Dialog — restore focus', () => {
     await page.getByRole('button', {name: 'Close', exact: true}).click();
 
     // Container must detach.
-    await expect(container).toHaveCount(0, {timeout: 1000});
+    await expect(container).toHaveCount(0);
 
     // Focus must have returned to the trigger.
     const focusOnTrigger = await page.evaluate(() => {

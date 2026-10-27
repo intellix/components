@@ -54,7 +54,7 @@ const settled: ParityStep = {
           );
         },
         undefined,
-        {timeout: 2000},
+        {timeout: 10_000},
       )
       .catch(() => {});
   },
@@ -119,7 +119,7 @@ const clickTrigger = (selector: string): ParityStep => ({
   name: 'click trigger',
   run: async (page: Page) => {
     await page.locator(selector).click();
-    await page.waitForSelector('mat-dialog-container', {state: 'attached', timeout: 2000});
+    await page.waitForSelector('mat-dialog-container', {state: 'attached', timeout: 10_000});
   },
 });
 

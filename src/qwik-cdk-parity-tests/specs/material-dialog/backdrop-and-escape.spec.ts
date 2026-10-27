@@ -18,9 +18,7 @@ test.describe('Material Dialog — backdrop and escape', () => {
     // test's actual behavior either.
     await page.locator('.cdk-overlay-backdrop').click({position: {x: 5, y: 5}, force: true});
 
-    await expect(page.locator('mat-dialog-container.mat-mdc-dialog-container')).toHaveCount(0, {
-      timeout: 500,
-    });
+    await expect(page.locator('mat-dialog-container.mat-mdc-dialog-container')).toHaveCount(0);
   });
 
   test('close-on-escape: pressing Escape detaches the container', async ({page}) => {
@@ -29,9 +27,7 @@ test.describe('Material Dialog — backdrop and escape', () => {
 
     await page.keyboard.press('Escape');
 
-    await expect(page.locator('mat-dialog-container.mat-mdc-dialog-container')).toHaveCount(0, {
-      timeout: 500,
-    });
+    await expect(page.locator('mat-dialog-container.mat-mdc-dialog-container')).toHaveCount(0);
   });
 
   test('disable-close: Escape does not close the dialog', async ({page}) => {

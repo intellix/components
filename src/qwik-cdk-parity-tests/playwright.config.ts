@@ -17,6 +17,9 @@ import {defineConfig} from '@playwright/test';
  */
 export default defineConfig({
   testDir: './specs',
+  // Every test cold-loads two apps (Angular + Qwik) in fresh contexts.
+  timeout: 60_000,
+  expect: {timeout: 10_000},
   use: {trace: 'retain-on-failure'},
   webServer: [
     {
