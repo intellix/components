@@ -185,7 +185,19 @@ export async function snapshotParityRoot(
           }
           attrs[name] = opts.idAttrs.includes(name) ? normalizeIdValue(attr.value) : attr.value;
         }
-        const elementChildren = Array.from(el.children);
+        // Qwik's reconciler parks a `<Slot>`'s provided-but-not-currently-
+        // rendered children in a hidden `<q:template q:slot>` element (e.g.
+        // a component that returns `null` instead of `<Slot/>` while some
+        // condition is false — see qwik-material/expansion's
+        // MatExpansionPanelContent, the first consumer of this pattern in
+        // the port). It is framework bookkeeping with no Angular
+        // equivalent to diff against, the same category as the `q:*`/`on:*`
+        // attribute prefixes and comment nodes already stripped above —
+        // just a real element instead of a comment, so `el.children`
+        // doesn't exclude it for free the way it excludes comments.
+        const elementChildren = Array.from(el.children).filter(
+          c => c.tagName.toLowerCase() !== 'q:template',
+        );
         const node: Node = {
           tag: el.tagName.toLowerCase(),
           classes,
@@ -194,7 +206,17 @@ export async function snapshotParityRoot(
           children: elementChildren.map(walk),
         };
         if (elementChildren.length === 0) {
-          const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+          // Direct text-node children only — NOT `el.textContent`, which
+          // recurses through every descendant regardless of the
+          // `q:template` filtering above (a hidden `<q:template>` child's
+          // own text content would otherwise still leak into this leaf's
+          // text, even though it isn't a counted/walked child).
+          const text = Array.from(el.childNodes)
+            .filter(n => n.nodeType === Node.TEXT_NODE)
+            .map(n => n.textContent ?? '')
+            .join('')
+            .replace(/\s+/g, ' ')
+            .trim();
           if (text) node.text = text;
         }
         return node;
