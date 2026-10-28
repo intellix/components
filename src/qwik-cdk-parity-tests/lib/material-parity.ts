@@ -133,6 +133,8 @@ const CONSUMER_SELECTOR_ATTRS = [
   'mat-header-cell',
   'mat-cell',
   'mat-footer-cell',
+  'mattreenodetoggle',
+  'mattreenodepadding',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
