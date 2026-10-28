@@ -9,6 +9,9 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * - `ng-component`: Angular's fallback tag for a dynamically-instantiated
  *   component with no `selector` at all (every Material dialog scenario
  *   body — Angular's ComponentPortal still needs a host element).
+ * - `parity-snack-bar-content`: the explicit `selector` the
+ *   `custom-component` mat-snack-bar scenario's content component declares
+ *   (src/dev-app/qwik-parity/snack-bar.ts's `ParitySnackBarContent`).
  * See docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md.
  */
 declare module '@builder.io/qwik' {
@@ -20,6 +23,7 @@ declare module '@builder.io/qwik' {
       'cdk-dialog-labelled-body': QwikIntrinsicElements['div'];
       'cdk-dialog-described-body': QwikIntrinsicElements['div'];
       'ng-component': QwikIntrinsicElements['div'];
+      'parity-snack-bar-content': QwikIntrinsicElements['div'];
     }
   }
 }

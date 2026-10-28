@@ -1,0 +1,30 @@
+// Prebuilt Material Snack Bar CSS entry.
+//
+// Emits: structural styles from snack-bar.scss + simple-snack-bar.scss, plus
+// a minimal set of M3 default values for the `--mat-sys-*` custom properties
+// the structural rules reference. Consumers import via
+// `@angular-community/qwik-material/snack-bar-prebuilt.css`. For full custom
+// theming, consumers should instead @use the snack-bar-theme mixin from
+// `@angular-community/qwik-material/scss/snack-bar/_snack-bar-theme.scss`
+// once the qwik-material/core theming DSL lands.
+
+@use './snack-bar';
+@use './simple-snack-bar';
+
+// Minimal Material Design 3 defaults so a bare consumer sees a themed snack
+// bar. Values sourced from @angular/material's M3 "inverse" surface roles
+// (the snack bar deliberately inverts light/dark relative to the rest of the
+// page) and body-medium typescale — see scss/core/tokens/m3/_md-sys-color.scss
+// / _md-sys-typescale.scss / _md-sys-shape.scss's light-theme defaults. Every
+// value can be overridden by the consumer at :root or on any ancestor of the
+// snack bar host.
+:root {
+  --mat-sys-inverse-surface: #33302d;
+  --mat-sys-inverse-on-surface: #f1ece6;
+  --mat-sys-inverse-primary: #ffffaa;
+  --mat-sys-corner-extra-small: 4px;
+  --mat-sys-body-medium-font: Roboto, "Helvetica Neue", sans-serif;
+  --mat-sys-body-medium-size: 0.875rem;
+  --mat-sys-body-medium-line-height: 1.25rem;
+  --mat-sys-body-medium-weight: 400;
+}

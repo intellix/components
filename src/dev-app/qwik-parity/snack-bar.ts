@@ -100,12 +100,16 @@ import {
 // open/close classes.
 //
 // REPLACEMENT: if a snack bar is already open when `MatSnackBar.open*()` is called again,
-// `_animateSnackBar` dismisses the old one and defers the new one's `enter()` until the old
-// one's `afterDismissed()` fires — which only happens after the old overlay has fully disposed
-// (DOM removed). So there is never a moment with two `mat-snack-bar-container` elements both
-// present; by the time the second exists, the first is already gone. The horizontal/vertical
-// position and politeness scenarios below each click through several triggers in sequence,
-// exercising this replace path repeatedly for free.
+// `_attach()` attaches the NEW container's overlay before `_animateSnackBar()` even looks at
+// whether to dismiss a previous one — only the new container's `enter()` call is deferred,
+// until the old one's `afterDismissed()` fires. Verified directly against the running app: the
+// old (now exiting) and new (not yet entered) `mat-snack-bar-container` elements ARE both
+// present in the DOM for the ~75ms the old one's exit animation takes (an earlier version of
+// this comment claimed otherwise, from reading the source without checking the real timing —
+// that was wrong). The horizontal/vertical position and politeness scenarios below each click
+// through several triggers in sequence, exercising this replace path repeatedly for free; see
+// `specs/material-snack-bar/angular-parity.spec.ts`'s header comment, point 2, for how its
+// `waitSettled()`-based steps account for this two-containers-at-once window.
 //
 // LIVE REGION / POLITENESS: `_live` ('polite' default, 'assertive', or 'off') feeds
 // `[attr.aria-live]="_live"` unconditionally (always a real attribute, including the literal
