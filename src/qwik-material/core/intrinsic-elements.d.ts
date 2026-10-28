@@ -15,6 +15,10 @@ declare module '@builder.io/qwik' {
         /** Echoed as a literal attribute — see mat-pseudo-checkbox.tsx. */
         appearance?: string;
       };
+      /** `<mat-option>` — see mat-option.tsx. */
+      'mat-option': QwikIntrinsicElements['div'];
+      /** `<mat-optgroup>` — see mat-optgroup.tsx. */
+      'mat-optgroup': QwikIntrinsicElements['div'];
     }
   }
 }
