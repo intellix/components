@@ -114,6 +114,20 @@ export function createMatBottomSheetRef<R = unknown, T = unknown>(deps: {
   let enterFn: (() => void) | undefined;
   let exitFn: (() => void) | undefined;
   let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+  // `[TRIGGER_ENTER]()`/`dismiss()` can run before the container has ever
+  // mounted and called `[REGISTER_ANIMATION_HANDLERS]`: a write to the
+  // shared `entries` signal that creates this sheet's overlay entry doesn't
+  // render synchronously in Qwik (unlike Angular's synchronous
+  // `ComponentFactory` attachment, which is why upstream's
+  // `MatBottomSheet.open()` can call `ref.containerInstance.enter()`
+  // immediately after `_dialog.open()` returns). For the common "no sheet
+  // currently open" path, `[TRIGGER_ENTER]()` fires in the SAME synchronous
+  // call as the overlay entry's creation — well before Qwik's next render
+  // flush. These flags make both triggers "sticky": if the container hasn't
+  // registered yet, remember the request and fire it the moment
+  // `[REGISTER_ANIMATION_HANDLERS]` runs, instead of silently dropping it.
+  let enterRequested = false;
+  let exitRequested = false;
 
   if (deps.ssr) {
     resolveOpened();
@@ -142,7 +156,8 @@ export function createMatBottomSheetRef<R = unknown, T = unknown>(deps: {
       // `_closeFallbackTimeout`, simplified to run from `dismiss()` itself
       // rather than from the exit animation's own `start` phase.
       fallbackTimer = setTimeout(() => ref[MARK_CLOSED](), 500);
-      exitFn?.();
+      if (exitFn) exitFn();
+      else exitRequested = true;
     },
 
     [MARK_OPENED]() {
@@ -160,10 +175,21 @@ export function createMatBottomSheetRef<R = unknown, T = unknown>(deps: {
     [REGISTER_ANIMATION_HANDLERS](handlers) {
       enterFn = handlers.enter;
       exitFn = handlers.exit;
+      // Fire whichever trigger already ran before this registration landed
+      // — see the "sticky" doc comment above.
+      if (enterRequested) {
+        enterRequested = false;
+        enterFn();
+      }
+      if (exitRequested) {
+        exitRequested = false;
+        exitFn();
+      }
     },
 
     [TRIGGER_ENTER]() {
-      enterFn?.();
+      if (enterFn) enterFn();
+      else enterRequested = true;
     },
   };
 

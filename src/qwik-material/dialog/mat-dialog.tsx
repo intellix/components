@@ -14,6 +14,7 @@ import {ensureCdkDispatchers, QWIK_CDK} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,
   createGlobalPositionStrategy,
+  createBlockScrollStrategy,
   type OverlayConfig,
   type OverlayRef,
 } from '@angular-community/qwik-cdk/overlay';
@@ -77,7 +78,24 @@ export function useMatDialog(): MatDialog {
   // by qwik-cdk's own useDialog — see src/qwik-cdk/dialog/dialog.tsx.
   const ctx = useContext(QWIK_CDK);
   const defaults = useContext(MAT_DIALOG_DEFAULT_OPTIONS, {} as Partial<MatDialogConfig>);
-  const scrollStrategyFactory = useContext(MAT_DIALOG_SCROLL_STRATEGY, undefined);
+  // Qwik's `useContext(ctx, defaultValue)` has two special cases that make
+  // passing a function as the default UNSAFE: (1) an explicit `undefined`
+  // default is treated the same as no default (throws
+  // `QError_notFoundContext` when no provider exists), and (2) a
+  // FUNCTION-typed default is treated as a lazy initializer and INVOKED
+  // immediately, with the return value (not the function) persisted —
+  // which would try to serialize the resulting `ScrollStrategy` instance
+  // (function properties like `.attach`) during SSR, crashing every route.
+  // See `useMatBottomSheet()`'s identical fix in `mat-bottom-sheet.tsx` for
+  // the full explanation and the scenario that surfaced this (calling the
+  // service hook from a component with no `<QwikMaterialProvider>`
+  // ancestor — not currently exercised by any `useMatDialog()` scenario,
+  // but fixed here too since it's the same latent bug). `null` (not a
+  // function, not `undefined`) is the safe default sentinel; the real
+  // fallback factory is substituted afterward in plain JS.
+  const scrollStrategyFactoryOrNull = useContext(MAT_DIALOG_SCROLL_STRATEGY, null as any);
+  const scrollStrategyFactory =
+    scrollStrategyFactoryOrNull ?? noSerialize(() => createBlockScrollStrategy());
 
   const matRefsById = useStore<Record<string, NoSerialize<MatDialogRef>>>({});
   const openDialogs = useSignal<readonly NoSerialize<MatDialogRef>[]>([]);

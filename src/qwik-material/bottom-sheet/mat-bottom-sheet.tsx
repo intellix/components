@@ -13,6 +13,7 @@ import {ensureCdkDispatchers, QWIK_CDK, type QwikCdkInternals} from '@angular-co
 import {
   createOverlayService,
   createGlobalPositionStrategy,
+  createBlockScrollStrategy,
   type OverlayConfig,
   type OverlayRef,
 } from '@angular-community/qwik-cdk/overlay';
@@ -125,7 +126,33 @@ export function useMatBottomSheet(): MatBottomSheet {
     MAT_BOTTOM_SHEET_DEFAULT_OPTIONS,
     {} as Partial<MatBottomSheetConfig>,
   );
-  const scrollStrategyFactory = useContext(MAT_BOTTOM_SHEET_SCROLL_STRATEGY, undefined);
+  // Qwik's `useContext(ctx, defaultValue)` has two special cases that make
+  // passing a function (even a `noSerialize`-wrapped one, since
+  // `noSerialize` just tags the same function reference — `typeof` is
+  // unaffected) as the default UNSAFE here:
+  //   1. If no provider is found AND `defaultValue === undefined`, it
+  //      throws `QError_notFoundContext` (an explicit `undefined` default
+  //      is treated the same as no default at all).
+  //   2. If `defaultValue` is itself a function, Qwik treats it as a LAZY
+  //      INITIALIZER and calls it immediately (`defaultValue(value)`),
+  //      storing the RETURN VALUE — not the function reference — as the
+  //      resolved value. Passing our `() => createBlockScrollStrategy()`
+  //      factory directly here would make Qwik call it and try to persist
+  //      the resulting `ScrollStrategy` INSTANCE (which has function
+  //      properties like `.attach`) through the normal serialization path,
+  //      crashing SSR with `QError_verifySerializable` on every route —
+  //      found by booting the real dev-app, not just unit tests.
+  // `useMatBottomSheet()` can be called from a component with no
+  // `<QwikMaterialProvider>` ancestor at all: the `replace-sheet` scenario
+  // calls it from INSIDE a bottom sheet's own content (rendered via
+  // `<OverlayContainerOutlet>`, a sibling of the routed page under
+  // `<QwikCdkRoot>`, not a descendant of `<QwikMaterialProvider>` — see
+  // `BottomSheetRegistry`'s doc comment below). Use `null` (not a function,
+  // not `undefined`) as the safe default sentinel, then substitute the real
+  // fallback factory afterward in plain JS.
+  const scrollStrategyFactoryOrNull = useContext(MAT_BOTTOM_SHEET_SCROLL_STRATEGY, null as any);
+  const scrollStrategyFactory =
+    scrollStrategyFactoryOrNull ?? noSerialize(() => createBlockScrollStrategy());
 
   const open$ = $(
     <C, D, R>(

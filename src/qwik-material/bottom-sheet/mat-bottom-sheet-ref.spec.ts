@@ -48,6 +48,39 @@ describe('createMatBottomSheetRef', () => {
     expect(exit).not.toHaveBeenCalled();
   });
 
+  it('[TRIGGER_ENTER] called BEFORE [REGISTER_ANIMATION_HANDLERS] still fires enter() once registration lands', () => {
+    // Regression: `useMatBottomSheet().open$` calls `[TRIGGER_ENTER]()`
+    // synchronously right after creating the overlay entry when no sheet
+    // is already open — but the real `MatBottomSheetContainer` only
+    // registers its handlers once Qwik actually renders that entry, which
+    // never happens synchronously within the same call. Without the
+    // "sticky" request flag, this trigger would be silently dropped and
+    // the sheet would never animate in.
+    const ref = createMatBottomSheetRef({
+      cdkRef: makeCdkRefStub(),
+      config: {},
+      instance: makeSignal(null),
+      id: 'x',
+    });
+    ref[TRIGGER_ENTER]();
+    const enter = vi.fn();
+    ref[REGISTER_ANIMATION_HANDLERS]({enter, exit: () => {}});
+    expect(enter).toHaveBeenCalledTimes(1);
+  });
+
+  it('dismiss() called BEFORE [REGISTER_ANIMATION_HANDLERS] still fires exit() once registration lands', () => {
+    const ref = createMatBottomSheetRef({
+      cdkRef: makeCdkRefStub(),
+      config: {},
+      instance: makeSignal(null),
+      id: 'x',
+    });
+    ref.dismiss();
+    const exit = vi.fn();
+    ref[REGISTER_ANIMATION_HANDLERS]({enter: () => {}, exit});
+    expect(exit).toHaveBeenCalledTimes(1);
+  });
+
   it('[MARK_OPENED] resolves afterOpened', async () => {
     const ref = createMatBottomSheetRef({
       cdkRef: makeCdkRefStub(),
