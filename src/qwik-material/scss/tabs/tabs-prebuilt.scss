@@ -1,0 +1,75 @@
+// Prebuilt Material Tabs CSS entry.
+//
+// Emits: structural styles from tab-group.scss, tab-header.scss, tab-body.scss,
+// tab-nav-bar/tab-nav-bar.scss, tab-nav-bar/tab-link.scss + :root defaults for
+// every --mat-tab-* / --mat-sys-* custom property the (byte-synced) upstream
+// partials reference. Consumers import via
+// `@angular-community/qwik-material/tabs-prebuilt.css`. Compiled + reconciled
+// the same way as every other qwik-material prebuilt file: recompile, add
+// whatever var() names are still unresolved, repeat (see SYNC.md).
+//
+// Values are the M3 baseline ("Purple") theme's defaults — the same theme
+// $fallbacks: m3-tabs.get-tokens() resolves to when the tabs partials are
+// compiled with no live theme. --mat-sys-primary/-on-surface/-on-surface-
+// variant/-surface-variant reuse the exact literal values every other
+// qwik-material prebuilt file already defines for these shared --mat-sys-*
+// names (card/button/button-toggle/slide-toggle/expansion/radio/checkbox
+// prebuilt files all agree on the same numbers).
+//
+// `--mat-tab-background-color` / `--mat-tab-foreground-color` are
+// deliberately left undefined, matching the M3 token function's own `null`
+// entries — only relevant to the (never-exercised-by-any-parity-scenario)
+// `mat-tabs-with-background` class.
+
+@use './tab-group';
+@use './tab-header';
+@use './tab-body';
+@use './tab-nav-bar/tab-nav-bar';
+@use './tab-nav-bar/tab-link';
+
+:root {
+  // ─── tab base (size, shape, divider) ───
+  --mat-tab-active-indicator-height: 2px;
+  --mat-tab-active-indicator-shape: 0;
+  --mat-tab-divider-height: 1px;
+  --mat-tab-container-height: 48px;
+
+  // ─── tab color ───
+  --mat-tab-active-focus-indicator-color: var(--mat-sys-primary, #6750a4);
+  --mat-tab-active-focus-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-active-hover-indicator-color: var(--mat-sys-primary, #6750a4);
+  --mat-tab-active-hover-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-active-indicator-color: var(--mat-sys-primary, #6750a4);
+  --mat-tab-active-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-active-ripple-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-divider-color: var(--mat-sys-surface-variant, #e7e0ec);
+  --mat-tab-inactive-focus-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-inactive-hover-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-inactive-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-inactive-ripple-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-pagination-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tab-disabled-ripple-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+
+  // ─── tab typography ───
+  --mat-tab-label-text-font: var(
+    --mat-sys-title-small-font,
+    Roboto,
+    'Helvetica Neue',
+    sans-serif
+  );
+  --mat-tab-label-text-line-height: var(--mat-sys-title-small-line-height, 1.25rem);
+  --mat-tab-label-text-size: var(--mat-sys-title-small-size, 0.875rem);
+  --mat-tab-label-text-tracking: var(--mat-sys-title-small-tracking, 0.006rem);
+  --mat-tab-label-text-weight: var(--mat-sys-title-small-weight, 500);
+
+  // ─── --mat-sys-* system tokens the tab partials resolve through ───
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
+  --mat-sys-primary: #6750a4;
+  --mat-sys-surface-variant: #e7e0ec;
+  --mat-sys-title-small-font: Roboto, 'Helvetica Neue', sans-serif;
+  --mat-sys-title-small-line-height: 1.25rem;
+  --mat-sys-title-small-size: 0.875rem;
+  --mat-sys-title-small-tracking: 0.006rem;
+  --mat-sys-title-small-weight: 500;
+}

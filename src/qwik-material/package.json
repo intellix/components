@@ -124,6 +124,11 @@
       "types": "./dist/sort/index.d.ts",
       "import": "./dist/sort/index.js"
     },
+    "./tabs": {
+      "qwik": "./tabs/index.ts",
+      "types": "./dist/tabs/index.d.ts",
+      "import": "./dist/tabs/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -142,6 +147,7 @@
     "./radio-prebuilt.css": "./dist/radio-prebuilt.css",
     "./checkbox-prebuilt.css": "./dist/checkbox-prebuilt.css",
     "./sort-prebuilt.css": "./dist/sort-prebuilt.css",
+    "./tabs-prebuilt.css": "./dist/tabs-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

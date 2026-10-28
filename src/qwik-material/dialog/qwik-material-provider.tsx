@@ -37,6 +37,8 @@ import type {MatCheckboxConfig} from '../checkbox/checkbox-config';
 import {MAT_CHECKBOX_CONFIG} from '../checkbox/checkbox-config';
 import type {MatSortConfig} from '../sort/sort-config';
 import {MAT_SORT_CONFIG} from '../sort/sort-config';
+import type {MatTabsConfig} from '../tabs/tab-config';
+import {MAT_TABS_CONFIG} from '../tabs/tab-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -75,6 +77,8 @@ export interface QwikMaterialProviderProps {
   matCheckboxConfig?: MatCheckboxConfig;
   /** Defaults applied to every MatSort / MatSortHeader in this subtree. */
   matSortConfig?: MatSortConfig;
+  /** Defaults applied to every MatTabGroup / MatTabNav in this subtree. */
+  matTabsConfig?: MatTabsConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -157,6 +161,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // MatSort/MatSortHeader; providing an empty object is equivalent to
   // accepting all defaults.
   useContextProvider(MAT_SORT_CONFIG, props.matSortConfig ?? {});
+  // MatTabsConfig is a plain object with primitive fields — no noSerialize
+  // needed. Tab groups/navs outside a provider get the CONFIG_DEFAULTS
+  // declared in MatTabGroup/MatTabNav; providing an empty object is
+  // equivalent to accepting all defaults.
+  useContextProvider(MAT_TABS_CONFIG, props.matTabsConfig ?? {});
 
   return <Slot />;
 });
