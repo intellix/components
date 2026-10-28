@@ -308,8 +308,29 @@ const route = 'mat-stepper';
 
 /** Waits for the one-time, time-delayed `mat-stepper-animating` class (see note 1 above) to
  * clear from the stepper host under the root, then a small fixed buffer for any
- * zone/signal-triggered follow-up change that lands in the same tick. */
+ * zone/signal-triggered follow-up change that lands in the same tick.
+ *
+ * First waits (bounded, best-effort) for the class to actually APPEAR, before waiting for it
+ * to clear. Without that first wait, a step whose Qwik-side click handler hasn't finished
+ * loading yet (first interaction on a fresh page, or the host under load) reads as "already
+ * settled" — `.mat-stepper-animating` being absent is true for the wrong reason (nothing has
+ * happened yet), not because the stepper already finished transitioning. Confirmed live on this
+ * spec (100% reproducible on a fresh `error-state`/`vertical-basic` page load: the very first
+ * selection-changing click settles in ~170ms instead of the real ~650ms, leaving the class
+ * present a moment later when the next step's comparison runs) — the exact same class of race
+ * already documented and fixed this way for `qwik-material/checkbox` (see that entry's
+ * SYNC.md, "Known flakiness" / "First paint + handler timing": "Steps now wait for the input's
+ * className to change ... before waiting the class out"). A step whose click is a genuine
+ * no-op (blocked by linear/editable gating, or re-selecting the already-selected header) never
+ * adds the class at all, so this first wait harmlessly times out and falls through. */
 async function waitForStepperSettled(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => !!document.querySelector('[data-parity-root] .mat-stepper-animating'),
+      undefined,
+      {timeout: 1500},
+    )
+    .catch(() => {});
   await page.waitForFunction(
     () => !document.querySelector('[data-parity-root] .mat-stepper-animating'),
     undefined,

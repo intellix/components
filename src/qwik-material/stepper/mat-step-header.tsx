@@ -24,9 +24,27 @@ export interface MatStepHeaderItemProps {
   id: string;
   contentId: string;
   selected: boolean;
-  /** `step.isNavigable()` — drives `aria-disabled` AND the label's
-   *  `mat-step-label-active` class (upstream's `active` input). */
+  /** `step.isNavigable()` — drives the label's `mat-step-label-active`
+   *  class (upstream's `active` input, a normal `@Input()` not subject to
+   *  `ariaDisabled`'s own quirk below). */
   active: boolean;
+  /**
+   * The literal `aria-disabled` attribute value (`'true'` or `undefined`),
+   * computed by `MatStepper` — NOT simply `!active`. Upstream's template
+   * has TWO `[attr.aria-disabled]` bindings on this element (`stepper.html`):
+   * an earlier `orientation === 'vertical' && step.isSelected() ? 'true' :
+   * null` and the later, "real" `step.isNavigable() ? null : true`. Angular
+   * memoizes EACH binding against its OWN previous value and only touches
+   * the DOM when THAT specific expression changes — so whichever binding's
+   * value changed most recently "wins", not simply whichever is declared
+   * last. For a vertical, non-linear stepper (`isNavigable()` is always
+   * `true`, so the second binding's value never changes after the first
+   * render), this means a header that transitions from unselected to
+   * selected gets `aria-disabled="true"` STUCK on it (the first binding
+   * firing, the second one skipped because unchanged) until it's
+   * deselected again — confirmed live; see `mat-stepper.tsx`'s
+   * `ariaDisabledQuirk` store for the full replication. */
+  ariaDisabled?: 'true';
   tabIndex: number;
   state: StepState;
   label?: string;
@@ -97,7 +115,7 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
       aria-controls={props.contentId}
       aria-label={props.ariaLabel || undefined}
       aria-labelledby={!props.ariaLabel && props.ariaLabelledby ? props.ariaLabelledby : undefined}
-      aria-disabled={props.active ? undefined : 'true'}
+      aria-disabled={props.ariaDisabled}
       onClick$={() => props.onHeaderClick$(props.index)}
     >
       {/* `matripple` mirrors Angular's bare `matRipple` directive-selector

@@ -251,6 +251,24 @@ export async function snapshotParityRoot(
         if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio')) {
           attrs['checked'] = String(el.checked);
         }
+        // Same non-reflected-IDL-property category as `checked` above, for
+        // the `value` property on a text-ish `<input>`: a bare
+        // `[formControl]`/`[ngModel]` binding (no `mat-form-field`/
+        // `matInput`) sets only the live `.value` property via
+        // `Renderer2.setProperty`, never a content attribute — confirmed on
+        // `mat-stepper`'s `linear-required`/`error-state` scenarios'
+        // Angular side, whose bare `<input>` never has a `value` attribute
+        // at all, initially or after typing. A Qwik `<input value={...}>`
+        // SSRs that prop as a literal `value="…"` attribute (needed so the
+        // control paints correctly before resume) — comparing the content
+        // attribute directly would be the same false-positive SSR-vs-CSR
+        // architecture mismatch `checked` already avoids. Compare the live
+        // `.value` property instead, for every `<input>` (not just
+        // checkbox/radio — those also have a `value` IDL property,
+        // unrelated to `.checked`, with the exact same reflection quirk).
+        if (el instanceof HTMLInputElement) {
+          attrs['value'] = el.value;
+        }
         // Qwik's reconciler parks a `<Slot>`'s provided-but-not-currently-
         // rendered children in a hidden `<q:template q:slot>` element (e.g.
         // a component that returns `null` instead of `<Slot/>` while some

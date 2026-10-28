@@ -5,7 +5,6 @@ import {
   useContextProvider,
   useSignal,
   useStore,
-  useTask$,
   useVisibleTask$,
   type JSXOutput,
   type QRL,
@@ -160,15 +159,13 @@ export const MatStepper = component$<MatStepperProps>(props => {
 
   const hostRef = useSignal<HTMLElement>();
 
-  // Plain derived arrays — captured by `trySelectIndex$` below instead of
-  // `steps` itself, so that QRL never has a live reference to any step's
-  // `content`/`labelTemplate` `JSXOutput` in its captured scope (mirrors
-  // `qwik-material/tabs/mat-tab-group.tsx`'s `disabledFlags`).
+  // Plain derived arrays used by `renderHeader` below, for THIS render only
+  // (never captured into a `$()` scope — see `trySelectIndex$`'s own doc
+  // comment for why that QRL instead reads `props.steps` live).
   const editableFlags = steps.map(s => s.editable ?? true);
   const optionalFlags = steps.map(s => !!s.optional);
   const completedOverrides = steps.map(s => s.completed ?? null);
   const controlValids = steps.map(s => s.stepControl?.valid);
-  const controlPendings = steps.map(s => s.stepControl?.pending);
 
   // `interacted` is the one piece of genuinely internal, stepper-owned
   // mutable state (CdkStep's `_interacted` signal) — not controlled by the
@@ -182,11 +179,86 @@ export const MatStepper = component$<MatStepperProps>(props => {
     return arr;
   });
 
+  /** `step.isNavigable()` for step `i`, for THIS render — reused by
+   *  `ariaDisabledQuirk` below and `renderHeader`. */
+  function computeNavigableForStep(i: number): boolean {
+    const completed = computeCompleted({
+      interacted: interactedStore[i],
+      controlValid: controlValids[i],
+      completedOverride: completedOverrides[i],
+    });
+    return isNavigable(completed, selectedIndex === i, linear);
+  }
+
+  // Replicates the `aria-disabled` two-`[attr.]`-binding Angular quirk —
+  // see `mat-step-header.tsx`'s `ariaDisabled` prop doc comment for the
+  // full explanation (confirmed live: a vertical, non-linear header that
+  // transitions from unselected to selected gets `aria-disabled="true"`
+  // STUCK on it, because `isNavigable()` never itself changes value in
+  // that case, so the binding that would clear it never re-fires). Tracks
+  // each binding's own last-fired value, exactly like Angular's per-
+  // binding change memoization, and only updates `value[i]` when ONE of
+  // them actually changes — binding2 (`isNavigable`) applied after
+  // binding1 (`vertical && selected`) when both change in the same render,
+  // matching their declaration order in `stepper.html`.
+  const ariaDisabledQuirk = useStore<{
+    b1: Array<'true' | null>;
+    b2: Array<'true' | null>;
+    value: Array<'true' | undefined>;
+  }>(() => {
+    const b1: Array<'true' | null> = [];
+    const b2: Array<'true' | null> = [];
+    const value: Array<'true' | undefined> = [];
+    for (let i = 0; i < stepCount; i++) {
+      const bind1 = vertical && selectedIndex === i ? 'true' : null;
+      const bind2 = computeNavigableForStep(i) ? null : 'true';
+      b1.push(bind1);
+      b2.push(bind2);
+      // Both bindings fire on the very first render (no previous value to
+      // diff against) — binding2, declared later in the template, wins.
+      value.push(bind2 ?? undefined);
+    }
+    return {b1, b2, value};
+  });
+  for (let i = 0; i < stepCount; i++) {
+    const bind1 = vertical && selectedIndex === i ? 'true' : null;
+    const bind2 = computeNavigableForStep(i) ? null : 'true';
+    if (bind1 !== ariaDisabledQuirk.b1[i]) {
+      ariaDisabledQuirk.b1[i] = bind1;
+      ariaDisabledQuirk.value[i] = bind1 ?? undefined;
+    }
+    if (bind2 !== ariaDisabledQuirk.b2[i]) {
+      ariaDisabledQuirk.b2[i] = bind2;
+      ariaDisabledQuirk.value[i] = bind2 ?? undefined;
+    }
+  }
+
   // Roving-tabindex focus tracking (`CdkStepper._getFocusIndex()` /
   // `FocusKeyManager.activeItemIndex`). `null` until a keyboard/selection
   // interaction explicitly moves it, falling back to `selectedIndex` — same
   // convention as `qwik-material/tabs`' `focusIndex`.
   const focusIndexSig = useSignal<number | null>(null);
+
+  // Mirrors `FocusKeyManager._origin` (`src/cdk/a11y/key-manager/
+  // focus-key-manager.ts`): defaults to `'program'`, and becomes `'keyboard'`
+  // PERMANENTLY — a one-way latch, never reset back — the first time
+  // `CdkStepper._onKeydown`'s arrow/Home/End branch calls
+  // `manager.setFocusOrigin('keyboard')`. `setActiveItem()` always calls
+  // `.focus(this._origin)` on the newly-active header on EVERY successful
+  // selection change (click, button, or Enter/Space alike) — a real,
+  // explicit `FocusMonitor.focusVia()` call that overrides whatever origin
+  // the underlying click/native-focus event would otherwise have been
+  // classified as. Confirmed live: a plain, "cold" click with NO prior
+  // keyboard interaction in the session gives the newly-selected header
+  // `cdk-program-focused` (NOT `cdk-mouse-focused`, despite being a real
+  // mouse click) — and once ANY arrow-key press has happened, EVERY later
+  // successful click/button selection gives `cdk-keyboard-focused` instead,
+  // forever, regardless of input device. This only applies to a
+  // header that BECOMES selected (`trySelectIndex$`'s success path below);
+  // a BLOCKED click (gating fails, `setActiveItem` never runs) still gets
+  // its focus classes from the ordinary `useFocusOrigin()` pointerdown
+  // heuristic — confirmed by angular-parity.spec.ts note 8 (`editable-false`).
+  const keyboardOriginSig = useSignal<'program' | 'keyboard'>('program');
 
   const animDuration = animationsDisabled.value
     ? '0ms'
@@ -198,21 +270,6 @@ export const MatStepper = component$<MatStepperProps>(props => {
 
   const isAnimating = useSignal(false);
   const animationsEnabledClass = useSignal(false);
-  // Tracks the previously-seen (clamped) `selectedIndex` so the task below
-  // can tell "the prop actually changed" from "this is the first run" —
-  // both start equal, so the first (always-eager) task run is a no-op,
-  // mirroring `selectedIndexChange` never firing at initial construction.
-  const lastSelectedIndexForAnim = useSignal(selectedIndex);
-
-  useTask$(({track}) => {
-    const raw = track(() => props.selectedIndex);
-    const clamped = clampIndex(raw, stepCount);
-    if (clamped === lastSelectedIndexForAnim.value) return;
-    lastSelectedIndexForAnim.value = clamped;
-    if (animDuration !== '0ms' && animDuration !== '0s') {
-      isAnimating.value = true;
-    }
-  });
 
   // `mat-stepper-animations-enabled` is added ~200ms after mount, once,
   // forever (when animations are enabled) — mirrors `ngAfterContentInit`'s
@@ -245,6 +302,7 @@ export const MatStepper = component$<MatStepperProps>(props => {
         target.classList.contains('mat-vertical-content-container-active');
       if (isHorizontalActive || isVerticalActive) {
         isAnimating.value = false;
+        hostEl.classList.remove('mat-stepper-animating');
         props.onAnimationDone$?.();
       }
     };
@@ -259,44 +317,100 @@ export const MatStepper = component$<MatStepperProps>(props => {
    * marking interacted), then gate the move. On success, move the roving
    * tabindex AND real DOM focus (if focus is currently inside the stepper —
    * `_containsFocus()`) to the new header, then notify the consumer.
+   *
+   * Reads `props.steps`/`props.linear`/`props.selectedIndex` LIVE (property
+   * access on the `props` store, at call time) rather than through the
+   * `editableFlags`/`controlValids`/… snapshots computed for THIS render's
+   * `renderHeader` calls — deliberately, so this QRL's gating decision is
+   * always correct even when CALLED from a closure captured on an EARLIER
+   * render. That matters here specifically: `MatStepperNext`/
+   * `MatStepperPrevious` (see `stepper-buttons.tsx`) are leaf components
+   * rendered inside a step's `content`, with no props of their own that
+   * ever change — Qwik has no reason to re-render them when an ANCESTOR's
+   * provided `MAT_STEPPER_ACTIONS` context value changes, so their
+   * `useContext()` call can keep returning an `{next$, previous$}` pair
+   * captured from an OLD render (confirmed live: a `matStepperNext` click
+   * right after `stepControl` flips valid, before any OTHER re-render,
+   * invoked a stale `next$` whose own closure's captured validity snapshot
+   * was pre-fill). Since `props` itself is the SAME live store across
+   * renders (reading a field on it is never stale), and `trySelectIndex$`
+   * is itself just called (not re-executed) by `next$`/`previous$`, every
+   * value this function touches must come from `props` (or a `useStore`/
+   * `useSignal`) directly — never a plain local computed earlier in render.
    */
   const trySelectIndex$ = $((targetIndex: number) => {
-    if (targetIndex < 0 || targetIndex >= stepCount) return;
-    const current = clampIndex(props.selectedIndex, stepCount);
+    const liveSteps = props.steps;
+    const count = liveSteps.length;
+    if (targetIndex < 0 || targetIndex >= count) return;
+    const current = clampIndex(props.selectedIndex, count);
     if (targetIndex === current) return;
 
     interactedStore[current] = true;
 
-    const gateSteps: LinearGateStep[] = editableFlags.map((_editable, i) => ({
-      interacted: interactedStore[i],
-      optional: optionalFlags[i],
-      completedOverride: completedOverrides[i],
-      completed: computeCompleted({
+    const isLinear = props.linear ?? false;
+    const gateSteps: LinearGateStep[] = liveSteps.map((s, i) => {
+      const controlValid = s.stepControl?.valid;
+      const completedOverride = s.completed ?? null;
+      return {
         interacted: interactedStore[i],
-        controlValid: controlValids[i],
-        completedOverride: completedOverrides[i],
-      }),
-      controlValid: controlValids[i],
-      controlPending: controlPendings[i],
-    }));
+        optional: !!s.optional,
+        completedOverride,
+        completed: computeCompleted({
+          interacted: interactedStore[i],
+          controlValid,
+          completedOverride,
+        }),
+        controlValid,
+        controlPending: s.stepControl?.pending,
+      };
+    });
 
     const canMove = canMoveToIndex({
       targetIndex,
       currentIndex: current,
-      targetEditable: editableFlags[targetIndex] ?? true,
+      targetEditable: liveSteps[targetIndex]?.editable ?? true,
       steps: gateSteps,
-      linear,
+      linear: isLinear,
     });
     if (!canMove) return;
 
     focusIndexSig.value = targetIndex;
+
+    // Toggle the transient animating class SYNCHRONOUSLY, in the same tick
+    // as the selection decision — mirrors upstream's `_isAnimating.set
+    // (true)`, which fires in the same change-detection cycle as
+    // `selectionChange`, not after an async round-trip through the
+    // consumer's controlled prop. Setting it from a reactive task watching
+    // `props.selectedIndex` instead (an earlier version of this code) raced
+    // Playwright's settle-polling: the extra render hop (this call ->
+    // `onSelectedIndexChange$` -> consumer state -> re-render -> task
+    // fires) could land the class-add AFTER a poll had already found it
+    // absent and resolved early — confirmed live.
+    //
+    // ALSO mutate the host's classList directly, synchronously, right
+    // here — not just the `isAnimating` signal (which still drives the
+    // class on every regular/SSR render). Even setting the signal
+    // synchronously, Qwik's own re-render flush is scheduled (a
+    // microtask/rAF hop), which isn't guaranteed to land before a test
+    // harness's `page.waitForFunction` takes its FIRST poll right after
+    // `.click()` resolves — confirmed live as an intermittent (not
+    // deterministic) race. A direct `classList.add()` makes the class
+    // appear in the exact same synchronous turn as the click/keydown
+    // handler, with no scheduling gap at all.
+    if (animDuration !== '0ms' && animDuration !== '0s') {
+      isAnimating.value = true;
+      if (isBrowser) hostRef.value?.classList.add('mat-stepper-animating');
+    }
 
     if (isBrowser) {
       const hostEl = hostRef.value;
       const active = document.activeElement;
       if (hostEl && active && hostEl.contains(active)) {
         const headerEls = hostEl.querySelectorAll<HTMLElement>('.mat-step-header');
-        headerEls[targetIndex]?.focus();
+        const target = headerEls[targetIndex];
+        // Mirrors `FocusKeyManager.setActiveItem()`'s `this.activeItem.focus
+        // (this._origin)` — see `keyboardOriginSig`'s doc comment above.
+        if (target) focusVia(target, keyboardOriginSig.value);
       }
     }
 
@@ -306,11 +420,13 @@ export const MatStepper = component$<MatStepperProps>(props => {
 
   useContextProvider(MAT_STEPPER_ACTIONS, {
     next$: $(() => {
-      const current = clampIndex(props.selectedIndex, stepCount);
-      trySelectIndex$(Math.min(current + 1, stepCount - 1));
+      const count = props.steps.length;
+      const current = clampIndex(props.selectedIndex, count);
+      trySelectIndex$(Math.min(current + 1, count - 1));
     }),
     previous$: $(() => {
-      const current = clampIndex(props.selectedIndex, stepCount);
+      const count = props.steps.length;
+      const current = clampIndex(props.selectedIndex, count);
       trySelectIndex$(Math.max(current - 1, 0));
     }),
   });
@@ -338,6 +454,13 @@ export const MatStepper = component$<MatStepperProps>(props => {
       return;
     }
 
+    // Mirrors `CdkStepper._onKeydown`'s `else` branch: `manager
+    // ?.setFocusOrigin('keyboard').onKeydown(event)` runs for ANY key that
+    // isn't an unmodified Enter/Space, unconditionally — latching
+    // `keyboardOriginSig` to 'keyboard' even for a key the key manager
+    // itself ends up doing nothing with (see that signal's doc comment).
+    keyboardOriginSig.value = 'keyboard';
+
     if (
       event.key !== 'ArrowLeft' &&
       event.key !== 'ArrowRight' &&
@@ -363,20 +486,37 @@ export const MatStepper = component$<MatStepperProps>(props => {
     if (target) focusVia(target, 'keyboard');
   });
 
-  // Per-step runtime values for THIS render only — never captured by a
-  // `$()` scope above, so reading `.content`/`.labelTemplate` here is fine.
-  const stepRuntime = steps.map((s, i) => {
+  // IMPORTANT: every value below that depends on "is step i selected" is
+  // computed FRESH, inline, right where it's passed as a JSX prop — NOT
+  // hoisted into a shared array (e.g. `steps.map(i => ({selected: ...}))`)
+  // and read back through `someArray[i].selected`. Empirically bisected
+  // (see `qwik-material/tabs/mat-tab-body.tsx`'s identical doc comment,
+  // itself quoting the same finding): in a `component$` instantiated from a
+  // parent's `.map()` with a `key` — exactly `MatStepHeaderItem` below — a
+  // boolean computed via a comparison and stored in a local (here: an
+  // array built ahead of render) and THEN fed into a prop fails to update
+  // on the client after the FIRST client-side prop change, even though the
+  // identical comparison inlined directly at the call site updates
+  // correctly. Confirmed live: `aria-selected`/icon state froze on the
+  // initial render's values after the first `Enter`/click selection change
+  // until this was inlined.
+  const renderHeader = (i: number): JSXOutput => {
+    const s = steps[i];
     const interacted = interactedStore[i];
-    const controlValid = controlValids[i];
-    const controlInvalid = s.stepControl?.invalid;
-    const completedOverride = completedOverrides[i];
     const hasErrorOverride = s.hasError ?? null;
-    const completed = computeCompleted({interacted, controlValid, completedOverride});
-    const hasError = computeHasError({interacted, controlInvalid, hasErrorOverride});
-    const selected = selectedIndex === i;
+    const completed = computeCompleted({
+      interacted,
+      controlValid: controlValids[i],
+      completedOverride: completedOverrides[i],
+    });
+    const hasError = computeHasError({
+      interacted,
+      controlInvalid: s.stepControl?.invalid,
+      hasErrorOverride,
+    });
     const showError = shouldShowError(globalOptions.showError, hasErrorOverride);
     const indicatorType = computeIndicatorType({
-      selected,
+      selected: selectedIndex === i,
       completed,
       editable: editableFlags[i],
       showError,
@@ -384,36 +524,30 @@ export const MatStepper = component$<MatStepperProps>(props => {
       displayDefaultIndicatorType: globalOptions.displayDefaultIndicatorType,
       defaultState: s.state,
     });
-    return {
-      selected,
-      completed,
-      indicatorType,
-      navigable: isNavigable(completed, selected, linear),
-    };
-  });
-
-  const renderHeader = (i: number): JSXOutput => (
-    <MatStepHeaderItem
-      key={`header-${i}`}
-      orientation={orientation}
-      index={i}
-      count={stepCount}
-      id={`${groupId.value}-label-${i}`}
-      contentId={`${groupId.value}-content-${i}`}
-      selected={stepRuntime[i].selected}
-      active={stepRuntime[i].navigable}
-      tabIndex={i === (focusIndexSig.value ?? selectedIndex) ? 0 : -1}
-      state={stepRuntime[i].indicatorType}
-      label={steps[i].label}
-      labelTemplate={steps[i].labelTemplate}
-      optional={optionalFlags[i]}
-      errorMessage={steps[i].errorMessage}
-      color={steps[i].color || props.color}
-      ariaLabel={steps[i].ariaLabel}
-      ariaLabelledby={steps[i].ariaLabelledby}
-      onHeaderClick$={onHeaderClick$}
-    />
-  );
+    return (
+      <MatStepHeaderItem
+        key={`header-${i}`}
+        orientation={orientation}
+        index={i}
+        count={stepCount}
+        id={`${groupId.value}-label-${i}`}
+        contentId={`${groupId.value}-content-${i}`}
+        selected={selectedIndex === i}
+        active={isNavigable(completed, selectedIndex === i, linear)}
+        ariaDisabled={ariaDisabledQuirk.value[i]}
+        tabIndex={i === (focusIndexSig.value ?? selectedIndex) ? 0 : -1}
+        state={indicatorType}
+        label={s.label}
+        labelTemplate={s.labelTemplate}
+        optional={optionalFlags[i]}
+        errorMessage={s.errorMessage}
+        color={s.color || props.color}
+        ariaLabel={s.ariaLabel}
+        ariaLabelledby={s.ariaLabelledby}
+        onHeaderClick$={onHeaderClick$}
+      />
+    );
+  };
 
   const hostClasses = [
     vertical ? 'mat-stepper-vertical' : 'mat-stepper-horizontal',
