@@ -60,9 +60,37 @@ const settled: ParityStep = {
   },
 };
 
+/**
+ * After a possible close (Escape / backdrop click), waits until the dialog
+ * state stops changing: no `mdc-dialog--closing` container and the same
+ * container count across consecutive checks. Works for both a real close and
+ * a no-op (`disable-close`), and covers Qwik's lazily-resolved handlers
+ * starting the close a little later than Angular's synchronous ones.
+ */
+async function settleAfterClose(page: Page) {
+  await page.waitForFunction(
+    () => {
+      const w = window as unknown as {__dlgCount?: number; __dlgStable?: number};
+      const count = document.querySelectorAll('mat-dialog-container').length;
+      const closing = !!document.querySelector('mat-dialog-container.mdc-dialog--closing');
+      if (closing || count !== w.__dlgCount) {
+        w.__dlgCount = count;
+        w.__dlgStable = 0;
+        return false;
+      }
+      return (w.__dlgStable = (w.__dlgStable ?? 0) + 1) >= 3;
+    },
+    undefined,
+    {polling: 100, timeout: 10_000},
+  );
+}
+
 const escape: ParityStep = {
   name: 'press Escape',
-  run: (page: Page) => page.keyboard.press('Escape'),
+  run: async (page: Page) => {
+    await page.keyboard.press('Escape');
+    await settleAfterClose(page);
+  },
 };
 
 /**
@@ -82,8 +110,10 @@ const escape: ParityStep = {
  */
 const backdropClick: ParityStep = {
   name: 'click backdrop',
-  run: (page: Page) =>
-    page.locator('.cdk-overlay-backdrop').click({position: {x: 5, y: 5}, force: true}),
+  run: async (page: Page) => {
+    await page.locator('.cdk-overlay-backdrop').click({position: {x: 5, y: 5}, force: true});
+    await settleAfterClose(page);
+  },
 };
 
 /**
@@ -103,7 +133,10 @@ const backdropClick: ParityStep = {
  */
 const clickButton = (text: string): ParityStep => ({
   name: `click button "${text}"`,
-  run: (page: Page) => page.getByRole('button', {name: text, exact: true}).click(),
+  run: async (page: Page) => {
+    await page.getByRole('button', {name: text, exact: true}).click();
+    await settleAfterClose(page);
+  },
 });
 
 /**
