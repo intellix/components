@@ -116,6 +116,9 @@ const CONSUMER_SELECTOR_ATTRS = [
   'matsnackbaraction',
   'matsteppernext',
   'matstepperprevious',
+  'matsliderthumb',
+  'matsliderstartthumb',
+  'matsliderendthumb',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
@@ -161,12 +164,16 @@ export async function snapshotParityRoot(
   page: Page,
   rootSelector = '[data-parity-root]',
 ): Promise<DomNode> {
-  // Transient ripple elements are timing-dependent; wait them out. Template
-  // ripples that stay for good (e.g. `mat-radio-persistent-ripple`) are part
-  // of the DOM contract and are not waited for.
+  // Transient ripple elements are timing-dependent; wait them out. Ripples
+  // that stay for good (radio's `mat-radio-persistent-ripple`, slider's
+  // persistent hover/focus/active ripples) are part of the DOM contract and
+  // are not waited for.
   await page
     .waitForFunction(
-      () => !document.querySelector('.mat-ripple-element:not([class*="persistent-ripple"])'),
+      () =>
+        !document.querySelector(
+          '.mat-ripple-element:not([class*="persistent-ripple"]):not(.mat-mdc-slider-hover-ripple):not(.mat-mdc-slider-focus-ripple):not(.mat-mdc-slider-active-ripple)',
+        ),
       undefined,
       {
         timeout: 3000,
