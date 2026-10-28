@@ -35,7 +35,7 @@ export interface FocusableOption extends ListKeyManagerOption {
 
 export interface FocusKeyManager<T extends FocusableOption> extends ListKeyManager<T> {
   /** Sets the focus origin passed to items' `focus()` for subsequent activations. */
-  setFocusOrigin(origin: FocusOrigin): FocusKeyManager<T>;
+  setFocusOrigin(origin: FocusOrigin): this;
 }
 
 /**

@@ -20,18 +20,7 @@
  * (`setActiveItem`, `setNextItemActive`, wrap mode, skip-disabled, Home/End,
  * Page Up/Down, typeahead) are faithful ports.
  */
-import {
-  DOWN_ARROW,
-  END,
-  HOME,
-  LEFT_ARROW,
-  PAGE_DOWN,
-  PAGE_UP,
-  RIGHT_ARROW,
-  TAB,
-  UP_ARROW,
-  hasModifierKey,
-} from '../../keycodes';
+import {hasModifierKey} from '../../keycodes';
 import {createTypeahead, type Typeahead} from './typeahead';
 
 /** This interface is for items that can be passed to a ListKeyManager. */
@@ -47,21 +36,21 @@ export type ListKeyManagerModifierKey = 'altKey' | 'ctrlKey' | 'metaKey' | 'shif
 
 export interface ListKeyManager<T extends ListKeyManagerOption> {
   /** Configures wrapping mode (active item wraps to the other end of the list). */
-  withWrap(shouldWrap?: boolean): ListKeyManager<T>;
+  withWrap(shouldWrap?: boolean): this;
   /** Configures whether the active item can move vertically (arrow up/down). */
-  withVerticalOrientation(enabled?: boolean): ListKeyManager<T>;
+  withVerticalOrientation(enabled?: boolean): this;
   /** Configures whether/which direction the active item can move horizontally. */
-  withHorizontalOrientation(direction: 'ltr' | 'rtl' | null): ListKeyManager<T>;
+  withHorizontalOrientation(direction: 'ltr' | 'rtl' | null): this;
   /** Modifier keys allowed to be held down while pressing an arrow key. */
-  withAllowedModifierKeys(keys: ListKeyManagerModifierKey[]): ListKeyManager<T>;
+  withAllowedModifierKeys(keys: ListKeyManagerModifierKey[]): this;
   /** Turns on typeahead mode (set the active item by typing). */
-  withTypeAhead(debounceInterval?: number): ListKeyManager<T>;
+  withTypeAhead(debounceInterval?: number): this;
   /** Configures Home/End to jump to the first/last item. */
-  withHomeAndEnd(enabled?: boolean): ListKeyManager<T>;
+  withHomeAndEnd(enabled?: boolean): this;
   /** Configures Page Up/Page Down to jump by `delta` items. */
-  withPageUpDown(enabled?: boolean, delta?: number): ListKeyManager<T>;
+  withPageUpDown(enabled?: boolean, delta?: number): this;
   /** Sets the predicate determining which items are skipped (default: `item.disabled`). */
-  skipPredicate(predicate: (item: T) => boolean): ListKeyManager<T>;
+  skipPredicate(predicate: (item: T) => boolean): this;
   /** Replaces the managed items (e.g. after a re-render). Active item is re-resolved by reference. */
   setItems(items: readonly T[]): void;
   /** Sets the active item by index or reference, firing `onChange` if it changed. */
@@ -77,7 +66,7 @@ export interface ListKeyManager<T extends ListKeyManagerOption> {
   /** Whether the typeahead buffer currently has pending letters. */
   isTyping(): boolean;
   /** Cancels the current typeahead sequence. */
-  cancelTypeahead(): ListKeyManager<T>;
+  cancelTypeahead(): this;
   /** Activates the first non-skipped item. */
   setFirstItemActive(): void;
   /** Activates the last non-skipped item. */

@@ -1,0 +1,13 @@
+// Prebuilt Material Menu CSS entry.
+//
+// Unlike most other *-prebuilt.scss entries, menu.scss's `token-utils.slot(...)`
+// calls are all fed `$fallbacks: m3-menu.get-tokens()` computed locally (no
+// `$theme` arg — defaults to `m3.$sys-theme`), so every `--mat-menu-*`
+// variable this stylesheet emits already carries a literal fallback value
+// baked into its own `var(--mat-menu-x, <fallback>)` chain at Sass-compile
+// time. There is no stray `--mat-sys-*` reference anywhere in menu.scss or
+// the shared core/style/_menu-common.scss / _button-common.scss mixins it
+// pulls in, so no extra `:root` overrides are needed for a bare consumer to
+// see a themed menu (contrast with tooltip-prebuilt.scss, whose tokens are
+// NOT all self-contained this way).
+@use './menu';
