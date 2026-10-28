@@ -31,6 +31,8 @@ import type {MatSlideToggleConfig} from '../slide-toggle/slide-toggle-config';
 import {MAT_SLIDE_TOGGLE_CONFIG} from '../slide-toggle/slide-toggle-config';
 import type {MatExpansionConfig} from '../expansion/expansion-config';
 import {MAT_EXPANSION_CONFIG} from '../expansion/expansion-config';
+import type {MatSidenavConfig} from '../sidenav/sidenav-config';
+import {MAT_SIDENAV_CONFIG} from '../sidenav/sidenav-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -63,6 +65,8 @@ export interface QwikMaterialProviderProps {
   matSlideToggleConfig?: MatSlideToggleConfig;
   /** Defaults applied to every MatExpansionPanel / MatExpansionPanelHeader in this subtree. */
   matExpansionConfig?: MatExpansionConfig;
+  /** Defaults applied to every MatDrawerContainer / MatSidenavContainer in this subtree. */
+  matSidenavConfig?: MatSidenavConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -129,6 +133,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // MatExpansionPanel/MatExpansionPanelHeader; providing an empty object is
   // equivalent to accepting all defaults.
   useContextProvider(MAT_EXPANSION_CONFIG, props.matExpansionConfig ?? {});
+  // MatSidenavConfig is a plain object with primitive fields — no noSerialize needed.
+  // Drawer containers outside a provider get the DEFAULTS declared in
+  // MatDrawerContainer/MatSidenavContainer; providing an empty object is equivalent to
+  // accepting all defaults.
+  useContextProvider(MAT_SIDENAV_CONFIG, props.matSidenavConfig ?? {});
 
   return <Slot />;
 });

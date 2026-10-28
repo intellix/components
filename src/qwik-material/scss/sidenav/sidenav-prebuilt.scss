@@ -1,0 +1,39 @@
+// Sidenav prebuilt CSS. Wraps the port's upstream-synced drawer.scss with
+// :root defaults for every --mat-sidenav-* / --mat-sys-* variable it emits,
+// following the same reconciliation approach as expansion-prebuilt.scss
+// (recompile, add whatever var() names are still unresolved, repeat). See
+// design spec §4 and SYNC.md.
+//
+// --mat-sys-* values are M3-ish literals, not a live theme (this port has no
+// runtime theming system, same as every other qwik-material prebuilt file) —
+// reused verbatim from button/dialog/expansion/slide-toggle's own prebuilt
+// files wherever they already define the same variable name, so loading
+// more than one of these prebuilt CSS files on the same page doesn't
+// produce conflicting defaults for shared system tokens. `--mat-sys-
+// background`/`--mat-sys-on-background` have no prior art in this port (no
+// earlier component used the M3 "background" role) — approximated here as
+// equal to `surface`/`on-surface`, matching the M3 baseline theme's own
+// background-mirrors-surface relationship. The scrim color
+// (`m3-utils.color-with-opacity(neutral-variant20, 40%)` upstream) is
+// approximated as a literal `rgba(0, 0, 0, 0.4)` — in the same spirit as
+// `qwik-cdk/overlay`'s own backdrop default (`rgba(0, 0, 0, 0.32)`).
+
+@use './drawer';
+
+:root {
+  --mat-sidenav-container-shape: 16px;
+  --mat-sidenav-container-elevation-shadow: none;
+  --mat-sidenav-container-width: 360px;
+  --mat-sidenav-container-divider-color: transparent;
+  --mat-sidenav-container-background-color: var(--mat-sys-surface, #fef7ff);
+  --mat-sidenav-container-text-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-sidenav-content-background-color: var(--mat-sys-background, #fef7ff);
+  --mat-sidenav-content-text-color: var(--mat-sys-on-background, rgba(0, 0, 0, 0.87));
+  --mat-sidenav-scrim-color: rgba(0, 0, 0, 0.4);
+
+  --mat-sys-surface: #fef7ff;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
+  --mat-sys-background: #fef7ff;
+  --mat-sys-on-background: rgba(0, 0, 0, 0.87);
+}

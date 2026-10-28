@@ -109,6 +109,11 @@
       "types": "./dist/expansion/index.d.ts",
       "import": "./dist/expansion/index.js"
     },
+    "./sidenav": {
+      "qwik": "./sidenav/index.ts",
+      "types": "./dist/sidenav/index.d.ts",
+      "import": "./dist/sidenav/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -124,6 +129,7 @@
     "./button-toggle-prebuilt.css": "./dist/button-toggle-prebuilt.css",
     "./slide-toggle-prebuilt.css": "./dist/slide-toggle-prebuilt.css",
     "./expansion-prebuilt.css": "./dist/expansion-prebuilt.css",
+    "./sidenav-prebuilt.css": "./dist/sidenav-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
