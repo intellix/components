@@ -9,7 +9,7 @@ Every deviation from a verbatim copy is recorded here. Companion to
 `src/qwik-material/progress-spinner/SYNC.md`,
 `src/qwik-material/divider/SYNC.md`, `src/qwik-material/grid-list/SYNC.md`,
 `src/qwik-material/list/SYNC.md`, `src/qwik-material/button-toggle/SYNC.md`,
-and `src/qwik-material/checkbox/SYNC.md`.
+`src/qwik-material/checkbox/SYNC.md`, and `src/qwik-material/select/SYNC.md`.
 
 New entry point added 2026-10-27 as shared infrastructure for the
 qwik-material DOM-parity remediation
@@ -78,3 +78,98 @@ on the same element that carries the `mat-internal-form-field` selector
 one element; `_MatInternalFormField` itself has no click handling of its
 own). No existing caller is affected — the prop defaults to `undefined`. See
 `checkbox/SYNC.md`.
+
+## `MatOption` / `MatOptgroup` (2026-10-28)
+
+Added `mat-option.tsx` / `mat-optgroup.tsx`, porting
+`src/material/core/option/{option,optgroup}.ts` + their `.html` templates +
+synced SCSS. First consumer: `qwik-material/select`. Documented as reusable
+by a future autocomplete/datepicker/timepicker port (upstream itself shares
+these the same way).
+
+### Upstream sync state
+
+| File | Upstream path | Sync state |
+|------|---------------|------------|
+| `scss/core/option/option.scss` | `src/material/core/option/option.scss` | synced (cdk-stub swap only) |
+| `scss/core/option/optgroup.scss` | `src/material/core/option/optgroup.scss` | synced, byte-identical |
+| `scss/core/option/_m2-option.scss` / `_m3-option.scss` | same | synced, byte-identical |
+| `scss/core/option/_m2-optgroup.scss` / `_m3-optgroup.scss` | same | synced, byte-identical |
+| `scss/core/option/_option-theme.scss` / `_optgroup-theme.scss` | same | synced, byte-identical (not referenced by the prebuilt CSS — same as every other `*-theme.scss`, kept for completeness/custom-theming) |
+| `scss/core/option/option-prebuilt.scss` | n/a (qwik-material-specific) | new — no `:root` overrides needed; every `--mat-option-*`/`--mat-optgroup-*` variable already gets a real fallback baked in via `token-utils.slot(..., $fallbacks)`, where `$fallbacks` resolves the default M3 system theme at Sass compile time (same situation as `list-prebuilt.scss`'s majority case) |
+
+### Public API
+
+```tsx
+<MatOption id="mat-option-0" value="apple" selected={false} active={false}>
+  Apple
+</MatOption>
+<MatOptgroup label="Grass" labelId="mat-optgroup-label-0">
+  <MatOption .../>
+</MatOptgroup>
+```
+
+Both are **plain, fully props-controlled presentational components** — they
+own no internal state of their own. `selected`/`active`/`disabled` are
+computed and passed in by whatever owns the option list (`MatSelect` today);
+this mirrors upstream's `ActiveDescendantKeyManager` role declaratively (see
+`qwik-cdk/a11y/key-manager/list-key-manager.ts`'s own doc comment: this
+port's rendering model has no imperative `setActiveStyles()`/
+`setInactiveStyles()` step left to port — "active" is just
+`index === activeItemIndex`, re-rendered by whoever owns that signal).
+
+Renders the literal `<mat-option>`/`<mat-optgroup>` custom elements (same
+convention as `<mat-form-field>`/`<mat-pseudo-checkbox>` elsewhere in this
+project — see `intrinsic-elements.d.ts`).
+
+`id`/`labelId` are optional on the props (a fallback module-level id
+generator mints one if omitted — the same "simplified singleton" pattern
+`MatBadge`/`MatTooltip` already use for their own fallback ids) — in
+practice every option `MatSelect` renders gets an explicit one from its own
+`select-option-resolver.ts`, so this is a pure safety net for a
+hypothetically standalone `<MatOption>`, not load-bearing for any parity
+scenario.
+
+### Deviations from upstream
+
+- **No `<ng-content select="mat-icon">` slot.** No scenario in this port's
+  current consumers projects an icon into an option. `content`/children are
+  rendered as-is; a future consumer wanting an icon can simply put a
+  `<MatIcon>` inside the children/`content` it hands to whatever's building
+  the option list.
+- **`MatOptgroup`'s `_inert` a11y mode (Safari-only VoiceOver workaround,
+  upstream: `MatAutocomplete` sets `inertGroups`, `MatSelect` never does) is
+  supported structurally (`inert` prop + `groupInertLabel` prop on
+  `MatOption`, mirroring `option.html`'s `@if (group && group._inert)`
+  visually-hidden span) but unexercised — no current consumer sets `inert`.
+- **Ripple**: the option's own ripple container (`.mat-mdc-option-ripple
+  .mat-focus-indicator`) is rendered as a static, always-present element
+  with the bare `mat-ripple` directive-selector attribute — same "static
+  containers, not the lazy JS behind them" scope line the remediation design
+  doc draws for every other ripple-bearing component (radio/tab-label/
+  slide-toggle already establish this exact pattern: a plain `mat-ripple`
+  attribute + classes, no `MatRippleLoader`-style lazy-init machinery, which
+  only button/icon-button/fab need). No interactive ripple animation is
+  ported.
+
+### `MAT_FORM_FIELD_CONNECTED_ORIGIN` / `MatFormFieldControlState` additions
+
+`core/mat-form-field-control.ts` gained, for `qwik-material/select`:
+
+- `MAT_FORM_FIELD_CONNECTED_ORIGIN` — a context carrying a `Signal` ref to
+  `MatFormField`'s own `.mat-mdc-text-field-wrapper` div, the Qwik-port
+  equivalent of upstream `MatFormField.getConnectedOverlayOrigin()`
+  (returns `this._textField`, an `ElementRef` to that same wrapper).
+- `MatFormFieldControlState.labelId` — the id of `MatFormField`'s own
+  floating `<label>`, when it has one. Needed because `MatSelect` must build
+  its own `aria-labelledby` itself (`disableAutomaticLabeling` means the
+  label's `for` never points the other way).
+- `MatFormFieldControlState.color` — the form field's resolved theme color,
+  needed for `MatSelect`'s panel `mat-primary`/`mat-accent`/`mat-warn`/
+  `mat-undefined` class.
+- `MatFormFieldControlProps.disableAutomaticLabeling` — suppresses the
+  floating label's `for` attribute. Also auto-derived from
+  `controlType === 'mat-select'` in `mat-form-field.tsx`, so `MatSelect`
+  doesn't need to pass it explicitly (see `form-field/SYNC.md`).
+
+All additive; `MatInput`'s existing behavior is unchanged.
