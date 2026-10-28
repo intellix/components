@@ -205,6 +205,31 @@ export async function snapshotParityRoot(
     )
     .catch(() => {});
 
+  // `MatFormField.ngAfterViewInit` adds `.mat-form-field-animations-enabled` to every
+  // `.mat-mdc-form-field` ~300ms after mount, once, forever (never removed) — see
+  // specs/material-form-field/angular-parity.spec.ts's own big ANIMATIONS-ENABLED comment and
+  // its locally-defined `settle` step, which exists for exactly this reason. That spec works
+  // around the race by putting its OWN settle step first in every scenario; a component that
+  // merely EMBEDS a `<mat-form-field>` (e.g. chips' `grid-input`/`grid-disabled`, wrapping a
+  // `mat-chip-grid` in one) has no reason to duplicate that wait itself, and the generic
+  // `expectMaterialParity` sequencing (angular opened first, then qwik — see `open()` below)
+  // means Angular's copy of this timer always has a head start by the time BOTH pages are
+  // ready, for ANY scenario with zero steps before the first compare: confirmed live, this is
+  // not qwik-specific flakiness, it reproduces 100% of the time for a zero-step outline
+  // scenario embedding a form field. Waiting here, universally, before every snapshot (not
+  // just a per-component opt-in) generalizes form-field's own fix to any component that
+  // nests one, the same way the ripple-element wait above already does for ripples.
+  await page
+    .waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('.mat-mdc-form-field')).every(el =>
+          el.classList.contains('mat-form-field-animations-enabled'),
+        ),
+      undefined,
+      {timeout: 3000},
+    )
+    .catch(() => {});
+
   return page.locator(rootSelector).evaluate(
     (root: Element, opts) => {
       type Node = {

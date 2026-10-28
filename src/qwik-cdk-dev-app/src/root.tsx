@@ -26,6 +26,7 @@ import '@angular-community/qwik-material/snack-bar-prebuilt.css';
 import '@angular-community/qwik-material/bottom-sheet-prebuilt.css';
 import '@angular-community/qwik-material/form-field-prebuilt.css';
 import '@angular-community/qwik-material/stepper-prebuilt.css';
+import '@angular-community/qwik-material/chips-prebuilt.css';
 import '@angular-community/qwik-material/tooltip-prebuilt.css';
 import '@angular-community/qwik-material/slider-prebuilt.css';
 import '@angular-community/qwik-material/menu-prebuilt.css';
