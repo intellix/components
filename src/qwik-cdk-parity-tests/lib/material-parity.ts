@@ -365,11 +365,51 @@ function settle(page: Page): Promise<unknown> {
   );
 }
 
+/**
+ * Waits for `MatFormField`'s own `mat-form-field-animations-enabled` class
+ * (added ~300ms after mount, once, forever — mirrors upstream's
+ * `ngAfterViewInit` `setTimeout`; see `qwik-material/form-field/
+ * mat-form-field.tsx`'s own comment) to settle, on whichever page has a
+ * `.mat-mdc-form-field` at all. A no-op (resolves immediately) for any
+ * scenario without one.
+ *
+ * Needed specifically for components whose FIRST comparison (before any
+ * interaction step) runs soon enough after navigation that this timer
+ * genuinely hasn't fired yet on one side — confirmed live for
+ * `mat-select`: unlike `mat-input`'s own scenarios (whose bundle is
+ * smaller, so Qwik's SSR→resumability bootstrap finishes with more of the
+ * 300ms margin already elapsed), select's substantially larger bundle
+ * (overlay, key-manager, option/optgroup, form-field extensions) pushes
+ * qwikloader's own bootstrap time close enough to the 300ms mark that the
+ * class was consistently (not flakily — confirmed across repeated runs)
+ * still absent by the time `expectMaterialParity`'s very first `compare()`
+ * ran, on EVERY `mat-select` scenario. This does not weaken the
+ * `mat-form-field-animations-enabled` assertion itself (the full class
+ * list, including this one, is still compared after this resolves) — it
+ * only waits for a known, real, transient mount-timer to settle first,
+ * the same category of fix `waitForSelectPanel`'s own polling in
+ * `specs/material-select/angular-parity.spec.ts` already applies to the
+ * select panel's exit animation.
+ */
+async function waitForFormFieldAnimationsSettled(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => {
+        const field = document.querySelector('.mat-mdc-form-field');
+        return !field || field.classList.contains('mat-form-field-animations-enabled');
+      },
+      undefined,
+      {timeout: 2000},
+    )
+    .catch(() => {});
+}
+
 async function open(browser: Browser, url: string): Promise<Page> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.goto(url);
   await page.waitForSelector('[data-parity-root]', {state: 'attached'});
+  await waitForFormFieldAnimationsSettled(page);
   return page;
 }
 
