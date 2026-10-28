@@ -58,6 +58,11 @@
       "types": "./dist/accordion/index.d.ts",
       "import": "./dist/accordion/index.js"
     },
+    "./stepper": {
+      "qwik": "./stepper/index.ts",
+      "types": "./dist/stepper/index.d.ts",
+      "import": "./dist/stepper/index.js"
+    },
     "./platform": {
       "qwik": "./platform/index.ts",
       "types": "./dist/platform/index.d.ts",

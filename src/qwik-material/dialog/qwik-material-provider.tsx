@@ -52,6 +52,8 @@ import type {MatFormFieldConfig} from '../form-field/form-field-config';
 import {MAT_FORM_FIELD_CONFIG} from '../form-field/form-field-config';
 import type {MatInputConfig} from '../input/input-config';
 import {MAT_INPUT_CONFIG} from '../input/input-config';
+import type {StepperOptions} from '@angular-community/qwik-cdk/stepper';
+import {CDK_STEPPER_GLOBAL_OPTIONS} from '@angular-community/qwik-cdk/stepper';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -104,6 +106,9 @@ export interface QwikMaterialProviderProps {
   matFormFieldConfig?: MatFormFieldConfig;
   /** Defaults applied to every MatInput in this subtree. */
   matInputConfig?: MatInputConfig;
+  /** Qwik-context equivalent of `@angular/cdk/stepper`'s `STEPPER_GLOBAL_OPTIONS`
+   *  — applies to every MatStepper in this subtree. */
+  stepperGlobalOptions?: StepperOptions;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -220,6 +225,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // `false` fallback declared in MatInput; providing an empty object is
   // equivalent to accepting that default.
   useContextProvider(MAT_INPUT_CONFIG, props.matInputConfig ?? {});
+  // StepperOptions is a plain object with primitive fields — no noSerialize
+  // needed. Steppers outside a provider get {} (upstream's own un-provided
+  // STEPPER_GLOBAL_OPTIONS default: showError falls back to per-step
+  // `hasError` overrides only, displayDefaultIndicatorType defaults true).
+  useContextProvider(CDK_STEPPER_GLOBAL_OPTIONS, props.stepperGlobalOptions ?? {});
 
   return <Slot />;
 });
