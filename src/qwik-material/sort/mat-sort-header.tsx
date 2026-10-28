@@ -73,6 +73,21 @@ export interface MatSortHeaderProps {
   /** Overrides the table's `disableClear` for this column only. */
   disableClear?: boolean;
   class?: string | ReadonlyArray<string>;
+  /**
+   * Explicit `role` for the rendered `<th>`. Omitted by default — a bare
+   * `<th mat-sort-header>` with no co-located `mat-header-cell`/
+   * `cdk-header-cell` directive relies on the element's native implicit
+   * `columnheader` role (upstream never sets the attribute explicitly in
+   * that case either). `qwik-material/table`'s `<MatTable>` passes
+   * `role="columnheader"` explicitly when a column's header IS this
+   * element (no separate `<th mat-header-cell>` wrapper exists in that
+   * case — see table/SYNC.md "matSort integration"), matching upstream's
+   * actual combined-directive host binding.
+   */
+  role?: string;
+  /** Inline style merged onto the `<th>` — used by `<MatTable>` to apply
+   *  sticky positioning when a sortable column is also sticky. */
+  style?: Record<string, string>;
 }
 
 const CONFIG_DEFAULTS: MatSortConfig = {};
@@ -256,6 +271,8 @@ export const MatSortHeader = component$<MatSortHeaderProps>(props => {
       // recognized HTML attr, same pattern as slide-toggle's `mat-ripple`.
       {...({'mat-sort-header': props.id} as Record<string, string>)}
       class={thClasses}
+      role={props.role}
+      style={props.style}
       aria-sort={ariaSort}
       onClick$={toggleOnInteraction$}
       onKeyDown$={onKeyDown$}
