@@ -48,6 +48,10 @@ import {
   MAT_BOTTOM_SHEET_DEFAULT_OPTIONS,
   MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
 } from '../bottom-sheet/mat-bottom-sheet-tokens';
+import type {MatFormFieldConfig} from '../form-field/form-field-config';
+import {MAT_FORM_FIELD_CONFIG} from '../form-field/form-field-config';
+import type {MatInputConfig} from '../input/input-config';
+import {MAT_INPUT_CONFIG} from '../input/input-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -96,6 +100,10 @@ export interface QwikMaterialProviderProps {
   matBottomSheetDefaults?: Partial<MatBottomSheetConfig>;
   /** Factory returning the default ScrollStrategy for MatBottomSheet. Defaults to createBlockScrollStrategy(). */
   matBottomSheetScrollStrategyFactory?: () => ScrollStrategy;
+  /** Defaults applied to every MatFormField in this subtree. */
+  matFormFieldConfig?: MatFormFieldConfig;
+  /** Defaults applied to every MatInput in this subtree. */
+  matInputConfig?: MatInputConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -200,6 +208,18 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
     MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
     noSerialize(props.matBottomSheetScrollStrategyFactory ?? (() => createBlockScrollStrategy())),
   );
+  // MatFormFieldConfig is a plain object with primitive fields — no
+  // noSerialize needed. Form fields outside a provider get the
+  // MAT_FORM_FIELD_CONFIG_DEFAULTS declared in form-field-config.ts;
+  // providing an empty object here is NOT equivalent to those defaults
+  // (MatFormField itself falls back per-field: `props.x ?? config.x ?? ownDefault`,
+  // same convention as checkbox/radio).
+  useContextProvider(MAT_FORM_FIELD_CONFIG, props.matFormFieldConfig ?? {});
+  // MatInputConfig is a plain object with a single primitive field — no
+  // noSerialize needed. Inputs outside a provider get the hardcoded
+  // `false` fallback declared in MatInput; providing an empty object is
+  // equivalent to accepting that default.
+  useContextProvider(MAT_INPUT_CONFIG, props.matInputConfig ?? {});
 
   return <Slot />;
 });
