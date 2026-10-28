@@ -136,20 +136,33 @@ export interface MatFormControl {
  * `<MatFormField>`/`<MatInput>`/`<MatError>` JSX for it).
  */
 export function useMatFormControl(options: MatFormControlOptions = {}): MatFormControl {
+  // Built in two steps deliberately: a `useStore()` initializer object
+  // whose own fields are `$()`-wrapped closures that close over the SAME
+  // variable the `useStore()` call is busy assigning (a self-referential
+  // `const control = useStore({..., setValue$: $(() => control.value = …)})`)
+  // was found, empirically, to crash the SSR bundle at runtime
+  // ("Cannot access 't' before initialization" — a minified-bundle TDZ
+  // error only reproducible once this hook was actually exercised by a
+  // route and that route's page was requested, not caught by typecheck/
+  // vitest/the build step itself). Declaring the store with only plain
+  // data fields FIRST, then attaching the QRL methods as separate
+  // statements afterwards, sidesteps whatever interaction between Qwik's
+  // closure-capture extraction and self-referential initializers caused
+  // it, and is otherwise behaviorally identical.
   const control = useStore<MatFormControl>({
     value: options.value ?? '',
     touched: false,
     dirty: false,
-    setValue$: $((value: string) => {
-      control.value = value;
-      control.dirty = true;
-    }),
-    markAsTouched$: $(() => {
-      control.touched = true;
-    }),
-    markAsDirty$: $(() => {
-      control.dirty = true;
-    }),
+  } as MatFormControl);
+  control.setValue$ = $((value: string) => {
+    control.value = value;
+    control.dirty = true;
+  });
+  control.markAsTouched$ = $(() => {
+    control.touched = true;
+  });
+  control.markAsDirty$ = $(() => {
+    control.dirty = true;
   });
   return control;
 }

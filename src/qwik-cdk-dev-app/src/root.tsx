@@ -19,6 +19,7 @@ import '@angular-community/qwik-material/slide-toggle-prebuilt.css';
 import '@angular-community/qwik-material/expansion-prebuilt.css';
 import '@angular-community/qwik-material/radio-prebuilt.css';
 import '@angular-community/qwik-material/checkbox-prebuilt.css';
+import '@angular-community/qwik-material/form-field-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>

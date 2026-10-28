@@ -186,30 +186,62 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const hidePlaceholder = hasFloatingLabel && !shouldLabelFloat;
 
   // ── ids ──
-  // Lazy initializers (run once) — mirror upstream's field-initializer
-  // `_labelId`/`_hintLabelId` `_IdGenerator` calls. Exact numeric values
-  // don't need to match upstream's allocation ORDER (the parity harness
-  // squashes digits — see angular-parity.spec.ts's header comment) — only
-  // that each `for`/`aria-describedby` reference points at the matching
-  // element's own id.
+  // Lazy initializers (run once, memoized for the lifetime of this
+  // component instance) — mirror upstream's field-initializer `_labelId`/
+  // `_hintLabelId` `_IdGenerator` calls. Exact numeric values don't need to
+  // match upstream's allocation ORDER (the parity harness squashes digits
+  // — see angular-parity.spec.ts's header comment) — only that each
+  // `for`/`aria-describedby` reference points at the matching element's
+  // own id.
+  //
+  // CRITICAL: every one of these MUST be memoized (`useSignal(() => ...)`),
+  // never a bare `idGen.getId(...)` call inline in the render body. A bare
+  // call mints a FRESH id on every re-render (e.g. the 300ms
+  // animations-enabled timer firing, or a later focus/blur) — found, via a
+  // real hung-browser repro (the page's JS spun at 100% CPU and stopped
+  // responding to CDP commands entirely), to cause the control's `id` /
+  // the label's `for` / `aria-describedby` to keep changing out from under
+  // the live DOM after mount, apparently feeding back into more
+  // re-renders. Fixed by generating every fallback id exactly once per
+  // component instance and reusing it thereafter — matches upstream's own
+  // field-initializer semantics (`readonly _labelId = idGen.getId(...)`
+  // literally cannot re-run either).
   const labelId = useSignal(() => idGen.getId('mat-mdc-form-field-label-'));
   const hintLabelId = useSignal(() => idGen.getId('mat-mdc-hint-'));
+  const generatedControlId = useSignal(() => idGen.getId('mat-input-'));
+  const generatedHintStartId = useSignal(() => idGen.getId('mat-mdc-hint-'));
+  const generatedHintEndId = useSignal(() => idGen.getId('mat-mdc-hint-'));
+  // Errors are the one slot whose CONTENT (not just count) can legitimately
+  // change across renders (error-state: "Email is required" swapped for
+  // "Enter a valid email") — cached per ARRAY INDEX (slot), not per
+  // render, so a slot that stays populated keeps the same id while a
+  // genuinely different error occupying that slot still gets a fresh one
+  // the first time it appears. Plain mutation (not a reactive write) is
+  // intentional: this is stable storage across this instance's re-renders,
+  // never read for its own reactivity.
+  const errorIdCache = useSignal<string[]>(() => []);
 
-  const controlId = controlProps?.id ?? idGen.getId('mat-input-');
+  const controlId = controlProps?.id ?? generatedControlId.value;
 
   const errorsArray = toArray(props.errors).filter(SETTLE_SELECTED_FILTER);
   const hasErrors = errorsArray.length > 0;
   // Upstream `_getSubscriptMessageType()`.
   const showErrors = hasErrors && errorState;
 
-  const errorsWithIds = errorsArray.map(node =>
-    withGeneratedId(node, idGen.getId('mat-mdc-error-')),
-  );
+  const errorsWithIds = errorsArray.map((node, i) => {
+    const explicit = readControlProps(node)?.id;
+    if (explicit) return {node, id: explicit};
+    if (!errorIdCache.value[i]) {
+      errorIdCache.value[i] = idGen.getId('mat-mdc-error-');
+    }
+    const id = errorIdCache.value[i];
+    return {node: withProps(node, {id}), id};
+  });
   const {node: hintStartNode, id: hintStartId} = props.hintStart
-    ? withGeneratedId(props.hintStart, idGen.getId('mat-mdc-hint-'))
+    ? withGeneratedId(props.hintStart, generatedHintStartId.value)
     : {node: undefined, id: undefined};
   const {node: hintEndNode, id: hintEndId} = props.hintEnd
-    ? withGeneratedId(props.hintEnd, idGen.getId('mat-mdc-hint-'))
+    ? withGeneratedId(props.hintEnd, generatedHintEndId.value)
     : {node: undefined, id: undefined};
 
   // Upstream `_syncDescribedByIds`.
@@ -346,6 +378,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     hasOutline && 'mdc-text-field--outlined',
     !hasFloatingLabel && 'mdc-text-field--no-label',
     disabled && 'mdc-text-field--disabled',
+    controlState.focused && 'mdc-text-field--focused',
     errorState && 'mdc-text-field--invalid',
   ].filter(Boolean) as string[];
 

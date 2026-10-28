@@ -54,7 +54,6 @@ export const MatInput = component$<MatInputProps>(props => {
   const config = useContext(MAT_INPUT_CONFIG, MAT_INPUT_CONFIG_DEFAULTS);
   const as = props.as ?? 'input';
   const isTextarea = as === 'textarea';
-  const type = props.type ?? 'text';
   const disabled = props.disabled ?? false;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
   const required = props.required ?? false;
@@ -233,5 +232,12 @@ export const MatInput = component$<MatInputProps>(props => {
   if (isTextarea) {
     return <textarea {...sharedProps} rows={props.rows} maxLength={props.maxLength} />;
   }
-  return <input {...sharedProps} type={type} maxLength={props.maxLength} />;
+  // `type` is only ever rendered when the consumer explicitly set one —
+  // mirrors upstream's `@Input() type` setter, which the TEMPLATE never
+  // invokes without an explicit `[type]`/`type="…"` binding, leaving the
+  // native element's own browser-default "text" behavior untouched (no
+  // `type` attribute at all) rather than writing a redundant
+  // `type="text"` nothing in the template ever asked for. Confirmed live:
+  // Angular's `fill-basic` input has no `type` attribute whatsoever.
+  return <input {...sharedProps} type={props.type} maxLength={props.maxLength} />;
 });

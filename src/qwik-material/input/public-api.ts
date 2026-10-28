@@ -3,6 +3,6 @@
 // and input/SYNC.md.
 
 export type {MatInputConfig} from './input-config';
-export {MAT_INPUT_CONFIG} from './input-config';
+export {MAT_INPUT_CONFIG, MAT_INPUT_CONFIG_DEFAULTS} from './input-config';
 
 export {MatInput, type MatInputProps} from './mat-input';
