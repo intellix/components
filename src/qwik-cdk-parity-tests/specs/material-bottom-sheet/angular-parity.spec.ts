@@ -180,7 +180,12 @@ const clickButton = (text: string): ParityStep => ({
  */
 const clickLink = (text: string): ParityStep => ({
   name: `click link "${text}"`,
-  run: (page: Page) => page.getByRole('link', {name: text, exact: true}).click(),
+  run: async (page: Page) => {
+    await page.getByRole('link', {name: text, exact: true}).click();
+    // The link dismisses the sheet; wait out its exit animation on each page
+    // (otherwise one side can be mid-exit while the other has finished).
+    await page.waitForFunction(() => !document.querySelector('mat-bottom-sheet-container'));
+  },
 });
 
 /**
