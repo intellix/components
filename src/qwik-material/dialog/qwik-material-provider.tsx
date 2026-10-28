@@ -27,6 +27,8 @@ import type {MatListConfig} from '../list/list-config';
 import {MAT_LIST_CONFIG} from '../list/list-config';
 import type {MatButtonToggleConfig} from '../button-toggle/button-toggle-config';
 import {MAT_BUTTON_TOGGLE_CONFIG} from '../button-toggle/button-toggle-config';
+import type {MatRadioConfig} from '../radio/radio-config';
+import {MAT_RADIO_CONFIG} from '../radio/radio-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -55,6 +57,8 @@ export interface QwikMaterialProviderProps {
   matListConfig?: MatListConfig;
   /** Defaults applied to every MatButtonToggleGroup / MatButtonToggle in this subtree. */
   matButtonToggleConfig?: MatButtonToggleConfig;
+  /** Defaults applied to every MatRadioGroup / MatRadioButton in this subtree. */
+  matRadioConfig?: MatRadioConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -111,6 +115,12 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // in MatButtonToggleGroup; providing an empty object is equivalent to
   // accepting all defaults.
   useContextProvider(MAT_BUTTON_TOGGLE_CONFIG, props.matButtonToggleConfig ?? {});
+  // MatRadioConfig falls back to {} here (same pattern as every other
+  // config above) when the prop is omitted — MatRadioButton's own
+  // color/disabledInteractive computation hardcodes the upstream
+  // ('accent'/false) defaults as its FINAL fallback regardless, so this
+  // stays correct even though {} isn't MAT_RADIO_CONFIG_DEFAULTS itself.
+  useContextProvider(MAT_RADIO_CONFIG, props.matRadioConfig ?? {});
 
   return <Slot />;
 });
