@@ -19,10 +19,12 @@ export default component$(() => {
     <QwikMaterialProvider matSortConfig={{arrowPosition: 'before'}}>
       <div data-parity-root>
         <MatSort onSortChange$={next => (sort.value = next)}>
-          <tr>
-            <MatSortHeader id="name">Name</MatSortHeader>
-            <MatSortHeader id="population">Population</MatSortHeader>
-          </tr>
+          <thead>
+            <tr>
+              <MatSortHeader id="name">Name</MatSortHeader>
+              <MatSortHeader id="population">Population</MatSortHeader>
+            </tr>
+          </thead>
         </MatSort>
         <p>
           Sort: {sort.value.active} {sort.value.direction}
