@@ -24,6 +24,7 @@ import {
   hideRippleKind,
   isShowingAnyRipple,
   showRippleKind,
+  type RippleBox,
   type RippleCapableThumb,
 } from './slider-ripple';
 import {fixValueFromClientX} from './slider-math';
@@ -37,6 +38,40 @@ export interface ThumbStore extends RippleCapableThumb {
   isActive: boolean;
   /** `MatSliderVisualThumb._isHovered`. */
   isHovered: boolean;
+  /**
+   * The last value THIS component told its `onValueChange$`/`onStartValue
+   * Change$`/`onEndValueChange$` consumer about (`undefined` until the first
+   * emission). Has no upstream equivalent — it exists purely to let
+   * mat-slider.tsx's controlled "prop -> store" sync `useTask$` reject a
+   * STALE echo of its own earlier emission, a defense-in-depth backstop for
+   * the race `correctionPending` (below) is the primary fix for. See
+   * SYNC.md "controlled-value echo race" for the full story; short version:
+   * emitting twice in quick succession through a QRL-resolved consumer
+   * callback — unlike Angular's synchronous, same-tick zone change
+   * detection — has no ordering guarantee, so a naive double-emit can have
+   * the consumer observe them in EITHER order.
+   */
+  lastEmittedValue?: number;
+  /**
+   * True from the moment a pointerdown schedules the `_fixValue`-equivalent
+   * deferred correction (`handleThumbPointerDown`'s `setTimeout`) until that
+   * correction actually runs. While true, `handleThumbInput` (the native
+   * `input` event) still updates `value` locally (matching upstream's own
+   * momentary "native, uncorrected position" flicker — see slider-input.ts:
+   * `_onInput` always calls `_updateThumbUIByValue` immediately) but
+   * mat-slider.tsx's `onInput$` handler SKIPS calling the external
+   * `onValueChange$`-family callback for it, deferring to the correction's
+   * own single, authoritative emission once it settles. Needed because a
+   * naive "emit from both `input` and the correction" (upstream's actual
+   * dual-emission shape: `_onChange` on native `change` + `_fixValue`) can
+   * have the FIRST (now-stale) emission's own QRL resolution finish
+   * AFTER the second — observed live: the "basic" scenario's click briefly
+   * had the stale, uncorrected `76` arrive at the consumer ~20ms AFTER the
+   * correction had already told it `75`, leaving the consumer's own state
+   * stuck on the wrong value. Suppressing the first emission entirely
+   * (rather than just racing to correct it) sidesteps the ordering problem.
+   */
+  correctionPending?: boolean;
 }
 
 export interface SliderStore {
@@ -44,12 +79,42 @@ export interface SliderStore {
   cachedWidth: number;
   /** `MatSlider._cachedLeft`. */
   cachedLeft: number;
-  /** `MatSlider._hasAnimation` → the sticky `mat-mdc-slider-with-animation` class. */
-  hasAnimation: boolean;
   end: ThumbStore;
   /** Only present for a range slider. */
   start?: ThumbStore;
+  /**
+   * Range mode only: which thumb most recently triggered `MatSlider.
+   * _updateTrackUI` upstream — i.e. the last one to fire either a native
+   * `input` (value change) or `focus` event (`MatSliderThumb._onFocus`
+   * ALSO calls `_updateTrackUI(this)` — see `trackActiveStyleRange`'s doc
+   * comment in slider-math.ts). Drives which branch mat-slider.tsx's
+   * track-active style computation takes. Defaults to `'start'`, matching
+   * upstream's mount-time settled state (not literally what `ngAfterViewInit`
+   * itself computes last — see that same doc comment for why).
+   */
+  rangeTrackSource: ThumbKey;
 }
+
+// Note: `MatSlider._hasAnimation` / the `mat-mdc-slider-with-animation` host
+// class it drives has NO corresponding field here — confirmed live it is
+// NEVER actually observable in Angular's rendered DOM, despite `_setTransition`
+// genuinely toggling it via a raw `classList.toggle()` call. `MatSlider`'s
+// host metadata includes a bare `'[class]': '"mat-" + (color || "primary")'`
+// binding (not `[class.foo]`) alongside its other `[class.foo]` bindings;
+// Angular's Ivy class-binding instructions for an element with ANY such
+// binding own the ENTIRE computed class list and rewrite it from their own
+// tracked state on every change-detection pass — which runs synchronously,
+// via zone.js, immediately after the very event handler that called
+// `_setTransition` returns. A class toggled by reaching straight into
+// `classList` outside that tracked set is therefore wiped out the instant
+// CD next reconciles the host's classes, before any observer (a real user,
+// a screen reader, or this harness) could ever see it. Verified by polling
+// the real Angular app's rendered class list every 5ms through a keyboard-
+// driven value change (`_setTransition(true)` definitely runs — the value
+// itself changes) — the class never appears, not even transiently. This
+// also matches angular-parity.spec.ts note 2's own hedge ("isn't load-
+// bearing for the comparison") precisely because it is never load-bearing
+// for ANY comparison: this port simply never renders it.
 
 export type ThumbKey = 'start' | 'end';
 
@@ -59,6 +124,17 @@ export function createThumbStore(value: number): ThumbStore {
 
 export function thumbOf(store: SliderStore, which: ThumbKey): ThumbStore {
   return which === 'start' ? store.start! : store.end;
+}
+
+/**
+ * Guards mat-slider.tsx's controlled "prop -> store" sync tasks against the
+ * stale-echo race `ThumbStore.lastEmittedValue`'s doc comment describes.
+ * Trusts an incoming value if nothing has been emitted yet (the initial,
+ * mount-time sync) or if it matches the most recent emission; rejects an
+ * older, now-superseded echo.
+ */
+export function shouldAcceptExternalValue(thumb: ThumbStore, value: number): boolean {
+  return thumb.lastEmittedValue === undefined || value === thumb.lastEmittedValue;
 }
 
 /**
@@ -114,12 +190,15 @@ export function handleThumbFocus(
   store: SliderStore,
   which: ThumbKey,
   noopAnimations: boolean,
+  box: RippleBox,
 ): void {
   const thumb = thumbOf(store, which);
   hideRippleKind(thumb, 'hover');
-  showRippleKind(thumb, 'focus', noopAnimations);
+  showRippleKind(thumb, 'focus', noopAnimations, box);
   thumb.isFocused = true;
-  store.hasAnimation = false; // `_slider._setTransition(false)`
+  store.rangeTrackSource = which; // `_onFocus`'s own `_updateTrackUI(this)` call
+  // `_slider._setTransition(false)` — no store write; see SliderStore's
+  // trailing comment on why `_hasAnimation` has no field here.
 }
 
 /** `MatSliderThumb._onBlur` + `MatSliderVisualThumb._onBlur`. */
@@ -127,10 +206,11 @@ export function handleThumbBlur(
   store: SliderStore,
   which: ThumbKey,
   noopAnimations: boolean,
+  box: RippleBox,
 ): void {
   const thumb = thumbOf(store, which);
   if (!thumb.isActive) hideRippleKind(thumb, 'focus');
-  if (thumb.isHovered) showRippleKind(thumb, 'hover', noopAnimations);
+  if (thumb.isHovered) showRippleKind(thumb, 'hover', noopAnimations, box);
   thumb.isFocused = false;
 }
 
@@ -142,11 +222,12 @@ export function handleThumbPointerMove(
   which: ThumbKey,
   isHovered: boolean,
   noopAnimations: boolean,
+  box: RippleBox,
 ): void {
   const thumb = thumbOf(store, which);
   thumb.isHovered = isHovered;
   if (isHovered) {
-    showRippleKind(thumb, 'hover', noopAnimations);
+    showRippleKind(thumb, 'hover', noopAnimations, box);
   } else {
     hideRippleKind(thumb, 'hover');
   }
@@ -164,10 +245,13 @@ export function handleThumbPointerLeave(store: SliderStore, which: ThumbKey): vo
  * the deferred `_handleValueCorrection`/`_fixValue` (via a real
  * `setTimeout(…, 0)`, matching upstream's own comment on why it must be
  * deferred: "the value on pointerdown … is calculated in the split second
- * before the input(s) resize"). `onCorrected` is called only when the
- * correction actually changes the value (mirrors `_fixValue`'s own
- * `if (value === prevValue) { …; return; }` branch, which still re-syncs UI
- * but never emits `valueChange`).
+ * before the input(s) resize"). `onSettled` is ALWAYS called exactly once,
+ * ~0ms later, with whatever the authoritative final value is — whether or
+ * not the correction actually changed anything — because it is this port's
+ * SINGLE emission point for the whole gesture's initial value (see
+ * `ThumbStore.correctionPending`'s doc comment for why `handleThumbInput`'s
+ * own native-`input`-triggered emission is suppressed for the window this
+ * function opens).
  */
 export function handleThumbPointerDown(
   store: SliderStore,
@@ -176,8 +260,9 @@ export function handleThumbPointerDown(
   hostEl: HTMLElement | undefined,
   inputEl: HTMLInputElement | undefined,
   noopAnimations: boolean,
+  box: RippleBox,
   event: {button: number; clientX: number},
-  onCorrected: (value: number) => void,
+  onSettled: (value: number) => void,
 ): void {
   if (event.button !== 0 || config.disabled) return;
   if (hostEl) {
@@ -187,12 +272,14 @@ export function handleThumbPointerDown(
   const thumb = thumbOf(store, which);
   thumb.isActive = true;
   thumb.isFocused = true;
-  showRippleKind(thumb, 'active', noopAnimations);
+  thumb.correctionPending = true;
+  showRippleKind(thumb, 'active', noopAnimations, box);
 
   const clientX = event.clientX;
   const cachedLeftAtDown = store.cachedLeft;
   const cachedWidthAtDown = store.cachedWidth;
   setTimeout(() => {
+    thumb.correctionPending = false;
     if (!inputEl) return;
     const fixed = fixValueFromClientX(
       clientX,
@@ -204,11 +291,14 @@ export function handleThumbPointerDown(
       false,
     );
     const prev = Number(inputEl.value);
-    store.hasAnimation = false; // `_updateThumbUIByValue()` with no options
-    if (fixed === prev) return;
-    inputEl.value = String(fixed);
-    thumbOf(store, which).value = fixed;
-    onCorrected(fixed);
+    // `_updateThumbUIByValue()` with no options -> `_setTransition(false)` —
+    // no store write; see SliderStore's trailing comment.
+    if (fixed !== prev) {
+      inputEl.value = String(fixed);
+      thumb.value = fixed;
+    }
+    thumb.lastEmittedValue = fixed; // see ThumbStore.lastEmittedValue's doc comment
+    onSettled(fixed);
   }, 0);
 }
 
@@ -222,19 +312,23 @@ export function handleThumbPointerUp(store: SliderStore, which: ThumbKey): void 
 }
 
 /**
- * `MatSliderThumb._onInput`. `withAnimation` mirrors
- * `this._slider.step || !this._isActive` — true whenever a step is defined
- * (always, in every scenario here) or the thumb isn't mid-drag.
+ * `MatSliderThumb._onInput`. Upstream gates its own UI-sync call on
+ * `this._slider.step || !this._isActive` (true whenever a step is defined —
+ * always, in every scenario here — or the thumb isn't mid-drag), but that
+ * gate only controls whether `_updateThumbUIByValue` (and, through it,
+ * `_setTransition`, dropped entirely — see `SliderStore`'s trailing
+ * comment) runs; it never gates `this.value` itself. This port's `value`
+ * IS the single source of truth for the visual thumb/track-active position
+ * (derived fresh every render in mat-slider.tsx — see slider-thumb-
+ * state.ts's header comment), so there is nothing left for that gate to
+ * usefully control here. Updates `value` unconditionally (matching
+ * upstream's own immediate, possibly-uncorrected UI update — see
+ * `ThumbStore.correctionPending`'s doc comment); the CALLER (mat-slider.
+ * tsx's `onInput$`) decides whether to also emit externally, skipping it
+ * while `correctionPending` so the pending correction's own `onSettled`
+ * stays this gesture's sole emission.
  */
-export function handleThumbInput(
-  store: SliderStore,
-  which: ThumbKey,
-  newValue: number,
-  hasStep: boolean,
-): void {
-  const thumb = thumbOf(store, which);
-  thumb.value = newValue;
-  if (hasStep || !thumb.isActive) {
-    store.hasAnimation = true;
-  }
+export function handleThumbInput(store: SliderStore, which: ThumbKey, newValue: number): void {
+  thumbOf(store, which).value = newValue;
+  store.rangeTrackSource = which; // `_onInput`'s `_updateTrackUI(this)` call chain
 }

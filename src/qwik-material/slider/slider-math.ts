@@ -85,10 +85,21 @@ export function trackActiveStyleNonRange(fillPct: number, isRtl: boolean): Track
 }
 
 /**
- * `MatSlider._updateTrackUIRange`. `sourceIsLeftThumb` picks the branch —
- * per the parity spec's note 6, the SETTLED state always lands on the START
- * thumb's (left, in LTR) branch, so callers always invoke this with the
- * start thumb as `source`/`sibling=end`.
+ * `MatSlider._updateTrackUIRange`. `sourceIsLeftThumb` picks the branch,
+ * where "source" is whichever thumb most recently triggered this update —
+ * confirmed live this is NOT always the start/left thumb: `MatSliderThumb.
+ * _onFocus` ALSO calls `_updateTrackUI(this)` (not just a native `input`
+ * event), so focusing the END thumb re-renders this with source=END (the
+ * non-left branch) even with no value change at all. The caller
+ * (mat-slider.tsx) tracks which thumb last fired either event in
+ * `SliderStore.rangeTrackSource`, defaulting to `'start'` — not because
+ * `source` is literally START at mount (upstream's `ngAfterViewInit` calls
+ * `_updateTrackUI(eInput)`, i.e. END), but because a `ResizeObserver`
+ * fires once asynchronously right after mount per spec (even with no
+ * actual size change) and its handler updates the end thumb then the start
+ * thumb, in that order — "last write wins" settles mount on START's
+ * branch before any real interaction. See SYNC.md "range track-active
+ * branch tracks the last focus/input source".
  */
 export function trackActiveStyleRange(
   cachedWidth: number,

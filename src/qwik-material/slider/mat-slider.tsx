@@ -8,6 +8,7 @@ import {
   type QRL,
 } from '@builder.io/qwik';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {computeRippleBox} from './slider-ripple';
 import {
   TICK_MARK_OFFSET,
   calcTranslateXByValue,
@@ -36,6 +37,7 @@ import {
   handleThumbPointerMove,
   handleThumbPointerUp,
   isCursorOnSliderThumb,
+  shouldAcceptExternalValue,
   siblingOf,
   thumbOf,
   thumbWithIndicator,
@@ -80,11 +82,13 @@ export interface MatSliderProps {
   /** M2-only theme color. Default `'primary'` (see angular-parity.spec.ts note 10 —
    *  unlike `mat-checkbox`'s default of `'accent'`). */
   color?: MatSliderColor;
-  /** `MatSlider.displayWith`. Invoked synchronously at render time (for
-   *  `aria-valuetext` and the discrete value-indicator text) — a plain
-   *  function, not a `QRL`, since a render-time value can't be `await`ed
-   *  off a lazily-resolved reference. See SYNC.md. */
-  displayWith?: (value: number) => string;
+  /** `MatSlider.displayWith`. A `QRL` (not a plain function): Qwik's
+   *  serializer cannot serialize a raw function reference into the SSR
+   *  payload — passing a plain function here breaks mid-stream with a 500
+   *  (confirmed live, see SYNC.md "displayWith must be a QRL"). Resolved by
+   *  `await`ing it for each thumb's current value; `MatSlider`'s own render
+   *  function is therefore `async`. */
+  displayWith?: QRL<(value: number) => string>;
   class?: string | ReadonlyArray<string>;
   style?: string | Record<string, string | number | undefined>;
 
@@ -110,12 +114,14 @@ interface SliderConfig {
   showTickMarks: boolean;
   disableRipple: boolean;
   isRange: boolean;
-  displayWith: (value: number) => string;
 }
 
 /** Read fresh from `props` every call — never captured as an outer-scope
  *  const inside a `$()` handler (see qwik-material/checkbox's SYNC.md
- *  "stale QRL capture" pitfall, cited throughout this project). */
+ *  "stale QRL capture" pitfall, cited throughout this project). Excludes
+ *  `displayWith` — unlike every other field here, it's never read inside an
+ *  interaction handler (only at render time, where it needs `await`ing —
+ *  see `computeValueText`), so it has no reason to be read "live" this way. */
 function readSliderConfig(props: MatSliderProps): SliderConfig {
   return {
     min: props.min ?? 0,
@@ -126,23 +132,47 @@ function readSliderConfig(props: MatSliderProps): SliderConfig {
     showTickMarks: props.showTickMarks ?? false,
     disableRipple: props.disableRipple ?? false,
     isRange: props.startValue !== undefined || props.endValue !== undefined,
-    displayWith: props.displayWith ?? ((v: number) => `${v}`),
   };
 }
 
+/** `MatSlider.displayWith`'s default (`(value: number) => \`${value}\``),
+ *  applied when the consumer doesn't provide one. `displayWith` is a `QRL`
+ *  (see `MatSliderProps.displayWith`'s doc comment for why), so resolving
+ *  it always means `await`ing a call — this helper does that uniformly for
+ *  both the provided-QRL and no-QRL-provided cases. */
+async function computeValueText(
+  displayWith: QRL<(value: number) => string> | undefined,
+  value: number,
+): Promise<string> {
+  return displayWith ? await displayWith(value) : `${value}`;
+}
+
 /**
- * The ripple host div (`.mat-ripple` inside `.mat-mdc-slider-visual-thumb`)
- * is always exactly 48x48 — `.mdc-slider__thumb { height: 48px; width:
- * 48px; }` (slider.scss) plus `.mat-mdc-slider-visual-thumb .mat-ripple {
- * height: 100%; width: 100%; }` (slider-thumb.scss), both byte-for-byte
- * synced from upstream. `MatRipple.launch()`'s `centered: true` with the
- * fixed `radius: 24` `MatSliderVisualThumb.ngAfterViewInit` sets therefore
- * ALWAYS resolves `fadeInRipple`'s `offsetX - radius` / `offsetY - radius`
- * to exactly 0 (offset = half of 48 = 24, radius = 24) — a live
- * `getBoundingClientRect()` measurement would compute the identical
- * numbers, so this port hardcodes them instead of measuring.
+ * Every ripple element's box, computed ONCE from the container's nominal
+ * 48x48 CSS size (see `computeRippleBox`'s doc comment for the formula) —
+ * deliberately NOT a live `getBoundingClientRect()` measurement despite
+ * that function existing to support one. Tried that first: measuring via a
+ * ref on the `.mat-ripple` container. It does not reproduce upstream's
+ * `left`/`top` more faithfully — confirmed live it makes things WORSE. A
+ * `getBoundingClientRect()` on an element positioned via `transform:
+ * translateX(Npx)` can return a width a few millionths of a pixel off 48
+ * (e.g. `47.99998474121094`), and WHETHER it does depends on the ANCESTOR
+ * chain's own compositing/transform context, not on this component's CSS:
+ * proved by cloning a real, already-affected thumb element to a fresh
+ * position under `<body>` (clean `48`) and back to its original spot
+ * (reappears). Each of this port's two dev-apps has different ambient
+ * chrome, so this noise is independent for each — live-measuring made the
+ * `range` scenario's END thumb (translateX 208.8px) match Angular's noisy
+ * `-7.6e-06px`, while simultaneously making `discrete`/`tick-marks`'s thumb
+ * (translateX 120.6px) MISMATCH Angular's clean `0px`, because measuring
+ * introduced noise Angular didn't have for THAT value. A fixed nominal box
+ * is strictly better across every scenario here: it matches whichever side
+ * happens to be clean (confirmed true for 8 of 9 scenarios) and only loses
+ * to the one case where upstream's own ambient page happens to be the noisy
+ * side. See SYNC.md "ripple element sub-pixel noise" for the full
+ * investigation.
  */
-const RIPPLE_ELEMENT_BOX = {left: '0px', top: '0px', height: '48px', width: '48px'} as const;
+const RIPPLE_BOX = computeRippleBox(48, 48);
 
 export const MatSlider = component$<MatSliderProps>(props => {
   const cfg = readSliderConfig(props);
@@ -152,12 +182,35 @@ export const MatSlider = component$<MatSliderProps>(props => {
     () => ({
       cachedWidth: 0,
       cachedLeft: 0,
-      hasAnimation: false,
       end: createThumbStore(cfg.isRange ? (props.endValue ?? cfg.max) : (props.value ?? cfg.min)),
       start: cfg.isRange ? createThumbStore(props.startValue ?? cfg.min) : undefined,
+      rangeTrackSource: 'start',
     }),
     {deep: true},
   );
+
+  // `displayWith` is a QRL (see MatSliderProps's doc comment for why a
+  // plain function can't be used here), so resolving it needs `await`ing —
+  // but `component$`'s own render function can't be `async` (tried that
+  // first: `OnRenderFn<PROPS>` is typed as returning `JSXOutput`, not
+  // `Promise<JSXOutput>`, in this project's pinned Qwik 1.x). Resolving it
+  // through a `useTask$` into a plain signal instead keeps `metricsFor`
+  // (below) fully synchronous. A plain (non-visible) `useTask$` — unlike
+  // `useVisibleTask$` — runs during SSR too (Qwik's SSR pipeline awaits
+  // pending tasks before serializing), so the initial render still carries
+  // the resolved text, not a placeholder.
+  const endValueText = useSignal('');
+  const startValueText = useSignal('');
+  useTask$(async ({track}) => {
+    const v = track(() => store.end.value);
+    endValueText.value = await computeValueText(props.displayWith, v);
+  });
+  useTask$(async ({track}) => {
+    const start = store.start;
+    if (!start) return;
+    const v = track(() => start.value);
+    startValueText.value = await computeValueText(props.displayWith, v);
+  });
 
   const hostRef = useSignal<HTMLElement>();
   const endInputRef = useSignal<HTMLInputElement>();
@@ -188,19 +241,26 @@ export const MatSlider = component$<MatSliderProps>(props => {
   // Controlled-component prop -> store sync. Guarded by `isActive` exactly
   // like upstream's `MatSliderThumb.value` setter ("if (this._isActive)
   // return;") — an external value update mid-drag is dropped, matching
-  // upstream's own behavior.
+  // upstream's own behavior. ALSO guarded by `shouldAcceptExternalValue` —
+  // see `ThumbStore.lastEmittedValue`'s doc comment for the stale-echo race
+  // this rejects (a Qwik-specific hazard with no upstream equivalent: a
+  // round-trip through a QRL-resolved consumer callback and back down as a
+  // prop has latency Angular's same-tick zone change detection never does).
   useTask$(({track}) => {
     const v = track(() => props.value);
-    if (v !== undefined && !store.start && !store.end.isActive) store.end.value = v;
+    if (v === undefined || store.start || store.end.isActive) return;
+    if (shouldAcceptExternalValue(store.end, v)) store.end.value = v;
   });
   useTask$(({track}) => {
     if (!store.start) return;
     const v = track(() => props.startValue);
-    if (v !== undefined && !store.start.isActive) store.start.value = v;
+    if (v === undefined || store.start.isActive) return;
+    if (shouldAcceptExternalValue(store.start, v)) store.start.value = v;
   });
   useTask$(({track}) => {
     const v = track(() => props.endValue);
-    if (v !== undefined && store.start && !store.end.isActive) store.end.value = v;
+    if (v === undefined || !store.start || store.end.isActive) return;
+    if (shouldAcceptExternalValue(store.end, v)) store.end.value = v;
   });
 
   // Live DOM-PROPERTY sync (never the attribute — see slider-math.ts /
@@ -258,7 +318,7 @@ export const MatSlider = component$<MatSliderProps>(props => {
     } else {
       translateX = clampSingle(rawTranslateX, store.cachedWidth);
     }
-    const valuetext = cfg.displayWith(value);
+    const valuetext = which === 'start' ? startValueText.value : endValueText.value;
     return {
       thumb,
       value,
@@ -274,17 +334,22 @@ export const MatSlider = component$<MatSliderProps>(props => {
   const endMetrics = metricsFor('end');
   const startMetrics = isRange ? metricsFor('start') : undefined;
 
-  // Track-active fill. Range: ALWAYS the start/left-thumb-anchored formula —
-  // the observed SETTLED style regardless of which thumb actually changed;
-  // see slider-math.ts's `trackActiveStyleRange` doc comment / SYNC.md
-  // "range track-active always settles on the start branch".
+  // Track-active fill. Range: branches on `store.rangeTrackSource` — see
+  // slider-math.ts's `trackActiveStyleRange` doc comment for why it isn't
+  // always the start thumb (focusing either thumb re-renders this too, not
+  // just a value change).
   const trackActiveStyle = isRange
-    ? trackActiveStyleRange(
-        store.cachedWidth,
-        startMetrics!.translateX,
-        endMetrics.translateX,
-        true,
-      )
+    ? (() => {
+        const sourceIsStart = store.rangeTrackSource === 'start';
+        const sourceTranslateX = sourceIsStart ? startMetrics!.translateX : endMetrics.translateX;
+        const siblingTranslateX = sourceIsStart ? endMetrics.translateX : startMetrics!.translateX;
+        return trackActiveStyleRange(
+          store.cachedWidth,
+          sourceTranslateX,
+          siblingTranslateX,
+          sourceIsStart,
+        );
+      })()
     : trackActiveStyleNonRange(
         fillPercentage(endMetrics.translateX, store.cachedWidth, false),
         false,
@@ -374,7 +439,8 @@ export const MatSlider = component$<MatSliderProps>(props => {
     cfg.discrete && 'mdc-slider--discrete',
     cfg.showTickMarks && 'mdc-slider--tick-marks',
     noopAnimations.value && '_mat-animation-noopable',
-    store.hasAnimation && 'mat-mdc-slider-with-animation',
+    // No `mat-mdc-slider-with-animation` entry — see SliderStore's trailing
+    // comment in slider-thumb-state.ts for why it's never rendered.
     props.class,
   ].filter(Boolean) as string[];
 
@@ -386,22 +452,37 @@ export const MatSlider = component$<MatSliderProps>(props => {
   // `props`/signals — never a function value from this closure).
   const onFocus$ = (which: ThumbKey) =>
     $(() => {
-      handleThumbFocus(store, which, noopAnimations.value);
+      // Defensive — a real disabled native input never dispatches `focus`
+      // at all, so this never actually guards anything in a genuine user
+      // interaction; kept for parity with the other handlers below (see
+      // onPointerMove$'s comment for why THAT guard is load-bearing).
+      if (props.disabled) return;
+      handleThumbFocus(store, which, noopAnimations.value, RIPPLE_BOX);
     });
 
   const onBlur$ = (which: ThumbKey) =>
     $(() => {
-      handleThumbBlur(store, which, noopAnimations.value);
+      handleThumbBlur(store, which, noopAnimations.value, RIPPLE_BOX);
     });
 
   const onPointerMove$ = (which: ThumbKey, thumbRef: typeof endThumbRef) =>
     $((event: PointerEvent) => {
+      // Load-bearing, unlike onFocus$'s: confirmed live (the `disabled`
+      // scenario's force-click step) that a `force: true` Playwright click
+      // still delivers a `pointermove` to a disabled native input even
+      // though the browser suppresses `pointerdown`/`focus`/`input` for it
+      // — without this guard the thumb would incorrectly start a hover
+      // ripple.
+      if (props.disabled) return;
       const thumb = thumbOf(store, which);
       if (thumb.isFocused) return;
-      const rect = thumbRef.value?.getBoundingClientRect();
-      if (!rect) return;
-      const hovered = isCursorOnSliderThumb(event.clientX, event.clientY, rect);
-      handleThumbPointerMove(store, which, hovered, noopAnimations.value);
+      // The hover HIT-TEST uses the visual THUMB's own rect (matches
+      // upstream's `_isCursorOnSliderThumb(event, this._hostElement.
+      // getBoundingClientRect())`, where `_hostElement` is the thumb).
+      const thumbRect = thumbRef.value?.getBoundingClientRect();
+      if (!thumbRect) return;
+      const hovered = isCursorOnSliderThumb(event.clientX, event.clientY, thumbRect);
+      handleThumbPointerMove(store, which, hovered, noopAnimations.value, RIPPLE_BOX);
     });
 
   const onPointerLeave$ = (which: ThumbKey) =>
@@ -419,8 +500,13 @@ export const MatSlider = component$<MatSliderProps>(props => {
         hostRef.value,
         inputRef.value,
         noopAnimations.value,
+        RIPPLE_BOX,
         event,
         (value: number) => {
+          // This gesture's single, authoritative emission — see
+          // ThumbStore.correctionPending's doc comment. `handleThumbInput`'s
+          // own emission (below) was suppressed for this exact value while
+          // this correction was pending.
           if (which === 'start') props.onStartValueChange$?.(value);
           else if (liveCfg.isRange) props.onEndValueChange$?.(value);
           else props.onValueChange$?.(value);
@@ -438,7 +524,16 @@ export const MatSlider = component$<MatSliderProps>(props => {
       const el = event.target as HTMLInputElement;
       const newValue = Number(el.value);
       const liveCfg = readSliderConfig(props);
-      handleThumbInput(store, which, newValue, Boolean(liveCfg.step));
+      const thumb = thumbOf(store, which);
+      handleThumbInput(store, which, newValue);
+      // Suppressed while a pointerdown's deferred correction is pending —
+      // its own `onSettled` call above is this gesture's sole emission
+      // (see ThumbStore.correctionPending's doc comment for the ordering
+      // race this avoids). Still reached normally for every keyboard-driven
+      // `input` (no pointerdown precedes those) and for continued dragging
+      // once the initial correction has already settled.
+      if (thumb.correctionPending) return;
+      thumb.lastEmittedValue = newValue;
       if (which === 'start') props.onStartValueChange$?.(newValue);
       else if (liveCfg.isRange) props.onEndValueChange$?.(newValue);
       else props.onValueChange$?.(newValue);
@@ -514,7 +609,7 @@ export const MatSlider = component$<MatSliderProps>(props => {
               key={slot.token}
               class={['mat-ripple-element', slot.extraClass]}
               style={{
-                ...RIPPLE_ELEMENT_BOX,
+                ...slot.box,
                 transitionDuration: `${slot.exiting ? slot.exitDuration : slot.enterDuration}ms`,
                 transform: 'scale3d(1, 1, 1)',
                 ...(slot.exiting ? {opacity: '0'} : {}),

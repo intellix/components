@@ -25,6 +25,7 @@ import '@angular-community/qwik-material/sidenav-prebuilt.css';
 import '@angular-community/qwik-material/snack-bar-prebuilt.css';
 import '@angular-community/qwik-material/bottom-sheet-prebuilt.css';
 import '@angular-community/qwik-material/form-field-prebuilt.css';
+import '@angular-community/qwik-material/slider-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>
