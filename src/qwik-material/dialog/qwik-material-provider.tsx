@@ -43,6 +43,11 @@ import type {MatSidenavConfig} from '../sidenav/sidenav-config';
 import {MAT_SIDENAV_CONFIG} from '../sidenav/sidenav-config';
 import type {MatSnackBarConfig} from '../snack-bar/snack-bar-config';
 import {MAT_SNACK_BAR_DEFAULT_OPTIONS} from '../snack-bar/mat-snack-bar-tokens';
+import type {MatBottomSheetConfig} from '../bottom-sheet/mat-bottom-sheet-config';
+import {
+  MAT_BOTTOM_SHEET_DEFAULT_OPTIONS,
+  MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
+} from '../bottom-sheet/mat-bottom-sheet-tokens';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -87,6 +92,10 @@ export interface QwikMaterialProviderProps {
   matSidenavConfig?: MatSidenavConfig;
   /** Defaults merged into every useMatSnackBar() open()/openFromComponent()/openFromTemplate() config. */
   matSnackBarDefaults?: Partial<MatSnackBarConfig>;
+  /** Defaults merged into every MatBottomSheet open() config. */
+  matBottomSheetDefaults?: Partial<MatBottomSheetConfig>;
+  /** Factory returning the default ScrollStrategy for MatBottomSheet. Defaults to createBlockScrollStrategy(). */
+  matBottomSheetScrollStrategyFactory?: () => ScrollStrategy;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -183,6 +192,14 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // their own (see `createMatSnackBarConfig()`); an empty object here is
   // equivalent to accepting all of them, same pattern as every config above.
   useContextProvider(MAT_SNACK_BAR_DEFAULT_OPTIONS, props.matSnackBarDefaults ?? {});
+  useContextProvider(MAT_BOTTOM_SHEET_DEFAULT_OPTIONS, props.matBottomSheetDefaults ?? {});
+  // The scroll-strategy factory is a plain function; wrap in noSerialize so
+  // Qwik doesn't try to serialize it when consumer QRLs (useMatBottomSheet().open$)
+  // capture it via useContext.
+  useContextProvider(
+    MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
+    noSerialize(props.matBottomSheetScrollStrategyFactory ?? (() => createBlockScrollStrategy())),
+  );
 
   return <Slot />;
 });

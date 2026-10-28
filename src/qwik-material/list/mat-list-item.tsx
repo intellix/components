@@ -1,4 +1,4 @@
-import {component$, useContext, type JSXOutput} from '@builder.io/qwik';
+import {component$, useContext, type JSXOutput, type QRL} from '@builder.io/qwik';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context';
 
@@ -91,6 +91,16 @@ export interface MatListItemProps {
   'aria-describedby'?: string;
   class?: string | ReadonlyArray<string>;
   id?: string;
+  /**
+   * Click handler, forwarded onto whichever host tag `as` renders. Upstream
+   * attaches `(click)` directly in the CONSUMER's own template on
+   * `<a mat-list-item>`/`<button mat-list-item>` (an ordinary native
+   * listener, independent of the `MatListItem` directive's own metadata) —
+   * e.g. a nav-list action that dismisses an enclosing `MatBottomSheet`. A
+   * Qwik `component$` has no such "arbitrary extra listener on the host
+   * I render" affordance, so it's accepted as an explicit prop instead.
+   */
+  onClick$?: QRL<(event: MouseEvent) => void>;
 }
 
 /** Counts a `JSXOutput | readonly JSXOutput[] | undefined` prop the way
@@ -202,7 +212,7 @@ export const MatListItem = component$<MatListItemProps>(props => {
 
   if (as === 'a') {
     return (
-      <a {...sharedAttrs} href={props.href} aria-current={ariaCurrent}>
+      <a {...sharedAttrs} href={props.href} aria-current={ariaCurrent} onClick$={props.onClick$}>
         {body}
       </a>
     );
@@ -210,12 +220,21 @@ export const MatListItem = component$<MatListItemProps>(props => {
 
   if (as === 'button') {
     return (
-      <button {...sharedAttrs} type={nativeType} disabled={nativeDisabled as unknown as boolean}>
+      <button
+        {...sharedAttrs}
+        type={nativeType}
+        disabled={nativeDisabled as unknown as boolean}
+        onClick$={props.onClick$}
+      >
         {body}
       </button>
     );
   }
 
   // Default: <mat-list-item> custom element.
-  return <mat-list-item {...sharedAttrs}>{body}</mat-list-item>;
+  return (
+    <mat-list-item {...sharedAttrs} onClick$={props.onClick$}>
+      {body}
+    </mat-list-item>
+  );
 });

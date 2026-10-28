@@ -23,6 +23,7 @@ import '@angular-community/qwik-material/sort-prebuilt.css';
 import '@angular-community/qwik-material/tabs-prebuilt.css';
 import '@angular-community/qwik-material/sidenav-prebuilt.css';
 import '@angular-community/qwik-material/snack-bar-prebuilt.css';
+import '@angular-community/qwik-material/bottom-sheet-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>

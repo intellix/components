@@ -8,6 +8,7 @@ const entries = [
   'bidi',
   'coercion',
   'keycodes',
+  'layout',
   'portal',
   'a11y',
   'accordion',
