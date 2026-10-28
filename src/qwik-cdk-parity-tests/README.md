@@ -92,6 +92,9 @@ the Qwik DOM must match it exactly (tags, nesting, classes, attributes, text).
 - **Helper:** `lib/material-parity.ts` → `expectMaterialParity(browser, {route, scenario, steps})`
   compares the initial DOM and again after every step (clicks, key presses).
 
+Each comparison is eventually consistent: on a mismatch it re-settles and
+retries (5 attempts) before failing, since the contract is the settled DOM.
+
 Normalization: Angular (`_ngcontent-*`, `ng-reflect-*`) and Qwik (`q:*`, `on:*`,
 comments) bookkeeping is stripped; digits in id-like attributes become `#`;
 transient `.mat-ripple-element` nodes are waited out. CDK `AriaDescriber`'s own
