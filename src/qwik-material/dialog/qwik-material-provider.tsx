@@ -54,6 +54,8 @@ import type {MatInputConfig} from '../input/input-config';
 import {MAT_INPUT_CONFIG} from '../input/input-config';
 import type {StepperOptions} from '@angular-community/qwik-cdk/stepper';
 import {CDK_STEPPER_GLOBAL_OPTIONS} from '@angular-community/qwik-cdk/stepper';
+import type {MatChipsConfig} from '../chips/tokens';
+import {MAT_CHIPS_CONFIG} from '../chips/tokens';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -109,6 +111,9 @@ export interface QwikMaterialProviderProps {
   /** Qwik-context equivalent of `@angular/cdk/stepper`'s `STEPPER_GLOBAL_OPTIONS`
    *  — applies to every MatStepper in this subtree. */
   stepperGlobalOptions?: StepperOptions;
+  /** Defaults applied to every MatChip family component in this subtree (separator keys,
+   *  hideSingleSelectionIndicator, inputDisabledInteractive). */
+  matChipsConfig?: MatChipsConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -230,6 +235,12 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // STEPPER_GLOBAL_OPTIONS default: showError falls back to per-step
   // `hasError` overrides only, displayDefaultIndicatorType defaults true).
   useContextProvider(CDK_STEPPER_GLOBAL_OPTIONS, props.stepperGlobalOptions ?? {});
+  // MatChipsConfig is a plain object with primitive fields — no noSerialize needed. Chips
+  // outside a provider get MAT_CHIPS_CONFIG_DEFAULTS declared in chips/tokens.ts; providing
+  // an empty object here is NOT equivalent to those defaults (every chip-family component
+  // falls back per-field: `props.x ?? config.x ?? ownDefault`, same convention as checkbox/
+  // radio/form-field).
+  useContextProvider(MAT_CHIPS_CONFIG, props.matChipsConfig ?? {});
 
   return <Slot />;
 });
