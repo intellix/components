@@ -32,6 +32,7 @@ const entries = [
   'tooltip',
   'slider',
   'select',
+  'menu',
 ];
 
 export default defineConfig({
@@ -76,6 +77,7 @@ export default defineConfig({
           ['scss/tooltip/tooltip-prebuilt.scss', 'dist/tooltip-prebuilt.css'],
           ['scss/slider/slider-prebuilt.scss', 'dist/slider-prebuilt.css'],
           ['scss/select/select-prebuilt.scss', 'dist/select-prebuilt.css'],
+          ['scss/menu/menu-prebuilt.scss', 'dist/menu-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

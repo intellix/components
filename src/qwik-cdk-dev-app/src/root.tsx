@@ -28,6 +28,7 @@ import '@angular-community/qwik-material/form-field-prebuilt.css';
 import '@angular-community/qwik-material/stepper-prebuilt.css';
 import '@angular-community/qwik-material/tooltip-prebuilt.css';
 import '@angular-community/qwik-material/slider-prebuilt.css';
+import '@angular-community/qwik-material/menu-prebuilt.css';
 import '@angular-community/qwik-material/select-prebuilt.css';
 
 export default component$(() => (

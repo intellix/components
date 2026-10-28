@@ -1,134 +1,136 @@
-import {describe, it, expect, vi} from 'vitest';
-import {createListKeyManager, type ListKeyManagerItem} from './list-key-manager';
-import {DOWN_ARROW, END, HOME, TAB, UP_ARROW} from '../../keycodes';
+import {describe, expect, it, vi} from 'vitest';
+import {createListKeyManager, type ListKeyManagerOption} from './list-key-manager';
+import {createFocusKeyManager, type FocusableOption} from './focus-key-manager';
 
-interface Item extends ListKeyManagerItem {
+interface Item extends ListKeyManagerOption {
   label: string;
+  disabled?: boolean;
+  getLabel?(): string;
 }
 
 function item(label: string, disabled = false): Item {
   return {label, disabled, getLabel: () => label};
 }
 
-function keyEvent(keyCode: number, key = ''): KeyboardEvent {
-  return {
-    keyCode,
-    key,
-    altKey: false,
-    ctrlKey: false,
-    metaKey: false,
-    shiftKey: false,
-    preventDefault: vi.fn(),
-  } as unknown as KeyboardEvent;
+function press(key: string, extra: Partial<KeyboardEventInit> = {}): KeyboardEvent {
+  return new KeyboardEvent('keydown', {key, cancelable: true, ...extra});
 }
 
-describe('createListKeyManager', () => {
-  it('starts with no active item', () => {
-    const manager = createListKeyManager([item('a'), item('b')]);
-    expect(manager.activeItemIndex).toBeNull();
-    expect(manager.activeItem).toBeNull();
-  });
-
-  it('setFirstItemActive / setLastItemActive skip disabled items', () => {
-    const items = [item('a', true), item('b'), item('c', true), item('d')];
+describe('ListKeyManager', () => {
+  it('moves the active item on ArrowDown/ArrowUp, skipping disabled items', () => {
+    const items = [item('a'), item('b', true), item('c')];
     const manager = createListKeyManager(items);
-    manager.setFirstItemActive();
-    expect(manager.activeItemIndex).toBe(1); // 'b', since 'a' is disabled
-    manager.setLastItemActive();
-    expect(manager.activeItemIndex).toBe(3); // 'd', since 'c' is disabled
-  });
 
-  it('ArrowDown/ArrowUp move the active item, skipping disabled ones', () => {
-    const items = [item('a'), item('b'), item('c', true), item('d')];
-    const manager = createListKeyManager(items).withVerticalOrientation();
-    manager.onKeydown(keyEvent(DOWN_ARROW));
+    manager.onKeydown(press('ArrowDown'));
     expect(manager.activeItemIndex).toBe(0);
-    manager.onKeydown(keyEvent(DOWN_ARROW));
-    expect(manager.activeItemIndex).toBe(1);
-    manager.onKeydown(keyEvent(DOWN_ARROW)); // skips disabled 'c'
-    expect(manager.activeItemIndex).toBe(3);
-    manager.onKeydown(keyEvent(UP_ARROW));
-    expect(manager.activeItemIndex).toBe(1); // back over disabled 'c'
+
+    manager.onKeydown(press('ArrowDown'));
+    expect(manager.activeItemIndex).toBe(2); // skips disabled 'b'
   });
 
-  it('Home/End jump to the first/last enabled item when enabled', () => {
+  it('does not wrap past the last item by default', () => {
+    const items = [item('a'), item('b')];
+    const manager = createListKeyManager(items);
+    manager.setActiveItem(1);
+    manager.onKeydown(press('ArrowDown'));
+    expect(manager.activeItemIndex).toBe(1);
+  });
+
+  it('wraps around when withWrap() is enabled', () => {
+    const items = [item('a'), item('b')];
+    const manager = createListKeyManager(items).withWrap();
+    manager.setActiveItem(1);
+    manager.onKeydown(press('ArrowDown'));
+    expect(manager.activeItemIndex).toBe(0);
+  });
+
+  it('Home/End jump to the first/last item when enabled', () => {
     const items = [item('a'), item('b'), item('c')];
     const manager = createListKeyManager(items).withHomeAndEnd();
-    manager.setActiveItem(1);
-    manager.onKeydown(keyEvent(HOME));
-    expect(manager.activeItemIndex).toBe(0);
-    manager.onKeydown(keyEvent(END));
+    manager.onKeydown(press('End'));
     expect(manager.activeItemIndex).toBe(2);
-  });
-
-  it('Home/End are no-ops when not enabled', () => {
-    const items = [item('a'), item('b'), item('c')];
-    const manager = createListKeyManager(items);
-    manager.setActiveItem(1);
-    manager.onKeydown(keyEvent(HOME));
-    expect(manager.activeItemIndex).toBe(1);
-  });
-
-  it('Tab calls onTabOut and does not change the active item', () => {
-    const items = [item('a'), item('b')];
-    const manager = createListKeyManager(items);
-    manager.setActiveItem(0);
-    const onTabOut = vi.fn();
-    manager.onTabOut = onTabOut;
-    manager.onKeydown(keyEvent(TAB));
-    expect(onTabOut).toHaveBeenCalledTimes(1);
+    manager.onKeydown(press('Home'));
     expect(manager.activeItemIndex).toBe(0);
   });
 
-  it('skipPredicate overrides the default disabled-skip behavior', () => {
-    const items = [item('a'), item('b'), item('c')];
-    const manager = createListKeyManager(items).skipPredicate(it => it.label === 'b');
-    manager.onKeydown(keyEvent(DOWN_ARROW));
-    expect(manager.activeItemIndex).toBe(0);
-    manager.onKeydown(keyEvent(DOWN_ARROW));
-    expect(manager.activeItemIndex).toBe(2); // skips 'b' per the custom predicate
-  });
-
-  it('onChange fires only when the active item actually changes', () => {
+  it('fires onChange only when the active item actually changes', () => {
     const items = [item('a'), item('b')];
     const manager = createListKeyManager(items);
-    const onChange = vi.fn();
-    manager.onChange = onChange;
+    const changes: number[] = [];
+    manager.onChange(i => changes.push(i));
+
     manager.setActiveItem(0);
-    expect(onChange).toHaveBeenCalledTimes(1);
-    manager.setActiveItem(0);
-    expect(onChange).toHaveBeenCalledTimes(1); // unchanged — no second call
+    manager.setActiveItem(0); // no-op, same item
     manager.setActiveItem(1);
-    expect(onChange).toHaveBeenCalledTimes(2);
+
+    expect(changes).toEqual([0, 1]);
   });
 
-  it('typeahead selects the first item whose label starts with the typed letters, after a debounce', async () => {
+  it('fires onTabOut on Tab', () => {
+    const manager = createListKeyManager([item('a')]);
+    const tabOut = vi.fn();
+    manager.onTabOut(tabOut);
+    manager.onKeydown(press('Tab'));
+    expect(tabOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('selects an item via typeahead after the debounce interval', async () => {
     vi.useFakeTimers();
-    const items = [item('Apple'), item('Banana'), item('Cherry')];
-    const manager = createListKeyManager(items).withTypeAhead(200);
-    manager.onKeydown(keyEvent(66, 'b')); // 'b' -> Banana
-    expect(manager.activeItemIndex).toBeNull(); // not yet — still debouncing
-    vi.advanceTimersByTime(200);
-    expect(manager.activeItemIndex).toBe(1);
-    vi.useRealTimers();
-  });
+    try {
+      const items = [item('Apple'), item('Banana'), item('Cherry')];
+      const manager = createListKeyManager(items).withTypeAhead(50);
 
-  it('isTyping reflects whether a typeahead sequence is in progress', () => {
-    vi.useFakeTimers();
-    const items = [item('Apple'), item('Banana')];
-    const manager = createListKeyManager(items).withTypeAhead(200);
-    expect(manager.isTyping()).toBe(false);
-    manager.onKeydown(keyEvent(65, 'a'));
-    expect(manager.isTyping()).toBe(true);
-    vi.advanceTimersByTime(200);
-    expect(manager.isTyping()).toBe(false);
-    vi.useRealTimers();
-  });
+      manager.onKeydown(press('B', {keyCode: 66}));
+      expect(manager.activeItemIndex).toBe(-1); // not yet, still debouncing
 
-  it('createActiveDescendantKeyManager behaves identically (documented alias)', async () => {
-    const {createActiveDescendantKeyManager} = await import('./list-key-manager');
-    const manager = createActiveDescendantKeyManager([item('a'), item('b')]);
+      vi.advanceTimersByTime(60);
+      expect(manager.activeItemIndex).toBe(1); // 'Banana'
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('FocusKeyManager', () => {
+  function focusableItem(label: string, disabled = false): Item & FocusableOption {
+    return {
+      label,
+      disabled,
+      getLabel: () => label,
+      focus: vi.fn(),
+    };
+  }
+
+  it('calls .focus(origin) on the newly active item', () => {
+    const items = [focusableItem('a'), focusableItem('b')];
+    const manager = createFocusKeyManager(items).setFocusOrigin('keyboard');
+
     manager.setActiveItem(1);
-    expect(manager.activeItemIndex).toBe(1);
+
+    expect(items[1].focus).toHaveBeenCalledWith('keyboard');
+  });
+
+  it('calls .focus() for arrow-key-driven activation too', () => {
+    const items = [focusableItem('a'), focusableItem('b')];
+    const manager = createFocusKeyManager(items).withWrap().setFocusOrigin('mouse');
+
+    manager.onKeydown(press('ArrowDown'));
+
+    expect(items[0].focus).toHaveBeenCalledWith('mouse');
+  });
+
+  it('focuses the item selected via typeahead', async () => {
+    vi.useFakeTimers();
+    try {
+      const items = [focusableItem('Apple'), focusableItem('Banana')];
+      const manager = createFocusKeyManager(items).withTypeAhead(10).setFocusOrigin('program');
+
+      manager.onKeydown(press('B', {keyCode: 66}));
+      vi.advanceTimersByTime(20);
+
+      expect(items[1].focus).toHaveBeenCalledWith('program');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

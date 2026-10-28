@@ -1,423 +1,363 @@
 /**
- * Qwik-native port of upstream `ListKeyManager`
- * (`src/cdk/a11y/key-manager/list-key-manager.ts`) + `Typeahead`
- * (`./typeahead.ts`) + `ActiveDescendantKeyManager`
- * (`./activedescendant-key-manager.ts`), merged into one small factory.
+ * Qwik port of `src/cdk/a11y/key-manager/list-key-manager.ts`.
  *
- * ## Why one factory instead of three RxJS/Angular classes
+ * Deviations from upstream:
+ * - A factory function (`createListKeyManager`) returning a plain object,
+ *   not a class — matches this package's existing convention
+ *   (`createFocusMonitor`, `createOverlayService`, …).
+ * - `tabOut`/`change` are plain callback-subscription lists (`onTabOut`/
+ *   `onChange`, each returning an unsubscribe function), not RxJS `Subject`s
+ *   — qwik-cdk has no RxJS dependency.
+ * - `items` is always a plain array snapshot (`setItems()` to update it) —
+ *   no `QueryList`/Angular `Signal` support, since there's no Qwik
+ *   equivalent of a live content query. A caller that needs reactivity
+ *   re-renders the manager against fresh items itself (see
+ *   `qwik-material/menu`'s `MenuPanel` for the pattern: items are static for
+ *   the lifetime of one open menu instance).
+ * - No `EffectRef`/`Injector` plumbing (follows from the point above).
  *
- * Upstream's `ListKeyManager` is an Angular-DI-free plain class already, but
- * it leans on RxJS (`Subject` for `tabOut`/`change`, `debounceTime` for
- * typeahead) and Angular `signal()`s for its internal active-item state.
- * This project has no RxJS dependency and — per the design doc's house style
- * (see `qwik-material/tabs/tab-group-keyboard.ts`,
- * `qwik-material/slider/slider-math.ts`,
- * `qwik-material/expansion/accordion-keyboard.ts`,
- * `qwik-cdk/stepper/stepper-keyboard.ts`) — keyboard-navigation logic in
- * this port is modeled as small, plain, synchronously-testable state rather
- * than as a port of an RxJS-flavored class. `createListKeyManager()` keeps
- * upstream's fluent `.withX()` builder API and method names (so the call
- * site in `mat-select.tsx` reads almost identically to
- * `MatSelect._initKeyManager()`), but:
- *
- * - `tabOut`/`change` are plain, directly-assignable callback fields
- *   (`manager.onTabOut = () => {...}`), not `Subject`s — no consumer here
- *   needs multiple subscribers or unsubscription semantics.
- * - The active item/index are plain mutable fields read via getters, not
- *   Angular `signal()`s — the CALLER (`MatSelect`, a Qwik `component$`) owns
- *   the actual reactive `useSignal<number>()` that drives rendering; it
- *   writes that signal from inside `onChange`, so re-render scheduling is
- *   entirely the caller's concern, matching how every other
- *   `create*()`-style qwik-cdk engine (`createOverlayRef`,
- *   `createLiveAnnouncer`, `createFocusMonitor`) hands reactivity back to
- *   its caller instead of trying to own it itself.
- * - Typeahead debouncing uses a plain `setTimeout`, not `debounceTime` — see
- *   `createTypeahead()` below.
- * - No `QueryList`/Angular `Signal<T[]>` constructor overloads — items are
- *   always a plain array, updated via `setItems()`.
- *
- * ## Why this subsumes `ActiveDescendantKeyManager` (no separate export)
- *
- * Upstream's `ActiveDescendantKeyManager` is a two-line subclass of
- * `ListKeyManager` that calls `item.setActiveStyles()`/`setInactiveStyles()`
- * imperatively around `setActiveItem()` — needed because Angular's items
- * are long-lived component instances whose "active" CSS class is applied
- * imperatively via `ChangeDetectorRef.markForCheck()`. This port's
- * `MatOption` (`qwik-material/core/mat-option.tsx`) is a plain, fully
- * props-controlled presentational component: "active" is just
- * `index === activeItemIndex`, derived and re-rendered declaratively by
- * whichever `useSignal()` the caller updates in `onChange`. There is no
- * imperative style-setting step left to port, so
- * {@link createActiveDescendantKeyManager} is a documented alias of
- * {@link createListKeyManager} — exported under upstream's name purely so a
- * reader familiar with `MatSelect._initKeyManager()` finds the expected
- * symbol, and so a future `FocusKeyManager` port (if one turns out to need
- * real imperative focus calls) has an obvious sibling to diverge from.
+ * Otherwise the keyboard-handling and active-item algorithms
+ * (`setActiveItem`, `setNextItemActive`, wrap mode, skip-disabled, Home/End,
+ * Page Up/Down, typeahead) are faithful ports.
  */
+import {hasModifierKey} from '../../keycodes';
+import {createTypeahead, type Typeahead} from './typeahead';
 
-import {
-  A,
-  DOWN_ARROW,
-  END,
-  HOME,
-  LEFT_ARROW,
-  NINE,
-  PAGE_DOWN,
-  PAGE_UP,
-  RIGHT_ARROW,
-  TAB,
-  UP_ARROW,
-  Z,
-  ZERO,
-  hasModifierKey,
-} from '../../keycodes';
-
-/** Mirrors upstream `ListKeyManagerOption`. */
-export interface ListKeyManagerItem {
+/** This interface is for items that can be passed to a ListKeyManager. */
+export interface ListKeyManagerOption {
+  /** Whether the option is disabled. */
   disabled?: boolean;
+  /** Gets the label for this option. */
   getLabel?(): string;
 }
 
-/** Mirrors upstream `ListKeyManagerModifierKey`. */
+/** Modifier keys handled by the ListKeyManager. */
 export type ListKeyManagerModifierKey = 'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey';
 
-const DEFAULT_TYPEAHEAD_DEBOUNCE_INTERVAL_MS = 200;
-
-/**
- * Plain-`setTimeout` port of upstream `Typeahead` (`./typeahead.ts`).
- * Accumulates letter keys and, after `debounceInterval` ms of silence,
- * calls `onMatch` with the index of the first item (starting just after
- * `currentIndex`, wrapping) whose label starts with the accumulated string
- * — identical search semantics to upstream, minus the RxJS plumbing.
- */
-function createTypeahead<T extends ListKeyManagerItem>(
-  items: readonly T[],
-  options: {debounceInterval: number; skipPredicate?: (item: T) => boolean},
-) {
-  let _items = items;
-  let currentIndex = -1;
-  let pressedLetters: string[] = [];
-  let timer: ReturnType<typeof setTimeout> | undefined;
-
-  return {
-    setItems(next: readonly T[]) {
-      _items = next;
-    },
-    setCurrentIndex(index: number) {
-      currentIndex = index;
-    },
-    isTyping(): boolean {
-      return pressedLetters.length > 0;
-    },
-    reset() {
-      pressedLetters = [];
-      if (timer != null) clearTimeout(timer);
-      timer = undefined;
-    },
-    destroy() {
-      this.reset();
-    },
-    /** Returns the matched index, or `null` if nothing (yet) matched. */
-    handleKey(event: KeyboardEvent, onMatch: (index: number) => void): void {
-      const keyCode = event.keyCode;
-      if (event.key && event.key.length === 1) {
-        pressedLetters.push(event.key.toLocaleUpperCase());
-      } else if ((keyCode >= A && keyCode <= Z) || (keyCode >= ZERO && keyCode <= NINE)) {
-        pressedLetters.push(String.fromCharCode(keyCode));
-      } else {
-        return;
-      }
-
-      if (timer != null) clearTimeout(timer);
-      timer = setTimeout(() => {
-        timer = undefined;
-        if (!pressedLetters.length) return;
-        const inputString = pressedLetters.join('').toLocaleUpperCase();
-
-        for (let i = 1; i < _items.length + 1; i++) {
-          const index = (currentIndex + i) % _items.length;
-          const item = _items[index];
-          if (
-            !options.skipPredicate?.(item) &&
-            item.getLabel?.().toLocaleUpperCase().trim().indexOf(inputString) === 0
-          ) {
-            onMatch(index);
-            break;
-          }
-        }
-
-        pressedLetters = [];
-      }, options.debounceInterval);
-    },
-  };
-}
-
-/** Public surface of {@link createListKeyManager}. Mirrors upstream `ListKeyManager`'s API. */
-export interface ListKeyManager<T extends ListKeyManagerItem> {
+export interface ListKeyManager<T extends ListKeyManagerOption> {
+  /** Configures wrapping mode (active item wraps to the other end of the list). */
   withWrap(shouldWrap?: boolean): this;
+  /** Configures whether the active item can move vertically (arrow up/down). */
   withVerticalOrientation(enabled?: boolean): this;
+  /** Configures whether/which direction the active item can move horizontally. */
   withHorizontalOrientation(direction: 'ltr' | 'rtl' | null): this;
+  /** Modifier keys allowed to be held down while pressing an arrow key. */
   withAllowedModifierKeys(keys: ListKeyManagerModifierKey[]): this;
+  /** Turns on typeahead mode (set the active item by typing). */
   withTypeAhead(debounceInterval?: number): this;
+  /** Configures Home/End to jump to the first/last item. */
   withHomeAndEnd(enabled?: boolean): this;
+  /** Configures Page Up/Page Down to jump by `delta` items. */
   withPageUpDown(enabled?: boolean, delta?: number): this;
+  /** Sets the predicate determining which items are skipped (default: `item.disabled`). */
   skipPredicate(predicate: (item: T) => boolean): this;
-  /** Replaces the managed item list in place (preserves active index/typeahead state). */
+  /** Replaces the managed items (e.g. after a re-render). Active item is re-resolved by reference. */
   setItems(items: readonly T[]): void;
+  /** Sets the active item by index or reference, firing `onChange` if it changed. */
   setActiveItem(indexOrItem: number | T): void;
+  /** Like `setActiveItem`, but never fires `onChange`. */
   updateActiveItem(indexOrItem: number | T): void;
-  setFirstItemActive(): void;
-  setLastItemActive(): void;
-  setNextItemActive(): void;
-  setPreviousItemActive(): void;
-  /** Mirrors `ListKeyManager.onKeydown` — returns `true` if the event was handled
-   *  (navigational key recognized; caller should usually preventDefault, which
-   *  this does NOT do itself — mirrors upstream exactly: only navigational keys
-   *  call `event.preventDefault()`, done here internally). */
+  /** Handles a keydown event, moving/activating the appropriate item. */
   onKeydown(event: KeyboardEvent): void;
-  cancelTypeahead(): void;
-  isTyping(): boolean;
+  /** Index of the currently active item, or `null`/`-1` if none. */
   readonly activeItemIndex: number | null;
+  /** The currently active item, or `null`. */
   readonly activeItem: T | null;
-  /** Mirrors `tabOut` — called when Tab is pressed. */
-  onTabOut?: () => void;
-  /** Mirrors `change` — called whenever the active item changes (via any method, incl. setActiveItem). */
-  onChange?: (index: number) => void;
+  /** Whether the typeahead buffer currently has pending letters. */
+  isTyping(): boolean;
+  /** Cancels the current typeahead sequence. */
+  cancelTypeahead(): this;
+  /** Activates the first non-skipped item. */
+  setFirstItemActive(): void;
+  /** Activates the last non-skipped item. */
+  setLastItemActive(): void;
+  /** Activates the next non-skipped item. */
+  setNextItemActive(): void;
+  /** Activates the previous non-skipped item. */
+  setPreviousItemActive(): void;
+  /** Subscribes to TAB keydowns; returns an unsubscribe function. */
+  onTabOut(callback: () => void): () => void;
+  /** Subscribes to active-item changes; returns an unsubscribe function. */
+  onChange(callback: (index: number) => void): () => void;
+  /** Releases internal timers/subscriptions. */
   destroy(): void;
 }
 
-/**
- * Qwik-native port of upstream `ListKeyManager`. See the module doc comment
- * for the full rationale. Fluent `.withX()` calls mutate and return the same
- * instance (matching upstream's chaining API).
- */
-export function createListKeyManager<T extends ListKeyManagerItem>(
-  items: readonly T[] = [],
-): ListKeyManager<T> {
-  let _items: readonly T[] = items;
-  let activeIndex = -1;
-  let wrap = false;
-  let vertical = true;
-  let horizontal: 'ltr' | 'rtl' | null = null;
-  let allowedModifierKeys: ListKeyManagerModifierKey[] = [];
-  let homeAndEnd = false;
-  let pageUpDown = {enabled: false, delta: 10};
-  let skipPredicateFn: (item: T) => boolean = item => !!item.disabled;
-  let typeahead: ReturnType<typeof createTypeahead<T>> | undefined;
+class ListKeyManagerImpl<T extends ListKeyManagerOption> implements ListKeyManager<T> {
+  private _items: readonly T[];
+  private _activeItemIndex = -1;
+  private _activeItem: T | null = null;
+  private _wrap = false;
+  private _vertical = true;
+  private _horizontal: 'ltr' | 'rtl' | null = null;
+  private _allowedModifierKeys: ListKeyManagerModifierKey[] = [];
+  private _homeAndEnd = false;
+  private _pageUpAndDown = {enabled: false, delta: 10};
+  private _typeahead?: Typeahead<T>;
+  private _skipPredicateFn: (item: T) => boolean = item => !!item.disabled;
+  private _tabOutListeners = new Set<() => void>();
+  private _changeListeners = new Set<(index: number) => void>();
 
-  function getItemsArray(): readonly T[] {
-    return _items;
+  constructor(items: readonly T[]) {
+    this._items = items;
   }
 
-  function resolveIndex(indexOrItem: number | T): number {
-    return typeof indexOrItem === 'number' ? indexOrItem : getItemsArray().indexOf(indexOrItem);
-  }
-
-  function setActiveByIndex(index: number, fallbackDelta: -1 | 1): void {
-    const arr = getItemsArray();
-    if (!arr[index]) return;
-    while (skipPredicateFn(arr[index])) {
-      index += fallbackDelta;
-      if (!arr[index]) return;
+  setItems(items: readonly T[]): void {
+    this._items = items;
+    this._typeahead?.setItems(items);
+    if (this._activeItem) {
+      const newIndex = items.indexOf(this._activeItem);
+      if (newIndex > -1 && newIndex !== this._activeItemIndex) {
+        this._activeItemIndex = newIndex;
+        this._typeahead?.setCurrentSelectedItemIndex(newIndex);
+      }
     }
-    manager.setActiveItem(index);
   }
 
-  function setActiveByDelta(delta: -1 | 1): void {
-    if (wrap) {
-      const arr = getItemsArray();
-      for (let i = 1; i <= arr.length; i++) {
-        const index = (activeIndex + delta * i + arr.length) % arr.length;
-        if (!skipPredicateFn(arr[index])) {
-          manager.setActiveItem(index);
+  skipPredicate(predicate: (item: T) => boolean): this {
+    this._skipPredicateFn = predicate;
+    return this;
+  }
+
+  withWrap(shouldWrap = true): this {
+    this._wrap = shouldWrap;
+    return this;
+  }
+
+  withVerticalOrientation(enabled = true): this {
+    this._vertical = enabled;
+    return this;
+  }
+
+  withHorizontalOrientation(direction: 'ltr' | 'rtl' | null): this {
+    this._horizontal = direction;
+    return this;
+  }
+
+  withAllowedModifierKeys(keys: ListKeyManagerModifierKey[]): this {
+    this._allowedModifierKeys = keys;
+    return this;
+  }
+
+  withTypeAhead(debounceInterval?: number): this {
+    this._typeahead?.destroy();
+    this._typeahead = createTypeahead(this._items, {
+      debounceInterval,
+      skipPredicate: item => this._skipPredicateFn(item),
+      onSelect: item => this.setActiveItem(item),
+    });
+    return this;
+  }
+
+  cancelTypeahead(): this {
+    this._typeahead?.reset();
+    return this;
+  }
+
+  withHomeAndEnd(enabled = true): this {
+    this._homeAndEnd = enabled;
+    return this;
+  }
+
+  withPageUpDown(enabled = true, delta = 10): this {
+    this._pageUpAndDown = {enabled, delta};
+    return this;
+  }
+
+  setActiveItem(item: number | T): void {
+    const previousActiveItem = this._activeItem;
+    this.updateActiveItem(item);
+    if (this._activeItem !== previousActiveItem) {
+      for (const cb of this._changeListeners) cb(this._activeItemIndex);
+    }
+  }
+
+  updateActiveItem(item: number | T): void {
+    const index = typeof item === 'number' ? item : this._items.indexOf(item);
+    const activeItem = this._items[index];
+    this._activeItem = activeItem == null ? null : activeItem;
+    this._activeItemIndex = index;
+    this._typeahead?.setCurrentSelectedItemIndex(index);
+  }
+
+  onKeydown(event: KeyboardEvent): void {
+    const modifiers: ListKeyManagerModifierKey[] = ['altKey', 'ctrlKey', 'metaKey', 'shiftKey'];
+    const isModifierAllowed = modifiers.every(modifier => {
+      return !event[modifier] || this._allowedModifierKeys.indexOf(modifier) > -1;
+    });
+
+    switch (event.key) {
+      case 'Tab':
+        for (const cb of this._tabOutListeners) cb();
+        return;
+
+      case 'ArrowDown':
+        if (this._vertical && isModifierAllowed) {
+          this.setNextItemActive();
+          break;
+        } else {
           return;
         }
+
+      case 'ArrowUp':
+        if (this._vertical && isModifierAllowed) {
+          this.setPreviousItemActive();
+          break;
+        } else {
+          return;
+        }
+
+      case 'ArrowRight':
+        if (this._horizontal && isModifierAllowed) {
+          this._horizontal === 'rtl' ? this.setPreviousItemActive() : this.setNextItemActive();
+          break;
+        } else {
+          return;
+        }
+
+      case 'ArrowLeft':
+        if (this._horizontal && isModifierAllowed) {
+          this._horizontal === 'rtl' ? this.setNextItemActive() : this.setPreviousItemActive();
+          break;
+        } else {
+          return;
+        }
+
+      case 'Home':
+        if (this._homeAndEnd && isModifierAllowed) {
+          this.setFirstItemActive();
+          break;
+        } else {
+          return;
+        }
+
+      case 'End':
+        if (this._homeAndEnd && isModifierAllowed) {
+          this.setLastItemActive();
+          break;
+        } else {
+          return;
+        }
+
+      case 'PageUp':
+        if (this._pageUpAndDown.enabled && isModifierAllowed) {
+          const targetIndex = this._activeItemIndex - this._pageUpAndDown.delta;
+          this._setActiveItemByIndex(targetIndex > 0 ? targetIndex : 0, 1);
+          break;
+        } else {
+          return;
+        }
+
+      case 'PageDown':
+        if (this._pageUpAndDown.enabled && isModifierAllowed) {
+          const targetIndex = this._activeItemIndex + this._pageUpAndDown.delta;
+          const itemsLength = this._items.length;
+          this._setActiveItemByIndex(targetIndex < itemsLength ? targetIndex : itemsLength - 1, -1);
+          break;
+        } else {
+          return;
+        }
+
+      default:
+        if (isModifierAllowed || hasModifierKey(event, 'shiftKey')) {
+          this._typeahead?.handleKey(event);
+        }
+        // Avoid preventing the default action of non-navigational keys.
+        return;
+    }
+
+    this._typeahead?.reset();
+    event.preventDefault();
+  }
+
+  get activeItemIndex(): number | null {
+    return this._activeItemIndex;
+  }
+
+  get activeItem(): T | null {
+    return this._activeItem;
+  }
+
+  isTyping(): boolean {
+    return !!this._typeahead && this._typeahead.isTyping();
+  }
+
+  setFirstItemActive(): void {
+    this._setActiveItemByIndex(0, 1);
+  }
+
+  setLastItemActive(): void {
+    this._setActiveItemByIndex(this._items.length - 1, -1);
+  }
+
+  setNextItemActive(): void {
+    this._activeItemIndex < 0 ? this.setFirstItemActive() : this._setActiveItemByDelta(1);
+  }
+
+  setPreviousItemActive(): void {
+    this._activeItemIndex < 0 && this._wrap
+      ? this.setLastItemActive()
+      : this._setActiveItemByDelta(-1);
+  }
+
+  onTabOut(callback: () => void): () => void {
+    this._tabOutListeners.add(callback);
+    return () => this._tabOutListeners.delete(callback);
+  }
+
+  onChange(callback: (index: number) => void): () => void {
+    this._changeListeners.add(callback);
+    return () => this._changeListeners.delete(callback);
+  }
+
+  destroy(): void {
+    this._typeahead?.destroy();
+    this._tabOutListeners.clear();
+    this._changeListeners.clear();
+  }
+
+  private _setActiveItemByDelta(delta: -1 | 1): void {
+    this._wrap ? this._setActiveInWrapMode(delta) : this._setActiveInDefaultMode(delta);
+  }
+
+  private _setActiveInWrapMode(delta: -1 | 1): void {
+    const items = this._items;
+    for (let i = 1; i <= items.length; i++) {
+      const index = (this._activeItemIndex + delta * i + items.length) % items.length;
+      const item = items[index];
+      if (!this._skipPredicateFn(item)) {
+        this.setActiveItem(index);
+        return;
       }
-    } else {
-      setActiveByIndex(activeIndex + delta, delta);
     }
   }
 
-  const manager: ListKeyManager<T> = {
-    withWrap(shouldWrap = true) {
-      wrap = shouldWrap;
-      return this;
-    },
-    withVerticalOrientation(enabled = true) {
-      vertical = enabled;
-      return this;
-    },
-    withHorizontalOrientation(direction) {
-      horizontal = direction;
-      return this;
-    },
-    withAllowedModifierKeys(keys) {
-      allowedModifierKeys = keys;
-      return this;
-    },
-    withTypeAhead(debounceInterval = DEFAULT_TYPEAHEAD_DEBOUNCE_INTERVAL_MS) {
-      typeahead?.destroy();
-      typeahead = createTypeahead(getItemsArray(), {
-        debounceInterval,
-        skipPredicate: skipPredicateFn,
-      });
-      typeahead.setCurrentIndex(activeIndex);
-      return this;
-    },
-    withHomeAndEnd(enabled = true) {
-      homeAndEnd = enabled;
-      return this;
-    },
-    withPageUpDown(enabled = true, delta = 10) {
-      pageUpDown = {enabled, delta};
-      return this;
-    },
-    skipPredicate(predicate) {
-      skipPredicateFn = predicate;
-      return this;
-    },
-    setItems(next) {
-      _items = next;
-      typeahead?.setItems(next);
-    },
-    setActiveItem(indexOrItem) {
-      const previous = activeIndex;
-      manager.updateActiveItem(indexOrItem);
-      if (activeIndex !== previous) {
-        manager.onChange?.(activeIndex);
+  private _setActiveInDefaultMode(delta: -1 | 1): void {
+    this._setActiveItemByIndex(this._activeItemIndex + delta, delta);
+  }
+
+  private _setActiveItemByIndex(index: number, fallbackDelta: -1 | 1): void {
+    const items = this._items;
+    if (!items[index]) {
+      return;
+    }
+    while (this._skipPredicateFn(items[index])) {
+      index += fallbackDelta;
+      if (!items[index]) {
+        return;
       }
-    },
-    updateActiveItem(indexOrItem) {
-      const arr = getItemsArray();
-      const index = resolveIndex(indexOrItem);
-      activeIndex = arr[index] != null ? index : -1;
-      typeahead?.setCurrentIndex(activeIndex);
-    },
-    setFirstItemActive() {
-      setActiveByIndex(0, 1);
-    },
-    setLastItemActive() {
-      setActiveByIndex(getItemsArray().length - 1, -1);
-    },
-    setNextItemActive() {
-      activeIndex < 0 ? manager.setFirstItemActive() : setActiveByDelta(1);
-    },
-    setPreviousItemActive() {
-      activeIndex < 0 && wrap ? manager.setLastItemActive() : setActiveByDelta(-1);
-    },
-    onKeydown(event) {
-      const keyCode = event.keyCode;
-      const modifiers: ListKeyManagerModifierKey[] = ['altKey', 'ctrlKey', 'metaKey', 'shiftKey'];
-      const isModifierAllowed = modifiers.every(
-        modifier => !event[modifier] || allowedModifierKeys.indexOf(modifier) > -1,
-      );
-
-      switch (keyCode) {
-        case TAB:
-          manager.onTabOut?.();
-          return;
-
-        case DOWN_ARROW:
-          if (vertical && isModifierAllowed) {
-            manager.setNextItemActive();
-            break;
-          } else {
-            return;
-          }
-
-        case UP_ARROW:
-          if (vertical && isModifierAllowed) {
-            manager.setPreviousItemActive();
-            break;
-          } else {
-            return;
-          }
-
-        case RIGHT_ARROW:
-          if (horizontal && isModifierAllowed) {
-            horizontal === 'rtl' ? manager.setPreviousItemActive() : manager.setNextItemActive();
-            break;
-          } else {
-            return;
-          }
-
-        case LEFT_ARROW:
-          if (horizontal && isModifierAllowed) {
-            horizontal === 'rtl' ? manager.setNextItemActive() : manager.setPreviousItemActive();
-            break;
-          } else {
-            return;
-          }
-
-        case HOME:
-          if (homeAndEnd && isModifierAllowed) {
-            manager.setFirstItemActive();
-            break;
-          } else {
-            return;
-          }
-
-        case END:
-          if (homeAndEnd && isModifierAllowed) {
-            manager.setLastItemActive();
-            break;
-          } else {
-            return;
-          }
-
-        case PAGE_UP:
-          if (pageUpDown.enabled && isModifierAllowed) {
-            const target = activeIndex - pageUpDown.delta;
-            setActiveByIndex(target > 0 ? target : 0, 1);
-            break;
-          } else {
-            return;
-          }
-
-        case PAGE_DOWN:
-          if (pageUpDown.enabled && isModifierAllowed) {
-            const target = activeIndex + pageUpDown.delta;
-            const len = getItemsArray().length;
-            setActiveByIndex(target < len ? target : len - 1, -1);
-            break;
-          } else {
-            return;
-          }
-
-        default:
-          if (isModifierAllowed || hasModifierKey(event, 'shiftKey')) {
-            typeahead?.handleKey(event, index => manager.setActiveItem(index));
-          }
-          return;
-      }
-
-      typeahead?.reset();
-      event.preventDefault();
-    },
-    cancelTypeahead() {
-      typeahead?.reset();
-    },
-    isTyping() {
-      return !!typeahead?.isTyping();
-    },
-    get activeItemIndex() {
-      return activeIndex < 0 ? null : activeIndex;
-    },
-    get activeItem() {
-      return activeIndex < 0 ? null : getItemsArray()[activeIndex] ?? null;
-    },
-    destroy() {
-      typeahead?.destroy();
-    },
-  };
-
-  return manager;
+    }
+    this.setActiveItem(index);
+  }
 }
 
 /**
- * Documented alias of {@link createListKeyManager} — see the module doc
- * comment's "Why this subsumes ActiveDescendantKeyManager" section for why
- * no separate imperative setActiveStyles/setInactiveStyles step is needed
- * in this port's declarative rendering model.
+ * Creates a `ListKeyManager` for the given items. If you pass it a new
+ * array (`setItems()`) whenever the set of items changes, it will keep the
+ * active item in sync and set the correct active item on arrow key events.
  */
-export const createActiveDescendantKeyManager = createListKeyManager;
+export function createListKeyManager<T extends ListKeyManagerOption>(
+  items: readonly T[] = [],
+): ListKeyManager<T> {
+  return new ListKeyManagerImpl(items);
+}

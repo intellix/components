@@ -247,7 +247,17 @@ export async function snapshotParityRoot(
             // Browser-parsed, sorted declarations: order/format-insensitive.
             const style = (el as HTMLElement).style;
             const decls = Array.from(style)
-              .map(prop => `${prop}: ${style.getPropertyValue(prop)}`)
+              // Numbers rounded to 2 decimals: sub-pixel float noise from
+              // layout measurement (e.g. `-7.6e-06px` vs `0px`) is not a
+              // difference any stylesheet can observe.
+              .map(
+                prop =>
+                  `${prop}: ${style
+                    .getPropertyValue(prop)
+                    .replace(/-?\d*\.?\d+(?:e-?\d+)?/gi, n =>
+                      String(Math.round(Number(n) * 100) / 100 || 0),
+                    )}`,
+              )
               .sort();
             if (decls.length) attrs[name] = decls.join('; ');
             continue;
