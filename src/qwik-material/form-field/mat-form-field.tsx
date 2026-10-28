@@ -7,7 +7,6 @@ import {
   useStore,
   useTask$,
   useVisibleTask$,
-  type JSXNode,
   type JSXOutput,
   type QRL,
 } from '@builder.io/qwik';
@@ -26,6 +25,7 @@ import {
   type MatFormFieldFloatLabelType,
   type MatFormFieldSubscriptSizing,
 } from './form-field-config';
+import {MatIdScope} from './id-scope';
 
 /**
  * Props for `<MatFormField>`. See `SYNC.md` for the full architecture
@@ -99,30 +99,21 @@ function toArray<T>(value: T | T[] | undefined): T[] {
 }
 
 /**
- * Clones a JSX element descriptor with extra/overriding props, WITHOUT
- * rendering/executing it — see the module doc comment and
- * `core/mat-form-field-control.ts`'s "SSR ordering" note. Used to inject
- * an id (and, for the control, `aria-describedby`) that `MatFormField`
- * itself decides, when the consumer didn't already set one explicitly.
- * Passes non-JSX-node values (`null`/`undefined`/strings/arrays) through
- * unchanged.
+ * Reads `node`'s own explicit `id` prop, if any, WITHOUT rendering it —
+ * used to decide whether `MatFormField`'s generated fallback id for this
+ * slot is actually needed (an explicit id always wins). This never
+ * CLONES the node (see `id-scope.tsx`'s doc comment for why a clone-
+ * based approach was tried first and abandoned: it was found, via a real
+ * hung-browser repro, to silently freeze the slot's projected children at
+ * whatever they were the first time `MatFormField` happened to re-render
+ * for an unrelated reason). The generated id itself is handed to the
+ * rendered node via `<MatIdScope>` (hints/errors) or the
+ * `MAT_FORM_FIELD_CONTROL_STATE` store (`assignedId`/`assignedDescribedBy`
+ * — the control), both context-based, both confirmed immune to the same
+ * issue.
  */
-function withProps(node: JSXOutput, extra: Record<string, unknown>): JSXOutput {
-  if (!node || typeof node !== 'object' || Array.isArray(node)) return node ?? null;
-  const n = node as JSXNode;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Tag = n.type as any;
-  return <Tag {...n.props} {...extra} />;
-}
-
-/** Injects `id` onto `node` only when it doesn't already carry one
- *  explicitly — mirrors "an explicit id always wins" for every sub-piece
- *  `MatFormField` owns id-generation for (label handled separately since
- *  it's always form-field's own id; this is for hints/errors/the control). */
-function withGeneratedId(node: JSXOutput, generatedId: string): {node: JSXOutput; id: string} {
-  const existing = readControlProps(node)?.id;
-  if (existing) return {node, id: existing};
-  return {node: withProps(node, {id: generatedId}), id: generatedId};
+function explicitId(node: JSXOutput): string | undefined {
+  return readControlProps(node)?.id;
 }
 
 const SETTLE_SELECTED_FILTER = (v: unknown): v is JSXOutput => v !== undefined && v !== null;
@@ -173,10 +164,17 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // useStore() of booleans, seeded here (correct for the very first SSR
   // render) and written to afterwards only by the control's own lazy
   // onFocus$/onBlur$ handlers (never a mount task). ──
+  // `assignedId`/`assignedDescribedBy` are seeded with placeholders here
+  // and overwritten below, synchronously, before the control ever renders
+  // (both depend on ids computed further down — hints/errors need to be
+  // processed first for `assignedDescribedBy`) — never left stale, since
+  // this is all one synchronous pass before `<Slot/>`/the control runs.
   const controlState = useStore<MatFormFieldControlState>({
     focused: false,
     empty: initialEmpty,
     shouldLabelFloat: initialControlShouldFloat,
+    assignedId: '',
+    assignedDescribedBy: undefined,
   });
   useContextProvider(MAT_FORM_FIELD_CONTROL_STATE, controlState);
 
@@ -228,28 +226,31 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // Upstream `_getSubscriptMessageType()`.
   const showErrors = hasErrors && errorState;
 
-  const errorsWithIds = errorsArray.map((node, i) => {
-    const explicit = readControlProps(node)?.id;
-    if (explicit) return {node, id: explicit};
+  // Each error's id: its own explicit `id` prop if set, else a per-slot
+  // (array index) cached fallback — see `errorIdCache`'s own comment for
+  // why index-keyed, not per-render. Wrapped in `<MatIdScope>` at render
+  // time (not cloned) — see `id-scope.tsx`.
+  const errorIds = errorsArray.map((node, i) => {
+    const explicit = explicitId(node);
+    if (explicit) return explicit;
     if (!errorIdCache.value[i]) {
       errorIdCache.value[i] = idGen.getId('mat-mdc-error-');
     }
-    const id = errorIdCache.value[i];
-    return {node: withProps(node, {id}), id};
+    return errorIdCache.value[i];
   });
-  const {node: hintStartNode, id: hintStartId} = props.hintStart
-    ? withGeneratedId(props.hintStart, generatedHintStartId.value)
-    : {node: undefined, id: undefined};
-  const {node: hintEndNode, id: hintEndId} = props.hintEnd
-    ? withGeneratedId(props.hintEnd, generatedHintEndId.value)
-    : {node: undefined, id: undefined};
+  const hintStartId = props.hintStart
+    ? (explicitId(props.hintStart) ?? generatedHintStartId.value)
+    : undefined;
+  const hintEndId = props.hintEnd
+    ? (explicitId(props.hintEnd) ?? generatedHintEndId.value)
+    : undefined;
 
   // Upstream `_syncDescribedByIds`.
   const describedByIds: string[] = [];
   const userDescribedBy = controlProps?.['aria-describedby'];
   if (userDescribedBy) describedByIds.push(...userDescribedBy.split(' '));
   if (showErrors) {
-    describedByIds.push(...errorsWithIds.map(e => e.id));
+    describedByIds.push(...errorIds);
   } else {
     if (hintStartId) describedByIds.push(hintStartId);
     else if (hintLabel) describedByIds.push(hintLabelId.value);
@@ -257,10 +258,13 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   }
   const finalDescribedBy = describedByIds.length ? describedByIds.join(' ') : undefined;
 
-  const finalControl = withProps(props.control, {
-    id: controlId,
-    'aria-describedby': finalDescribedBy,
-  });
+  // The control reads these off the SAME context store it already
+  // consumes for focused/empty/shouldLabelFloat — see
+  // core/mat-form-field-control.ts's `assignedId` doc comment for why
+  // this (not cloning the control's JSX to inject props) is the fix for
+  // the same staleness bug the hints/errors fix (`MatIdScope`) addresses.
+  controlState.assignedId = controlId;
+  controlState.assignedDescribedBy = finalDescribedBy;
 
   // ── Line ripple (fill only) — mirrors MatFormFieldLineRipple.activate()/
   // deactivate()/_handleTransitionEnd(). Modeled as 2 independent booleans
@@ -471,7 +475,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
 
           <div class="mat-mdc-form-field-infix">
             {!hasOutline && labelContent}
-            {finalControl}
+            {props.control}
           </div>
 
           {hasTextSuffix && <div class="mat-mdc-form-field-text-suffix">{props.textSuffix}</div>}
@@ -489,7 +493,13 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
 
       <div aria-atomic="true" aria-live="polite" class={subscriptClasses}>
         {showErrors ? (
-          <div class="mat-mdc-form-field-error-wrapper">{errorsWithIds.map(e => e.node)}</div>
+          <div class="mat-mdc-form-field-error-wrapper">
+            {errorsArray.map((node, i) => (
+              <MatIdScope key={errorIds[i]} id={errorIds[i]}>
+                {node}
+              </MatIdScope>
+            ))}
+          </div>
         ) : (
           <div class="mat-mdc-form-field-hint-wrapper">
             {hintLabel && (
@@ -507,9 +517,11 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
                 {hintLabel}
               </mat-hint>
             )}
-            {hintStartNode}
+            {props.hintStart && (
+              <MatIdScope id={hintStartId as string}>{props.hintStart}</MatIdScope>
+            )}
             <div class="mat-mdc-form-field-hint-spacer" />
-            {hintEndNode}
+            {props.hintEnd && <MatIdScope id={hintEndId as string}>{props.hintEnd}</MatIdScope>}
           </div>
         )}
       </div>

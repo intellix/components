@@ -78,14 +78,20 @@ export const MatInput = component$<MatInputProps>(props => {
   // Fallback id for standalone usage (`matNativeControl` outside a form
   // field, or a consumer that didn't specify one) — mirrors upstream's own
   // `_uid = inject(_IdGenerator).getId('mat-input-')` constructor fallback.
-  // In the common case (nested in `<MatFormField control={...}>`),
-  // `MatFormField` already injected a concrete `id` onto this element's
-  // props before it ever rendered (see `mat-form-field.tsx`'s "id
-  // ownership" note), so this lazy initializer never actually runs its
-  // id-generation path.
   const idGen = useIdGenerator();
   const autoId = useSignal(() => idGen.getId('mat-input-'));
-  const id = props.id ?? autoId.value;
+  // When nested in a `<MatFormField control={...}>`, the form field is the
+  // AUTHORITY for both `id` (so its label's `for` always agrees — see
+  // core/mat-form-field-control.ts's `assignedId` doc comment) and
+  // `aria-describedby` (so it always reflects the form field's current
+  // hint/error ids). Read from the context STORE, never injected by
+  // cloning this element's JSX — a clone-based approach was tried first
+  // and found, via a real hung-browser repro, to silently freeze a
+  // sibling slot's projected children after an unrelated re-render; a
+  // store field has no such issue. Standalone usage (no owning
+  // `MatFormField`) falls back to this component's own id/prop.
+  const id = formField ? formField.assignedId : (props.id ?? autoId.value);
+  const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];
 
   const inputRef = useSignal<Element>();
 
@@ -223,7 +229,7 @@ export const MatInput = component$<MatInputProps>(props => {
     'aria-disabled': ariaDisabled,
     'aria-invalid': ariaInvalid,
     'aria-required': ariaRequired,
-    'aria-describedby': props['aria-describedby'],
+    'aria-describedby': ariaDescribedBy,
     onFocus$: handleFocus$,
     onBlur$: handleBlur$,
     onInput$: handleInput$,

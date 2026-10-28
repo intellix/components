@@ -115,12 +115,31 @@ export interface MatFormFieldControlProps {
 
 /**
  * The reactive (post-mount) half of the contract — see the big comment
- * above. Always 3 plain booleans; never a function or getter.
+ * above. Always plain data (booleans/strings); never a function or getter.
  */
 export interface MatFormFieldControlState {
   focused: boolean;
   empty: boolean;
   shouldLabelFloat: boolean;
+  /**
+   * The id `MatFormField` decided for the control (its own explicit `id`
+   * prop if it had one, else a generated fallback) — the control reads
+   * this instead of computing its own, so the label's `for` and this id
+   * always agree. See `mat-form-field.tsx`'s "id/describedby via context,
+   * not cloning" note for why this is a STORE FIELD rather than a prop
+   * `MatFormField` injects by cloning the control's JSX descriptor: a
+   * clone-based injection was found, via a real hung/stuck-browser repro,
+   * to silently stop propagating updates to the cloned element once
+   * `MatFormField` re-rendered for an unrelated reason (e.g. its own
+   * 300ms animations-enabled timer) — a store field, read directly, has
+   * no such issue (confirmed by the same repro once switched).
+   */
+  assignedId: string;
+  /** Mirrors upstream's `_syncDescribedByIds()` result — the control
+   *  renders this directly as its `aria-describedby` (already merged with
+   *  the control's own explicit `aria-describedby`, if any, by
+   *  `MatFormField`) rather than merging it again itself. */
+  assignedDescribedBy: string | undefined;
 }
 
 /**
