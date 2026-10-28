@@ -35,6 +35,8 @@ import type {MatRadioConfig} from '../radio/radio-config';
 import {MAT_RADIO_CONFIG} from '../radio/radio-config';
 import type {MatCheckboxConfig} from '../checkbox/checkbox-config';
 import {MAT_CHECKBOX_CONFIG} from '../checkbox/checkbox-config';
+import type {MatTabsConfig} from '../tabs/tab-config';
+import {MAT_TABS_CONFIG} from '../tabs/tab-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -71,6 +73,8 @@ export interface QwikMaterialProviderProps {
   matRadioConfig?: MatRadioConfig;
   /** Defaults applied to every MatCheckbox in this subtree. */
   matCheckboxConfig?: MatCheckboxConfig;
+  /** Defaults applied to every MatTabGroup / MatTabNav in this subtree. */
+  matTabsConfig?: MatTabsConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -148,6 +152,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // checkbox-config.ts; providing an empty object here is NOT equivalent to those
   // defaults (MatCheckbox itself falls back per-field: `props.x ?? config.x ?? ownDefault`).
   useContextProvider(MAT_CHECKBOX_CONFIG, props.matCheckboxConfig ?? {});
+  // MatTabsConfig is a plain object with primitive fields — no noSerialize
+  // needed. Tab groups/navs outside a provider get the CONFIG_DEFAULTS
+  // declared in MatTabGroup/MatTabNav; providing an empty object is
+  // equivalent to accepting all defaults.
+  useContextProvider(MAT_TABS_CONFIG, props.matTabsConfig ?? {});
 
   return <Slot />;
 });

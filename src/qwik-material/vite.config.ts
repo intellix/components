@@ -21,6 +21,7 @@ const entries = [
   'expansion',
   'radio',
   'checkbox',
+  'tabs',
 ];
 
 export default defineConfig({
@@ -55,6 +56,7 @@ export default defineConfig({
           ['scss/expansion/expansion-prebuilt.scss', 'dist/expansion-prebuilt.css'],
           ['scss/radio/radio-prebuilt.scss', 'dist/radio-prebuilt.css'],
           ['scss/checkbox/checkbox-prebuilt.scss', 'dist/checkbox-prebuilt.css'],
+          ['scss/tabs/tabs-prebuilt.scss', 'dist/tabs-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);
