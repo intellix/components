@@ -32,7 +32,7 @@ import {
   createListKeyManager,
   createLiveAnnouncer,
   type ListKeyManager,
-  type ListKeyManagerItem,
+  type ListKeyManagerOption,
   type LiveAnnouncer,
 } from '@angular-community/qwik-cdk/a11y';
 import {MatSelectPanel} from './mat-select-panel';
@@ -58,7 +58,7 @@ export const SELECT_POSITIONS: ConnectedPosition[] = [
   },
 ];
 
-interface KeyManagerItem extends ListKeyManagerItem {
+interface KeyManagerItem extends ListKeyManagerOption {
   option: ResolvedSelectOption;
 }
 
@@ -196,10 +196,10 @@ function buildKeyManager(
     .withAllowedModifierKeys(['shiftKey'])
     .skipPredicate(it => (signals.panelOpen.value ? false : !!it.disabled));
 
-  manager.onChange = index => {
+  manager.onChange(index => {
     signals.activeIndex.value = index;
-  };
-  manager.onTabOut = () => {
+  });
+  manager.onTabOut(() => {
     if (signals.panelOpen.value) {
       const active = manager.activeItem;
       if (!cfg.multiple && active) {
@@ -208,7 +208,7 @@ function buildKeyManager(
       signals.hostRef.value?.focus();
       closeSelectPanel(cfg, signals);
     }
-  };
+  });
 
   return manager;
 }
