@@ -364,10 +364,11 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // time `shouldLabelFloat` flips, via a ref to form-field's OWN rendered
   // `<label>` (upstream's label lives in `MatFormField`'s own template too
   // — no cross-component ref needed). A plain reactive useTask$, not a
-  // mount-only task: it is a no-op at mount for every scenario here (no
-  // outline scenario starts floated — see `outline-basic`'s own note) and
-  // only does real work once a real focus event flips `shouldLabelFloat`,
-  // by which point the label ref is populated (client-side). ──
+  // mount-only task: it is a no-op at mount for every scenario here that
+  // does NOT start floated (no `outline-basic`-style scenario starts
+  // floated) and only does real work once a real focus event flips
+  // `shouldLabelFloat`, by which point the label ref is populated
+  // (client-side). ──
   const labelRef = useSignal<Element>();
   const notchRef = useSignal<Element>();
   useTask$(({track}) => {
@@ -392,6 +393,32 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     }
     notch.style.width = `calc(${labelWidth}px * var(--mat-mdc-form-field-floating-label-scale, 0.75) + 9px)`;
   });
+  // A control that starts ALREADY floating (e.g. a chip-grid seeded with existing chips —
+  // see chips/SYNC.md) needs the SAME measurement to happen once more, correctly, on the
+  // client: the `useTask$` above runs for the first time during SSR, where `notchRef`/
+  // `labelRef` are never populated (no real DOM to measure `scrollWidth` against on the
+  // server) — and since `controlState.shouldLabelFloat` is ALREADY `true` on that very first
+  // run, it never "flips" again to give that task a reason to re-run once a real DOM exists.
+  // `initialControlShouldFloat` is known statically (from the control's own props) BEFORE any
+  // hook runs, and is stable for the lifetime of this component instance, so calling
+  // `useVisibleTask$` conditionally on it is safe (this instance either always or never calls
+  // it, never a different count across ITS OWN re-renders — the only thing Qwik's hook-order
+  // rule actually requires). This keeps the eager cost scoped to exactly the controls that
+  // need it; the other 16+ form-field scenarios (none start floated) never pay it, matching
+  // design doc rule 6/expansion's own "mount-driven-timing exception" precedent (the
+  // `mat-form-field-animations-enabled` timer just below is the SAME kind of exception, just
+  // unconditional since every form-field needs it once).
+  if (hasOutline && initialControlShouldFloat && hasFloatingLabel) {
+    // eslint-disable-next-line qwik/no-use-visible-task
+    useVisibleTask$(() => {
+      const notch = notchRef.value as HTMLElement | undefined;
+      const label = labelRef.value as HTMLElement | undefined;
+      if (!notch || !label) return;
+      const labelWidth = label.scrollWidth;
+      if (!labelWidth) return;
+      notch.style.width = `calc(${labelWidth}px * var(--mat-mdc-form-field-floating-label-scale, 0.75) + 9px)`;
+    });
+  }
 
   // ── `mat-form-field-animations-enabled`, ~300ms after mount, once,
   // forever — mirrors `ngAfterViewInit`'s `setTimeout`. Explicitly
