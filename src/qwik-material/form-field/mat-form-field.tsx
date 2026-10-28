@@ -13,6 +13,7 @@ import {
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {
+  MAT_FORM_FIELD_CONNECTED_ORIGIN,
   MAT_FORM_FIELD_CONTROL_STATE,
   readControlProps,
   type MatFormFieldControlState,
@@ -189,21 +190,32 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // the context store below once real focus/blur events fire.
   const initialControlShouldFloat = !initialEmpty;
 
+  // Backs `MAT_FORM_FIELD_CONNECTED_ORIGIN` — see that context's own doc
+  // comment (core/mat-form-field-control.ts). A plain ref signal: written
+  // once the wrapper div mounts, read (not subscribed-to) by a control like
+  // `MatSelect` only inside its own lazy `open()` handler — no reactivity
+  // concerns, unlike `controlState` below.
+  const wrapperRef = useSignal<Element>();
+  useContextProvider(MAT_FORM_FIELD_CONNECTED_ORIGIN, wrapperRef);
+
   // ── Reactive (post-mount) control state — see
   // core/mat-form-field-control.ts's doc comment for why this is a plain
   // useStore() of booleans, seeded here (correct for the very first SSR
   // render) and written to afterwards only by the control's own lazy
   // onFocus$/onBlur$ handlers (never a mount task). ──
-  // `assignedId`/`assignedDescribedBy` are seeded with placeholders here
-  // and overwritten below, synchronously, before the control ever renders
-  // (both depend on ids computed further down — hints/errors need to be
-  // processed first for `assignedDescribedBy`) — never left stale, since
-  // this is all one synchronous pass before `<Slot/>`/the control runs.
+  // `assignedId`/`labelId`/`assignedDescribedBy` are seeded with
+  // placeholders here and overwritten below, synchronously, before the
+  // control ever renders (all depend on ids computed further down —
+  // hints/errors need to be processed first for `assignedDescribedBy`) —
+  // never left stale, since this is all one synchronous pass before
+  // `<Slot/>`/the control runs.
   const controlState = useStore<MatFormFieldControlState>({
     focused: false,
     empty: initialEmpty,
     shouldLabelFloat: initialControlShouldFloat,
     assignedId: '',
+    labelId: undefined,
+    color,
     assignedDescribedBy: undefined,
     touched,
     dirty,
@@ -239,7 +251,18 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // literally cannot re-run either).
   const labelId = useSignal(() => idGen.getId('mat-mdc-form-field-label-'));
   const hintLabelId = useSignal(() => idGen.getId('mat-mdc-hint-'));
-  const generatedControlId = useSignal(() => idGen.getId('mat-input-'));
+  // The generated-id PREFIX mirrors whichever control actually owns it
+  // upstream (`MatInput._uid = idGenerator.getId('mat-input-')` vs.
+  // `MatSelect._uid = idGenerator.getId('mat-select-')`, etc.) — even
+  // though, per this port's "id ownership" deviation (see this field's own
+  // doc comment below), the FORM FIELD is the one minting the fallback, not
+  // the control itself. `controlType` (already computed above from the
+  // control's own `controlType` prop — `MatInput` passes `'mat-input'`,
+  // `MatSelect` passes `'mat-select'`) is reused as the lookup key so a
+  // future control type just needs to add itself here once.
+  const generatedControlId = useSignal(() =>
+    idGen.getId(controlType === 'mat-select' ? 'mat-select-' : 'mat-input-'),
+  );
   const generatedHintStartId = useSignal(() => idGen.getId('mat-mdc-hint-'));
   const generatedHintEndId = useSignal(() => idGen.getId('mat-mdc-hint-'));
   // Errors are the one slot whose CONTENT (not just count) can legitimately
@@ -312,6 +335,8 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // when the value hasn't actually changed avoids the spurious
   // notification entirely.
   if (controlState.assignedId !== controlId) controlState.assignedId = controlId;
+  const ownLabelId = hasFloatingLabel ? labelId.value : undefined;
+  if (controlState.labelId !== ownLabelId) controlState.labelId = ownLabelId;
   if (controlState.assignedDescribedBy !== finalDescribedBy) {
     controlState.assignedDescribedBy = finalDescribedBy;
   }
@@ -481,7 +506,18 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
         ].filter(Boolean) as string[]
       }
       id={labelId.value}
-      for={controlId}
+      // `controlType === 'mat-select'` ALSO implies `disableAutomaticLabeling`
+      // even when the control didn't explicitly set it — `MatSelect` must
+      // pass `controlType="mat-select"` anyway (see that prop's own doc
+      // comment: it's the only way `MatFormField` can tell which control
+      // this is, since the `mat-input-`-fallback id-prefix branch needs the
+      // SAME check), so bundling the label-`for` suppression into that
+      // single required prop avoids asking consumers for a SECOND one.
+      for={
+        controlProps?.disableAutomaticLabeling || controlType === 'mat-select'
+          ? undefined
+          : controlId
+      }
       ref={labelRef}
     >
       {props.label}
@@ -496,7 +532,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
 
   return (
     <mat-form-field id={props.id} class={hostClasses} style={props.style}>
-      <div class={wrapperClasses} onClick$={onWrapperClick$}>
+      <div class={wrapperClasses} onClick$={onWrapperClick$} ref={wrapperRef}>
         {!hasOutline && !disabled && <div class="mat-mdc-form-field-focus-overlay" />}
         <div class="mat-mdc-form-field-flex">
           {hasOutline && (
