@@ -1,19 +1,15 @@
 import {defineConfig} from '@playwright/test';
 
 /**
- * PLACEHOLDER NOTICE (webServer config):
- *
- * The Angular CDK dev-app command below requires Bazel + ibazel to be installed.
- * `pnpm dev-app` (from workspace root) ultimately invokes `ibazel run //src/dev-app:devserver`.
- *
- * If you already have the Angular dev-app running on port 4200 by other means,
- * `reuseExistingServer: true` means Playwright will detect and reuse it.
- *
- * The qwik-cdk-dev-app must be built first then served with `pnpm preview` due to a
- * qwik-city dev-mode bug discovered in Task 25; `pnpm dev` does not serve routes correctly.
- * Run: `pnpm -C src/qwik-cdk-dev-app build && pnpm -C src/qwik-cdk-dev-app preview`
- *
- * See README.md for full human-setup steps.
+ * No `webServer` block: both apps are run manually (see README.md) and
+ * targeted via ANGULAR_URL/QWIK_URL env vars (defaulting to localhost:4200
+ * and localhost:4173 respectively — see lib/material-parity.ts). An opt-in
+ * `webServer` auto-start previously lived here, but it fired for every test
+ * run regardless of which app(s) a given spec file actually needed, and
+ * would race with / tear down a manually-run preview server on the same
+ * port from another worktree — surprising and disruptive for concurrent
+ * work across worktrees. Each worktree should run its own preview server on
+ * its own port and pass it via QWIK_URL.
  */
 export default defineConfig({
   testDir: './specs',
@@ -21,23 +17,4 @@ export default defineConfig({
   timeout: 60_000,
   expect: {timeout: 10_000},
   use: {trace: 'retain-on-failure'},
-  webServer: [
-    {
-      // PLACEHOLDER: Angular CDK dev-app — requires Bazel + ibazel.
-      // Substitute with your preferred Angular dev-app start command if needed.
-      // Actual URL served: http://localhost:4200
-      // Note: Angular's dialog demo is at /dialog NOT /dialog/basic — see README.
-      command: 'pnpm -C ../../ dev-app',
-      port: 4200,
-      reuseExistingServer: true,
-      timeout: 120_000,
-    },
-    {
-      // qwik-cdk dev-app — must build first, then preview (not dev) due to qwik-city bug.
-      command: 'pnpm -C ../qwik-cdk-dev-app preview',
-      port: 4173,
-      reuseExistingServer: true,
-      timeout: 60_000,
-    },
-  ],
 });
