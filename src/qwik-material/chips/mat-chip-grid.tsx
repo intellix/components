@@ -380,7 +380,10 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
         const stillFocused = !!root && !!active && root.contains(active);
         if (formField && !stillFocused) {
           formField.focused = false;
-          formField.shouldLabelFloat = !(inputEmpty.value && rows.length === 0);
+          // Re-read `props.rows` LIVE here rather than the outer-scope `rows` const — same
+          // `useOn()`-stale-closure pitfall as `fixupRippleDisabled$` above.
+          const liveRows = Array.isArray(props.rows) ? props.rows : props.rows.value;
+          formField.shouldLabelFloat = !(inputEmpty.value && liveRows.length === 0);
         }
       });
     }),

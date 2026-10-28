@@ -136,11 +136,21 @@ export const MatChipSet = component$<MatChipSetProps>(props => {
     // event bubbling to here) must land first, or `querySelectorAll` below could still see
     // last render's elements mid-removal.
     requestAnimationFrame(() => {
+      // Re-read `props.chips`/`props.disabled` LIVE here, rather than closing over the
+      // outer-scope `chips`/`disabled` consts: `useOn()`'s registered handler reference can
+      // go stale (confirmed live — a sibling re-render that changes `chips` without ALSO
+      // re-triggering one of THIS listener's own events first leaves it holding an EARLIER
+      // render's closure), the same "stale QRL capture" pitfall `MatButtonToggleGroup`
+      // documents for its own onClick$, and the same fix already applied to
+      // `MatChipGrid`'s own `fixupRippleDisabled$` — the outer-scope `chips`/`disabled`
+      // consts stay only for the rest of this render body's other uses.
+      const liveChips = props.chips;
+      const liveDisabled = props.disabled ?? false;
       const chipEls = Array.from(root.querySelectorAll('mat-chip'));
       chipEls.forEach((el, i) => {
-        const def = chips[i];
+        const def = liveChips[i];
         if (!def) return;
-        const chipDisabled = (def.disabled ?? false) || disabled;
+        const chipDisabled = (def.disabled ?? false) || liveDisabled;
         const chipDisableRipple = def.disableRipple ?? false;
         const hasInteractiveActions = def.removeButton != null;
         if (
