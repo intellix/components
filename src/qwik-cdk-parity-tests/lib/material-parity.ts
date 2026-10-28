@@ -119,6 +119,8 @@ const CONSUMER_SELECTOR_ATTRS = [
   'matsliderthumb',
   'matsliderstartthumb',
   'matsliderendthumb',
+  'mat-menu-item',
+  'matmenuitemicon',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
