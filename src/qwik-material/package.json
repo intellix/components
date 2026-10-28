@@ -129,6 +129,11 @@
       "types": "./dist/tabs/index.d.ts",
       "import": "./dist/tabs/index.js"
     },
+    "./snack-bar": {
+      "qwik": "./snack-bar/index.ts",
+      "types": "./dist/snack-bar/index.d.ts",
+      "import": "./dist/snack-bar/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -148,6 +153,7 @@
     "./checkbox-prebuilt.css": "./dist/checkbox-prebuilt.css",
     "./sort-prebuilt.css": "./dist/sort-prebuilt.css",
     "./tabs-prebuilt.css": "./dist/tabs-prebuilt.css",
+    "./snack-bar-prebuilt.css": "./dist/snack-bar-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

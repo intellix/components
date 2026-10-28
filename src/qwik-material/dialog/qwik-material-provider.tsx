@@ -39,6 +39,8 @@ import type {MatSortConfig} from '../sort/sort-config';
 import {MAT_SORT_CONFIG} from '../sort/sort-config';
 import type {MatTabsConfig} from '../tabs/tab-config';
 import {MAT_TABS_CONFIG} from '../tabs/tab-config';
+import type {MatSnackBarConfig} from '../snack-bar/snack-bar-config';
+import {MAT_SNACK_BAR_DEFAULT_OPTIONS} from '../snack-bar/mat-snack-bar-tokens';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -79,6 +81,8 @@ export interface QwikMaterialProviderProps {
   matSortConfig?: MatSortConfig;
   /** Defaults applied to every MatTabGroup / MatTabNav in this subtree. */
   matTabsConfig?: MatTabsConfig;
+  /** Defaults merged into every useMatSnackBar() open()/openFromComponent()/openFromTemplate() config. */
+  matSnackBarDefaults?: Partial<MatSnackBarConfig>;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -166,6 +170,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // declared in MatTabGroup/MatTabNav; providing an empty object is
   // equivalent to accepting all defaults.
   useContextProvider(MAT_TABS_CONFIG, props.matTabsConfig ?? {});
+  // MatSnackBarConfig's fields all have upstream class-level defaults of
+  // their own (see `createMatSnackBarConfig()`); an empty object here is
+  // equivalent to accepting all of them, same pattern as every config above.
+  useContextProvider(MAT_SNACK_BAR_DEFAULT_OPTIONS, props.matSnackBarDefaults ?? {});
 
   return <Slot />;
 });
