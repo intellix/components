@@ -126,6 +126,13 @@ const CONSUMER_SELECTOR_ATTRS = [
   'matchiptrailingicon',
   'matchipedit',
   'matchipinputfor',
+  'mat-table',
+  'mat-header-row',
+  'mat-row',
+  'mat-footer-row',
+  'mat-header-cell',
+  'mat-cell',
+  'mat-footer-cell',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
