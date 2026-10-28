@@ -1,7 +1,45 @@
 import {$, useOn, useSignal, type Signal} from '@builder.io/qwik';
-import type {FocusOrigin} from '../focus-monitor/focus-monitor';
+import type {FocusOptions, FocusOrigin} from '../focus-monitor/focus-monitor';
 
 export type {FocusOrigin};
+
+/**
+ * DOM attribute `focusVia()` writes just before calling `element.focus()`
+ * and `useFocusOrigin()`'s own `focusin` handler reads (and clears) on the
+ * very next focus event. A transient, one-shot override — the same role
+ * upstream's real `FocusMonitor.focusVia()` plays with its private pending
+ * `origin` variable (see `../focus-monitor/focus-monitor.ts`), reframed as a
+ * plain element attribute so it needs no shared engine/listener registry:
+ * each `useFocusOrigin()` instance already owns a `focusin` listener on its
+ * own host element (attached lazily via `useOn()`), so it can just check
+ * its own element for this attribute first.
+ */
+const PENDING_ORIGIN_ATTR = 'data-cdk-pending-focus-origin';
+
+/**
+ * Qwik-native replacement for upstream `FocusMonitor.focusVia(element,
+ * origin, options)`: forces the ORIGIN of the very next focus event on
+ * `element` to `origin`, bypassing `useFocusOrigin()`'s normal
+ * pointerdown/`:focus-visible` heuristic entirely, then focuses it. Needed
+ * wherever upstream calls the real `focusVia()` with an origin the
+ * heuristic would get wrong — e.g. `MatAccordion`'s `FocusKeyManager`-driven
+ * arrow-key navigation, whose origin is always `'program'` even though a
+ * real keydown triggered it (CDK's `FocusKeyManager` never calls
+ * `setFocusOrigin('keyboard')`), and `MatExpansionPanelHeader` regaining
+ * focus as `'program'` when its panel closes while focus was inside it.
+ *
+ * Only meaningful for elements that ALSO call `useFocusOrigin()` on
+ * themselves — plain `element.focus()` on an unrelated element is a no-op
+ * attribute write.
+ */
+export function focusVia(element: HTMLElement, origin: FocusOrigin, options?: FocusOptions): void {
+  if (origin) {
+    element.setAttribute(PENDING_ORIGIN_ATTR, origin);
+  } else {
+    element.removeAttribute(PENDING_ORIGIN_ATTR);
+  }
+  element.focus(options);
+}
 
 /**
  * Lazy, per-component replacement for `useFocusMonitor()` (which — as of
@@ -38,6 +76,11 @@ export type {FocusOrigin};
  *    guard — callers with more than one focusable descendant under the
  *    host should reconsider; today's only caller (MatButtonToggle) has
  *    exactly one.
+ *  - A pending origin written by `focusVia()` (see above) on the target
+ *    element takes priority over both, exactly once, then is cleared —
+ *    needed by callers (`MatAccordion`, `MatExpansionPanelHeader`) that
+ *    must force `'program'` even though a real keydown/click triggered the
+ *    resulting focus.
  */
 export function useFocusOrigin(): Signal<FocusOrigin> {
   const origin = useSignal<FocusOrigin>(null);
@@ -54,7 +97,11 @@ export function useFocusOrigin(): Signal<FocusOrigin> {
     'focusin',
     $((event: FocusEvent) => {
       const target = event.target as Element | null;
-      if (target?.matches?.(':focus-visible')) {
+      const pending = target?.getAttribute?.(PENDING_ORIGIN_ATTR);
+      if (pending) {
+        target?.removeAttribute(PENDING_ORIGIN_ATTR);
+        origin.value = pending as FocusOrigin;
+      } else if (target?.matches?.(':focus-visible')) {
         origin.value = 'keyboard';
       } else if (lastPointerModality.value) {
         origin.value = lastPointerModality.value;

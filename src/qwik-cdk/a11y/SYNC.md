@@ -107,6 +107,23 @@
     reactive-store pattern in `qwik-cdk/root.tsx`
     (`internals.keyboardDispatcher`, etc.) — just not as a per-instance
     convenience hook.
+  - **2026-10-27 (expansion port):** added `focusVia(element, origin,
+    options)` to `focus-origin.ts` — NOT built on this engine, despite the
+    note directly above anticipating it as the reason a caller would reach
+    for `FocusMonitor.focusVia()`. The need (`MatAccordion`'s
+    `FocusKeyManager`-equivalent arrow-key navigation, and
+    `MatExpansionPanelHeader`'s "focus returns to the header as `'program'`
+    when its panel closes with focus inside") is specifically about
+    overriding `useFocusOrigin()`'s own heuristic for one element's next
+    focus event — `useFocusOrigin()` already has a lazy `focusin` listener
+    on that exact element, so `focusVia()` just writes a one-shot
+    `data-cdk-pending-focus-origin` attribute that listener checks first,
+    then calls `.focus()`. This needs no shared engine, no global capture
+    listener, and no `useVisibleTask$` — unlike `createFocusMonitor().monitor()`,
+    which requires registering a document-level capture listener per
+    element up front (fine for one-off callers, but `MatExpansionPanelHeader`
+    can appear dozens of times per page in a long accordion, exactly the
+    "components that appear many times per page" case rule 7 is about).
 
 ### `FocusTrap` / `useFocusTrap`
 
