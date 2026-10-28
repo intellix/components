@@ -52,6 +52,8 @@ import type {MatFormFieldConfig} from '../form-field/form-field-config';
 import {MAT_FORM_FIELD_CONFIG} from '../form-field/form-field-config';
 import type {MatInputConfig} from '../input/input-config';
 import {MAT_INPUT_CONFIG} from '../input/input-config';
+import type {MatTooltipDefaultOptions} from '../tooltip/mat-tooltip-tokens';
+import {MAT_TOOLTIP_DEFAULT_OPTIONS} from '../tooltip/mat-tooltip-tokens';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -104,6 +106,8 @@ export interface QwikMaterialProviderProps {
   matFormFieldConfig?: MatFormFieldConfig;
   /** Defaults applied to every MatInput in this subtree. */
   matInputConfig?: MatInputConfig;
+  /** Defaults merged into every `<MatTooltip>`'s resolved config in this subtree. */
+  matTooltipDefaults?: MatTooltipDefaultOptions;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -220,6 +224,12 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // `false` fallback declared in MatInput; providing an empty object is
   // equivalent to accepting that default.
   useContextProvider(MAT_INPUT_CONFIG, props.matInputConfig ?? {});
+  // MatTooltipDefaultOptions is a plain object with primitive fields — no
+  // noSerialize needed. Tooltips outside a provider get the hardcoded
+  // MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY fallbacks declared in
+  // mat-tooltip.tsx's `resolveConfig`; providing an empty object here is
+  // equivalent to accepting all of them.
+  useContextProvider(MAT_TOOLTIP_DEFAULT_OPTIONS, props.matTooltipDefaults ?? {});
 
   return <Slot />;
 });

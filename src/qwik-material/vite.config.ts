@@ -28,6 +28,7 @@ const entries = [
   'bottom-sheet',
   'form-field',
   'input',
+  'tooltip',
 ];
 
 export default defineConfig({
@@ -68,6 +69,7 @@ export default defineConfig({
           ['scss/snack-bar/snack-bar-prebuilt.scss', 'dist/snack-bar-prebuilt.css'],
           ['scss/bottom-sheet/bottom-sheet-prebuilt.scss', 'dist/bottom-sheet-prebuilt.css'],
           ['scss/form-field/form-field-prebuilt.scss', 'dist/form-field-prebuilt.css'],
+          ['scss/tooltip/tooltip-prebuilt.scss', 'dist/tooltip-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);
