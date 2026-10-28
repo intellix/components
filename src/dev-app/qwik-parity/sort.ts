@@ -14,10 +14,12 @@ import {MatSortModule, Sort} from '@angular/material/sort';
   template: `
     <div data-parity-root>
       <table matSort (matSortChange)="sort = $event">
-        <tr>
-          <th mat-sort-header="name">Name</th>
-          <th mat-sort-header="population">Population</th>
-        </tr>
+        <thead>
+          <tr>
+            <th mat-sort-header="name">Name</th>
+            <th mat-sort-header="population">Population</th>
+          </tr>
+        </thead>
       </table>
       <p>Sort: {{ sort.active }} {{ sort.direction }}</p>
     </div>
@@ -36,10 +38,12 @@ export class SortBasic {
         [matSortActive]="'population'"
         [matSortDirection]="'desc'"
         (matSortChange)="sort = $event">
-        <tr>
-          <th mat-sort-header="name">Name</th>
-          <th mat-sort-header="population">Population</th>
-        </tr>
+        <thead>
+          <tr>
+            <th mat-sort-header="name">Name</th>
+            <th mat-sort-header="population">Population</th>
+          </tr>
+        </thead>
       </table>
       <p>Sort: {{ sort.active }} {{ sort.direction }}</p>
     </div>
@@ -54,10 +58,12 @@ export class SortInitialActiveDirection {
   template: `
     <div data-parity-root>
       <table matSort [matSortStart]="'desc'" (matSortChange)="sort = $event">
-        <tr>
-          <th mat-sort-header="name">Name</th>
-          <th mat-sort-header="population">Population</th>
-        </tr>
+        <thead>
+          <tr>
+            <th mat-sort-header="name">Name</th>
+            <th mat-sort-header="population">Population</th>
+          </tr>
+        </thead>
       </table>
       <p>Sort: {{ sort.active }} {{ sort.direction }}</p>
     </div>
@@ -72,10 +78,12 @@ export class SortStartDesc {
   template: `
     <div data-parity-root>
       <table matSort [matSortDisableClear]="true" (matSortChange)="sort = $event">
-        <tr>
-          <th mat-sort-header="name">Name</th>
-          <th mat-sort-header="population">Population</th>
-        </tr>
+        <thead>
+          <tr>
+            <th mat-sort-header="name">Name</th>
+            <th mat-sort-header="population">Population</th>
+          </tr>
+        </thead>
       </table>
       <p>Sort: {{ sort.active }} {{ sort.direction }}</p>
     </div>
@@ -90,10 +98,12 @@ export class SortDisableClear {
   template: `
     <div data-parity-root>
       <table matSort (matSortChange)="sort = $event">
-        <tr>
-          <th mat-sort-header="name" [disabled]="true">Name</th>
-          <th mat-sort-header="population">Population</th>
-        </tr>
+        <thead>
+          <tr>
+            <th mat-sort-header="name" [disabled]="true">Name</th>
+            <th mat-sort-header="population">Population</th>
+          </tr>
+        </thead>
       </table>
       <p>Sort: {{ sort.active }} {{ sort.direction }}</p>
     </div>
@@ -113,10 +123,12 @@ export class SortDisabledHeader {
         [matSortDirection]="'asc'"
         [matSortDisabled]="true"
         (matSortChange)="sort = $event">
-        <tr>
-          <th mat-sort-header="name">Name</th>
-          <th mat-sort-header="population">Population</th>
-        </tr>
+        <thead>
+          <tr>
+            <th mat-sort-header="name">Name</th>
+            <th mat-sort-header="population">Population</th>
+          </tr>
+        </thead>
       </table>
       <p>Sort: {{ sort.active }} {{ sort.direction }}</p>
     </div>
@@ -131,10 +143,12 @@ export class SortDisabledSort {
   template: `
     <div data-parity-root>
       <table matSort (matSortChange)="sort = $event">
-        <tr>
-          <th mat-sort-header="name" [arrowPosition]="'before'">Name</th>
-          <th mat-sort-header="population">Population</th>
-        </tr>
+        <thead>
+          <tr>
+            <th mat-sort-header="name" [arrowPosition]="'before'">Name</th>
+            <th mat-sort-header="population">Population</th>
+          </tr>
+        </thead>
       </table>
       <p>Sort: {{ sort.active }} {{ sort.direction }}</p>
     </div>
@@ -149,10 +163,12 @@ export class SortArrowPositionBefore {
   template: `
     <div data-parity-root>
       <table matSort (matSortChange)="sort = $event">
-        <tr>
-          <th mat-sort-header="name" [sortActionDescription]="'Sort by name'">Name</th>
-          <th mat-sort-header="population">Population</th>
-        </tr>
+        <thead>
+          <tr>
+            <th mat-sort-header="name" [sortActionDescription]="'Sort by name'">Name</th>
+            <th mat-sort-header="population">Population</th>
+          </tr>
+        </thead>
       </table>
       <p>Sort: {{ sort.active }} {{ sort.direction }}</p>
     </div>
