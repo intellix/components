@@ -90,6 +90,26 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
 
   return (
     <>
+      {/*
+        Eager installation for `recent-keydown.ts` (see its doc comment for
+        the full "why" — `useFocusOrigin()` needs to know "was there a real
+        keydown since the last focus change" to correctly attribute
+        keyboard-driven focus, and nothing Qwik-lazy-loaded — including a
+        `useVisibleTask$` here, tried first — is reliably registered before
+        the FIRST keydown on a page under real test-harness load). A
+        literal inline `<script>`, not a QRL: it runs synchronously as the
+        browser parses this point in the HTML — before Qwik's own bundle
+        has even started loading, let alone hydrated anything. Written
+        with zero string-literal quotes (`document.onkeydown =` instead of
+        `addEventListener("keydown", …)`) because a JSX text child gets
+        HTML-entity-escaped (`"`/`'` → `&quot;`/`&#39;`), which `<script>`
+        tags never decode back (their content is raw text, not parsed as
+        HTML) — confirmed by the dev-app root's own identical constraint on
+        its `<style>` tag. No expiry timer (unlike an earlier version of
+        this script): see recent-keydown.ts for why the flag instead
+        persists until a `focusin`/`pointerdown` explicitly clears it.
+      */}
+      <script>{`document.onkeydown=function(){window.__qwikCdkRecentKeydown__=true}`}</script>
       <Slot />
       <OverlayContainerOutlet />
     </>

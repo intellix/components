@@ -124,6 +124,45 @@
     element up front (fine for one-off callers, but `MatExpansionPanelHeader`
     can appear dozens of times per page in a long accordion, exactly the
     "components that appear many times per page" case rule 7 is about).
+  - **2026-10-28 (tooltip port): `useFocusOrigin()`'s keyboard-vs-program
+    distinction reworked twice, both times to fix a real bug caught by
+    `qwik-material/tooltip`'s `message-change` scenario (bare
+    `element.focus()` after a hover must resolve `'program'`, not
+    `'keyboard'`) WITHOUT regressing every existing consumer's real
+    Tab-navigation case:
+    1. The hook previously read the browser's own `:focus-visible`
+       pseudo-class to decide `'keyboard'`. Confirmed live: Chromium's
+       native heuristic also matches `:focus-visible` for a bare scripted
+       `.focus()` call with no real keydown/mousedown behind it at all
+       (e.g. Playwright's `locator.focus()`) — conflating "scripted, no
+       recent interaction" with "real keyboard navigation", where upstream
+       `FocusMonitor.getFocusOrigin()` correctly falls through to
+       `'program'`. Replaced with tracking real `keydown` events directly.
+    2. Tracking `keydown`s only works if the tracking is truly eager — a
+       Tab press's own default action (advancing focus, then firing
+       `focusin`) can complete before ANY Qwik-lazy listener resolves
+       (`useOn`: component-scoped, so often not even attached to the
+       right element for Tab, which fires the keydown on the
+       *previously*-focused element, not the new target; `useOnDocument`:
+       document-scoped but still at least one microtask away even for an
+       already-cached chunk) — both attempts, in turn, intermittently lost
+       that race under real test-harness load and misreported a real Tab
+       press as `'program'` (see `material-expansion`'s
+       `tabIntoFirstHeader` step, which caught it). The fix that actually
+       holds: `focus-origin/recent-keydown.ts`'s state lives on `window`
+       (not a module-level `let` — nothing guarantees one shared module
+       instance across this package's separately-built entry points), set
+       by a literal inline `<script>` in `<QwikCdkRoot>`'s own SSR output
+       (`qwik-cdk/root.tsx`) — not a QRL at all, so it runs synchronously
+       as the browser parses that point in the HTML, before Qwik's own
+       bundle has even started loading. No time-based expiry either (an
+       earlier version used `FocusMonitor`'s own 1ms "IMMEDIATE mode"
+       window): the flag persists until the next `focusin` consumes it or
+       a newer `pointerdown` invalidates it, because unlike upstream
+       (which reads its `origin` variable synchronously, same listener
+       that set it) this hook's `focusin` handler is itself a lazily-
+       resolved QRL reading a DIFFERENT handler's flag — a short window
+       routinely closed before that resolution finished.
 
 ### `LiveAnnouncer`
 
