@@ -31,3 +31,5 @@ export type {
 } from './focus-trap/use-focus-trap';
 export type {LiveAnnouncer, AriaLivePoliteness} from './live-announcer/live-announcer';
 export {createLiveAnnouncer} from './live-announcer/live-announcer';
+export type {ListKeyManager, ListKeyManagerItem, ListKeyManagerModifierKey} from './key-manager/list-key-manager';
+export {createListKeyManager, createActiveDescendantKeyManager} from './key-manager/list-key-manager';
