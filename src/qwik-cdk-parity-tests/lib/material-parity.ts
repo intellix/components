@@ -84,6 +84,19 @@ const CONSUMER_SELECTOR_ATTRS = [
   'matdialogcontent',
   'mat-dialog-actions',
   'matdialogactions',
+  'matsort',
+  'mat-sort-header',
+  'mat-tab-link',
+  'mattablink',
+  'mat-tab-nav-bar',
+  'mattabnavbar',
+  'matinput',
+  'matprefix',
+  'matsuffix',
+  'mattextprefix',
+  'mattextsuffix',
+  'maticonprefix',
+  'maticonsuffix',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
