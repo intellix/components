@@ -431,6 +431,38 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Sliders</h2>
+        <ul>
+          <li>
+            <a href="/mat-slider/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-slider/initial-value/">initial-value</a>
+          </li>
+          <li>
+            <a href="/mat-slider/min-max-step/">min-max-step</a>
+          </li>
+          <li>
+            <a href="/mat-slider/discrete/">discrete</a>
+          </li>
+          <li>
+            <a href="/mat-slider/tick-marks/">tick-marks</a>
+          </li>
+          <li>
+            <a href="/mat-slider/display-with/">display-with</a>
+          </li>
+          <li>
+            <a href="/mat-slider/disabled/">disabled</a>
+          </li>
+          <li>
+            <a href="/mat-slider/range/">range</a>
+          </li>
+          <li>
+            <a href="/mat-slider/colors/">colors</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
