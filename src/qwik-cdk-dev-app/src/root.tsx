@@ -15,6 +15,7 @@ import '@angular-community/qwik-material/grid-list-prebuilt.css';
 import '@angular-community/qwik-material/list-prebuilt.css';
 import '@angular-community/qwik-material/button-toggle-prebuilt.css';
 import '@angular-community/qwik-material/slide-toggle-prebuilt.css';
+import '@angular-community/qwik-material/expansion-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>

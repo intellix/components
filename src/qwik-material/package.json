@@ -104,6 +104,11 @@
       "types": "./dist/slide-toggle/index.d.ts",
       "import": "./dist/slide-toggle/index.js"
     },
+    "./expansion": {
+      "qwik": "./expansion/index.ts",
+      "types": "./dist/expansion/index.d.ts",
+      "import": "./dist/expansion/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -118,6 +123,7 @@
     "./list-prebuilt.css": "./dist/list-prebuilt.css",
     "./button-toggle-prebuilt.css": "./dist/button-toggle-prebuilt.css",
     "./slide-toggle-prebuilt.css": "./dist/slide-toggle-prebuilt.css",
+    "./expansion-prebuilt.css": "./dist/expansion-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

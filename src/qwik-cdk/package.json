@@ -53,6 +53,11 @@
       "types": "./dist/a11y/index.d.ts",
       "import": "./dist/a11y/index.js"
     },
+    "./accordion": {
+      "qwik": "./accordion/index.ts",
+      "types": "./dist/accordion/index.d.ts",
+      "import": "./dist/accordion/index.js"
+    },
     "./platform": {
       "qwik": "./platform/index.ts",
       "types": "./dist/platform/index.d.ts",

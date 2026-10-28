@@ -20,7 +20,7 @@ export {
   FocusMonitorDetectionMode,
 } from './focus-monitor/focus-monitor';
 export type {FocusOrigin, FocusOptions} from './focus-monitor/focus-monitor';
-export {useFocusOrigin} from './focus-origin/focus-origin';
+export {useFocusOrigin, focusVia} from './focus-origin/focus-origin';
 export type {FocusTrap} from './focus-trap/focus-trap';
 export {createFocusTrap} from './focus-trap/focus-trap';
 export {useFocusTrap} from './focus-trap/use-focus-trap';

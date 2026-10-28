@@ -29,6 +29,8 @@ import type {MatButtonToggleConfig} from '../button-toggle/button-toggle-config'
 import {MAT_BUTTON_TOGGLE_CONFIG} from '../button-toggle/button-toggle-config';
 import type {MatSlideToggleConfig} from '../slide-toggle/slide-toggle-config';
 import {MAT_SLIDE_TOGGLE_CONFIG} from '../slide-toggle/slide-toggle-config';
+import type {MatExpansionConfig} from '../expansion/expansion-config';
+import {MAT_EXPANSION_CONFIG} from '../expansion/expansion-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -59,6 +61,8 @@ export interface QwikMaterialProviderProps {
   matButtonToggleConfig?: MatButtonToggleConfig;
   /** Defaults applied to every MatSlideToggle in this subtree. */
   matSlideToggleConfig?: MatSlideToggleConfig;
+  /** Defaults applied to every MatExpansionPanel / MatExpansionPanelHeader in this subtree. */
+  matExpansionConfig?: MatExpansionConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -120,6 +124,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // CONFIG_DEFAULTS declared in MatSlideToggle; providing an empty object is
   // equivalent to accepting all defaults.
   useContextProvider(MAT_SLIDE_TOGGLE_CONFIG, props.matSlideToggleConfig ?? {});
+  // MatExpansionConfig is a plain object with primitive fields — no noSerialize needed.
+  // Expansion panels outside a provider get the CONFIG_DEFAULTS declared in
+  // MatExpansionPanel/MatExpansionPanelHeader; providing an empty object is
+  // equivalent to accepting all defaults.
+  useContextProvider(MAT_EXPANSION_CONFIG, props.matExpansionConfig ?? {});
 
   return <Slot />;
 });

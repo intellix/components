@@ -7,6 +7,7 @@ Repo root: this file lives at src/qwik-material/SYNC.md.
 | Entry-point | Upstream base | Last sync commit | Notes |
 |---|---|---|---|
 | dialog | src/material/dialog | (unsynced — initial port) | See dialog/SYNC.md |
+| expansion | src/material/expansion | (unsynced — initial port, 2026-10-27) | Built on `@angular-community/qwik-cdk/accordion`. See expansion/SYNC.md |
 
 ## Sync recipe
 

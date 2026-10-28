@@ -3,7 +3,17 @@ import {qwikVite} from '@builder.io/qwik/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
 
-const entries = ['platform', 'bidi', 'coercion', 'keycodes', 'portal', 'a11y', 'overlay', 'dialog'];
+const entries = [
+  'platform',
+  'bidi',
+  'coercion',
+  'keycodes',
+  'portal',
+  'a11y',
+  'accordion',
+  'overlay',
+  'dialog',
+];
 
 export default defineConfig({
   plugins: [

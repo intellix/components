@@ -393,6 +393,44 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Expansion panels</h2>
+        <ul>
+          <li>
+            <a href="/mat-expansion/basic/">basic</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/initially-expanded/">initially-expanded</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/disabled/">disabled</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/hide-toggle/">hide-toggle</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/toggle-position-before/">toggle-position-before</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/header-heights/">header-heights</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/action-row/">action-row</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/lazy-content/">lazy-content</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/accordion-single/">accordion-single</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/accordion-multi/">accordion-multi</a>
+          </li>
+          <li>
+            <a href="/mat-expansion/accordion-flat/">accordion-flat</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });
