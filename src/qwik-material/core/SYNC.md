@@ -8,7 +8,8 @@ Every deviation from a verbatim copy is recorded here. Companion to
 `src/qwik-material/progress-bar/SYNC.md`,
 `src/qwik-material/progress-spinner/SYNC.md`,
 `src/qwik-material/divider/SYNC.md`, `src/qwik-material/grid-list/SYNC.md`,
-`src/qwik-material/list/SYNC.md`, and `src/qwik-material/button-toggle/SYNC.md`.
+`src/qwik-material/list/SYNC.md`, `src/qwik-material/button-toggle/SYNC.md`,
+and `src/qwik-material/checkbox/SYNC.md`.
 
 New entry point added 2026-10-27 as shared infrastructure for the
 qwik-material DOM-parity remediation
@@ -56,7 +57,7 @@ rather than inventing a new one.
 
 ## Pipeline
 
-`pnpm test:qwik-material` at the repo root runs `build && vitest && lint:no-ssr-leaks && typecheck` for the whole qwik-material package, covering dialog + button + card + toolbar + badge + icon + progress-bar + progress-spinner + divider + grid-list + list + button-toggle + core.
+`pnpm test:qwik-material` at the repo root runs `build && vitest && lint:no-ssr-leaks && typecheck` for the whole qwik-material package, covering dialog + button + card + toolbar + badge + icon + progress-bar + progress-spinner + divider + grid-list + list + button-toggle + checkbox + core.
 
 ## MatInternalFormField (2026-10-27)
 
@@ -66,3 +67,14 @@ rather than inventing a new one.
   (+ `mdc-form-field--align-end` for `labelPosition="before"`). Shared by
   checkbox, radio and slide-toggle. Its CSS ships in `core-prebuilt.css`
   (`scss/core/core-prebuilt.scss` now bundles pseudo-checkbox + internal form field).
+
+## MatInternalFormField gains an `onClick$` prop (2026-10-28)
+
+Added an optional `onClick$` prop (forwarded straight onto the rendered div)
+for `checkbox/mat-checkbox.tsx` — the first real consumer, and upstream's
+`checkbox.html` puts `(click)="_preventBubblingFromLabel($event)"` directly
+on the same element that carries the `mat-internal-form-field` selector
+(Angular lets a template bind both a component selector and a plain event on
+one element; `_MatInternalFormField` itself has no click handling of its
+own). No existing caller is affected — the prop defaults to `undefined`. See
+`checkbox/SYNC.md`.

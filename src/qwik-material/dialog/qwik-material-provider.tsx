@@ -27,6 +27,8 @@ import type {MatListConfig} from '../list/list-config';
 import {MAT_LIST_CONFIG} from '../list/list-config';
 import type {MatButtonToggleConfig} from '../button-toggle/button-toggle-config';
 import {MAT_BUTTON_TOGGLE_CONFIG} from '../button-toggle/button-toggle-config';
+import type {MatCheckboxConfig} from '../checkbox/checkbox-config';
+import {MAT_CHECKBOX_CONFIG} from '../checkbox/checkbox-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -55,6 +57,8 @@ export interface QwikMaterialProviderProps {
   matListConfig?: MatListConfig;
   /** Defaults applied to every MatButtonToggleGroup / MatButtonToggle in this subtree. */
   matButtonToggleConfig?: MatButtonToggleConfig;
+  /** Defaults applied to every MatCheckbox in this subtree. */
+  matCheckboxConfig?: MatCheckboxConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -111,6 +115,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // in MatButtonToggleGroup; providing an empty object is equivalent to
   // accepting all defaults.
   useContextProvider(MAT_BUTTON_TOGGLE_CONFIG, props.matButtonToggleConfig ?? {});
+  // MatCheckboxConfig is a plain object with primitive fields — no noSerialize needed.
+  // Checkboxes outside a provider get the MAT_CHECKBOX_CONFIG_DEFAULTS declared in
+  // checkbox-config.ts; providing an empty object here is NOT equivalent to those
+  // defaults (MatCheckbox itself falls back per-field: `props.x ?? config.x ?? ownDefault`).
+  useContextProvider(MAT_CHECKBOX_CONFIG, props.matCheckboxConfig ?? {});
 
   return <Slot />;
 });
