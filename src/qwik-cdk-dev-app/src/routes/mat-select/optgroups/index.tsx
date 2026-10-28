@@ -1,6 +1,6 @@
 import {component$, useSignal} from '@builder.io/qwik';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
-import {MatSelect, MatOption, MatOptgroup} from '@angular-community/qwik-material/select';
+import {MatSelect} from '@angular-community/qwik-material/select';
 
 // Mirrors src/dev-app/qwik-parity/select.ts's SelectOptgroups — two groups,
 // "Fire" disabled.
@@ -19,18 +19,21 @@ export default component$(() => {
               value={value.value}
               onValueChange$={v => (value.value = v as string)}
               options={[
-                <MatOptgroup label="Grass">
-                  {[
-                    <MatOption value="bulbasaur">Bulbasaur</MatOption>,
-                    <MatOption value="oddish">Oddish</MatOption>,
-                  ]}
-                </MatOptgroup>,
-                <MatOptgroup label="Fire" disabled>
-                  {[
-                    <MatOption value="charmander">Charmander</MatOption>,
-                    <MatOption value="vulpix">Vulpix</MatOption>,
-                  ]}
-                </MatOptgroup>,
+                {
+                  label: 'Grass',
+                  options: [
+                    {value: 'bulbasaur', label: 'Bulbasaur'},
+                    {value: 'oddish', label: 'Oddish'},
+                  ],
+                },
+                {
+                  label: 'Fire',
+                  disabled: true,
+                  options: [
+                    {value: 'charmander', label: 'Charmander'},
+                    {value: 'vulpix', label: 'Vulpix'},
+                  ],
+                },
               ]}
             />
           }

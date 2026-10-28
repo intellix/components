@@ -1,6 +1,6 @@
 import {component$, useSignal} from '@builder.io/qwik';
 import {MatFormField} from '@angular-community/qwik-material/form-field';
-import {MatSelect, MatOption} from '@angular-community/qwik-material/select';
+import {MatSelect} from '@angular-community/qwik-material/select';
 
 // Mirrors src/dev-app/qwik-parity/select.ts's SelectPlaceholder — NO
 // <mat-label> at all, isolating `mat-mdc-select-placeholder` from the
@@ -20,9 +20,9 @@ export default component$(() => {
               onValueChange$={v => (value.value = v as string)}
               placeholder="Choose a fruit"
               options={[
-                <MatOption value="apple">Apple</MatOption>,
-                <MatOption value="banana">Banana</MatOption>,
-                <MatOption value="cherry">Cherry</MatOption>,
+                {value: 'apple', label: 'Apple'},
+                {value: 'banana', label: 'Banana'},
+                {value: 'cherry', label: 'Cherry'},
               ]}
             />
           }

@@ -1,6 +1,6 @@
 import {component$, useSignal} from '@builder.io/qwik';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
-import {MatSelect, MatOption} from '@angular-community/qwik-material/select';
+import {MatSelect} from '@angular-community/qwik-material/select';
 
 // Mirrors src/dev-app/qwik-parity/select.ts's SelectMultiple —
 // `[multiple]="true"`, 2 of 4 toppings preselected. `<p>Value: {{ value }}</p>`
@@ -24,10 +24,10 @@ export default component$(() => {
               value={value.value}
               onValueChange$={v => (value.value = v as string[])}
               options={[
-                <MatOption value="cheese">Extra cheese</MatOption>,
-                <MatOption value="mushroom">Mushroom</MatOption>,
-                <MatOption value="onion">Onion</MatOption>,
-                <MatOption value="pepperoni">Pepperoni</MatOption>,
+                {value: 'cheese', label: 'Extra cheese'},
+                {value: 'mushroom', label: 'Mushroom'},
+                {value: 'onion', label: 'Onion'},
+                {value: 'pepperoni', label: 'Pepperoni'},
               ]}
             />
           }

@@ -1,6 +1,6 @@
 import {component$, useSignal} from '@builder.io/qwik';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
-import {MatSelect, MatOption} from '@angular-community/qwik-material/select';
+import {MatSelect} from '@angular-community/qwik-material/select';
 
 // Mirrors src/dev-app/qwik-parity/select.ts's SelectPanelClass —
 // `[panelClass]="'custom-select-panel'"`.
@@ -20,9 +20,9 @@ export default component$(() => {
               onValueChange$={v => (value.value = v as string)}
               panelClass="custom-select-panel"
               options={[
-                <MatOption value="red">Red</MatOption>,
-                <MatOption value="green">Green</MatOption>,
-                <MatOption value="blue">Blue</MatOption>,
+                {value: 'red', label: 'Red'},
+                {value: 'green', label: 'Green'},
+                {value: 'blue', label: 'Blue'},
               ]}
             />
           }

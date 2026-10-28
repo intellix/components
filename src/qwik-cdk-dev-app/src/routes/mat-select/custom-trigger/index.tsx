@@ -1,6 +1,6 @@
 import {component$, useSignal} from '@builder.io/qwik';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
-import {MatSelect, MatOption} from '@angular-community/qwik-material/select';
+import {MatSelect} from '@angular-community/qwik-material/select';
 
 // Mirrors src/dev-app/qwik-parity/select.ts's SelectCustomTrigger —
 // `[multiple]="true"` plus a `<mat-select-trigger>` projecting a `<span>`
@@ -13,7 +13,8 @@ import {MatSelect, MatOption} from '@angular-community/qwik-material/select';
 // itself being nested inside `<MatFormField control={...}>` — see
 // mat-select.tsx's own "why value is not a live prop" write-up: `MatSelect`
 // reads `customTrigger` as a genuine top-level prop on itself, which IS the
-// proven-live shape, even though `value` itself is only read once.
+// proven-live shape, even though `value`/`options` themselves are only
+// read once.
 export default component$(() => {
   const value = useSignal<string[]>(['cheese', 'mushroom', 'onion']);
 
@@ -38,10 +39,10 @@ export default component$(() => {
                 </>
               }
               options={[
-                <MatOption value="cheese">Extra cheese</MatOption>,
-                <MatOption value="mushroom">Mushroom</MatOption>,
-                <MatOption value="onion">Onion</MatOption>,
-                <MatOption value="pepperoni">Pepperoni</MatOption>,
+                {value: 'cheese', label: 'Extra cheese'},
+                {value: 'mushroom', label: 'Mushroom'},
+                {value: 'onion', label: 'Onion'},
+                {value: 'pepperoni', label: 'Pepperoni'},
               ]}
             />
           }

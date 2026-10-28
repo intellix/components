@@ -9,7 +9,11 @@ import {
 } from '@builder.io/qwik';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
-import {useIdGenerator, type ListKeyManager, type LiveAnnouncer} from '@angular-community/qwik-cdk/a11y';
+import {
+  useIdGenerator,
+  type ListKeyManager,
+  type LiveAnnouncer,
+} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {
   MAT_FORM_FIELD_CONNECTED_ORIGIN,
@@ -17,7 +21,7 @@ import {
   type MatFormFieldControlProps,
 } from '../core/mat-form-field-control';
 import {MAT_SELECT_CONFIG, type MatSelectConfig} from './select-config';
-import {resolveSelectOptions} from './select-option-resolver';
+import {resolveSelectOptions, type MatSelectEntryDef} from './select-option-resolver';
 import {
   handleSelectKeydown,
   openSelectPanel,
@@ -38,19 +42,39 @@ const MAT_SELECT_CONFIG_DEFAULTS: MatSelectConfig = {};
  *
  * ## The `options` prop — this port's "SSR-correct option-definition shape"
  *
- * `options` is an array of `<MatOption>`/`<MatOptgroup>` JSX *descriptors*
- * — NOT rendered children (no `<Slot>` involved at all). `MatSelect` mines
- * each descriptor's plain `.props` (value/disabled/id/label text) via
- * {@link resolveSelectOptions}, entirely synchronously, during its OWN
- * render — then renders FRESH `<MatOptgroup>`/`<MatOption>` elements itself
- * (inside the lazily-created `MatSelectPanel`) with every computed prop
- * (selected/active/multiple/...) filled in. See
- * `select-option-resolver.ts`'s doc comment and `mat-optgroup.tsx`'s for the
- * full "why" — short version: Qwik cannot introspect a `<Slot>`'s projected
- * children during a parent's own SSR render, so a plain-data (here,
- * JSX-descriptor) prop is the only way `MatSelect` can know its full option
- * list up front, matching what upstream's `@ContentChildren(MatOption,
- * {descendants: true})` QueryList gives it for free.
+ * `options` is a PLAIN-DATA array of {@link MatSelectOptionDef}/
+ * {@link MatSelectGroupDef} — NOT `<MatOption>`/`<MatOptgroup>` JSX
+ * elements. `MatSelect` resolves it via {@link resolveSelectOptions} and
+ * renders the actual `<MatOptgroup>`/`<MatOption>` elements itself (inside
+ * the lazily-created `MatSelectPanel`) with every computed prop
+ * (selected/active/multiple/...) filled in — `MatOption`/`MatOptgroup`
+ * (`qwik-material/core`) are reusable RENDERER components, not something a
+ * consumer of `<MatSelect>` writes directly.
+ *
+ * This is NOT merely the usual "Qwik can't read a `<Slot>`'s projected
+ * children during SSR" constraint (which a JSX-descriptor-array prop, read
+ * via `.props` without rendering, already solves elsewhere in this
+ * project — see `core/mat-form-field-control.ts`'s `readControlProps` /
+ * `qwik-material/grid-list/jsx-children.ts`). An EARLIER version of this
+ * file tried exactly that (`options: JSXOutput[]`) and hit a DIFFERENT,
+ * sharper problem: `MatSelect` needs its resolved option data again INSIDE
+ * its own lazily-resumed `$()` handlers (`onTriggerClick$`/
+ * `onHostKeyDown$`), not just once at render time. Confirmed live, with an
+ * isolated repro: a JSX descriptor's `.type` is a reference to a
+ * `component$()`-wrapped function (`MatOption`) — safe for Qwik to
+ * serialize when the descriptor is an ACTUAL VNODE being rendered/diffed,
+ * but NOT when it's sitting inertly inside plain prop data merely
+ * introspected by a different component. `props.options` (or anything
+ * memoizing a value derived from it) read from inside a `$()` handler
+ * resumed after the SSR→client boundary consistently deserialized to
+ * empty/undefined — even for a scenario (`preselected-value`) whose
+ * INITIAL render demonstrably used it correctly (the trigger showed
+ * "Banana" from the very first paint). Plain data with no embedded
+ * component-function references — exactly `qwik-material/tabs`'
+ * `MatTabGroup.tabs: MatTabDef[]` shape, already proven to survive this
+ * exact path including its OWN `$()` handlers — does not have this
+ * problem. See `select-option-resolver.ts`'s doc comment and
+ * `select/SYNC.md` for the full write-up.
  *
  * ```tsx
  * <MatFormField
@@ -60,9 +84,9 @@ const MAT_SELECT_CONFIG_DEFAULTS: MatSelectConfig = {};
  *       value={value.value}
  *       onValueChange$={(v) => (value.value = v)}
  *       options={[
- *         <MatOption value="apple">Apple</MatOption>,
- *         <MatOption value="banana">Banana</MatOption>,
- *         <MatOption value="cherry" disabled>Cherry</MatOption>,
+ *         {value: 'apple', label: 'Apple'},
+ *         {value: 'banana', label: 'Banana'},
+ *         {value: 'cherry', label: 'Cherry', disabled: true},
  *       ]}
  *     />
  *   }
@@ -89,8 +113,8 @@ const MAT_SELECT_CONFIG_DEFAULTS: MatSelectConfig = {};
  * by this port yet — see SYNC.md.
  */
 export interface MatSelectProps<T = unknown> extends Omit<MatFormFieldControlProps, 'value'> {
-  /** `<MatOption>`/`<MatOptgroup>` descriptors — see the module doc comment. */
-  options: ReadonlyArray<JSXOutput>;
+  /** Plain-data option/group definitions — see the module doc comment. */
+  options: ReadonlyArray<MatSelectEntryDef>;
   /** Current value. A single value, or an array when `multiple`. Read ONCE
    *  — see the module doc comment's "why value is not a live prop". */
   value?: T | ReadonlyArray<T>;
@@ -198,7 +222,11 @@ export const MatSelect = component$<MatSelectProps>(props => {
   const liveAnnouncer = useSignal<NoSerialize<LiveAnnouncer>>();
   const focused = useSignal(false);
 
-  const {tree, flat} = resolveSelectOptions(props.options, idGen);
+  // `options` is plain data (no embedded component-function references) —
+  // see the module doc comment for why that matters. Safe to recompute as
+  // a plain local on every render, exactly like every other derived local
+  // in this file.
+  const {flat, tree} = resolveSelectOptions(props.options, idGen);
 
   const touched = isInFormField ? formField.touched : (props.touched ?? false);
   const dirty = isInFormField ? formField.dirty : (props.dirty ?? false);
@@ -216,7 +244,8 @@ export const MatSelect = component$<MatSelectProps>(props => {
   // `mat-input.tsx` uses (guarded writes avoid redundant notifications).
   if (formField) {
     if (formField.empty !== empty) formField.empty = empty;
-    if (formField.shouldLabelFloat !== shouldLabelFloat) formField.shouldLabelFloat = shouldLabelFloat;
+    if (formField.shouldLabelFloat !== shouldLabelFloat)
+      formField.shouldLabelFloat = shouldLabelFloat;
     if (formField.focused !== focused.value) formField.focused = focused.value;
   }
 
@@ -236,11 +265,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
   })();
 
   const panelClassList = (
-    Array.isArray(props.panelClass)
-      ? props.panelClass
-      : props.panelClass
-        ? [props.panelClass]
-        : []
+    Array.isArray(props.panelClass) ? props.panelClass : props.panelClass ? [props.panelClass] : []
   ) as string[];
 
   const overlayPanelClass = config.overlayPanelClass;
@@ -276,7 +301,11 @@ export const MatSelect = component$<MatSelectProps>(props => {
     overlayPanelClass,
     color,
     ariaLabel: props['aria-label'],
-    panelAriaLabelledby: panelAriaLabelledby(props['aria-label'], props['aria-labelledby'], formFieldLabelId),
+    panelAriaLabelledby: panelAriaLabelledby(
+      props['aria-label'],
+      props['aria-labelledby'],
+      formFieldLabelId,
+    ),
     hideSingleSelectionIndicator:
       props.hideSingleSelectionIndicator ?? config.hideSingleSelectionIndicator ?? false,
     panelWidth: props.panelWidth ?? config.panelWidth ?? 'auto',
@@ -356,7 +385,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
       id={id}
       class={hostClasses}
       style={props.style}
-      tabIndex={disabled ? -1 : props.tabIndex ?? 0}
+      tabIndex={disabled ? -1 : (props.tabIndex ?? 0)}
       aria-controls={panelOpen.value ? panelId : undefined}
       aria-expanded={panelOpen.value ? 'true' : 'false'}
       aria-label={props['aria-label'] || undefined}
@@ -388,16 +417,20 @@ export const MatSelect = component$<MatSelectProps>(props => {
             </span>
           ) : (
             <span class="mat-mdc-select-value-text">
-              {props.customTrigger ?? (
-                <span class="mat-mdc-select-min-line">{triggerValue}</span>
-              )}
+              {props.customTrigger ?? <span class="mat-mdc-select-min-line">{triggerValue}</span>}
             </span>
           )}
         </div>
 
         <div class="mat-mdc-select-arrow-wrapper">
           <div class="mat-mdc-select-arrow">
-            <svg viewBox="0 0 24 24" width="24px" height="24px" focusable="false" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="24px"
+              height="24px"
+              focusable="false"
+              aria-hidden="true"
+            >
               <path d="M7 10l5 5 5-5z" />
             </svg>
           </div>

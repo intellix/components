@@ -1,6 +1,6 @@
 import {component$, useSignal} from '@builder.io/qwik';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
-import {MatSelect, MatOption} from '@angular-community/qwik-material/select';
+import {MatSelect} from '@angular-community/qwik-material/select';
 
 // Mirrors src/dev-app/qwik-parity/select.ts's SelectOutlineBasic — identical
 // content to fill-basic, just `appearance="outline"`.
@@ -20,12 +20,10 @@ export default component$(() => {
               value={value.value}
               onValueChange$={v => (value.value = v as string)}
               options={[
-                <MatOption value="apple">Apple</MatOption>,
-                <MatOption value="banana">Banana</MatOption>,
-                <MatOption value="cherry" disabled>
-                  Cherry
-                </MatOption>,
-                <MatOption value="date">Date</MatOption>,
+                {value: 'apple', label: 'Apple'},
+                {value: 'banana', label: 'Banana'},
+                {value: 'cherry', label: 'Cherry', disabled: true},
+                {value: 'date', label: 'Date'},
               ]}
             />
           }

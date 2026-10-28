@@ -1,70 +1,82 @@
 /**
- * Resolves `MatSelect`'s `options` prop — an array of `<MatOption>`/
- * `<MatOptgroup>` JSX *descriptors* (never rendered directly; see
- * `mat-optgroup.tsx`'s doc comment and `select/SYNC.md`'s "SSR-correct
- * option-definition shape" write-up) — into the flat, synchronous data
+ * Resolves `MatSelect`'s `options` prop into the flat, synchronous data
  * `MatSelect` needs for everything upstream derives from its
  * `@ContentChildren(MatOption, {descendants: true})` QueryList: keyboard
- * navigation, selection, id assignment, `triggerValue`, and finally the
- * fresh `<MatOptgroup>`/`<MatOption>` elements it renders itself.
+ * navigation, selection, id assignment, `triggerValue`, and the
+ * `<MatOptgroup>`/`<MatOption>` tree it renders inside `MatSelectPanel`.
  *
- * `<MatOption>{text}</MatOption>`'s `text` is read directly off the
- * descriptor's `props.children` (a plain string/number/array at the point
- * the CALLER constructed the JSX — never executed/rendered) via
- * {@link extractOptionText} — the same "read `.props` without rendering"
+ * ## Why `options` is a PLAIN-DATA array, not `<MatOption>` JSX elements
+ *
+ * An earlier version of this port took `options: JSXOutput[]` — an array
+ * of `<MatOption>`/`<MatOptgroup>` *descriptors*, mined via `.props`
+ * without ever rendering them (the same "read `.props` without rendering"
  * technique `core/mat-form-field-control.ts`'s `readControlProps` and
  * `qwik-material/grid-list/jsx-children.ts`'s `collectTypedChildren`
- * already established, specialized here for text content instead of
- * structural presence/props.
+ * already use elsewhere in this project). That turned out to be broken for
+ * a reason neither of those precedents hits: `MatSelect` needs the
+ * resolved option data again INSIDE its own lazily-resolved `$()` event
+ * handlers (`onTriggerClick$`/`onHostKeyDown$`), not just once during its
+ * initial render. Confirmed live, with a reproducible, isolated repro (not
+ * a guess): a JSX descriptor's `.type` field is a reference to a
+ * `component$()`-wrapped function (`MatOption`) — safe for Qwik to
+ * serialize when the descriptor is an ACTUAL VNODE Qwik itself is
+ * rendering/diffing, but NOT when it's sitting inertly inside plain prop
+ * data that a *different* component (`MatSelect`) merely introspects.
+ * Reading `props.options` (or any signal memoizing a value derived from
+ * it) from inside a `$()` handler resumed after the SSR→client boundary
+ * consistently deserialized to empty/undefined — even for a scenario
+ * (`preselected-value`) whose INITIAL render demonstrably used
+ * `props.options` correctly (the trigger showed "Banana" from the first
+ * paint). Plain data with no embedded component-function references
+ * (exactly `qwik-material/tabs`' `MatTabGroup.tabs: MatTabDef[]` shape —
+ * already proven to survive this exact path, including its own `$()`
+ * handlers) does not have this problem. See select/SYNC.md for the full
+ * write-up.
+ *
+ * So `options` is an array of {@link MatSelectOptionDef}/
+ * {@link MatSelectGroupDef} — plain objects. `content` (an ESCAPE HATCH
+ * for an option's richer-than-plain-text body, e.g. a leading icon) is the
+ * one field that may legitimately hold a `JSXOutput` — safe because it is
+ * only ever FORWARDED opaquely for rendering (passed straight through to
+ * `<MatOption>{entry.content}</MatOption>` inside `MatSelectPanel`, a
+ * normal render path, never read back out inside a `$()` handler), exactly
+ * matching `MatTabDef.content`/`.labelTemplate`'s already-proven-safe
+ * usage — never introspected the way the old `options: JSXOutput[]` shape
+ * was.
  */
-import type {JSXChildren, JSXNode, JSXOutput} from '@builder.io/qwik';
-import {MatOption} from '../core/mat-option';
-import {MatOptgroup} from '../core/mat-optgroup';
+import type {JSXOutput} from '@builder.io/qwik';
 
-function isJsxNode(value: unknown): value is JSXNode {
-  return typeof value === 'object' && value !== null && 'type' in (value as object);
-}
-
-/** Depth-first extraction of a JSX children tree's plain text content —
- *  enough for every scenario's plain-text `<MatOption>`/`<MatOptgroup>`
- *  content (mirrors upstream `MatOption.viewValue`'s `textContent.trim()`,
- *  computed here from the JSX descriptor instead of a live DOM node since
- *  none exists yet). Richer per-option markup (e.g. a nested `<mat-icon>`)
- *  is out of scope — see SYNC.md's deviations list. */
-export function extractOptionText(children: JSXChildren | undefined | null): string {
-  if (children == null || typeof children === 'boolean') return '';
-  if (typeof children === 'string') return children;
-  if (typeof children === 'number') return String(children);
-  if (Array.isArray(children)) return children.map(extractOptionText).join('');
-  if (isJsxNode(children)) {
-    const props = children.props as {children?: JSXChildren} | undefined;
-    if (props && 'children' in props) return extractOptionText(props.children);
-    if (children.children != null) return extractOptionText(children.children as JSXChildren);
-    return '';
-  }
-  return '';
-}
-
-interface RawOptionProps {
-  value?: unknown;
-  id?: string;
+/** One `<mat-option>`. Mirrors `MatOption`'s inputs (`value`/`disabled`/`id`) +
+ *  its rendered text content (`label`), or richer content via `content`. */
+export interface MatSelectOptionDef<T = unknown> {
+  value?: T;
+  /** Plain-text label — used for `viewValue` (typeahead matching, the
+   *  trigger's joined text). Always provided, even when `content` is set
+   *  (mirrors upstream's `MatOption.viewValue`, read off the rendered
+   *  text regardless of how rich the projected content is). */
+  label: string;
+  /** Optional richer body for the option — e.g. with a leading icon.
+   *  Defaults to rendering `label` as plain text when omitted. Never
+   *  introspected by `MatSelect` — see the module doc comment. */
+  content?: JSXOutput;
   disabled?: boolean;
-  children?: JSXChildren;
-}
-
-interface RawOptgroupProps {
-  label?: string;
-  disabled?: boolean;
+  /** Explicit id. Auto-generated (`mat-option-N`) when omitted. */
   id?: string;
-  children?: JSXChildren;
 }
 
-function isMatOptionNode(node: unknown): node is JSXNode<typeof MatOption> {
-  return isJsxNode(node) && node.type === MatOption;
+/** One `<mat-optgroup>`, wrapping its own options. */
+export interface MatSelectGroupDef {
+  label: string;
+  disabled?: boolean;
+  /** Explicit label id. Auto-generated (`mat-optgroup-label-N`) when omitted. */
+  id?: string;
+  options: readonly MatSelectOptionDef[];
 }
 
-function isMatOptgroupNode(node: unknown): node is JSXNode<typeof MatOptgroup> {
-  return isJsxNode(node) && node.type === MatOptgroup;
+export type MatSelectEntryDef = MatSelectOptionDef | MatSelectGroupDef;
+
+function isGroupDef(entry: MatSelectEntryDef): entry is MatSelectGroupDef {
+  return Array.isArray((entry as MatSelectGroupDef).options);
 }
 
 /** One resolved `<MatOption>`, flattened — order matches document order
@@ -82,9 +94,9 @@ export interface ResolvedSelectOption {
   id: string;
   /** Plain-text label — mirrors `MatOption.viewValue`/`getLabel()`. */
   label: string;
-  /** Original JSX children, re-rendered as this option's own content. */
-  content: JSXChildren | undefined;
-  /** Index into {@link ResolvedSelectOptions.groups}, if inside a `<MatOptgroup>`. */
+  /** Content to render — `def.content` if given, else `def.label` as plain text. */
+  content: JSXOutput;
+  /** Index into {@link ResolvedSelectOptions.groups}, if inside a group. */
   groupIndex: number | undefined;
 }
 
@@ -115,73 +127,60 @@ export interface SelectOptionIdGenerator {
 }
 
 function resolveOption(
-  node: JSXNode<typeof MatOption>,
+  def: MatSelectOptionDef,
   index: number,
   groupIndex: number | undefined,
   groupDisabled: boolean,
   idGen: SelectOptionIdGenerator,
 ): ResolvedSelectOption {
-  const props = node.props as RawOptionProps;
-  const ownDisabled = props.disabled ?? false;
+  const ownDisabled = def.disabled ?? false;
   return {
     index,
-    value: props.value,
+    value: def.value,
     ownDisabled,
     disabled: ownDisabled || groupDisabled,
-    id: props.id ?? idGen.getId('mat-option-'),
-    label: extractOptionText(props.children).trim(),
-    content: props.children,
+    id: def.id ?? idGen.getId('mat-option-'),
+    label: def.label,
+    content: def.content ?? def.label,
     groupIndex,
   };
 }
 
 /**
- * Walks `options` (document order), flattening every `<MatOption>` — direct
- * or nested inside a `<MatOptgroup>` — into {@link ResolvedSelectOptions}.
- * Non-matching entries (`null`/`undefined`/`false`, stray strings) are
- * skipped silently, mirroring `@ContentChildren` simply not matching them.
+ * Walks `options` (document order), flattening every option — direct or
+ * nested inside a group — into {@link ResolvedSelectOptions}.
  */
 export function resolveSelectOptions(
-  options: ReadonlyArray<JSXOutput> | undefined,
+  options: ReadonlyArray<MatSelectEntryDef> | undefined,
   idGen: SelectOptionIdGenerator,
 ): ResolvedSelectOptions {
   const tree: ResolvedSelectNode[] = [];
   const flat: ResolvedSelectOption[] = [];
   const groups: ResolvedSelectGroup[] = [];
 
-  for (const node of options ?? []) {
-    if (isMatOptionNode(node)) {
-      const option = resolveOption(node, flat.length, undefined, false, idGen);
-      flat.push(option);
-      tree.push({kind: 'option', option});
-    } else if (isMatOptgroupNode(node)) {
-      const groupProps = node.props as RawOptgroupProps;
-      const groupDisabled = groupProps.disabled ?? false;
+  for (const entry of options ?? []) {
+    if (isGroupDef(entry)) {
+      const groupDisabled = entry.disabled ?? false;
       const group: ResolvedSelectGroup = {
         index: groups.length,
-        label: groupProps.label ?? '',
+        label: entry.label,
         disabled: groupDisabled,
-        id: groupProps.id ?? idGen.getId('mat-optgroup-label-'),
+        id: entry.id ?? idGen.getId('mat-optgroup-label-'),
       };
       groups.push(group);
 
-      const childNodes = Array.isArray(groupProps.children)
-        ? groupProps.children
-        : groupProps.children != null
-          ? [groupProps.children]
-          : [];
       const groupOptions: ResolvedSelectOption[] = [];
-      for (const child of childNodes) {
-        if (isMatOptionNode(child)) {
-          const option = resolveOption(child, flat.length, group.index, groupDisabled, idGen);
-          flat.push(option);
-          groupOptions.push(option);
-        }
+      for (const optionDef of entry.options) {
+        const option = resolveOption(optionDef, flat.length, group.index, groupDisabled, idGen);
+        flat.push(option);
+        groupOptions.push(option);
       }
       tree.push({kind: 'group', group, options: groupOptions});
+    } else {
+      const option = resolveOption(entry, flat.length, undefined, false, idGen);
+      flat.push(option);
+      tree.push({kind: 'option', option});
     }
-    // Anything else (a stray string/boolean/etc.) is silently skipped,
-    // mirroring @ContentChildren(MatOption) simply never matching it.
   }
 
   return {tree, flat, groups};
