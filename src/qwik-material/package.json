@@ -169,6 +169,11 @@
       "types": "./dist/slider/index.d.ts",
       "import": "./dist/slider/index.js"
     },
+    "./select": {
+      "qwik": "./select/index.ts",
+      "types": "./dist/select/index.d.ts",
+      "import": "./dist/select/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -195,6 +200,7 @@
     "./stepper-prebuilt.css": "./dist/stepper-prebuilt.css",
     "./tooltip-prebuilt.css": "./dist/tooltip-prebuilt.css",
     "./slider-prebuilt.css": "./dist/slider-prebuilt.css",
+    "./select-prebuilt.css": "./dist/select-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

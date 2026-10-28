@@ -31,6 +31,7 @@ const entries = [
   'stepper',
   'tooltip',
   'slider',
+  'select',
 ];
 
 export default defineConfig({
@@ -74,6 +75,7 @@ export default defineConfig({
           ['scss/stepper/stepper-prebuilt.scss', 'dist/stepper-prebuilt.css'],
           ['scss/tooltip/tooltip-prebuilt.scss', 'dist/tooltip-prebuilt.css'],
           ['scss/slider/slider-prebuilt.scss', 'dist/slider-prebuilt.css'],
+          ['scss/select/select-prebuilt.scss', 'dist/select-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

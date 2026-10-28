@@ -56,6 +56,8 @@ import type {StepperOptions} from '@angular-community/qwik-cdk/stepper';
 import {CDK_STEPPER_GLOBAL_OPTIONS} from '@angular-community/qwik-cdk/stepper';
 import type {MatTooltipDefaultOptions} from '../tooltip/mat-tooltip-tokens';
 import {MAT_TOOLTIP_DEFAULT_OPTIONS} from '../tooltip/mat-tooltip-tokens';
+import type {MatSelectConfig} from '../select/select-config';
+import {MAT_SELECT_CONFIG} from '../select/select-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -113,6 +115,8 @@ export interface QwikMaterialProviderProps {
   stepperGlobalOptions?: StepperOptions;
   /** Defaults merged into every `<MatTooltip>`'s resolved config in this subtree. */
   matTooltipDefaults?: MatTooltipDefaultOptions;
+  /** Defaults applied to every MatSelect in this subtree. */
+  matSelectConfig?: MatSelectConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -240,6 +244,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // mat-tooltip.tsx's `resolveConfig`; providing an empty object here is
   // equivalent to accepting all of them.
   useContextProvider(MAT_TOOLTIP_DEFAULT_OPTIONS, props.matTooltipDefaults ?? {});
+  // MatSelectConfig is a plain object with primitive fields — no
+  // noSerialize needed. Selects outside a provider get the hardcoded
+  // defaults declared in mat-select.tsx's own prop resolution; providing an
+  // empty object here is equivalent to accepting all of them.
+  useContextProvider(MAT_SELECT_CONFIG, props.matSelectConfig ?? {});
 
   return <Slot />;
 });
