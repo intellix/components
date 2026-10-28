@@ -30,6 +30,7 @@ const entries = [
   'input',
   'stepper',
   'tooltip',
+  'slider',
 ];
 
 export default defineConfig({
@@ -72,6 +73,7 @@ export default defineConfig({
           ['scss/form-field/form-field-prebuilt.scss', 'dist/form-field-prebuilt.css'],
           ['scss/stepper/stepper-prebuilt.scss', 'dist/stepper-prebuilt.css'],
           ['scss/tooltip/tooltip-prebuilt.scss', 'dist/tooltip-prebuilt.css'],
+          ['scss/slider/slider-prebuilt.scss', 'dist/slider-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

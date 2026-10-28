@@ -1,0 +1,94 @@
+// Prebuilt Material Slider CSS entry.
+//
+// Emits: structural styles from slider.scss + slider-thumb.scss, plus a
+// minimal set of M3 default values for the `--mat-slider-*` / `--mat-sys-*`
+// custom properties the structural rules reference (same approach as every
+// other qwik-material prebuilt entry — this port has no runtime theming
+// system, so these are static M3-ish literals, not a live theme).
+// Consumers import via `@angular-community/qwik-material/slider-prebuilt.css`.
+// For full custom theming, consumers should instead @use the slider-theme
+// mixin from `@angular-community/qwik-material/scss/slider/_slider-theme.scss`
+// once the qwik-material/core theming DSL lands.
+
+@use './slider';
+@use './slider-thumb';
+
+:root {
+  // ─── slider ───
+  --mat-slider-active-track-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-active-track-height: 4px;
+  --mat-slider-active-track-shape: var(--mat-sys-corner-full, 9999px);
+  --mat-slider-disabled-active-track-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-slider-disabled-handle-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-slider-disabled-inactive-track-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-slider-focus-handle-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-focus-state-layer-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-handle-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-handle-elevation: var(
+    --mat-sys-level1,
+    0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+    0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 3px 0px rgba(0, 0, 0, 0.12)
+  );
+  --mat-slider-handle-height: 20px;
+  --mat-slider-handle-shape: var(--mat-sys-corner-full, 9999px);
+  --mat-slider-handle-width: 20px;
+  --mat-slider-hover-handle-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-hover-state-layer-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-inactive-track-color: var(--mat-sys-surface-variant, #e7e0ec);
+  --mat-slider-inactive-track-height: 4px;
+  --mat-slider-inactive-track-shape: var(--mat-sys-corner-full, 9999px);
+  --mat-slider-label-container-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-label-label-text-color: var(--mat-sys-on-primary, #ffffff);
+  --mat-slider-label-label-text-font: var(
+    --mat-sys-label-medium-font,
+    Roboto,
+    'Helvetica Neue',
+    sans-serif
+  );
+  --mat-slider-label-label-text-line-height: var(--mat-sys-label-medium-line-height, 1rem);
+  --mat-slider-label-label-text-size: var(--mat-sys-label-medium-size, 0.75rem);
+  --mat-slider-label-label-text-tracking: var(--mat-sys-label-medium-tracking, 0.031rem);
+  --mat-slider-label-label-text-weight: var(--mat-sys-label-medium-weight, 500);
+  --mat-slider-ripple-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-value-indicator-border-radius: 50% 50% 50% 0;
+  --mat-slider-value-indicator-caret-display: none;
+  --mat-slider-value-indicator-container-transform: translateX(-50%) rotate(-45deg);
+  --mat-slider-value-indicator-height: 28px;
+  --mat-slider-value-indicator-opacity: 1;
+  --mat-slider-value-indicator-padding: 0;
+  --mat-slider-value-indicator-text-transform: rotate(45deg);
+  --mat-slider-value-indicator-transform-origin: 0 28px;
+  --mat-slider-value-indicator-width: 28px;
+  --mat-slider-with-overlap-handle-outline-color: var(--mat-sys-on-primary, #ffffff);
+  --mat-slider-with-overlap-handle-outline-width: 1px;
+  --mat-slider-with-tick-marks-active-container-color: var(--mat-sys-on-primary, #ffffff);
+  --mat-slider-with-tick-marks-active-container-opacity: 0.38;
+  --mat-slider-with-tick-marks-container-shape: var(--mat-sys-corner-full, 9999px);
+  --mat-slider-with-tick-marks-container-size: 2px;
+  --mat-slider-with-tick-marks-disabled-container-color: var(
+    --mat-sys-on-surface,
+    rgba(0, 0, 0, 0.87)
+  );
+  --mat-slider-with-tick-marks-inactive-container-color: var(
+    --mat-sys-on-surface-variant,
+    rgba(0, 0, 0, 0.6)
+  );
+  --mat-slider-with-tick-marks-inactive-container-opacity: 0.38;
+
+  // ─── --mat-sys-* system tokens slider's m3 tokens resolve through ───
+  --mat-sys-corner-full: 9999px;
+  --mat-sys-level1:
+    0px 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+  --mat-sys-label-medium-font: Roboto, 'Helvetica Neue', sans-serif;
+  --mat-sys-label-medium-line-height: 1rem;
+  --mat-sys-label-medium-size: 0.75rem;
+  --mat-sys-label-medium-tracking: 0.031rem;
+  --mat-sys-label-medium-weight: 500;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
+  --mat-sys-primary: #6750a4;
+  --mat-sys-surface-variant: #e7e0ec;
+}
