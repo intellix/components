@@ -3,12 +3,15 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
 /**
  * TypeScript augmentation for the custom-element host tags these parity
  * scenario bodies render to mirror the Angular mirror components' own host
- * tags (src/dev-app/qwik-parity/{cdk-dialog,dialog}.ts):
+ * tags (src/dev-app/qwik-parity/{cdk-dialog,dialog,bottom-sheet}.ts):
  * - `cdk-dialog-*-body`: the explicit `selector` each Angular CDK dialog
  *   scenario body component declares.
  * - `ng-component`: Angular's fallback tag for a dynamically-instantiated
  *   component with no `selector` at all (every Material dialog scenario
  *   body — Angular's ComponentPortal still needs a host element).
+ * - `bottom-sheet-*-body`: the explicit `selector` each Angular bottom sheet
+ *   scenario body component declares (see bottom-sheet.ts's header comment —
+ *   unlike dialog.ts's bodies, every one of these has a real selector).
  * See docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md.
  */
 declare module '@builder.io/qwik' {
@@ -20,6 +23,12 @@ declare module '@builder.io/qwik' {
       'cdk-dialog-labelled-body': QwikIntrinsicElements['div'];
       'cdk-dialog-described-body': QwikIntrinsicElements['div'];
       'ng-component': QwikIntrinsicElements['div'];
+      'bottom-sheet-scenario-body': QwikIntrinsicElements['div'];
+      'bottom-sheet-nav-body': QwikIntrinsicElements['div'];
+      'bottom-sheet-focusable-body': QwikIntrinsicElements['div'];
+      'bottom-sheet-data-body': QwikIntrinsicElements['div'];
+      'bottom-sheet-first-body': QwikIntrinsicElements['div'];
+      'bottom-sheet-second-body': QwikIntrinsicElements['div'];
     }
   }
 }

@@ -41,6 +41,11 @@ import type {MatTabsConfig} from '../tabs/tab-config';
 import {MAT_TABS_CONFIG} from '../tabs/tab-config';
 import type {MatSidenavConfig} from '../sidenav/sidenav-config';
 import {MAT_SIDENAV_CONFIG} from '../sidenav/sidenav-config';
+import type {MatBottomSheetConfig} from '../bottom-sheet/mat-bottom-sheet-config';
+import {
+  MAT_BOTTOM_SHEET_DEFAULT_OPTIONS,
+  MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
+} from '../bottom-sheet/mat-bottom-sheet-tokens';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -83,6 +88,10 @@ export interface QwikMaterialProviderProps {
   matTabsConfig?: MatTabsConfig;
   /** Defaults applied to every MatDrawerContainer / MatSidenavContainer in this subtree. */
   matSidenavConfig?: MatSidenavConfig;
+  /** Defaults merged into every MatBottomSheet open() config. */
+  matBottomSheetDefaults?: Partial<MatBottomSheetConfig>;
+  /** Factory returning the default ScrollStrategy for MatBottomSheet. Defaults to createBlockScrollStrategy(). */
+  matBottomSheetScrollStrategyFactory?: () => ScrollStrategy;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -175,6 +184,14 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // MatDrawerContainer/MatSidenavContainer; providing an empty object is equivalent to
   // accepting all defaults.
   useContextProvider(MAT_SIDENAV_CONFIG, props.matSidenavConfig ?? {});
+  useContextProvider(MAT_BOTTOM_SHEET_DEFAULT_OPTIONS, props.matBottomSheetDefaults ?? {});
+  // The scroll-strategy factory is a plain function; wrap in noSerialize so
+  // Qwik doesn't try to serialize it when consumer QRLs (useMatBottomSheet().open$)
+  // capture it via useContext.
+  useContextProvider(
+    MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
+    noSerialize(props.matBottomSheetScrollStrategyFactory ?? (() => createBlockScrollStrategy())),
+  );
 
   return <Slot />;
 });

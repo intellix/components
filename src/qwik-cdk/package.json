@@ -78,6 +78,11 @@
       "types": "./dist/keycodes/index.d.ts",
       "import": "./dist/keycodes/index.js"
     },
+    "./layout": {
+      "qwik": "./layout/index.ts",
+      "types": "./dist/layout/index.d.ts",
+      "import": "./dist/layout/index.js"
+    },
     "./overlay-prebuilt.css": "./dist/overlay-prebuilt.css",
     "./a11y-prebuilt.css": "./dist/a11y-prebuilt.css",
     "./scss/*": "./scss/*"

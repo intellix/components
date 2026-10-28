@@ -134,6 +134,11 @@
       "types": "./dist/sidenav/index.d.ts",
       "import": "./dist/sidenav/index.js"
     },
+    "./bottom-sheet": {
+      "qwik": "./bottom-sheet/index.ts",
+      "types": "./dist/bottom-sheet/index.d.ts",
+      "import": "./dist/bottom-sheet/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -154,6 +159,7 @@
     "./sort-prebuilt.css": "./dist/sort-prebuilt.css",
     "./tabs-prebuilt.css": "./dist/tabs-prebuilt.css",
     "./sidenav-prebuilt.css": "./dist/sidenav-prebuilt.css",
+    "./bottom-sheet-prebuilt.css": "./dist/bottom-sheet-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
