@@ -87,6 +87,10 @@ export const MatMenuTrigger = component$<MatMenuTriggerProps>(props => {
       autoFocus: true,
       origin: openedBy.value || 'program',
       restoreFocus: props.restoreFocus ?? true,
+      // The trigger is never `useFocusOrigin()`-monitored — plain `.focus()`,
+      // no visible class (confirmed live, see menu-runtime.ts's doc comment
+      // on `OpenMenuOptions.restoreFocusTo`).
+      restoreFocusTo: () => hostRef.value?.focus(),
       onClosed: () => {
         openedBy.value = null;
         props.onMenuClosed$?.();

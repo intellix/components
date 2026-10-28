@@ -12,7 +12,7 @@ import {
 import {isBrowser} from '@builder.io/qwik/build';
 import {QWIK_CDK, ensureCdkDispatchers} from '@angular-community/qwik-cdk';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
-import {useFocusOrigin, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
+import {useFocusOrigin, focusVia, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MAT_MENU_DEFAULT_OPTIONS} from './mat-menu-tokens';
 import type {MatMenuRef} from './menu-ref';
@@ -81,18 +81,40 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
 
   const signals: MenuRuntimeSignals = {overlayRef, isOpen, panelId, pendingReason};
 
-  // Only relevant for a submenu-trigger item: cascades the close when THIS
-  // item is unmounted (e.g. its parent menu is being torn down). Angular's
-  // equivalent is automatic (destroying the parent view destroys this
-  // directive instance, which disposes its own `_overlayRef` in
-  // `ngOnDestroy`); Qwik has no such implicit cascade across sibling
-  // overlay entries (the submenu's `OverlayHost` isn't a DOM/component
-  // descendant of the parent's), so it's reproduced explicitly here. One
-  // `useVisibleTask$` per submenu-trigger item (not every plain item) —
-  // a narrow, justified exception to the "no per-instance useVisibleTask$"
-  // rule: there is no lazy/useOn-based way to observe "this component is
-  // about to unmount" in Qwik.
-  useVisibleTask$(({cleanup}) => {
+  // Every `MatMenuItem` instance only ever exists once a menu has actually
+  // been opened (it's resolved from `content$()` inside `openMenu`/
+  // `openSubmenu`, never rendered eagerly for an unopened menu) — so,
+  // unlike a component that renders unconditionally on every page load,
+  // one `useVisibleTask$` here doesn't add eagerness beyond what opening
+  // the menu already required. Two things need it:
+  //
+  // 1. The literal `disabled="true"` attribute (mirrors upstream's
+  //    `[attr.disabled]="disabled || null"`, which Angular's attribute
+  //    renderer stringifies to the literal string `"true"`, NOT the plain
+  //    HTML boolean-attribute empty-string form). A plain `disabled={...}`
+  //    JSX prop works for this on SSR-rendered output (see
+  //    `qwik-material/button`'s `disabledAttr()`), but `MatMenuItem` is
+  //    rendered ENTIRELY client-side (via `overlay.create()`), where
+  //    confirmed live — Qwik's client-side DOM patcher reflects a truthy
+  //    `disabled` prop as the native boolean property (`disabled=""`)
+  //    instead of preserving the literal string. Setting the attribute
+  //    imperatively sidesteps that.
+  // 2. Only for a submenu-trigger item: cascading the close when THIS item
+  //    is unmounted (e.g. its parent menu is being torn down). Angular's
+  //    equivalent is automatic (destroying the parent view destroys this
+  //    directive instance, which disposes its own `_overlayRef` in
+  //    `ngOnDestroy`); Qwik has no such implicit cascade across sibling
+  //    overlay entries (the submenu's `OverlayHost` isn't a DOM/component
+  //    descendant of the parent's), so it's reproduced explicitly — there
+  //    is no lazy/`useOn`-based way to observe "this component is about to
+  //    unmount" in Qwik.
+  useVisibleTask$(({track, cleanup}) => {
+    const isDisabled = track(() => disabled);
+    const host = hostRef.value;
+    if (host) {
+      if (isDisabled) host.setAttribute('disabled', 'true');
+      else host.removeAttribute('disabled');
+    }
     if (!hasSubmenu) return;
     cleanup(() => {
       const ref = overlayRef.value;
@@ -124,6 +146,14 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
       autoFocus,
       origin: openedBy.value || 'program',
       restoreFocus: props.restoreFocus ?? true,
+      // Unlike a top-level `MatMenuTrigger`, a submenu-trigger item DOES
+      // call `useFocusOrigin()` on itself (every `MatMenuItem` does), so
+      // restoring focus via `focusVia()` correctly produces the right
+      // `cdk-*-focused` class — see menu-runtime.ts's doc comment on
+      // `OpenMenuOptions.restoreFocusTo`.
+      restoreFocusTo: origin => {
+        if (hostRef.value) focusVia(hostRef.value, origin);
+      },
       onClosed: () => {
         openedBy.value = null;
       },
@@ -191,12 +221,10 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
     <button
       ref={hostRef}
       id={props.id}
-      type="button"
       class={classes}
       role={props.role ?? 'menuitem'}
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled ? 'true' : 'false'}
-      disabled={(disabled ? 'true' : undefined) as unknown as boolean}
       aria-haspopup={hasSubmenu ? 'menu' : undefined}
       aria-expanded={hasSubmenu ? (isOpen.value ? 'true' : 'false') : undefined}
       aria-controls={hasSubmenu && isOpen.value ? panelId.value : undefined}

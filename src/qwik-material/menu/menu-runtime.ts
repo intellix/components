@@ -214,6 +214,19 @@ export interface OpenMenuOptions {
   origin: FocusOrigin;
   /** Whether focus should be restored to `triggerEl` on close (mirrors `matMenuTriggerRestoreFocus`, default `true`). */
   restoreFocus: boolean;
+  /**
+   * Restores focus to the trigger on close, given the origin to restore
+   * with. Split out from a plain `focusVia(triggerEl, origin)` call because
+   * the two trigger kinds need DIFFERENT restoration: a top-level
+   * `MatMenuTrigger` is never `useFocusOrigin()`-monitored (confirmed live
+   * — "plain .focus(), no visible class", see angular-parity.spec.ts's
+   * `basic` notes), so calling qwik-cdk's `focusVia()` on it would write a
+   * `data-cdk-pending-focus-origin` attribute that nothing ever consumes,
+   * leaking into the DOM forever; a submenu-trigger `MatMenuItem` IS
+   * monitored (it calls `useFocusOrigin()` on itself), so it DOES need the
+   * real `focusVia()` to get the correct `cdk-*-focused` class back.
+   */
+  restoreFocusTo: (origin: FocusOrigin) => void;
   /** Called once the overlay has fully detached (after the exit animation). */
   onClosed: (reason: MenuCloseReason | undefined) => void;
 }
@@ -288,7 +301,7 @@ export function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): void {
     signals.panelId.value = undefined;
     signals.pendingReason.value = undefined;
     if (options.restoreFocus && (reason === 'keydown' || !options.isSubmenu)) {
-      focusVia(options.triggerEl, options.origin);
+      options.restoreFocusTo(options.origin);
     }
     options.onClosed(reason);
   });
