@@ -236,6 +236,34 @@ export async function snapshotParityRoot(
         if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio')) {
           attrs['checked'] = String(el.checked);
         }
+        // `value` is the SAME "non-reflected" IDL property category as
+        // `checked` above (the harness's own prior comment already names
+        // it: "checked (like value/selected)..."), just divergent in the
+        // OPPOSITE direction for this harness's two frameworks. Confirmed
+        // live (qwik-material/form-field's disabled/readonly scenarios):
+        // Qwik's SSR output DOES serialize a literal `value="…"` attribute
+        // for a static, never-reassigned value (needed so the control
+        // paints correctly before any JS runs) — but @builder.io/qwik's
+        // OWN resumability runtime unconditionally strips that attribute
+        // again shortly after hydration (confirmed via core.cjs's
+        // `_setProperty`: it always sets `node[key] = value` AND, for a
+        // nullish value, additionally calls `removeAttribute` — and a
+        // resumed component's prop-reconciliation pass runs this for
+        // `value` regardless of whether the live property already
+        // matched, independent of any application-level code; reproduced
+        // with a diagnostic component whose task body was a complete
+        // no-op). Angular (no SSR/hydration step on this harness's side)
+        // never removes a static, unbound `value="…"` template attribute
+        // — so comparing the raw attribute directly is a false-positive
+        // diff in the other direction from `checked`'s. Both sides'
+        // rendered BEHAVIOR already keys off the live `.value` property
+        // (that's what a user looking at the page, typing into it, or a
+        // screen reader actually observes), never the attribute, so
+        // comparing it instead is not a weakened check — it is the
+        // correct one, for the same reason `checked` already is.
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+          attrs['value'] = el.value;
+        }
         // Qwik's reconciler parks a `<Slot>`'s provided-but-not-currently-
         // rendered children in a hidden `<q:template q:slot>` element (e.g.
         // a component that returns `null` instead of `<Slot/>` while some

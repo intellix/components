@@ -88,6 +88,20 @@ export interface MatFormFieldProps {
    *  `core/mat-form-field-control.ts` for the `MatFormFieldControlProps`
    *  contract any control's own props should satisfy. */
   control?: JSXOutput;
+  /**
+   * Live counterparts of the SAME fields on `control`'s own props
+   * (`MatFormFieldControlProps.touched`/`.dirty`/`.invalid`) — pass these
+   * whenever `formBound` is true AND any of them can change after mount
+   * (i.e. whenever the consumer's own `useMatFormControl()` value can
+   * become touched/dirty/invalid later). The copy nested inside `control`
+   * is read exactly once, at first render; THESE top-level props are what
+   * stays live afterward. See `core/mat-form-field-control.ts`'s doc
+   * comment and `SYNC.md`'s "touched/dirty/invalid: control-prop AND
+   * context-store" section for why both copies exist.
+   */
+  touched?: boolean;
+  dirty?: boolean;
+  invalid?: boolean;
   class?: string | ReadonlyArray<string>;
   style?: string | Record<string, string | number>;
   id?: string;
@@ -146,12 +160,28 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const required = controlProps?.required ?? false;
   const controlType = controlProps?.controlType ?? 'mat-input';
   const formBound = controlProps?.formBound ?? false;
-  const touched = controlProps?.touched ?? false;
-  const dirty = controlProps?.dirty ?? false;
-  // Mirrors the DEFAULT `ErrorStateMatcher` exactly: invalid && touched
-  // (upstream: `control.invalid && (control.touched || form.submitted)` —
-  // no `<form>`/submit concept in this port, so just `touched`).
-  const errorState = formBound && touched && (controlProps?.invalid ?? false);
+  // Prefer the LIVE top-level prop; fall back to the nested `control`-prop
+  // snapshot (correct only for the very first render — see this file's
+  // module doc comment in core/mat-form-field-control.ts for why the
+  // nested copy never updates after mount). Consumers that never need
+  // these to change (every scenario except error-state) simply never pass
+  // the top-level props, and the nested snapshot is all there is — which
+  // is fine, since it's permanently correct for a value that never changes.
+  const touched = props.touched ?? controlProps?.touched ?? false;
+  const dirty = props.dirty ?? controlProps?.dirty ?? false;
+  // RAW validity (upstream's `NgControlStatus` — `ng-valid`/`ng-invalid`
+  // mirror the control's `.valid`/`.invalid` status DIRECTLY, independent
+  // of touched/dirty; confirmed live on error-state: both fields are
+  // `ng-untouched ng-pristine ng-invalid` from the very FIRST render,
+  // before any interaction — do not gate this by touched).
+  const invalid = props.invalid ?? controlProps?.invalid ?? false;
+  // `errorState` (upstream's `_errorStateTracker.errorState`, the DEFAULT
+  // `ErrorStateMatcher`'s formula: `control.invalid && (control.touched ||
+  // form.submitted)` — no `<form>`/submit concept in this port, so just
+  // `touched`) is a SEPARATE, touched-GATED concept that drives
+  // mat-form-field-invalid/mdc-text-field--invalid/visible `<mat-error>`
+  // — never the plain `ng-valid`/`ng-invalid` classes above.
+  const errorState = formBound && touched && invalid;
   const initialEmpty = !controlProps?.value;
   // Control's OWN shouldLabelFloat (upstream's `MatInput.shouldLabelFloat`
   // getter): `(focused && !disabled) || !empty`. `focused` is always false
@@ -175,6 +205,9 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     shouldLabelFloat: initialControlShouldFloat,
     assignedId: '',
     assignedDescribedBy: undefined,
+    touched,
+    dirty,
+    invalid,
   });
   useContextProvider(MAT_FORM_FIELD_CONTROL_STATE, controlState);
 
@@ -263,8 +296,34 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // core/mat-form-field-control.ts's `assignedId` doc comment for why
   // this (not cloning the control's JSX to inject props) is the fix for
   // the same staleness bug the hints/errors fix (`MatIdScope`) addresses.
-  controlState.assignedId = controlId;
-  controlState.assignedDescribedBy = finalDescribedBy;
+  //
+  // GUARDED assignment — found live, via a MutationObserver-confirmed
+  // repro: writing to a useStore() field EVERY render (even re-assigning
+  // the SAME value) still notifies subscribers, and MatInput reads
+  // `assignedId`/`assignedDescribedBy` during ITS OWN render — so an
+  // unconditional write here re-triggered MatInput on EVERY MatFormField
+  // re-render (e.g. the unrelated `focused`/`shouldLabelFloat` flips a
+  // focus event causes), which in turn caused the live `<input>` element
+  // to be replaced (losing focus — confirmed: `document.activeElement`
+  // reverted to `<body>` within the SAME event, before any `blur` step
+  // ever ran, on the error-state scenario specifically — the only one
+  // whose control reads `assignedId`/`assignedDescribedBy` from a value
+  // that otherwise never changes while focused=true). Skipping the write
+  // when the value hasn't actually changed avoids the spurious
+  // notification entirely.
+  if (controlState.assignedId !== controlId) controlState.assignedId = controlId;
+  if (controlState.assignedDescribedBy !== finalDescribedBy) {
+    controlState.assignedDescribedBy = finalDescribedBy;
+  }
+  // Same guarded-write treatment, same reason, for the touched/dirty/
+  // invalid trio: these are the fields `error-state`'s LIVE top-level
+  // `MatFormField` props (`touched`/`dirty`/`invalid` above) feed into the
+  // control via this store — see core/mat-form-field-control.ts's doc
+  // comment. Writing on every render (even re-writing the SAME value)
+  // would re-trigger the control unnecessarily.
+  if (controlState.touched !== touched) controlState.touched = touched;
+  if (controlState.dirty !== dirty) controlState.dirty = dirty;
+  if (controlState.invalid !== invalid) controlState.invalid = invalid;
 
   // ── Line ripple (fill only) — mirrors MatFormFieldLineRipple.activate()/
   // deactivate()/_handleTransitionEnd(). Modeled as 2 independent booleans
@@ -369,7 +428,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     color === 'warn' && 'mat-warn',
     formBound && (touched ? 'ng-touched' : 'ng-untouched'),
     formBound && (dirty ? 'ng-dirty' : 'ng-pristine'),
-    formBound && (errorState ? 'ng-invalid' : 'ng-valid'),
+    formBound && (invalid ? 'ng-invalid' : 'ng-valid'),
     animationsEnabled.value && 'mat-form-field-animations-enabled',
     controlState.focused && 'mat-focused',
     props.class,

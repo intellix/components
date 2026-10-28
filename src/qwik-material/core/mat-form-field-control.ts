@@ -48,28 +48,68 @@ import {createContextId, type JSXOutput} from '@builder.io/qwik';
  *    actual prop VALUES, not just presence.
  *
  * 2. **{@link MatFormFieldControlState}** (the `MAT_FORM_FIELD_CONTROL_STATE`
- *    context) — the only fields that legitimately change AFTER mount with
- *    no consumer-visible trigger (`focused`, `empty`, `shouldLabelFloat`):
- *    a plain `useStore()` of BOOLEANS (deliberately never functions — see
- *    `mat-form-control.ts`'s own doc comment for why function-valued
- *    reactive state is unsafe to pass across a component boundary in this
- *    port) that `MatFormField` creates, seeds from (1), and provides via
- *    context BEFORE rendering the control. The control, once it actually
- *    renders (as a normal descendant), writes into this store from its OWN
- *    lazy `onFocus$`/`onBlur$` handlers — ordinary user-triggered QRLs, not
- *    a mount task (design doc rule 7 — "no per-instance useVisibleTask$ for
- *    interaction plumbing") — and `MatFormField`'s own render reads it
- *    reactively, so a write from anywhere correctly re-renders every
- *    subscriber regardless of tree position.
+ *    context) — fields that legitimately change AFTER mount with no
+ *    consumer-visible trigger (`focused`, `empty`, `shouldLabelFloat`), PLUS
+ *    `touched`/`dirty`/`invalid` (see below) — a plain `useStore()` of
+ *    BOOLEANS (deliberately never functions — see `mat-form-control.ts`'s
+ *    own doc comment for why function-valued reactive state is unsafe to
+ *    pass across a component boundary in this port) that `MatFormField`
+ *    creates, seeds from (1), and provides via context BEFORE rendering the
+ *    control. `focused`/`empty`/`shouldLabelFloat` are written by the
+ *    control itself, once it actually renders (as a normal descendant),
+ *    from its OWN lazy `onFocus$`/`onBlur$` handlers — ordinary
+ *    user-triggered QRLs, not a mount task (design doc rule 7 — "no
+ *    per-instance useVisibleTask$ for interaction plumbing"). `MatFormField`
+ *    writes `touched`/`dirty`/`invalid` itself, from its OWN top-level props
+ *    (see below) — either way, a write to ANY of these fields correctly
+ *    re-renders every subscriber regardless of tree position, since both
+ *    `MatFormField`'s and the control's own renders read this SAME store
+ *    directly.
+ *
+ * ## Why `touched`/`dirty`/`invalid` are BOTH a `control`-prop field AND a
+ * top-level `MatFormField` prop
  *
  * Everything else that upstream computes reactively per-control
  * (`errorState`, `required`-from-validators, the `ng-*` classes) is, in
  * this port, computed by the ROUTE/consumer — who already owns whatever
- * reactive primitive drives it (see `core/mat-form-control.ts`) — and
- * handed to BOTH `<MatFormField>` (via channel (1) above, as fresh plain
- * booleans on every re-render) and to the control itself as plain props.
- * See `form-field/SYNC.md`'s "why form-field doesn't know about
- * validators".
+ * reactive primitive drives it (see `core/mat-form-control.ts`).
+ *
+ * An EARLIER version of this doc claimed the consumer could hand these to
+ * `MatFormField` _solely_ through channel (1) — nested inside the `control`
+ * prop's own JSX descriptor (`<MatFormField control={<MatInput
+ * touched={fc.touched} .../>}>`) — "as fresh plain booleans on every
+ * re-render". That claim was WRONG, and empirically disproven: a value
+ * nested two levels deep like that (inside the JSX descriptor that is
+ * itself the VALUE of another component's prop) is only ever evaluated
+ * ONCE, at the moment the whole `<MatInput .../>` expression is built.
+ * Qwik's fine-grained per-prop reactivity (the mechanism that DOES let a
+ * single `foo={someStore.bar}`-shaped prop on a component update live,
+ * without needing any ancestor's function body to fully re-run) only
+ * reaches props that sit directly on an element `MatFormField` (or the
+ * route) returns from its OWN JSX — not one more level removed, buried
+ * inside the VALUE of a different prop that gets forwarded opaquely
+ * (confirmed via a battery of isolated reproductions: a trivial child
+ * receiving `touched={store.touched}` as a direct prop updates correctly,
+ * even when forwarded through an intermediate wrapper component exactly
+ * like `MatFormField` forwards `{props.control}` — but the SAME value
+ * nested inside `control`'s own JSX descriptor, as read back out via
+ * `readControlProps()`, never changes after the first render).
+ *
+ * So the consumer hands `touched`/`dirty`/`invalid` to `MatFormField` a
+ * SECOND time, as genuine top-level props directly on `<MatFormField
+ * touched={fc.touched} dirty={fc.dirty} invalid={...} control={<MatInput
+ * touched={fc.touched} .../>}>` — THIS copy is the one that's actually live
+ * after mount. `MatFormField` prefers it (falling back to the nested
+ * `control`-prop copy only for the very first SSR render, before any
+ * consumer-level reactivity could matter anyway, and for consumers that
+ * never need these fields to change) and writes it into THIS context store
+ * so the control can read the SAME live value back out, by the same
+ * already-proven mechanism `assignedId`/`assignedDescribedBy` use. The
+ * nested `control`-prop copy still exists and is still read once (via (1))
+ * — it is simply no longer the thing anything reactive depends on. See
+ * `form-field/SYNC.md`'s "why form-field doesn't know about validators" and
+ * its "touched/dirty/invalid: control-prop AND context-store" sections for
+ * the full write-up.
  */
 export interface MatFormFieldControlProps {
   /** Current value — used only to derive `empty` at first paint. */
@@ -140,6 +180,18 @@ export interface MatFormFieldControlState {
    *  the control's own explicit `aria-describedby`, if any, by
    *  `MatFormField`) rather than merging it again itself. */
   assignedDescribedBy: string | undefined;
+  /**
+   * Live mirrors of `MatFormFieldControlProps.touched`/`.dirty`/`.invalid`
+   * — written by `MatFormField` from its OWN top-level `touched`/`dirty`/
+   * `invalid` props (see the module doc comment's "control-prop AND
+   * context-store" section for why a SECOND copy, here, is necessary).
+   * The control reads these instead of its own (frozen-after-first-render)
+   * `props.touched`/`.dirty`/`.invalid` whenever it has an owning
+   * `MatFormField` to read them from.
+   */
+  touched: boolean;
+  dirty: boolean;
+  invalid: boolean;
 }
 
 /**

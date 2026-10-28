@@ -92,12 +92,18 @@ one actually implemented:
    (`required`-derived-from-validators, `errorState`, the `ng-*` classes) is
    computed by the ROUTE/consumer — who already owns whatever drives it
    (`useMatFormControl()`, see `core/mat-form-control.ts`) — and handed to
-   BOTH `<MatFormField>` (via channel (1), as fresh plain booleans on every
-   re-render, since the consumer's own render re-runs whenever the fields it
-   reads change) and to the control itself, as plain props. No function or
-   getter ever crosses a component boundary (see `input/SYNC.md` and
+   BOTH `<MatFormField>` and the control itself, as plain props. No function
+   or getter ever crosses a component boundary (see `input/SYNC.md` and
    `core/mat-form-control.ts`'s own doc comment for why that specifically
-   was avoided too).
+   was avoided too). **Correction, found during `error-state` debugging
+   (see the dedicated section below): an earlier draft of this paragraph
+   claimed the `<MatFormField>` copy could be handed through channel (1)
+   alone (nested inside `control`'s own JSX descriptor) "as fresh plain
+   booleans on every re-render". That is false — channel (1) is read ONCE,
+   at the moment `readControlProps()` first runs, and never again. For any
+   field that genuinely needs to change after mount (today: `touched`/
+   `dirty`/`invalid`), the consumer hands it to `<MatFormField>` a SECOND
+   time, as a genuine top-level prop, which the field then is.**
 4. **`MatFormField` owns id generation for the label, every hint, every
    error, AND the control** (injecting a generated id via a
    clone-with-overridden-props helper, `withProps()`/`withGeneratedId()`,
@@ -108,6 +114,114 @@ one actually implemented:
    errors actually get ids — but nothing can "fix up" a mismatch after the
    fact once rendered, so ONE place has to decide all of them up front, and
    `MatFormField` is that place.
+
+## A real Qwik reactivity limitation found via `error-state` (read this if touching `touched`/`dirty`/`invalid`/`empty`)
+
+`error-state` (the one scenario exercising `useMatFormControl()` — see
+`core/mat-form-control.ts`) initially shipped with `touched`/`dirty`/
+`invalid` passed to `<MatFormField>` SOLELY as fields nested inside
+`control`'s own JSX descriptor (`<MatFormField control={<MatInput
+touched={fc.touched} .../>}>`), on the (wrong, see above) assumption that
+`readControlProps()` would see a fresh value on every `MatFormField`
+re-render. In practice, blurring the field never produced `ng-touched`,
+`ng-dirty`, a visible `<mat-error>`, or a correct `aria-invalid` — not
+flakily; reproducibly, 100% of the time, with no amount of extra waiting
+(confirmed via instrumented diagnostics up to 2.5s) — even though the
+underlying `useMatFormControl()` store DID correctly flip `touched` to
+`true` internally (confirmed via logging inside `markAsTouched$` itself,
+and via an explicit `useTask$(({track}) => track(() => fc.touched))`,
+which DID fire correctly).
+
+Root cause, isolated via a series of minimal reproductions in a throwaway
+route (each built+previewed through the real production path, not a unit
+test, since this is specifically about Qwik's client-side reactivity
+after resumption):
+
+- A plain JSX child expression (`<div>{store.touched ? 'a' : 'b'}</div>`)
+  updates correctly without its enclosing `component$` ever visibly
+  re-running from the top.
+- A DIRECT, top-level prop on a component RETURNED BY the same enclosing
+  function (`<SomeChild touched={store.touched} />`) ALSO updates
+  correctly — even when `SomeChild` is nested several DOM levels deep
+  inside an intermediate wrapper component that renders it via
+  `{props.content}` (an opaque forward, structurally identical to how
+  `MatFormField` renders `{props.control}`). So "a JSX element forwarded
+  opaquely through another component's prop" is NOT, by itself, the
+  problem — Qwik's fine-grained per-prop update tracking reaches through
+  that forwarding correctly.
+- The SAME value, nested ONE level further — as a prop on a JSX element
+  that is ITSELF the value of ANOTHER prop (`<Outer inner={<Inner
+  touched={store.touched} />} />` — exactly `<MatFormField
+  control={<MatInput touched={fc.touched} />}>`'s shape) — does NOT
+  update. `readControlProps(props.control)?.touched` on `Outer`'s OWN
+  re-renders (triggered by something unrelated) kept returning the
+  ORIGINAL value, forever, confirmed directly by logging it on every
+  `MatFormField` render.
+
+So the dividing line is specifically: Qwik's optimizer generates a live,
+fine-grained update binding for a prop sitting directly on an element
+returned from a component's own JSX tree (at ANY resulting DOM depth, once
+rendered) — but NOT for a prop buried inside the VALUE of a DIFFERENT
+prop, one syntactic level removed from where the enclosing function
+actually "returns" it. `<MatInput touched={fc.touched} .../>` as the
+value of `<MatFormField control={...}>` is exactly that second shape: it
+is constructed once, handed to `MatFormField` as inert data, and never
+reconstructed, regardless of how many times anything re-renders
+afterward.
+
+The fix, applied consistently for `touched`/`dirty`/`invalid`:
+
+1. The consumer passes them a SECOND time, as genuine top-level props
+   directly on `<MatFormField touched={...} dirty={...} invalid={...}
+   control={<MatInput touched={...} .../>}>` (see `MatFormFieldProps`'s
+   doc comment). The nested copy on `<MatInput>` is kept — it is still
+   correct for the very first render, and still needed for the
+   `formBound` static-detection channel (1) above — but is no longer
+   relied on for anything that must update after mount.
+2. `MatFormField` prefers these top-level props over the nested
+   `control`-prop snapshot (`props.touched ?? controlProps?.touched ??
+   false`, same for `dirty`/`invalid`), so its OWN rendered classes
+   (`ng-touched`/`ng-dirty`/`ng-invalid`, `errorState`, `showErrors`) are
+   correctly live — this is the SAME proven-working shape (a prop directly
+   on the element `MatFormField`'s own PARENT returns) that the isolated
+   reproductions confirmed works.
+3. `MatFormField` writes `touched`/`dirty`/`invalid` into the SAME
+   `MAT_FORM_FIELD_CONTROL_STATE` context store `focused`/`empty`/
+   `shouldLabelFloat`/`assignedId`/`assignedDescribedBy` already live in
+   (guarded, same "skip the write if the value is unchanged" treatment as
+   `assignedId` — see that field's own comment for why), so `MatInput`
+   (reading the context store directly during ITS OWN render, exactly the
+   mechanism `assignedId`/`assignedDescribedBy` already proved out) picks
+   up the live value too, without needing `MatFormField` to re-render it
+   via a fresh `control` prop at all.
+4. `props.errors` (the visible `<mat-error>` content) did NOT need this
+   same treatment — it was ALREADY a top-level `<MatFormField errors={...}>`
+   prop (never nested inside `control`), so it was always in the
+   proven-working shape; once (2)'s `errorState`/`showErrors` became live,
+   the error message's visibility started following it correctly for
+   free.
+
+One more field needed an analogous (but simpler, single-component-local)
+fix: `MatInput`'s own `empty` (used for its `aria-invalid` computation) was
+computed from `!props.value` — but `value` is nested inside the SAME
+frozen `<MatInput>` descriptor, for the exact same reason. Rather than
+threading `value` through the context store too, `MatInput` tracks its own
+`emptySignal` locally, updated directly inside its OWN `handleInput$`/
+`handleBlur$` from the live DOM element (`inputRef`) it already holds — no
+cross-component channel needed, since the thing that needs the live value
+(the `aria-invalid` computation) and the thing with direct access to the
+live DOM (the input/blur handlers) are the SAME component. See
+`input/SYNC.md`'s matching note.
+
+**Takeaway for future controls (select/autocomplete/datepicker/chips):**
+any field on the shared control contract that must change AFTER the first
+render needs to reach the component that renders off it either (a) as a
+genuine top-level prop on an element returned directly from the OWNING
+component's own JSX (never nested inside the value of another prop), or
+(b) through the `MAT_FORM_FIELD_CONTROL_STATE` context store. A field
+nested inside `control`'s (or `errors`'/`label`'s/etc.'s) own JSX
+descriptor is fine for anything that is correct once and stays correct —
+but is a trap for anything that needs to change later.
 
 ## Upstream sync state
 

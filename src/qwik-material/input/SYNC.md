@@ -13,7 +13,7 @@ control every one of the 16 form-field scenarios renders).
 
 | File | Upstream path | Sync state | Notes |
 | --- | --- | --- | --- |
-| `input/mat-input.tsx` | `src/material/input/input.ts` (`MatInput` directive, 618 LOC) | ported | Polymorphic host (`as="input"\|"textarea"`, default `'input'`) — the pattern design doc rule 4 establishes for a directive applied to a consumer-written native element (`matInput`/`matNativeControl` selector matches `input[matInput], textarea[matInput], ...`). Implements `MatFormFieldControlProps` (see `core/mat-form-field-control.ts`) directly on its own props interface, so `<MatFormField control={<MatInput .../>}>` can introspect it. `disabled`/`disabledInteractive`/`required`/`readOnly` reflected exactly as upstream's host bindings specify (see deviations below for the one that needed special handling — `value`). `empty`/`errorState`/`aria-invalid` computed from `props.value`/`props.invalid`/`props.touched` — i.e. from whatever the CONSUMER passed in, which (per `core/mat-form-control.ts`'s design) is always already a plain boolean/string by the time it reaches here, never a function |
+| `input/mat-input.tsx` | `src/material/input/input.ts` (`MatInput` directive, 618 LOC) | ported | Polymorphic host (`as="input"\|"textarea"`, default `'input'`) — the pattern design doc rule 4 establishes for a directive applied to a consumer-written native element (`matInput`/`matNativeControl` selector matches `input[matInput], textarea[matInput], ...`). Implements `MatFormFieldControlProps` (see `core/mat-form-field-control.ts`) directly on its own props interface, so `<MatFormField control={<MatInput .../>}>` can introspect it. `disabled`/`disabledInteractive`/`required`/`readOnly` reflected exactly as upstream's host bindings specify (see deviations below for the one that needed special handling — `value`). `touched`/`dirty`/`invalid` are read from the `MAT_FORM_FIELD_CONTROL_STATE` context store when nested in a `<MatFormField>` (falling back to the plain props for standalone usage) — NOT from `props.touched`/`.dirty`/`.invalid` directly; `empty` (for `aria-invalid`) is a locally-owned signal updated from the live DOM element in `handleInput$`/`handleBlur$`, not from `props.value`. See deviation #6 and `form-field/SYNC.md`'s dedicated section for why |
 | `input/input-config.ts` | `src/material/input/input.ts` (`MatInputConfig` interface + `MAT_INPUT_CONFIG` InjectionToken, lines 50-57) | new | `MatInputConfig = {disabledInteractive?}`; `MAT_INPUT_CONFIG_DEFAULTS = {disabledInteractive: false}` (upstream's implicit `_config?.disabledInteractive \|\| false`); folded into `QwikMaterialProvider.matInputConfig` |
 | (no separate stylesheet) | `matInput`'s classes (`.mat-mdc-input-element`, `.mdc-text-field__input`, etc.) live inside `src/material/form-field/_mdc-text-field-structure.scss` upstream — `MatInput` has no CSS file of its own (only `_input-theme.scss`, a typography-mixin-only theme partial with no structural rules at all) | synced (via form-field) | See `form-field/SYNC.md`'s sync table — `form-field-prebuilt.scss` covers `MatInput`'s classes too. `scss/input/_input-theme.scss` is synced byte-for-byte for `diff -q` parity only (never `@use`d by any prebuilt file, same precedent as every other component's inert `_*-theme.scss`) |
 
@@ -100,6 +100,30 @@ control every one of the 16 form-field scenarios renders).
    `exportAs: 'matInput'` → N/A. `focus()`/`updateErrorState()` imperative
    methods → N/A, no component-instance handle in Qwik; a consumer needing
    this uses a ref to the rendered `<input>`/`<textarea>` directly.
+
+6. **`touched`/`dirty`/`invalid`/`empty` are NOT read from their
+   like-named props directly, despite `MatInputProps` declaring them.**
+   Found via `error-state` debugging (full write-up in
+   `form-field/SYNC.md`'s dedicated section — read that first): when
+   `<MatInput>` is nested inside `<MatFormField control={<MatInput
+   touched={fc.touched} .../>}>`, this whole JSX descriptor is constructed
+   ONCE, when the expression is first evaluated, and never reconstructed —
+   Qwik's fine-grained per-prop reactivity does not reach a value nested
+   that way (one level inside the VALUE of another component's prop),
+   even though it reliably reaches a prop sitting directly on an element
+   returned from a component's own JSX (confirmed via isolated
+   reproductions). So `touched`/`dirty`/`invalid` are instead read from
+   the `MAT_FORM_FIELD_CONTROL_STATE` context store (written by the owning
+   `MatFormField` from ITS OWN top-level props — a shape that IS reliably
+   live) whenever nested in a form field, falling back to the plain props
+   only for standalone usage (where no such forwarding-through-another-
+   component's-prop problem exists in the first place). `empty` doesn't
+   need the context-store round trip — `handleInput$`/`handleBlur$`
+   already hold a ref to the live DOM element, so they update a local
+   `emptySignal` directly. The `MatInputProps` fields themselves are
+   unchanged (still declared, still read for the SSR-correct-at-first-
+   paint snapshot and for standalone usage) — only which value wins, when
+   nested in a form field, changed.
 
 ## Class count
 

@@ -58,22 +58,49 @@ export const MatInput = component$<MatInputProps>(props => {
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
   const required = props.required ?? false;
   const formBound = props.formBound ?? false;
-  const touched = props.touched ?? false;
-  const dirty = props.dirty ?? false;
-  // Mirrors the DEFAULT `ErrorStateMatcher` exactly (same formula as
-  // `MatFormField`'s own independent copy — see that file's comment; each
-  // renders its own classes/attributes off this, so each computes it
-  // itself rather than threading it through the context store, which only
-  // ever carries focused/empty/shouldLabelFloat — see
-  // core/mat-form-field-control.ts).
-  const errorState = formBound && touched && (props.invalid ?? false);
-  const empty = !props.value;
 
   // Only present when actually nested in a `<MatFormField>` (context
   // absent otherwise — see core/mat-form-field-control.ts's doc comment:
   // "never exists without an owning MatFormField").
   const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined);
   const isInFormField = formField !== undefined;
+
+  // Prefer the context store's LIVE touched/dirty/invalid (written by the
+  // owning `MatFormField` from ITS OWN top-level props — see
+  // core/mat-form-field-control.ts's doc comment for why `props.touched`/
+  // `.dirty`/`.invalid` are frozen-after-first-render and cannot be relied
+  // on here directly: this exact element's JSX descriptor, nested as the
+  // VALUE of `MatFormField`'s `control` prop, is only ever constructed
+  // once). Standalone usage (no owning `MatFormField`) has no such store
+  // to read, so it falls back to the (then correctly-live, since nothing
+  // forwards THIS element's props through another component in that case)
+  // plain props.
+  const touched = isInFormField ? formField.touched : (props.touched ?? false);
+  const dirty = isInFormField ? formField.dirty : (props.dirty ?? false);
+  // RAW validity (upstream's `NgControlStatus` — `ng-valid`/`ng-invalid`
+  // mirror `.valid`/`.invalid` DIRECTLY, independent of touched/dirty —
+  // see `mat-form-field.tsx`'s matching comment; NOT the same as
+  // `errorState` below, which gates `aria-invalid`/visible errors by
+  // touched too).
+  const invalid = isInFormField ? formField.invalid : (props.invalid ?? false);
+  // Mirrors the DEFAULT `ErrorStateMatcher` exactly (same formula as
+  // `MatFormField`'s own independent copy — see that file's comment; each
+  // renders its own classes/attributes off this value).
+  const errorState = formBound && touched && invalid;
+  // Live "is this control empty" — seeded from `props.value` (correct at
+  // first paint) but NEVER re-read from it afterward: like `touched`/
+  // `dirty`/`invalid` above, `props.value` is nested inside the SAME
+  // frozen-after-first-render `<MatInput .../>` JSX descriptor (see
+  // core/mat-form-field-control.ts's doc comment), so it would otherwise
+  // never reflect what's actually been typed. Unlike touched/dirty/
+  // invalid, `empty` doesn't need a round-trip through `MatFormField`'s
+  // context store — `handleInput$` already has direct access to the live
+  // DOM element via `inputRef`, so it updates this signal itself,
+  // entirely within this one component (confirmed needed: `aria-invalid`
+  // reads this on every render, and a render can now happen BEFORE blur
+  // too — e.g. when `invalid` flips as soon as a validator starts/stops
+  // failing while typing, before `touched` ever becomes true).
+  const emptySignal = useSignal(() => !props.value);
 
   // Fallback id for standalone usage (`matNativeControl` outside a form
   // field, or a consumer that didn't specify one) — mirrors upstream's own
@@ -160,8 +187,9 @@ export const MatInput = component$<MatInputProps>(props => {
   // notch width" comment for the same lazy-measurement reasoning).
   const handleBlur$ = $((event: FocusEvent) => {
     const el = inputRef.value as NativeControlElement | undefined;
+    const liveEmpty = !el?.value;
+    emptySignal.value = liveEmpty;
     if (formField) {
-      const liveEmpty = !el?.value;
       formField.focused = false;
       formField.empty = liveEmpty;
       formField.shouldLabelFloat = !liveEmpty;
@@ -170,7 +198,9 @@ export const MatInput = component$<MatInputProps>(props => {
   });
 
   const handleInput$ = $((event: Event) => {
-    props.onInput$?.(event, inputRef.value as NativeControlElement);
+    const el = inputRef.value as NativeControlElement | undefined;
+    emptySignal.value = !el?.value;
+    props.onInput$?.(event, el as NativeControlElement);
   });
 
   const classes = [
@@ -184,7 +214,7 @@ export const MatInput = component$<MatInputProps>(props => {
     // see the big comment in angular-parity.spec.ts.
     formBound && (touched ? 'ng-touched' : 'ng-untouched'),
     formBound && (dirty ? 'ng-dirty' : 'ng-pristine'),
-    formBound && (errorState ? 'ng-invalid' : 'ng-valid'),
+    formBound && (invalid ? 'ng-invalid' : 'ng-valid'),
     // `cdk-text-field-autofill-monitored`: upstream's `AutofillMonitor`
     // adds this unconditionally (browser-only) the first time
     // `ngAfterViewInit` runs — no real autofill-detection behavior is
@@ -205,7 +235,7 @@ export const MatInput = component$<MatInputProps>(props => {
     (props.readOnly ?? false) || (disabled && disabledInteractive) ? 'true' : undefined;
 
   const ariaInvalid: 'true' | 'false' | undefined =
-    empty && required ? undefined : errorState ? 'true' : 'false';
+    emptySignal.value && required ? undefined : errorState ? 'true' : 'false';
   const ariaRequired: 'true' | 'false' = required ? 'true' : 'false';
   const ariaDisabled: 'true' | undefined = disabled && disabledInteractive ? 'true' : undefined;
 
@@ -225,7 +255,19 @@ export const MatInput = component$<MatInputProps>(props => {
     // `mat-ripple`/`matformfieldlineripple` elsewhere in this project.
     ...{readonly: readonlyAttr},
     placeholder: props.placeholder,
-    value: initialValue.value || undefined,
+    // Also a plain attribute spread, not the normal `value` JSX prop —
+    // found live: Qwik's SSR serializer treats `value` as a pure DOM
+    // PROPERTY for `<input>`/`<textarea>` and never writes it as an SSR
+    // attribute at all via the standard prop path (confirmed: the
+    // `disabled`/`readonly` scenarios' static `value="Mountain View"`/
+    // `"ACC-10294"` rendered NO attribute whatsoever as a plain `value={…}`
+    // prop, even though the frozen `initialValue` snapshot was correct).
+    // The spread form forces a literal `setAttribute`, matching Angular's
+    // own plain, unbound `value="…"` template attribute exactly. Safe here
+    // specifically because `initialValue` is a frozen, never-reassigned
+    // snapshot (see that signal's own comment) — this is not a reactive
+    // value prop that would otherwise need the property-diffing path.
+    ...{value: initialValue.value || undefined},
     'aria-disabled': ariaDisabled,
     'aria-invalid': ariaInvalid,
     'aria-required': ariaRequired,
