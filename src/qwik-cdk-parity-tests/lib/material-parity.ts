@@ -146,6 +146,8 @@ const ID_ATTRS = [
   'aria-controls',
   'aria-owns',
   'aria-activedescendant',
+  'mat-timepicker-panel-id',
+  'mat-timepicker-id',
 ];
 
 export interface ParityStep {
