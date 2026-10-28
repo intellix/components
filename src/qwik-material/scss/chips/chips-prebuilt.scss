@@ -1,0 +1,133 @@
+// Chips prebuilt CSS. Wraps the port's (now upstream-synced) chip.scss /
+// chip-set.scss with :root defaults for every --mat-chip-* / --mat-sys-*
+// variable they emit, following the same reconciliation approach as
+// button-toggle-prebuilt.scss (recompile, add whatever var() names are
+// still unresolved, repeat). See button-toggle/SYNC.md for the pattern this
+// mirrors.
+//
+// chip.scss's token-utils.slot(...) calls all key off _m3-chip.scss's
+// get-tokens() map (there is no separate "legacy" token set here, unlike
+// button-toggle) so every --mat-chip-* variable below is just the literal
+// (or --mat-sys-*-chained) value that map's `base` / `color` / `typography`
+// / `density` entries resolve to for the default M3 theme with no
+// color-variant override. chip-set.scss has no token-utils usage at all —
+// it's included only so consumers get its structural rules alongside
+// chip.scss's.
+//
+// chip-elevated-disabled-container-color is deliberately omitted: upstream
+// _m3-chip.scss sets it to `null` (MDC has no token for a disabled-but-not-
+// selected elevated chip background), so token-utils.values skips emitting
+// it and chip.scss's own `token-utils.slot(chip-elevated-disabled-container-
+// color, $fallbacks)` call compiles to a bare `var(--mat-chip-elevated-
+// disabled-container-color)` with no fallback at all — same as upstream's
+// own M3 output, not a missed token.
+//
+// --mat-sys-* values are M3-ish literals, not a live theme (this port has no
+// runtime theming system, same as every other qwik-material prebuilt file) —
+// reused verbatim from button-toggle/expansion/radio's own prebuilt files
+// wherever they already define the same variable name, so loading more than
+// one of these prebuilt CSS files on the same page doesn't produce
+// conflicting defaults for shared system tokens. (--mat-sys-hover-state-
+// layer-opacity / --mat-sys-focus-state-layer-opacity use the canonical M3
+// values from core/tokens/m3/_md-sys-state.scss — 0.08 / 0.12 — matching
+// expansion/radio's prebuilt files rather than button-toggle's.)
+
+@use './chip';
+@use './chip-set';
+
+:root {
+  // ─── chip (base — literal, no M3 color chain) ───
+  --mat-chip-container-shape-radius: 8px;
+  --mat-chip-disabled-container-opacity: 1;
+  --mat-chip-elevated-container-color: transparent;
+  --mat-chip-flat-selected-outline-width: 0;
+  --mat-chip-outline-width: 1px;
+  --mat-chip-trailing-action-focus-opacity: 1;
+  --mat-chip-trailing-action-opacity: 1;
+  --mat-chip-with-avatar-avatar-shape-radius: 24px;
+  --mat-chip-with-avatar-avatar-size: 24px;
+  --mat-chip-with-avatar-disabled-avatar-opacity: 0.38;
+  --mat-chip-with-icon-disabled-icon-opacity: 0.38;
+  --mat-chip-with-icon-icon-size: 18px;
+  --mat-chip-with-trailing-icon-disabled-trailing-icon-opacity: 0.38;
+
+  // ─── chip (color) ───
+  --mat-chip-disabled-label-text-color: color-mix(
+    in srgb,
+    var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87)) 38%,
+    transparent
+  );
+  --mat-chip-disabled-outline-color: color-mix(
+    in srgb,
+    var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87)) 12%,
+    transparent
+  );
+  --mat-chip-elevated-selected-container-color: var(--mat-sys-secondary-container, #e8def8);
+  --mat-chip-flat-disabled-selected-container-color: color-mix(
+    in srgb,
+    var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87)) 12%,
+    transparent
+  );
+  --mat-chip-focus-outline-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-chip-focus-state-layer-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-chip-focus-state-layer-opacity: var(--mat-sys-focus-state-layer-opacity, 0.12);
+  --mat-chip-hover-state-layer-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-chip-hover-state-layer-opacity: var(--mat-sys-hover-state-layer-opacity, 0.08);
+  --mat-chip-label-text-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-chip-outline-color: var(--mat-sys-outline, rgba(0, 0, 0, 0.12));
+  --mat-chip-selected-disabled-trailing-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-chip-selected-focus-state-layer-color: var(--mat-sys-on-secondary-container, #1d192b);
+  --mat-chip-selected-focus-state-layer-opacity: var(--mat-sys-focus-state-layer-opacity, 0.12);
+  --mat-chip-selected-hover-state-layer-color: var(--mat-sys-on-secondary-container, #1d192b);
+  --mat-chip-selected-hover-state-layer-opacity: var(--mat-sys-hover-state-layer-opacity, 0.08);
+  --mat-chip-selected-label-text-color: var(--mat-sys-on-secondary-container, #1d192b);
+  --mat-chip-selected-trailing-action-state-layer-color: var(
+    --mat-sys-on-secondary-container,
+    #1d192b
+  );
+  --mat-chip-selected-trailing-icon-color: var(--mat-sys-on-secondary-container, #1d192b);
+  --mat-chip-trailing-action-focus-state-layer-opacity: var(
+    --mat-sys-focus-state-layer-opacity,
+    0.12
+  );
+  --mat-chip-trailing-action-hover-state-layer-opacity: var(
+    --mat-sys-hover-state-layer-opacity,
+    0.08
+  );
+  --mat-chip-trailing-action-state-layer-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-chip-with-icon-disabled-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-chip-with-icon-icon-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-chip-with-icon-selected-icon-color: var(--mat-sys-on-secondary-container, #1d192b);
+  --mat-chip-with-trailing-icon-disabled-trailing-icon-color: var(
+    --mat-sys-on-surface,
+    rgba(0, 0, 0, 0.87)
+  );
+  --mat-chip-with-trailing-icon-trailing-icon-color: var(
+    --mat-sys-on-surface-variant,
+    rgba(0, 0, 0, 0.6)
+  );
+
+  // ─── chip (typography) ───
+  --mat-chip-label-text-font: var(--mat-sys-label-large-font, inherit);
+  --mat-chip-label-text-line-height: var(--mat-sys-label-large-line-height, 1.25rem);
+  --mat-chip-label-text-size: var(--mat-sys-label-large-size, 0.875rem);
+  --mat-chip-label-text-tracking: var(--mat-sys-label-large-tracking, 0.1px);
+  --mat-chip-label-text-weight: var(--mat-sys-label-large-weight, 500);
+
+  // ─── chip (density — scale 0) ───
+  --mat-chip-container-height: 32px;
+
+  // ─── --mat-sys-* system tokens chip's m3 tokens resolve through ───
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
+  --mat-sys-secondary-container: #e8def8;
+  --mat-sys-on-secondary-container: #1d192b;
+  --mat-sys-outline: rgba(0, 0, 0, 0.12);
+  --mat-sys-hover-state-layer-opacity: 0.08;
+  --mat-sys-focus-state-layer-opacity: 0.12;
+  --mat-sys-label-large-font: inherit;
+  --mat-sys-label-large-line-height: 1.25rem;
+  --mat-sys-label-large-size: 0.875rem;
+  --mat-sys-label-large-tracking: 0.1px;
+  --mat-sys-label-large-weight: 500;
+}
