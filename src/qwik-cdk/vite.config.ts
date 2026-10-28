@@ -11,6 +11,7 @@ const entries = [
   'portal',
   'a11y',
   'accordion',
+  'stepper',
   'overlay',
   'dialog',
 ];

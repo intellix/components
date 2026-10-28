@@ -43,6 +43,8 @@ import type {MatSidenavConfig} from '../sidenav/sidenav-config';
 import {MAT_SIDENAV_CONFIG} from '../sidenav/sidenav-config';
 import type {MatSnackBarConfig} from '../snack-bar/snack-bar-config';
 import {MAT_SNACK_BAR_DEFAULT_OPTIONS} from '../snack-bar/mat-snack-bar-tokens';
+import type {StepperOptions} from '@angular-community/qwik-cdk/stepper';
+import {CDK_STEPPER_GLOBAL_OPTIONS} from '@angular-community/qwik-cdk/stepper';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -87,6 +89,9 @@ export interface QwikMaterialProviderProps {
   matSidenavConfig?: MatSidenavConfig;
   /** Defaults merged into every useMatSnackBar() open()/openFromComponent()/openFromTemplate() config. */
   matSnackBarDefaults?: Partial<MatSnackBarConfig>;
+  /** Qwik-context equivalent of `@angular/cdk/stepper`'s `STEPPER_GLOBAL_OPTIONS`
+   *  — applies to every MatStepper in this subtree. */
+  stepperGlobalOptions?: StepperOptions;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -183,6 +188,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // their own (see `createMatSnackBarConfig()`); an empty object here is
   // equivalent to accepting all of them, same pattern as every config above.
   useContextProvider(MAT_SNACK_BAR_DEFAULT_OPTIONS, props.matSnackBarDefaults ?? {});
+  // StepperOptions is a plain object with primitive fields — no noSerialize
+  // needed. Steppers outside a provider get {} (upstream's own un-provided
+  // STEPPER_GLOBAL_OPTIONS default: showError falls back to per-step
+  // `hasError` overrides only, displayDefaultIndicatorType defaults true).
+  useContextProvider(CDK_STEPPER_GLOBAL_OPTIONS, props.stepperGlobalOptions ?? {});
 
   return <Slot />;
 });

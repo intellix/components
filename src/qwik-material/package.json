@@ -139,6 +139,11 @@
       "types": "./dist/snack-bar/index.d.ts",
       "import": "./dist/snack-bar/index.js"
     },
+    "./stepper": {
+      "qwik": "./stepper/index.ts",
+      "types": "./dist/stepper/index.d.ts",
+      "import": "./dist/stepper/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -160,6 +165,7 @@
     "./tabs-prebuilt.css": "./dist/tabs-prebuilt.css",
     "./sidenav-prebuilt.css": "./dist/sidenav-prebuilt.css",
     "./snack-bar-prebuilt.css": "./dist/snack-bar-prebuilt.css",
+    "./stepper-prebuilt.css": "./dist/stepper-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

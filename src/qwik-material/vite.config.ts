@@ -25,6 +25,7 @@ const entries = [
   'tabs',
   'sidenav',
   'snack-bar',
+  'stepper',
 ];
 
 export default defineConfig({
@@ -63,6 +64,7 @@ export default defineConfig({
           ['scss/tabs/tabs-prebuilt.scss', 'dist/tabs-prebuilt.css'],
           ['scss/sidenav/sidenav-prebuilt.scss', 'dist/sidenav-prebuilt.css'],
           ['scss/snack-bar/snack-bar-prebuilt.scss', 'dist/snack-bar-prebuilt.css'],
+          ['scss/stepper/stepper-prebuilt.scss', 'dist/stepper-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);
