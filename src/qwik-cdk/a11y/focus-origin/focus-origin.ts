@@ -1,4 +1,5 @@
 import {$, useOn, useSignal, type Signal} from '@builder.io/qwik';
+import {isBrowser} from '@builder.io/qwik/build';
 import type {FocusOptions, FocusOrigin} from '../focus-monitor/focus-monitor';
 
 export type {FocusOrigin};
@@ -31,6 +32,18 @@ const PENDING_ORIGIN_ATTR = 'data-cdk-pending-focus-origin';
  * Only meaningful for elements that ALSO call `useFocusOrigin()` on
  * themselves — plain `element.focus()` on an unrelated element is a no-op
  * attribute write.
+ *
+ * Mirrors one more subtlety of the real `FocusMonitor.focusVia()`: if
+ * `element` is ALREADY the focused element (e.g. pressing `End` while
+ * already on the last header — `FocusKeyManager.setActiveItem` always
+ * calls `.focus(origin)` on the resulting active item, even when it's
+ * unchanged), calling `.focus()` again fires no new `focus`/`focusin`
+ * event in any browser, so the pending-origin attribute would never be
+ * read back off — it would just sit there, stuck, forever. Upstream's real
+ * engine special-cases this by updating the focus classes directly instead
+ * of relying on a focus event; this port dispatches a synthetic `focusin`
+ * instead, so the SAME `useFocusOrigin()` listener (and its
+ * pending-origin-attribute check) handles both paths uniformly.
  */
 export function focusVia(element: HTMLElement, origin: FocusOrigin, options?: FocusOptions): void {
   if (origin) {
@@ -38,7 +51,11 @@ export function focusVia(element: HTMLElement, origin: FocusOrigin, options?: Fo
   } else {
     element.removeAttribute(PENDING_ORIGIN_ATTR);
   }
-  element.focus(options);
+  if (isBrowser && document.activeElement === element) {
+    element.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
+  } else {
+    element.focus(options);
+  }
 }
 
 /**

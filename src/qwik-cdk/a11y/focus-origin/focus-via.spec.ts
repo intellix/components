@@ -33,4 +33,30 @@ describe('focusVia', () => {
     focusVia(el, 'keyboard', {preventScroll: true});
     expect(receivedOptions).toEqual({preventScroll: true});
   });
+
+  it('dispatches a synthetic bubbling focusin instead of calling .focus() when the element is already focused (no real focus event would fire otherwise — e.g. pressing End while already on the last item)', () => {
+    const el = document.createElement('div');
+    el.tabIndex = 0;
+    document.body.appendChild(el);
+    el.focus();
+    expect(document.activeElement).toBe(el);
+
+    let focusCalled = false;
+    el.focus = () => {
+      focusCalled = true;
+    };
+    let focusinReceived: FocusEvent | undefined;
+    el.addEventListener('focusin', e => {
+      focusinReceived = e as FocusEvent;
+    });
+
+    focusVia(el, 'program');
+
+    expect(focusCalled).toBe(false);
+    expect(focusinReceived).toBeDefined();
+    expect(focusinReceived?.bubbles).toBe(true);
+    expect(el.getAttribute('data-cdk-pending-focus-origin')).toBe('program');
+
+    el.remove();
+  });
 });
