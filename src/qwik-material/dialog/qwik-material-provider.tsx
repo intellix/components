@@ -29,6 +29,8 @@ import type {MatButtonToggleConfig} from '../button-toggle/button-toggle-config'
 import {MAT_BUTTON_TOGGLE_CONFIG} from '../button-toggle/button-toggle-config';
 import type {MatSlideToggleConfig} from '../slide-toggle/slide-toggle-config';
 import {MAT_SLIDE_TOGGLE_CONFIG} from '../slide-toggle/slide-toggle-config';
+import type {MatSortConfig} from '../sort/sort-config';
+import {MAT_SORT_CONFIG} from '../sort/sort-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -59,6 +61,8 @@ export interface QwikMaterialProviderProps {
   matButtonToggleConfig?: MatButtonToggleConfig;
   /** Defaults applied to every MatSlideToggle in this subtree. */
   matSlideToggleConfig?: MatSlideToggleConfig;
+  /** Defaults applied to every MatSort / MatSortHeader in this subtree. */
+  matSortConfig?: MatSortConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -120,6 +124,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // CONFIG_DEFAULTS declared in MatSlideToggle; providing an empty object is
   // equivalent to accepting all defaults.
   useContextProvider(MAT_SLIDE_TOGGLE_CONFIG, props.matSlideToggleConfig ?? {});
+  // MatSortConfig is a plain object with primitive fields — no noSerialize
+  // needed. Sorts outside a provider get the CONFIG_DEFAULTS declared in
+  // MatSort/MatSortHeader; providing an empty object is equivalent to
+  // accepting all defaults.
+  useContextProvider(MAT_SORT_CONFIG, props.matSortConfig ?? {});
 
   return <Slot />;
 });
