@@ -15,6 +15,8 @@ import {focusVia, useIdGenerator, type AutoFocusTarget} from '@angular-community
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import {applyDrawerAutoFocus} from './focus-helpers';
 import {
+  computeContentMargins,
+  isShowingBackdrop,
   MAT_DRAWER_CONTAINER_STATE,
   type MatDrawerMode,
   type MatDrawerPosition,
@@ -116,7 +118,6 @@ function createDrawer(
 
     const position = props.position === 'end' ? 'end' : 'start';
     const mode = props.mode ?? 'over';
-    const disableClose = props.disableClose ?? false;
     const opened = props.opened ?? false;
 
     // Mirrors upstream `MatDrawer.toggle()`'s request path, flattened: this port's drawer is
@@ -125,38 +126,6 @@ function createDrawer(
     const requestClose$ = $(() => {
       if (!(props.opened ?? false)) return;
       props.onOpenedChange$?.(false);
-    });
-
-    // Registry sync — mirrors upstream's `@ContentChildren(MatDrawer) QueryList` iteration
-    // (`MatDrawerContainer._validateDrawers()` / `_watchDrawerToggle()` / `updateContentMargins()`),
-    // reframed as each drawer publishing its own slice of state into the container's registry
-    // (see drawer-state.ts) rather than the container reaching into its children.
-    useTask$(({track, cleanup}) => {
-      const trackedPosition = track(() => position);
-      const trackedMode = track(() => mode);
-      const trackedOpened = track(() => opened);
-      const trackedDisableClose = track(() => disableClose);
-      const trackedWidth = track(() => widthPx.value);
-      // Immutable reassignment, not a mutation — see drawer-state.ts's doc comment on
-      // `registry` for why this is required for `MatDrawerContent` (a cross-`<Slot>` consumer)
-      // to reactively pick up the change.
-      containerState.registry.value = {
-        ...containerState.registry.value,
-        [id.value]: {
-          position: trackedPosition,
-          mode: trackedMode,
-          opened: trackedOpened,
-          disableClose: trackedDisableClose,
-          width: trackedWidth,
-          hostRef,
-          requestClose$,
-        },
-      };
-      cleanup(() => {
-        const next = {...containerState.registry.value};
-        delete next[id.value];
-        containerState.registry.value = next;
-      });
     });
 
     // Mount-driven width measurement, kept live via ResizeObserver (so `autosize` content
@@ -178,48 +147,109 @@ function createDrawer(
       cleanup(() => ro.disconnect());
     });
 
-    // Settles an open/close transition: clears the transient animating class, fires the
-    // opened-state outputs, and runs the matching focus side effect — mirrors upstream's
-    // `_animationEnd`-driven `openedChange.emit()` subscription. Defined as a plain (non-`$()`)
-    // closure, called via `setTimeout` from the reactive task below rather than from a real
-    // `transitionend`/`transitioncancel` DOM listener — attaching `onTransitionEnd$`/
-    // `onTransitionCancel$` to this component crashes Qwik's SSR container-pause serialization
-    // step (`QError_verifySerializable`, Code(3)) in this project's pinned `@builder.io/qwik`
-    // version, reproduced with a trivial no-op handler on both a static and a dynamically-typed
-    // host tag, so it isn't specific to this component's logic or the `HostTag` pattern below —
-    // empirically confirmed while porting this component, treated as an upstream Qwik
-    // limitation rather than something to work around further. The timer uses the same fixed
-    // 400ms duration the synced `drawer.scss` hardcodes for `.mat-drawer-transition &`'s
-    // `transform` transition (never themeable upstream either), so it settles at the same wall
-    // time a real `transitionend` would.
-    const settleTransition = (isOpen: boolean) => {
-      animating.value = false;
-      props.onOpenedChange$?.(isOpen);
-      const hostEl = hostRef.value;
-      if (isOpen) {
-        previouslyFocused.value = (document.activeElement as HTMLElement) ?? undefined;
-        props.onOpened$?.();
-        if (hostEl) {
-          const autoFocus = props.autoFocus ?? (mode === 'side' ? 'dialog' : 'first-tabbable');
-          applyDrawerAutoFocus(hostEl, autoFocus);
+    // Single combined task: registry sync (mirrors upstream's `@ContentChildren(MatDrawer)
+    // QueryList` iteration — `MatDrawerContainer._validateDrawers()` / `_watchDrawerToggle()` /
+    // `updateContentMargins()` — reframed as each drawer publishing its own slice of state into
+    // the container's registry, see drawer-state.ts) PLUS the opened-transition timing below,
+    // in one task rather than two. `track()` reads `props.*` DIRECTLY (not the outer-scope
+    // `position`/`mode`/`opened` consts computed once above) — `track()` only subscribes to
+    // reactive reads (signals/props) made INSIDE the tracked callback; tracking a plain local
+    // const closes over whatever value it happened to hold when this task was first created and
+    // never re-runs on a later prop change (the same stale-capture pitfall slide-toggle/
+    // button-toggle's SYNC.md document for `$()` handlers, which applies equally to `track()`
+    // callbacks — confirmed empirically while porting this component).
+    //
+    // The opened-transition settling logic (clears the transient animating class, fires the
+    // opened-state outputs, runs the matching focus side effect — mirrors upstream's
+    // `_animationEnd`-driven `openedChange.emit()` subscription) is INLINED directly into the
+    // `setTimeout` callback below rather than factored into a separately-named function this
+    // task calls. Both are empirically-confirmed-necessary workarounds for the SAME underlying
+    // Qwik limitation in this project's pinned version: a task that establishes a REAL tracked
+    // subscription (as this one does, via `track(() => props.opened ...)`) crashes Qwik's SSR
+    // container-pause serialization step (`QError_verifySerializable`, Code(3)) if it calls out
+    // to a plain function defined elsewhere in the component body — reproduced with a function
+    // as trivial as `() => { animating.value = false; }`, so it isn't about this logic's
+    // complexity. Likewise, attaching a real `onTransitionEnd$`/`onTransitionCancel$` DOM
+    // listener (the more natural way to detect the transition ending) crashes the same step —
+    // see the `setTimeout`'s own doc note below. Both confirmed while porting this component.
+    useTask$(({track, cleanup}) => {
+      const trackedPosition = track(() => (props.position === 'end' ? 'end' : 'start'));
+      const trackedMode = track(() => props.mode ?? 'over');
+      const isOpen = track(() => props.opened ?? false);
+      const trackedDisableClose = track(() => props.disableClose ?? false);
+      const trackedWidth = track(() => widthPx.value);
+      // Immutable reassignment, not a mutation — see drawer-state.ts's doc comment on
+      // `registry` for why this is required for `MatDrawerContent` (a cross-`<Slot>` consumer)
+      // to reactively pick up the change.
+      containerState.registry.value = {
+        ...containerState.registry.value,
+        [id.value]: {
+          position: trackedPosition,
+          mode: trackedMode,
+          opened: isOpen,
+          disableClose: trackedDisableClose,
+          width: trackedWidth,
+          hostRef,
+          requestClose$,
+        },
+      };
+      cleanup(() => {
+        const next = {...containerState.registry.value};
+        delete next[id.value];
+        containerState.registry.value = next;
+      });
+
+      // Imperative, not just the reactive `classes` array below — see the container's analogous
+      // `mat-drawer-transition` doc comment (mat-drawer-container.tsx) for why: a re-render
+      // triggered solely by a signal this component already rendered with (here, `props.opened`
+      // changing after mount) doesn't reliably reach the DOM's `class` attribute in this
+      // project's pinned Qwik version, confirmed empirically while porting this component. The
+      // `classes` array still includes it too, both for the initial SSR/resume render (which
+      // DOES correctly reflect it) and as a safety net for whenever this component re-renders
+      // for some other reason.
+      // `isBrowser`-guarded, not just an `if (hostRef.value)` truthiness check: during SSR,
+      // `hostRef.value` is a non-null SSR-internal node placeholder (not a real `HTMLElement`),
+      // so it has no `.classList` — `.toggle()` on that throws. Confirmed empirically while
+      // porting this component.
+      if (isBrowser) {
+        const elForOpenedClass = hostRef.value;
+        if (elForOpenedClass) elForOpenedClass.classList.toggle('mat-drawer-opened', isOpen);
+
+        // Cross-component imperative updates, applied from THIS task (confirmed to reliably
+        // run) rather than from a task declared directly in `MatDrawerContainer`/
+        // `MatDrawerContent` (confirmed, while porting this component, to never run at all on
+        // the client) — see `containerHostRef`/`contentHostRef`'s doc comments in
+        // drawer-state.ts for the full rationale.
+        //
+        // `mat-drawer-container-has-open` — mirrors upstream's `_setContainerClass()`, called
+        // from EACH non-side drawer's own `openedChange` ("last write wins" if more than one
+        // non-side drawer exists, matching upstream, not a true OR — see drawer-state.ts's
+        // `hasOpenNonSide` doc comment for the same documented simplification elsewhere).
+        if (trackedMode !== 'side') {
+          const containerEl = containerState.containerHostRef.value;
+          if (containerEl) containerEl.classList.toggle('mat-drawer-container-has-open', isOpen);
         }
-      } else {
-        props.onClosed$?.();
-        const active = document.activeElement;
-        if (hostEl && active && hostEl.contains(active)) {
-          const target = previouslyFocused.value;
-          if (target) {
-            focusVia(target, 'program');
+
+        // Content margins + `inert` — mirrors upstream's `updateContentMargins()` /
+        // `_drawerToggled()`. Recomputed from the FULL registry (already reflecting this
+        // drawer's own just-written entry above), so it stays correct with two drawers too.
+        const contentEl = containerState.contentHostRef.value;
+        if (contentEl) {
+          const margins = computeContentMargins(containerState.registry.value);
+          contentEl.style.marginLeft = margins.left != null ? `${margins.left}px` : '';
+          contentEl.style.marginRight = margins.right != null ? `${margins.right}px` : '';
+          const shouldBeInert = isShowingBackdrop(
+            containerState.registry.value,
+            containerState.backdropOverride.value,
+          );
+          if (shouldBeInert) {
+            contentEl.setAttribute('inert', 'true');
           } else {
-            hostEl.blur();
+            contentEl.removeAttribute('inert');
           }
         }
-        previouslyFocused.value = undefined;
       }
-    };
 
-    useTask$(({track}) => {
-      const isOpen = track(() => opened);
       const isFirstRun = prevOpened.value === undefined;
       const wasOpen = prevOpened.value;
       prevOpened.value = isOpen;
@@ -233,12 +263,43 @@ function createDrawer(
         props.onClosedStart$?.();
       }
 
+      // Timed with a fixed duration matching the synced `drawer.scss`'s hardcoded
+      // `.mat-drawer-transition & { transition: transform 400ms ...; }` (never themeable
+      // upstream either) instead of a real `transitionend` listener — see this task's own doc
+      // comment above for why.
       const transitionsOn = containerState.transitionsEnabled.value;
-      if (transitionsOn && !isFirstRun) {
+      const delay = transitionsOn ? DRAWER_TRANSITION_MS : 0;
+      setTimeout(() => {
+        animating.value = false;
+        const hostEl = hostRef.value;
+        if (hostEl) hostEl.classList.remove('mat-drawer-animating');
+        props.onOpenedChange$?.(isOpen);
+        if (isOpen) {
+          previouslyFocused.value = (document.activeElement as HTMLElement) ?? undefined;
+          props.onOpened$?.();
+          if (hostEl) {
+            const autoFocus =
+              props.autoFocus ?? (props.mode === 'side' ? 'dialog' : 'first-tabbable');
+            applyDrawerAutoFocus(hostEl, autoFocus);
+          }
+        } else {
+          props.onClosed$?.();
+          const active = document.activeElement;
+          if (hostEl && active && hostEl.contains(active)) {
+            const target = previouslyFocused.value;
+            if (target) {
+              focusVia(target, 'program');
+            } else {
+              hostEl.blur();
+            }
+          }
+          previouslyFocused.value = undefined;
+        }
+      }, delay);
+      if (transitionsOn) {
         animating.value = true;
-        setTimeout(() => settleTransition(isOpen), DRAWER_TRANSITION_MS);
-      } else {
-        setTimeout(() => settleTransition(isOpen), 0);
+        const elForAnimating = hostRef.value;
+        if (elForAnimating) elForAnimating.classList.add('mat-drawer-animating');
       }
     });
 
@@ -289,7 +350,15 @@ function createDrawer(
         tabIndex={tabIndexValue}
         onKeyDown$={onKeyDown$}
       >
-        <div class="mat-drawer-inner-container">
+        {/* `cdkscrollable` mirrors upstream's bare `cdkScrollable` directive-selector attribute
+            (`drawer.html`'s `<div class="mat-drawer-inner-container" cdkScrollable>`) — a static,
+            no-value marker Angular echoes onto the host, same category as slide-toggle's
+            `mat-ripple` span. Cast past the intrinsic `<div>` type since it's not a recognized
+            HTML attribute. */}
+        <div
+          class="mat-drawer-inner-container"
+          {...({cdkscrollable: ''} as Record<string, string>)}
+        >
           <Slot />
         </div>
       </HostTag>

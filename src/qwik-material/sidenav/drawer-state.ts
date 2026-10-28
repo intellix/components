@@ -65,6 +65,27 @@ export interface MatDrawerContainerState {
    *  mount) — mirrors upstream's `_transitionsEnabled`. A drawer only runs a real CSS transition
    *  (and so only ever shows `mat-drawer-animating`) while this is true. */
   transitionsEnabled: Signal<boolean>;
+  /**
+   * The container's own host element, populated by its `ref` — exposed here so a registering
+   * `MatDrawer`/`MatSidenav` can imperatively toggle `mat-drawer-container-has-open` on it
+   * (mirrors upstream's `_setContainerClass()`, called per-drawer from each non-side drawer's
+   * own `openedChange` — "last write wins" across drawers if more than one is non-side, matching
+   * upstream, not a true OR; see `mat-drawer.tsx`). A `useTask$` declared directly in
+   * `MatDrawerContainer`/`MatDrawerContent` that tracks `registry`/`backdropOverride` to do this
+   * same imperative work itself was empirically found, while porting this component, to never
+   * run at all on the client (no diagnostics, just silently never invoked) — routing the work
+   * through the ONE task in `MatDrawer` that IS confirmed to reliably run (it also owns the
+   * `mat-drawer-opened` class toggle) avoids whatever that is.
+   */
+  containerHostRef: Signal<HTMLElement | undefined>;
+  /**
+   * The single `MatDrawerContent`/`MatSidenavContent`'s host element, populated by ITS `ref`
+   * (assigned directly to this shared signal, not a local one — see that component) — exposed
+   * here for the same reason as `containerHostRef`: a registering `MatDrawer`/`MatSidenav`
+   * imperatively applies the aggregate content margins + `inert` here after every registry
+   * change, instead of `MatDrawerContent` doing it from its own (empirically non-firing) task.
+   */
+  contentHostRef: Signal<HTMLElement | undefined>;
 }
 
 export const MAT_DRAWER_CONTAINER_STATE = createContextId<MatDrawerContainerState>(

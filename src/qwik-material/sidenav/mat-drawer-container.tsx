@@ -118,6 +118,9 @@ function createContainer(
     const backdropOverride = useSignal<boolean | null>(props.hasBackdrop ?? null);
     const transitionsEnabled = useSignal(false);
     const hostRef = useSignal<HTMLElement>();
+    // Populated by `MatDrawerContent`/`MatSidenavContent`'s own `ref` directly (not a local
+    // signal of its own) — see drawer-state.ts's doc comment on `contentHostRef`.
+    const contentHostRef = useSignal<HTMLElement>();
 
     useTask$(({track}) => {
       const explicit = track(() => props.hasBackdrop);
@@ -128,6 +131,8 @@ function createContainer(
       registry,
       backdropOverride,
       transitionsEnabled,
+      containerHostRef: hostRef,
+      contentHostRef,
     };
     useContextProvider(MAT_DRAWER_CONTAINER_STATE, containerState);
 
@@ -136,12 +141,33 @@ function createContainer(
     // A justified, one-time, mount-driven `useVisibleTask$` exception (design doc) — no user
     // interaction to lazily hang this on, same category as `qwik-material/expansion`'s delayed
     // animations-enabled class.
+    //
+    // The class itself is toggled IMPERATIVELY on the real DOM element (`classList.add`, matching
+    // upstream's own imperative approach above) rather than through the reactive `classes` array
+    // below — empirically confirmed while porting this component that re-renders of THIS
+    // component triggered solely by `transitionsEnabled.value` flipping (no other tracked value
+    // changing in the same render) do not reliably reach the DOM's `class` attribute in this
+    // project's pinned Qwik version, even though the component function demonstrably re-executes
+    // (confirmed via logging) — some other class-array-producing read apparently needs to change
+    // in the SAME render for the patch to actually apply. `transitionsEnabled` itself is still a
+    // real signal (read via context by `MatDrawer`'s task, which is NOT affected by this same
+    // issue), so its only remaining job is that cross-component read — the host's own visible
+    // class no longer depends on reading it reactively here.
     useVisibleTask$(({cleanup}) => {
       const timer = setTimeout(() => {
         transitionsEnabled.value = true;
+        const el = hostRef.value;
+        if (el) el.classList.add('mat-drawer-transition');
       }, 200);
       cleanup(() => clearTimeout(timer));
     });
+
+    // `mat-drawer-container-has-open` is NOT set from a task here — see `containerHostRef`'s
+    // doc comment in drawer-state.ts for why (a task declared directly in this component,
+    // analogous to the one below for `mat-drawer-transition`, was empirically found to never
+    // run on the client at all). Each registering `MatDrawer`/`MatSidenav` toggles it directly
+    // via `containerHostRef`, in the same already-reliable task that toggles its own
+    // `mat-drawer-opened` class.
 
     const hasBackdrop = containerHasBackdrop(registry.value, backdropOverride.value);
     const showingBackdrop = isShowingBackdrop(registry.value, backdropOverride.value);

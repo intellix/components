@@ -2,6 +2,8 @@ import {
   component$,
   Slot,
   useContext,
+  useSignal,
+  useVisibleTask$,
   type Component,
   type FunctionComponent,
 } from '@builder.io/qwik';
@@ -29,13 +31,31 @@ function createContent(
 ): Component<MatDrawerContentProps> {
   return component$<MatDrawerContentProps>(props => {
     const containerState = useContext(MAT_DRAWER_CONTAINER_STATE);
+    const hostRef = useSignal<HTMLElement>();
+
+    // Mirrors `hostRef` into the shared `containerState.contentHostRef` once mounted, so a
+    // registering `MatDrawer`/`MatSidenav` can reach this element imperatively (see that
+    // field's doc comment in drawer-state.ts). `ref` itself can't be bound directly to
+    // `containerState.contentHostRef` — empirically found, while porting this component, to
+    // never actually populate a signal sourced from another component's scope; a plain
+    // `useVisibleTask$` copy (no `track()`, no cross-component signal read — just a one-time
+    // mount-driven assignment, the same justified exception category as the width-measurement
+    // task in `mat-drawer.tsx`) reliably does.
+    useVisibleTask$(() => {
+      containerState.contentHostRef.value = hostRef.value;
+    });
 
     // Reads the container's shared registry directly (same context both `MatDrawerContainer`
     // and every `MatDrawer`/`MatSidenav` read) rather than through a value the container
     // precomputes — see drawer-state.ts's doc comment on why this avoids a child-writes/
     // parent-already-rendered ordering problem. Reactive: re-renders whenever any registered
     // drawer's `opened`/`mode`/`width` changes, exactly mirroring upstream's
-    // `_contentMarginChanges` subscription.
+    // `_contentMarginChanges` subscription — this covers the INITIAL SSR/resume render
+    // correctly. Subsequent updates (e.g. after a click) are additionally applied
+    // IMPERATIVELY by whichever `MatDrawer`/`MatSidenav` registers the change, directly on
+    // `containerState.contentHostRef` — see that field's doc comment in drawer-state.ts for
+    // why: a task declared directly in this component to do the same imperative work was
+    // empirically found, while porting this component, to never run at all on the client.
     const margins = computeContentMargins(containerState.registry.value);
     const inert = isShowingBackdrop(
       containerState.registry.value,
@@ -58,7 +78,7 @@ function createContent(
     const HostTag = hostTag as unknown as FunctionComponent<Record<string, unknown>>;
 
     return (
-      <HostTag id={props.id} class={classes} style={style} inert={inertAttr}>
+      <HostTag ref={hostRef} id={props.id} class={classes} style={style} inert={inertAttr}>
         <Slot />
       </HostTag>
     );
