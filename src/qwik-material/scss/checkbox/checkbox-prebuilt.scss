@@ -1,0 +1,38 @@
+// Checkbox prebuilt CSS entry. Wraps the port's checkbox.scss (now a
+// byte-for-byte sync of upstream src/material/checkbox/checkbox.scss +
+// _checkbox-common.scss — see checkbox/SYNC.md) with :root defaults for
+// every --mat-sys-* system token its token-utils.slot(...) fallback chain
+// resolves through. Computed-style / visual parity with the M2 Angular
+// theme the dev-app happens to run is out of scope (remediation design
+// doc's "Out of scope" section) — these values just keep the compiled CSS
+// free of dangling var() with no fallback, following the established
+// button/progress-bar/card/dialog precedent of a self-contained :root block
+// per entry point.
+//
+// Variable names verified against this file's own compiled output
+// (`sass.compile('scss/checkbox/checkbox.scss')`) — every name below is a
+// `var(--mat-sys-*` reference that actually appears there.
+@use './checkbox';
+
+:root {
+  // Color — mirrors _m3-checkbox.scss's `color` token group.
+  --mat-sys-primary: #6750a4;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-surface: #fef7ff;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
+
+  // State layer opacities — mirrors _m3-checkbox.scss's `base` token group.
+  --mat-sys-hover-state-layer-opacity: 0.08;
+  --mat-sys-focus-state-layer-opacity: 0.12;
+  --mat-sys-pressed-state-layer-opacity: 0.12;
+
+  // Typography — mirrors _m3-checkbox.scss's `typography` token group
+  // (checkbox-label-text-*), matching the Roboto fallback already used by
+  // button/badge/dialog's own body-medium/label-large defaults.
+  --mat-sys-body-medium-font: Roboto, 'Helvetica Neue', sans-serif;
+  --mat-sys-body-medium-line-height: 1.25rem;
+  --mat-sys-body-medium-size: 0.875rem;
+  --mat-sys-body-medium-tracking: 0.016rem;
+  --mat-sys-body-medium-weight: 400;
+}

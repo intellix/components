@@ -20,6 +20,7 @@ const entries = [
   'slide-toggle',
   'expansion',
   'radio',
+  'checkbox',
 ];
 
 export default defineConfig({
@@ -53,6 +54,7 @@ export default defineConfig({
           ['scss/slide-toggle/slide-toggle-prebuilt.scss', 'dist/slide-toggle-prebuilt.css'],
           ['scss/expansion/expansion-prebuilt.scss', 'dist/expansion-prebuilt.css'],
           ['scss/radio/radio-prebuilt.scss', 'dist/radio-prebuilt.css'],
+          ['scss/checkbox/checkbox-prebuilt.scss', 'dist/checkbox-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

@@ -33,6 +33,8 @@ import type {MatExpansionConfig} from '../expansion/expansion-config';
 import {MAT_EXPANSION_CONFIG} from '../expansion/expansion-config';
 import type {MatRadioConfig} from '../radio/radio-config';
 import {MAT_RADIO_CONFIG} from '../radio/radio-config';
+import type {MatCheckboxConfig} from '../checkbox/checkbox-config';
+import {MAT_CHECKBOX_CONFIG} from '../checkbox/checkbox-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -67,6 +69,8 @@ export interface QwikMaterialProviderProps {
   matExpansionConfig?: MatExpansionConfig;
   /** Defaults applied to every MatRadioGroup / MatRadioButton in this subtree. */
   matRadioConfig?: MatRadioConfig;
+  /** Defaults applied to every MatCheckbox in this subtree. */
+  matCheckboxConfig?: MatCheckboxConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -139,6 +143,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // ('accent'/false) defaults as its FINAL fallback regardless, so this
   // stays correct even though {} isn't MAT_RADIO_CONFIG_DEFAULTS itself.
   useContextProvider(MAT_RADIO_CONFIG, props.matRadioConfig ?? {});
+  // MatCheckboxConfig is a plain object with primitive fields — no noSerialize needed.
+  // Checkboxes outside a provider get the MAT_CHECKBOX_CONFIG_DEFAULTS declared in
+  // checkbox-config.ts; providing an empty object here is NOT equivalent to those
+  // defaults (MatCheckbox itself falls back per-field: `props.x ?? config.x ?? ownDefault`).
+  useContextProvider(MAT_CHECKBOX_CONFIG, props.matCheckboxConfig ?? {});
 
   return <Slot />;
 });

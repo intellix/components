@@ -114,6 +114,11 @@
       "types": "./dist/radio/index.d.ts",
       "import": "./dist/radio/index.js"
     },
+    "./checkbox": {
+      "qwik": "./checkbox/index.ts",
+      "types": "./dist/checkbox/index.d.ts",
+      "import": "./dist/checkbox/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -130,6 +135,7 @@
     "./slide-toggle-prebuilt.css": "./dist/slide-toggle-prebuilt.css",
     "./expansion-prebuilt.css": "./dist/expansion-prebuilt.css",
     "./radio-prebuilt.css": "./dist/radio-prebuilt.css",
+    "./checkbox-prebuilt.css": "./dist/checkbox-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

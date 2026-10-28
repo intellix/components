@@ -2,6 +2,7 @@ import {component$} from '@builder.io/qwik';
 import {QwikCityProvider, RouterOutlet} from '@builder.io/qwik-city';
 import {QwikCdkRoot} from '@angular-community/qwik-cdk';
 import '@angular-community/qwik-cdk/overlay-prebuilt.css';
+import '@angular-community/qwik-material/core-prebuilt.css';
 import '@angular-community/qwik-material/dialog-prebuilt.css';
 import '@angular-community/qwik-material/button-prebuilt.css';
 import '@angular-community/qwik-material/card-prebuilt.css';
@@ -17,6 +18,7 @@ import '@angular-community/qwik-material/button-toggle-prebuilt.css';
 import '@angular-community/qwik-material/slide-toggle-prebuilt.css';
 import '@angular-community/qwik-material/expansion-prebuilt.css';
 import '@angular-community/qwik-material/radio-prebuilt.css';
+import '@angular-community/qwik-material/checkbox-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>
