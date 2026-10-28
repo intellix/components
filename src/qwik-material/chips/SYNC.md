@@ -117,6 +117,43 @@ not just upstream's source code.
 7. **Icon-like content is always a plain `JSXOutput` prop, never a dedicated icon component.**
    `qwik-material/icon` is out of scope for this port's chips scenarios — avatars/trailing
    icons/remove glyphs are plain text/spans, matching the parity spec's own stated scope.
+8. **A genuine, rare Qwik 1.20 runtime limitation can destroy `<mat-chip-grid>` without
+   recreating it, the FIRST time a row is ever added purely client-side.** Found via repeated
+   (40+ back-to-back) run stress-testing of `grid-input`'s "type Mango + Enter" step: roughly
+   1 in 15-30 runs, Qwik logs "Rendering promises in JSX signals is not supported" (a
+   swallowed, not thrown, error) and `<mat-chip-grid>` itself is gone from the DOM afterward,
+   never recreated. Confirmed via a tagged-element check that this ISN'T specific to
+   `MatChipGrid`'s own `rows.map()` rendering at all: `<mat-chip-grid>`'s host element is
+   fully destroyed and recreated as part of EVERY add (success or failure) — the bug is
+   simply that specific recreation occasionally not completing. Extracting the row list into
+   its own `component$` boundary (`ChipGridRows`), switching `rows`' delivery mechanism
+   between a prop-`Signal` and a dedicated context, and several bounded self-healing retries
+   written INSIDE `MatChipGrid` were all tried and none reduced the failure rate — consistent
+   with the failure being at or above `MatChipGrid`'s own level, where nothing inside it
+   (including a fresh instance of itself) can reliably self-correct.
+
+   The fix that DOES work has to live in the CONSUMER: since `<MatChipGrid>` sits inside
+   `<MatFormField control={...}>`'s frozen prop value, only an ancestor with a live, reactive
+   `key` on `<MatFormField>` itself can force a correct, from-scratch remount when this is
+   detected. `grid-input`'s dev-app route polls via `requestAnimationFrame` for whether
+   `<mat-chip-grid>` still exists in the DOM shortly after an add; if not, it bumps a
+   `formFieldRemountNonce` used as `<MatFormField key={formFieldRemountNonce.value}>`, then
+   re-focuses the fresh input once it exists (the recreated instance has no memory of the
+   input still logically being focused — Enter doesn't blur it). Confirmed live across 80+
+   repeated runs this reliably self-corrects.
+
+   This recreation ALSO broke `fixupRippleDisabled$`'s original "mountedRowKeys" design (a
+   `useSignal` seeded once from `rows` at THIS component instance's own mount): a fresh
+   instance's "rows I saw at my own mount" wrongly includes a row that was genuinely added
+   dynamically, well before that particular instance existed, incorrectly applying the
+   construction-time ripple-disabled correction to it. Fixed by replacing that local,
+   per-instance set with an explicit, consumer-set `MatChipRowDef.dynamicallyAdded` flag,
+   which survives the instance being recreated because it lives in the consumer's own state,
+   never recomputed by `MatChipGrid` itself. (Also confirmed live via a 40-run repeat: briefly
+   tried applying the ripple-disabled correction unconditionally to every row instead of
+   excluding dynamically-added ones — this was dramatically WORSE, not a timing-dependent
+   wash. Upstream reliably does NOT correct a dynamically-added row within this suite's
+   interaction window, so excluding it is the right default.)
 
 ## Shared infrastructure touched by this port
 
