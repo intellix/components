@@ -75,8 +75,8 @@ export interface MatDrawerProps {
 }
 
 /** Matches `scss/sidenav/drawer.scss`'s hardcoded `.mat-drawer-transition & { transition:
- *  transform 400ms ...; }` — see `settleTransition`'s doc comment for why this port times the
- *  transition with a fixed timer instead of a real `transitionend` listener. */
+ *  transform 400ms ...; }` — see the combined task's doc comment below for why this port times
+ *  the transition with a fixed timer instead of a real `transitionend` listener. */
 const DRAWER_TRANSITION_MS = 400;
 
 /** Props for `<MatSidenav>` — adds the `MatSidenav`-only `fixedInViewport` family. */
