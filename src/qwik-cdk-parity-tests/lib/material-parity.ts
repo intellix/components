@@ -161,11 +161,17 @@ export async function snapshotParityRoot(
   page: Page,
   rootSelector = '[data-parity-root]',
 ): Promise<DomNode> {
-  // Transient ripple elements are timing-dependent; wait them out.
+  // Transient ripple elements are timing-dependent; wait them out. Template
+  // ripples that stay for good (e.g. `mat-radio-persistent-ripple`) are part
+  // of the DOM contract and are not waited for.
   await page
-    .waitForFunction(() => !document.querySelector('.mat-ripple-element'), undefined, {
-      timeout: 3000,
-    })
+    .waitForFunction(
+      () => !document.querySelector('.mat-ripple-element:not([class*="persistent-ripple"])'),
+      undefined,
+      {
+        timeout: 3000,
+      },
+    )
     .catch(() => {});
 
   return page.locator(rootSelector).evaluate(
