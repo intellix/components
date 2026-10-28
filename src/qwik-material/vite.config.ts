@@ -23,6 +23,7 @@ const entries = [
   'checkbox',
   'sort',
   'tabs',
+  'sidenav',
 ];
 
 export default defineConfig({
@@ -59,6 +60,7 @@ export default defineConfig({
           ['scss/checkbox/checkbox-prebuilt.scss', 'dist/checkbox-prebuilt.css'],
           ['scss/sort/sort-prebuilt.scss', 'dist/sort-prebuilt.css'],
           ['scss/tabs/tabs-prebuilt.scss', 'dist/tabs-prebuilt.css'],
+          ['scss/sidenav/sidenav-prebuilt.scss', 'dist/sidenav-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

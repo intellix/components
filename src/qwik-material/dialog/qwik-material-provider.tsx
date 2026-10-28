@@ -39,6 +39,8 @@ import type {MatSortConfig} from '../sort/sort-config';
 import {MAT_SORT_CONFIG} from '../sort/sort-config';
 import type {MatTabsConfig} from '../tabs/tab-config';
 import {MAT_TABS_CONFIG} from '../tabs/tab-config';
+import type {MatSidenavConfig} from '../sidenav/sidenav-config';
+import {MAT_SIDENAV_CONFIG} from '../sidenav/sidenav-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -79,6 +81,8 @@ export interface QwikMaterialProviderProps {
   matSortConfig?: MatSortConfig;
   /** Defaults applied to every MatTabGroup / MatTabNav in this subtree. */
   matTabsConfig?: MatTabsConfig;
+  /** Defaults applied to every MatDrawerContainer / MatSidenavContainer in this subtree. */
+  matSidenavConfig?: MatSidenavConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -166,6 +170,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // declared in MatTabGroup/MatTabNav; providing an empty object is
   // equivalent to accepting all defaults.
   useContextProvider(MAT_TABS_CONFIG, props.matTabsConfig ?? {});
+  // MatSidenavConfig is a plain object with primitive fields — no noSerialize needed.
+  // Drawer containers outside a provider get the DEFAULTS declared in
+  // MatDrawerContainer/MatSidenavContainer; providing an empty object is equivalent to
+  // accepting all defaults.
+  useContextProvider(MAT_SIDENAV_CONFIG, props.matSidenavConfig ?? {});
 
   return <Slot />;
 });
