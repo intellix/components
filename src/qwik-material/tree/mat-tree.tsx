@@ -120,17 +120,17 @@ export const MatTree = component$((props: MatTreeProps<unknown>) => {
     return base;
   });
 
-  useContextProvider(CDK_TREE_TOGGLE_STATE, {expanded, activeKey});
-
   // IMPORTANT — all of the following feed INTO the `$(...)` handlers
-  // below. Qwik's closure capture serializes whatever IDENTIFIER a QRL
-  // references from its enclosing scope, so these are deliberately
-  // trimmed to plain, JSON-serializable data (`FlatTreeEntry.content` is
-  // live `JSXOutput`, which is NOT serializable — reading `props.x`
-  // directly inside a handler captures the WHOLE `props` object,
-  // `nodes`/`content` included). Confirmed live: skipping this trimming
-  // crashes SSR with Qwik's "Code(3)" (`QError_verifySerializable`). See
-  // `CdkTreeNodeToggle`'s matching comment for the same finding.
+  // below (and, for `onExpandedChange`/`dataByKey`, into the shared
+  // context `CdkTreeNodeToggle` reads). Qwik's closure capture serializes
+  // whatever IDENTIFIER a QRL references from its enclosing scope, so
+  // these are deliberately trimmed to plain, JSON-serializable data
+  // (`FlatTreeEntry.content` is live `JSXOutput`, which is NOT
+  // serializable — reading `props.x` directly inside a handler captures
+  // the WHOLE `props` object, `nodes`/`content` included). Confirmed
+  // live: skipping this trimming crashes SSR with Qwik's "Code(3)"
+  // (`QError_verifySerializable`). See `CdkTreeNodeToggle`'s matching
+  // comment for the same finding.
   const onActivation = props.onActivation$;
   const onExpandedChange = props.onExpandedChange$;
   const navEntries = visible.map(e => ({
@@ -143,6 +143,13 @@ export const MatTree = component$((props: MatTreeProps<unknown>) => {
   }));
   const disabledByKey = new Map(all.map(e => [e.key, e.isDisabled] as const));
   const dataByKey = new Map(all.map(e => [e.key, e.data] as const));
+
+  useContextProvider(CDK_TREE_TOGGLE_STATE, {
+    expanded,
+    activeKey,
+    onExpandedChange,
+    dataByKey,
+  });
   // The order `treeRoot.querySelectorAll('[role="treeitem"]')` returns
   // rendered nodes in, for THIS variant — 'flat' only has visible nodes in
   // the DOM at all; 'nested' always renders every node (see

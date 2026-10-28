@@ -86,6 +86,14 @@ export const CdkTreeNodeToggle = component$<CdkTreeNodeToggleProps>(props => {
     if (onToggle) {
       await onToggle(nodeKey, next);
     }
+    // Also report through the TREE's own `onExpandedChange$` (see
+    // `CdkTreeToggleState`'s doc comment) — a toggle-click-driven change
+    // fires the same tree-level callback a keyboard-driven expand/
+    // collapse/`*` already does, matching upstream's single
+    // `(expandedChange)` output firing for every cause.
+    if (state.onExpandedChange) {
+      await state.onExpandedChange(nodeKey, next, state.dataByKey.get(nodeKey));
+    }
   });
 
   const onKeyDown$ = $((event: KeyboardEvent) => {
