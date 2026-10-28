@@ -8,6 +8,7 @@ Repo root: this file lives at src/qwik-material/SYNC.md.
 |---|---|---|---|
 | dialog | src/material/dialog | (unsynced — initial port) | See dialog/SYNC.md |
 | expansion | src/material/expansion | (unsynced — initial port, 2026-10-27) | Built on `@angular-community/qwik-cdk/accordion`. See expansion/SYNC.md |
+| menu | src/material/menu | (unsynced — initial port, 2026-10-28) | Built on `@angular-community/qwik-cdk/a11y`'s new `FocusKeyManager`. See menu/SYNC.md |
 
 ## Sync recipe
 
