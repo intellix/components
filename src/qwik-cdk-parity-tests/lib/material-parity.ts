@@ -135,6 +135,12 @@ const CONSUMER_SELECTOR_ATTRS = [
   'mat-footer-cell',
   'mattreenodetoggle',
   'mattreenodepadding',
+  'matstartdate',
+  'matenddate',
+  'matdatepickercancel',
+  'matdatepickerapply',
+  'matdaterangepickercancel',
+  'matdaterangepickerapply',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
