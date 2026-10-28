@@ -1,0 +1,33 @@
+// Tree prebuilt CSS. Wraps the port's upstream-synced tree.scss with
+// :root defaults for every --mat-tree-* / --mat-sys-* variable it
+// resolves through. Same reconciliation approach as every other
+// qwik-material prebuilt file (compile, add whatever var() names are
+// still unresolved, repeat) — see design spec §4 and SYNC.md.
+//
+// --mat-sys-* values are M3-ish literals, not a live theme (no runtime
+// theming system in this port) — reused verbatim from other prebuilt
+// files wherever they already define the same variable name (surface/
+// on-surface/body-large-*), so loading more than one of these prebuilt
+// CSS files on the same page doesn't produce conflicting defaults for
+// shared system tokens. `body-large-*` is new to this file (no other
+// prebuilt stylesheet in this port used it yet) — values from
+// `_m3-tree.scss`'s own upstream M3 type-scale defaults.
+
+@use './tree';
+
+:root {
+  // ─── tree ───
+  --mat-tree-container-background-color: var(--mat-sys-surface, #fef7ff);
+  --mat-tree-node-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-tree-node-text-font: var(--mat-sys-body-large-font, Roboto, 'Helvetica Neue', sans-serif);
+  --mat-tree-node-text-size: var(--mat-sys-body-large-size, 1rem);
+  --mat-tree-node-text-weight: var(--mat-sys-body-large-weight, 400);
+  --mat-tree-node-min-height: 48px;
+
+  // ─── --mat-sys-* system tokens tree's m3 tokens resolve through ───
+  --mat-sys-surface: #fef7ff;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-body-large-font: Roboto, 'Helvetica Neue', sans-serif;
+  --mat-sys-body-large-size: 1rem;
+  --mat-sys-body-large-weight: 400;
+}
