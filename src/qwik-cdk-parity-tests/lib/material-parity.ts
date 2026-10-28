@@ -97,6 +97,11 @@ const CONSUMER_SELECTOR_ATTRS = [
   'mattextsuffix',
   'maticonprefix',
   'maticonsuffix',
+  'matsnackbarlabel',
+  'matsnackbaractions',
+  'matsnackbaraction',
+  'matsteppernext',
+  'matstepperprevious',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
