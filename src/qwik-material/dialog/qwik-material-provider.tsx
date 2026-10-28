@@ -35,6 +35,10 @@ import type {MatRadioConfig} from '../radio/radio-config';
 import {MAT_RADIO_CONFIG} from '../radio/radio-config';
 import type {MatCheckboxConfig} from '../checkbox/checkbox-config';
 import {MAT_CHECKBOX_CONFIG} from '../checkbox/checkbox-config';
+import type {MatFormFieldConfig} from '../form-field/form-field-config';
+import {MAT_FORM_FIELD_CONFIG} from '../form-field/form-field-config';
+import type {MatInputConfig} from '../input/input-config';
+import {MAT_INPUT_CONFIG} from '../input/input-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -71,6 +75,10 @@ export interface QwikMaterialProviderProps {
   matRadioConfig?: MatRadioConfig;
   /** Defaults applied to every MatCheckbox in this subtree. */
   matCheckboxConfig?: MatCheckboxConfig;
+  /** Defaults applied to every MatFormField in this subtree. */
+  matFormFieldConfig?: MatFormFieldConfig;
+  /** Defaults applied to every MatInput in this subtree. */
+  matInputConfig?: MatInputConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -148,6 +156,18 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // checkbox-config.ts; providing an empty object here is NOT equivalent to those
   // defaults (MatCheckbox itself falls back per-field: `props.x ?? config.x ?? ownDefault`).
   useContextProvider(MAT_CHECKBOX_CONFIG, props.matCheckboxConfig ?? {});
+  // MatFormFieldConfig is a plain object with primitive fields — no
+  // noSerialize needed. Form fields outside a provider get the
+  // MAT_FORM_FIELD_CONFIG_DEFAULTS declared in form-field-config.ts;
+  // providing an empty object here is NOT equivalent to those defaults
+  // (MatFormField itself falls back per-field: `props.x ?? config.x ?? ownDefault`,
+  // same convention as checkbox/radio).
+  useContextProvider(MAT_FORM_FIELD_CONFIG, props.matFormFieldConfig ?? {});
+  // MatInputConfig is a plain object with a single primitive field — no
+  // noSerialize needed. Inputs outside a provider get the hardcoded
+  // `false` fallback declared in MatInput; providing an empty object is
+  // equivalent to accepting that default.
+  useContextProvider(MAT_INPUT_CONFIG, props.matInputConfig ?? {});
 
   return <Slot />;
 });

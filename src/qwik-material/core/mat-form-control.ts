@@ -95,7 +95,7 @@ export function matValidationErrors(
   let errors: MatValidationErrors | null = null;
   for (const fn of validators) {
     const result = fn(value);
-    if (result) errors = {...errors, ...result};
+    if (result) errors = Object.assign(errors ?? {}, result);
   }
   return errors;
 }
