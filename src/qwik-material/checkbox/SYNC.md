@@ -133,3 +133,14 @@ observed during this port's development coincided with heavy concurrent
 load from *other* agent worktrees' test suites running at the same time
 (sibling wave-1 ports for radio, expansion, and slide-toggle) — re-running,
 or running when the host is less contended, resolves it.
+
+## First paint + handler timing (2026-10-28, coordinator)
+
+- `checked` is rendered as a JSX prop again so a pre-checked checkbox paints
+  checked before JS runs (the parity harness compares the live `.checked`
+  property, so the SSR attribute that lingers afterwards is not a diff — see
+  the parity-tests README). `indeterminate` stays task-only (no attribute exists).
+- The "Known flakiness" above was a spec race, not host timing: the step's
+  "transition class is gone" wait could pass before Qwik's lazily-resolved
+  handler had added the class. Steps now wait for the input's className to
+  change (bounded at 1.5s) before waiting the class out.

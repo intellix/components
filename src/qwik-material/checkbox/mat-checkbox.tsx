@@ -188,8 +188,9 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
   // changes (e.g. after a click) — exactly as lazy as the JSX-prop approach
   // was meant to be, with none of its bugs. Cost (same as before): a
   // checkbox that starts checked/indeterminate and is never interacted with
-  // won't show the native `:checked`/`:indeterminate` CSS pseudo-class
-  // styling until first interaction — a visual-only gap, explicitly out of
+  // won't show the native `:indeterminate` CSS pseudo-class styling until
+  // first interaction (`checked` is also rendered as a JSX prop below for
+  // first paint) — a visual-only gap, explicitly out of
   // scope per the remediation design doc ("computed-style / visual parity
   // ... out of scope"). The `mdc-checkbox--selected`/`mat-mdc-checkbox-checked`
   // classes and `aria-checked="mixed"` attribute (the parts of this state any
@@ -333,12 +334,13 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
             aria-owns={props['aria-owns']}
             name={props.name ?? undefined}
             value={props.value}
-            // `checked`/`indeterminate` are intentionally NOT JSX props here
-            // — set imperatively via the `useTask$`s above (ref-based). See
-            // that comment for why: an attribute-shaped JSX prop either
-            // leaves a permanently-lingering stray attribute (SSR) or broke
-            // CSR reactivity outright when gated to avoid that (both
-            // confirmed empirically — see SYNC.md).
+            // Rendered so a pre-checked checkbox paints checked before JS
+            // runs. SSR leaves a `checked` attribute that never updates
+            // afterwards; the parity harness compares the live property
+            // (README: "Checkbox/radio inputs are compared on their live
+            // `.checked` state"). The useTask$ above keeps the property in
+            // sync; `indeterminate` has no attribute and stays task-only.
+            checked={checked.value}
             disabled={(disabled && !disabledInteractive) || undefined}
             id={inputId}
             required={required || undefined}

@@ -238,20 +238,47 @@ const waitForTransitionClassToClear = (page: Page) =>
     {timeout: 5000},
   );
 
+/**
+ * Runs `action`, then waits for the checkbox's handler to have landed before
+ * waiting out the transition class. Qwik resolves handlers lazily, so the
+ * class can appear *after* a bare "class is gone" check has already passed;
+ * Angular adds it synchronously. A change to the input's className marks the
+ * handler as done (no-op steps such as disabled clicks just time out quietly).
+ */
+async function actAndSettle(page: Page, index: number, action: () => Promise<void>) {
+  const input = checkboxInput(page, index);
+  const before = await input.evaluate(el => el.className);
+  await action();
+  await input
+    .evaluate(
+      (el, b) =>
+        new Promise<void>(resolve => {
+          if (el.className !== b) return resolve();
+          setTimeout(resolve, 1500);
+          new MutationObserver((_, obs) => {
+            obs.disconnect();
+            resolve();
+          }).observe(el, {attributes: true, attributeFilter: ['class']});
+        }),
+      before,
+    )
+    .then(
+      () => {},
+      () => {},
+    );
+  await waitForTransitionClassToClear(page);
+}
+
 const click = (index = 0): ParityStep => ({
   name: `click checkbox ${index}`,
-  run: async (page: Page) => {
-    await checkboxInput(page, index).click({force: true});
-    await waitForTransitionClassToClear(page);
-  },
+  run: page => actAndSettle(page, index, () => checkboxInput(page, index).click({force: true})),
 });
 
 const spaceToggle = (index = 0): ParityStep => ({
   name: `space checkbox ${index}`,
   run: async (page: Page) => {
     await checkboxInput(page, index).focus();
-    await page.keyboard.press('Space');
-    await waitForTransitionClassToClear(page);
+    await actAndSettle(page, index, () => page.keyboard.press('Space'));
   },
 });
 
