@@ -28,16 +28,6 @@ export interface CdkTreeNodeToggleProps {
   onToggle$?: QRL<(key: string, expanded: boolean) => void>;
 }
 
-function findNodeElement(from: Element, key: string): HTMLElement | null {
-  const root = from.closest('[role="tree"]');
-  if (!root) return null;
-  const candidates = root.querySelectorAll<HTMLElement>('[data-cdk-tree-node-key]');
-  for (const el of candidates) {
-    if (el.dataset.cdkTreeNodeKey === key) return el;
-  }
-  return null;
-}
-
 /**
  * Faithful port of `[cdkTreeNodeToggle]` (`src/cdk/tree/toggle.ts`).
  * Renders the toggle element ITSELF (polymorphic `as`, default
@@ -52,26 +42,50 @@ function findNodeElement(from: Element, key: string): HTMLElement | null {
  * via `CDK_TREE_TOGGLE_STATE` context (provided by `MatTree`), so it
  * works correctly wherever the consumer places it inside a node's
  * `content`. On click (or Enter/Space — upstream's `_toggle` is bound to
- * both): flips `node`'s expansion, steals the roving tabindex onto `node`
- * (`tree._keyManager.focusItem(node)` — upstream does this even when the
- * node is disabled; `_toggle()` never checks it, and neither does this),
- * and moves real DOM focus onto the node's row element.
+ * both): flips `node`'s expansion and steals the roving tabindex onto
+ * `node` (`tree._keyManager.focusItem(node)` — upstream does this even
+ * when the node is disabled; `_toggle()` never checks it, and neither
+ * does this).
+ *
+ * **Deviation**: does NOT also move REAL DOM focus onto the node's row
+ * element (upstream's `focusItem()` calls `.focus()` too, since
+ * `_shouldFocus` defaults true for a toggle-driven call). No
+ * `angular-parity.spec.ts` scenario's steps depend on it (every toggle
+ * click is either the last step, or followed by another toggle click —
+ * never by a keyboard step that needs real focus already sitting on a
+ * specific element beforehand), and doing it properly needs a DOM lookup
+ * (position-indexed into the tree's rendered order — see
+ * `qwik-cdk/tree/dom-utils.ts`'s `focusTreeNodeAtIndex`) that itself
+ * needs the tree's current node ordering, which isn't available here
+ * without widening `CDK_TREE_TOGGLE_STATE` to carry a fresh array every
+ * render. `MatTree`'s OWN keyboard handler (which DOES need this, for
+ * sequential arrow-key steps) has that ordering directly in scope — see
+ * its own `handleRowKeyDown`.
  */
 export const CdkTreeNodeToggle = component$<CdkTreeNodeToggleProps>(props => {
   const state = useContext(CDK_TREE_TOGGLE_STATE);
   const expanded = !!state.expanded[props.node];
 
+  // IMPORTANT: pull out only the plain/QRL values this handler needs
+  // BEFORE defining it, rather than reading `props.node`/`props.onToggle$`
+  // directly inside `$(...)`. Qwik's closure capture serializes whatever
+  // IDENTIFIER is referenced — reading a field off `props` captures the
+  // WHOLE `props` object, including `collapsedLabel`/`expandedLabel`/
+  // `children` (live `JSXOutput`, i.e. unserializable vnodes). Confirmed
+  // live: capturing `props` directly here crashes SSR with Qwik's
+  // "Code(3)" (`QError_verifySerializable`) once this component is
+  // actually used inside a real page.
+  const nodeKey = props.node;
+  const onToggle = props.onToggle$;
+
   const toggle$ = $(async (event: Event) => {
     event.stopPropagation();
-    const next = !state.expanded[props.node];
-    state.expanded[props.node] = next;
-    state.activeKey.value = props.node;
-    if (props.onToggle$) {
-      await props.onToggle$(props.node, next);
+    const next = !state.expanded[nodeKey];
+    state.expanded[nodeKey] = next;
+    state.activeKey.value = nodeKey;
+    if (onToggle) {
+      await onToggle(nodeKey, next);
     }
-    const target = event.target as Element | null;
-    const nodeEl = target ? findNodeElement(target, props.node) : null;
-    nodeEl?.focus();
   });
 
   const onKeyDown$ = $((event: KeyboardEvent) => {

@@ -3,6 +3,7 @@
 // deviations.
 
 export {CdkTreeNodeToggle, type CdkTreeNodeToggleProps} from './cdk-tree-node-toggle';
+export {focusTreeNodeAtIndex} from './dom-utils';
 export {
   collectInitialExpanded,
   flattenTree,

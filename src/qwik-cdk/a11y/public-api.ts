@@ -41,3 +41,9 @@ export type {FocusKeyManager, FocusableOption} from './key-manager/focus-key-man
 export {createFocusKeyManager} from './key-manager/focus-key-manager';
 export type {Typeahead} from './key-manager/typeahead';
 export {createTypeahead} from './key-manager/typeahead';
+export type {
+  TreeKeyManagerItem,
+  TreeKeydownAction,
+  ResolveTreeKeydownOptions,
+} from './key-manager/tree-key-manager';
+export {resolveTreeKeydown} from './key-manager/tree-key-manager';

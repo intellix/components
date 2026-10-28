@@ -83,6 +83,7 @@ so this requires no `noSerialize()` workaround.
 | `a11y/key-manager/tree-key-manager.ts` | `src/cdk/a11y/key-manager/tree-key-manager.ts` (`TreeKeyManager.onKeydown` + `_focusNextItem`/`_focusPreviousItem`/`_focusFirstItem`/`_focusLastItem`/`_expandCurrentItem`/`_collapseCurrentItem`/`_expandAllItemsAtCurrentItemLevel`) | ported (as a pure function) | `resolveTreeKeydown()` — see that file's own header comment for the full "class -> pure function" rationale. Typeahead NOT ported (no scenario exercises it). |
 | `tree/cdk-tree-node-toggle.tsx` | `src/cdk/tree/toggle.ts` (`CdkTreeNodeToggle`) | ported | Renders the toggle element itself (polymorphic `as`, default `'button'`) — see its own doc comment. `matTreeNodeToggleRecursive` accepted but NOT implemented (documented no-op — see the prop's own doc comment). |
 | `tree/tree-context.ts` | (new) | new | `CDK_TREE_TOGGLE_STATE` — the context contract between `MatTree` (provider) and `CdkTreeNodeToggle` (consumer). See "Why expansion/focus state is owned internally" above. |
+| `tree/dom-utils.ts` | (new) | new | `focusTreeNodeAtIndex(treeRoot, index)` — moves real DOM focus to the `index`-th rendered `role="treeitem"`, used by `MatTree`'s keyboard handler (ArrowUp/Down/Left/Right/Home/End need to move REAL focus, not just a `tabindex` attribute, since a scenario's later steps dispatch key presses wherever the browser currently considers focused). Deliberately index-based, not an attribute-value lookup — see "Pitfalls" below for why a `[data-*]` identifying attribute was rejected. |
 
 ## Removed upstream files
 
@@ -132,6 +133,61 @@ so this requires no `noSerialize()` workaround.
   deprecated escape hatch). No scenario or consumer needs this; `MatTree`
   always manages its own roving tabindex.
 
+## Pitfalls hit while porting (read before touching event handlers here)
+
+1. **A `$(...)` handler that reads a field off `props` captures the WHOLE
+   `props` object — not just that field.** `MatTree`/`CdkTreeNodeToggle`
+   both take props containing live `JSXOutput` (`content`/
+   `collapsedLabel`/`expandedLabel`/`children`) alongside plain QRLs/
+   strings. Writing `props.onToggle$(...)` directly inside a `$(...)`
+   handler crashes SSR with Qwik's "Code(3)"
+   (`QError_verifySerializable`) the moment that component is used on a
+   real page — NOT caught by `tsc`, NOT caught by `vitest` (happy-dom
+   doesn't exercise Qwik's actual serialization pipeline), only by
+   actually rendering the page (confirmed live, repeatedly, while porting
+   this component — see `cdk-tree-node-toggle.tsx`'s and `MatTree`'s own
+   comments at the top of their handlers). The fix: pull every value a
+   handler needs into a local `const` BEFORE defining the handler
+   (`const onToggle = props.onToggle$;`, `const nodeKey = props.node;`),
+   and reference the locals, never `props.x`, inside the `$(...)` body.
+   Same hazard for a handler that closes over an outer array/Map built
+   from `FlatTreeEntry[]` (which also carries `content`) — trim it to
+   plain fields first (see `MatTree`'s `navEntries`/`disabledByKey`/
+   `dataByKey`, all built from `all`/`visible` but stripped of `content`).
+2. **A `$(...)` handler cannot close over a plain function reference
+   either** (only over primitives, QRLs, and Qwik's own Signal/Store
+   proxies) — passing `isExpanded` (a plain arrow closing over the
+   `expanded` store) as an ARGUMENT from inside a handler to
+   `resolveTreeKeydown` would itself need to serialize that function. Fix:
+   define the equivalent arrow FRESH, INSIDE the handler body, so it's
+   compiled into the handler's own extracted chunk rather than captured
+   from the enclosing scope (see `MatTree.handleRowKeyDown`'s
+   `isExpandedNow`).
+3. **No identifying attribute beyond upstream's own real contract.** An
+   earlier version of this port added `data-cdk-tree-node-key` on every
+   rendered node, read back via `event.target.dataset` inside the shared
+   click/keydown handlers, to know WHICH node fired the event. This is
+   itself a DOM-parity violation (Angular's reference DOM has no such
+   attribute) and was caught immediately by `angular-parity.spec.ts`. The
+   fix: give each node's OWN small `onClick$`/`onKeyDown$` wrapper (built
+   per node, inside the `.map()`/recursive-render loop) the node's `key`
+   directly as a captured STRING — e.g. `onClick$={$((event) =>
+   handleRowClick(event, key))}`, where `key` is a local `const` (never
+   `entry.key` referenced directly, to avoid capturing `entry` itself —
+   see pitfall 1). Capturing a plain string this way is fine (unlike
+   capturing an object with JSX fields); only the SHARED handler body
+   (`handleRowClick`) needs trimmed data, not the per-node identity.
+4. **The JSX `key` prop must be a literal attribute on the element, never
+   spread via an object.** An earlier version built a shared `rowAttrs`
+   object (`{key: node.key, role: ..., ...}`) and spread it onto the
+   element (`<mat-nested-tree-node {...rowAttrs}>`). This renders `key`
+   as a LITERAL `key="..."` HTML attribute (Qwik's JSX factory only
+   recognizes `key` specially when it's a direct JSX attribute, not when
+   it arrives via a spread) — another DOM-parity violation, caught the
+   same way. Fix: pass `key={...}` directly on the JSX element, with the
+   REST of a shared attributes object spread separately (see `MatTree`'s
+   `renderNestedNode`).
+
 ## Deviations from upstream
 
 1. **No `TreeKeyManager` typeahead.** See `tree-key-manager.ts`'s own
@@ -154,3 +210,18 @@ so this requires no `noSerialize()` workaround.
    `CdkTreeNode.expand()`/`collapse()` never call `focusItem()` — only
    genuinely-moving actions (focus/toggle) call `.focus()`. Not a
    deviation, called out because it's easy to assume otherwise.
+5. **`CdkTreeNodeToggle` does not move real DOM focus**, only the roving-
+   tabindex SIGNAL (`activeKey.value`) — see its own doc comment for why
+   (no scenario's steps need it, and doing it right needs the tree's
+   current node ordering, which `MatTree`'s own keyboard handler has
+   directly in scope but this standalone component does not without
+   widening the context contract for zero tested benefit).
+6. **`matTreeNodePadding` is a tree-level `padding` boolean, not a
+   per-node directive presence.** Upstream's `matTreeNodePadding` is
+   applied (or not) per `*matTreeNodeDef` template; every reference
+   scenario is consistent across ALL its own node defs (either every flat
+   node carries it, as in `flat-basic`, or none do, as in
+   `disabled-skipped`), so `MatTree`'s single `padding` prop (default
+   `true`, flat variant only) covers every scenario without needing
+   per-node granularity. A future consumer needing MIXED padding within
+   one tree would need this extended to a per-node flag.

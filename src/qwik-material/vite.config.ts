@@ -33,6 +33,7 @@ const entries = [
   'slider',
   'menu',
   'table',
+  'tree',
 ];
 
 export default defineConfig({
@@ -78,6 +79,7 @@ export default defineConfig({
           ['scss/slider/slider-prebuilt.scss', 'dist/slider-prebuilt.css'],
           ['scss/menu/menu-prebuilt.scss', 'dist/menu-prebuilt.css'],
           ['scss/table/table-prebuilt.scss', 'dist/table-prebuilt.css'],
+          ['scss/tree/tree-prebuilt.scss', 'dist/tree-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);
