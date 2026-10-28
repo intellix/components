@@ -17,6 +17,7 @@ export {
   closeMenu,
   resolveMenuConfig,
   computeHasBackdrop,
+  computePositions,
   getParentInnerPadding,
 } from './menu-runtime';
 export type {MenuRuntimeSignals, ResolvedMenuConfig, OpenMenuOptions} from './menu-runtime';

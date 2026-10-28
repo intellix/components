@@ -110,7 +110,7 @@ export function computeHasBackdrop(resolved: ResolvedMenuConfig, isSubmenu: bool
 }
 
 /** Mirrors `MatMenuTriggerBase._setPosition`'s position-pair computation. */
-function computePositions(
+export function computePositions(
   resolved: ResolvedMenuConfig,
   isSubmenu: boolean,
   parentInnerPadding: number,
