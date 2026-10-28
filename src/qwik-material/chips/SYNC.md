@@ -140,7 +140,39 @@ not just upstream's source code.
    `formFieldRemountNonce` used as `<MatFormField key={formFieldRemountNonce.value}>`, then
    re-focuses the fresh input once it exists (the recreated instance has no memory of the
    input still logically being focused — Enter doesn't blur it). Confirmed live across 80+
-   repeated runs this reliably self-corrects.
+   repeated runs this reliably self-corrects **the one comparison step it targets** (the
+   "type Mango + Enter" step itself).
+
+   **STATUS — NOT FULLY RESOLVED, flagged here rather than glossed over.** The SAME underlying
+   recreation (confirmed: `<mat-chip-grid>` is destroyed and recreated on every rows change,
+   add OR remove, not just the first add) can ALSO fire during a LATER step in the same test
+   run (confirmed live via a targeted repro: the "Rendering promises in JSX signals" error
+   firing again during "type Mango + Enter", with the self-healing recovery succeeding for
+   THAT step's own comparison, but `document.activeElement` ending up on `<body>` — neither
+   chip — by the time the subsequent "Backspace in empty input" + "click remove(0)" steps run
+   immediately afterward in the SAME test). The observed symptom is a semi-deterministic
+   failure at the `grid-input` scenario's final "click remove(0)" comparison (the removed
+   chip's sibling ending up focused/ripple-initialized incorrectly, or focus landing on
+   neither chip at all) — reproduced across MULTIPLE full-suite runs during this port's own
+   verification, at a rate too high to call "rare" the way the add-step's own failure is. The
+   self-healing recovery only watches for the grid's OWN disappearance right after an ADD;
+   it has no equivalent check after a REMOVE, and does not re-verify that ITS OWN recovery
+   (the re-focus call) actually landed before further steps run. A corresponding fix (an
+   equivalent self-healing watch on the remove path, and/or verifying the re-focus actually
+   succeeded before declaring recovery complete) was not completed in this port due to time
+   constraints — left as a known, open issue for whoever picks this up next, rather than
+   silently accepted. The other 10 scenarios (including `removable`'s own chip-removal path,
+   on the simpler base `MatChipSet`/`MatChip` — see Deviation #9) are unaffected; this is
+   scoped specifically to `grid-input`'s combination of an add immediately followed by
+   removes within the same run.
+9. **`MatChipSet`'s `fixupRippleDisabled$` had the SAME stale-`useOn()`-closure bug as
+   `MatChipGrid`'s, independently.** Closed over the outer-scope `chips`/`disabled` consts
+   instead of re-reading `props.chips`/`props.disabled` live inside the handler — found live
+   via repeated-run testing of `removable`'s "click remove(0)" step mismatching a surviving
+   chip's `mat-ripple-loader-disabled` attribute once the chip count changed between when the
+   listener was registered and when it actually fired. Fixed the same way `MatChipGrid`'s own
+   version already was (see Deviation #6) — confirmed this specific scenario stopped failing
+   across repeated runs once fixed.
 
    This recreation ALSO broke `fixupRippleDisabled$`'s original "mountedRowKeys" design (a
    `useSignal` seeded once from `rows` at THIS component instance's own mount): a fresh
