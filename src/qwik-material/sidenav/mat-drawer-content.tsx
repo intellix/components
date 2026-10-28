@@ -7,7 +7,11 @@ import {
   type Component,
   type FunctionComponent,
 } from '@builder.io/qwik';
-import {computeContentMargins, isShowingBackdrop, MAT_DRAWER_CONTAINER_STATE} from './drawer-state';
+import {
+  computeContentMargins,
+  isShowingBackdropForInert,
+  MAT_DRAWER_CONTAINER_STATE,
+} from './drawer-state';
 
 /**
  * Props for `<MatDrawerContent>`/`<MatSidenavContent>`. Must be rendered
@@ -57,7 +61,7 @@ function createContent(
       const m = computeContentMargins(containerState.registry.value);
       el.style.marginLeft = m.left != null ? `${m.left}px` : '';
       el.style.marginRight = m.right != null ? `${m.right}px` : '';
-      const shouldBeInert = isShowingBackdrop(
+      const shouldBeInert = isShowingBackdropForInert(
         containerState.registry.value,
         containerState.backdropOverride.value,
       );
@@ -80,7 +84,7 @@ function createContent(
     // why: a task declared directly in this component to do the same imperative work was
     // empirically found, while porting this component, to never run at all on the client.
     const margins = computeContentMargins(containerState.registry.value);
-    const inert = isShowingBackdrop(
+    const inert = isShowingBackdropForInert(
       containerState.registry.value,
       containerState.backdropOverride.value,
     );

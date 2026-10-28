@@ -5,6 +5,7 @@ import {
   drawerHasBackdrop,
   hasOpenNonSide,
   isShowingBackdrop,
+  isShowingBackdropForInert,
   trapEnabledFor,
   type DrawerRegistration,
 } from './drawer-state';
@@ -24,6 +25,7 @@ function makeEntry(overrides: Partial<DrawerRegistration> = {}): DrawerRegistrat
     position: 'start',
     mode: 'over',
     opened: false,
+    inertEligible: true,
     disableClose: false,
     width: 0,
     hostRef: {value: undefined} as DrawerRegistration['hostRef'],
@@ -79,6 +81,21 @@ describe('isShowingBackdrop', () => {
 
   it('false for an open drawer when hasBackdrop is explicitly false', () => {
     expect(isShowingBackdrop({a: makeEntry({mode: 'over', opened: true})}, false)).toBe(false);
+  });
+});
+
+describe('isShowingBackdropForInert', () => {
+  it('matches isShowingBackdrop for a drawer that has gone through a real toggle', () => {
+    const registry = {a: makeEntry({mode: 'over', opened: true, inertEligible: true})};
+    expect(isShowingBackdropForInert(registry, null)).toBe(true);
+  });
+
+  it('false for a drawer opened from its very first render, even with a shown backdrop', () => {
+    // A genuine upstream lifecycle quirk (see `inertEligible`'s doc comment in drawer-state.ts),
+    // verified live against Angular via mat-sidenav's `autosize` scenario.
+    const registry = {a: makeEntry({mode: 'push', opened: true, inertEligible: false})};
+    expect(isShowingBackdrop(registry, null)).toBe(true);
+    expect(isShowingBackdropForInert(registry, null)).toBe(false);
   });
 });
 

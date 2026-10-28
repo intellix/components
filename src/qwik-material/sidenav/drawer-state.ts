@@ -25,6 +25,25 @@ export interface DrawerRegistration {
    *  immediate" deviation for why this port doesn't replicate upstream's finer-grained,
    *  inconsistent real/delayed split for the purely-CSS-driven classes/attrs below. */
   opened: boolean;
+  /**
+   * False only for a drawer whose VERY FIRST render already has `opened: true` (a static
+   * `opened={true}`, never toggled) — mirrors a genuine upstream quirk, verified live: a
+   * drawer's `_setOpen()` call registers the content's 50ms-delayed `inert` update via
+   * `_drawerToggled()`, but the FIRST such call (processing a static `[opened]="true"` input)
+   * runs before `MatDrawerContainer`'s `_content`/`_userContent` `@ContentChild`/`@ViewChild`
+   * have resolved, so `(this._container?._content || this._container?._userContent)
+   * ?._drawerToggled(this)` is a no-op THAT ONE TIME — `inert` then never gets applied for
+   * that drawer, even though its backdrop is genuinely shown (confirmed live: `autosize`,
+   * whose drawer starts `opened="true"`, shows `mat-drawer-shown` on the backdrop but never
+   * `inert` on the content — contrast every click-driven open in mode-over/has-backdrop-false/
+   * disable-close, all of which DO eventually get `inert`, because their first `_setOpen()`
+   * call happens well after content has resolved). Becomes `true` forever after this
+   * drawer's first REAL (post-mount) opened-state change. Only consulted for `inert` — the
+   * backdrop's `mat-drawer-shown` class and the focus-trap anchors' `tabindex` are separate
+   * upstream mechanisms, unaffected by this same-lifecycle quirk (see `isShowingBackdrop` vs
+   * `isShowingBackdropForInert` below).
+   */
+  inertEligible: boolean;
   disableClose: boolean;
   /** Measured `offsetWidth`, kept live via a ResizeObserver (see `mat-drawer.tsx`). 0 on the
    *  server and before the first client measurement — matches upstream's `_getWidth()`, which
@@ -131,6 +150,22 @@ export function isShowingBackdrop(
 ): boolean {
   for (const entry of Object.values(registry)) {
     if (entry.opened && drawerHasBackdrop(entry, backdropOverride)) return true;
+  }
+  return false;
+}
+
+/** Like `isShowingBackdrop`, but for `MatDrawerContent`'s `inert` attribute specifically — see
+ *  `inertEligible`'s doc comment above for the upstream lifecycle quirk this additionally
+ *  excludes (a drawer that's `opened` from its very first render never gets `inert` applied at
+ *  all, even while its backdrop is genuinely shown). */
+export function isShowingBackdropForInert(
+  registry: Record<string, DrawerRegistration>,
+  backdropOverride: boolean | null,
+): boolean {
+  for (const entry of Object.values(registry)) {
+    if (entry.opened && entry.inertEligible && drawerHasBackdrop(entry, backdropOverride)) {
+      return true;
+    }
   }
   return false;
 }
