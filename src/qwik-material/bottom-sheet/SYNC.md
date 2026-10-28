@@ -4,6 +4,34 @@ Tracks the sync state between this port and `src/material/bottom-sheet/` upstrea
 
 Last synced from angular/components commit: <this branch's fork point — see `git log --oneline -1 -- src/material/bottom-sheet`>
 
+## Real bugs found via live browser testing (not just vitest)
+
+Booting the actual dev-app and driving every scenario with Playwright against a real Chromium
+(before the shared Angular reference app was reachable to run the official parity spec)
+surfaced two real runtime bugs no unit test alone would have caught:
+
+1. **Enter/exit trigger race.** `[TRIGGER_ENTER]()`/`dismiss()` could run before
+   `MatBottomSheetContainer` ever mounted and called `[REGISTER_ANIMATION_HANDLERS]` — writing
+   to the shared overlay `entries` signal doesn't render synchronously in Qwik (unlike Angular's
+   synchronous `ComponentFactory` attachment). The common "no sheet already open" path triggers
+   enter in the same synchronous call as creating the overlay entry, so the request was silently
+   dropped. Fixed by making both triggers "sticky" in `mat-bottom-sheet-ref.ts` — see
+   `enterRequested`/`exitRequested`. Locked in by two new tests in `mat-bottom-sheet-ref.spec.ts`.
+2. **`useContext` crash on every route.** `useMatBottomSheet()` (and the identical pre-existing
+   pattern in `useMatDialog()`) crashed SSR as soon as either hook was called from a component
+   with no `<QwikMaterialProvider>` ancestor — exactly the `replace-sheet` scenario's "open a
+   second sheet from inside the first sheet's own content" (content rendered via
+   `<OverlayContainerOutlet>`, a sibling of the routed page under `<QwikCdkRoot>`, not a
+   descendant of `<QwikMaterialProvider>`). Root cause: Qwik's `useContext(ctx, defaultValue)`
+   treats an explicit `undefined` default the same as no default (throws), AND treats a
+   function-typed default as a lazy initializer to invoke immediately — so the natural-looking
+   `useContext(SCROLL_STRATEGY, noSerialize(() => createBlockScrollStrategy()))` made Qwik call
+   the factory and try to serialize the resulting `ScrollStrategy` instance (function properties
+   like `.attach`) during SSR. Fixed in both hooks by defaulting to `null` and substituting the
+   real fallback factory afterward in plain JS. No vitest-reachable repro (Qwik's `useContext`
+   special-casing only fires through the real optimizer/runtime) — verified instead via a
+   throwaway Playwright script against the live dev-app for every one of the 10 scenarios.
+
 ## Upstream sync state
 
 | File | Upstream path | Sync state | Notes |
