@@ -184,6 +184,11 @@
       "types": "./dist/table/index.d.ts",
       "import": "./dist/table/index.js"
     },
+    "./tree": {
+      "qwik": "./tree/index.ts",
+      "types": "./dist/tree/index.d.ts",
+      "import": "./dist/tree/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -213,6 +218,7 @@
     "./select-prebuilt.css": "./dist/select-prebuilt.css",
     "./menu-prebuilt.css": "./dist/menu-prebuilt.css",
     "./table-prebuilt.css": "./dist/table-prebuilt.css",
+    "./tree-prebuilt.css": "./dist/tree-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

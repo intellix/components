@@ -425,16 +425,28 @@ export async function expectMaterialParity(browser: Browser, s: ParityScenario):
       // A custom root (e.g. the overlay container) may not exist until a step
       // creates it; then both sides must agree that it is absent.
       const root = s.rootSelector ?? '[data-parity-root]';
-      const [aCount, qCount] = [
-        await angular.locator(root).count(),
-        await qwik.locator(root).count(),
-      ];
+      // Eventually-consistent compare (like Playwright's expect.poll): the
+      // contract is the settled DOM, and a multi-hop reactive update can need
+      // more than one settle() to land on either side. A real difference still
+      // fails after the last attempt; intermediate frames are never the contract.
+      const maxAttempts = 5;
+      let aCount = 0;
+      let qCount = 0;
+      let diffs: string[] = [];
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        aCount = await angular.locator(root).count();
+        qCount = await qwik.locator(root).count();
+        if (aCount === qCount) {
+          if (aCount === 0) return;
+          diffs = diffNodes(
+            await snapshotParityRoot(angular, s.rootSelector),
+            await snapshotParityRoot(qwik, s.rootSelector),
+          );
+          if (diffs.length === 0) return;
+        }
+        if (attempt < maxAttempts - 1) await Promise.all([settle(angular), settle(qwik)]);
+      }
       expect(qCount, `${s.route}/${s.scenario} [${label}] count of ${root}`).toBe(aCount);
-      if (aCount === 0) return;
-      const diffs = diffNodes(
-        await snapshotParityRoot(angular, s.rootSelector),
-        await snapshotParityRoot(qwik, s.rootSelector),
-      );
       expect(diffs, `${s.route}/${s.scenario} [${label}]\n${diffs.join('\n')}`).toEqual([]);
     };
 

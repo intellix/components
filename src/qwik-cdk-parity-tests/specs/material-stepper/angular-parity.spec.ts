@@ -324,6 +324,16 @@ const route = 'mat-stepper';
  * no-op (blocked by linear/editable gating, or re-selecting the already-selected header) never
  * adds the class at all, so this first wait harmlessly times out and falls through. */
 async function waitForStepperSettled(page: Page): Promise<void> {
+  // Every scenario runs with animations enabled: wait for the delayed
+  // (~200ms after init) class, which Qwik adds from a lazily-loaded task.
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('[data-parity-root] mat-stepper')].every(el =>
+        el.classList.contains('mat-stepper-animations-enabled'),
+      ),
+    undefined,
+    {timeout: 10_000},
+  );
   await page
     .waitForFunction(
       () => !!document.querySelector('[data-parity-root] .mat-stepper-animating'),
@@ -338,6 +348,9 @@ async function waitForStepperSettled(page: Page): Promise<void> {
   );
   await page.waitForTimeout(150);
 }
+
+/** Initial step for every test: compare only once the stepper has settled. */
+const settled: ParityStep = {name: 'settled', run: waitForStepperSettled};
 
 /** Scopes to this scenario's step headers in document order. */
 const stepHeader = (page: Page, index: number) =>
@@ -428,7 +441,9 @@ test.describe('mat-stepper — Angular DOM parity', () => {
     expectMaterialParity(browser, {
       route,
       scenario: 'horizontal-basic',
+      skipInitialCompare: true,
       steps: [
+        settled,
         tabIntoFirstHeader,
         pressKeyFocusOnly('ArrowRight'),
         pressKeyFocusOnly('ArrowLeft'),
@@ -445,7 +460,9 @@ test.describe('mat-stepper — Angular DOM parity', () => {
     expectMaterialParity(browser, {
       route,
       scenario: 'vertical-basic',
+      skipInitialCompare: true,
       steps: [
+        settled,
         tabIntoFirstHeader,
         pressKeyFocusOnly('ArrowDown'),
         pressKeyFocusOnly('ArrowRight'),
@@ -457,50 +474,71 @@ test.describe('mat-stepper — Angular DOM parity', () => {
     expectMaterialParity(browser, {
       route,
       scenario: 'linear-required',
-      steps: [clickNext, fillInput('Ada'), clickNext],
+      skipInitialCompare: true,
+      steps: [settled, clickNext, fillInput('Ada'), clickNext],
     }));
 
   test('optional-step', ({browser}) =>
-    expectMaterialParity(browser, {route, scenario: 'optional-step', steps: [clickNext]}));
+    expectMaterialParity(browser, {
+      route,
+      scenario: 'optional-step',
+      skipInitialCompare: true,
+      steps: [settled, clickNext],
+    }));
 
   test('editable-false', ({browser}) =>
     expectMaterialParity(browser, {
       route,
       scenario: 'editable-false',
-      steps: [clickNext, clickNext, clickPrevious, clickHeader(0)],
+      skipInitialCompare: true,
+      steps: [settled, clickNext, clickNext, clickPrevious, clickHeader(0)],
     }));
 
   test('completed-step-icons', ({browser}) =>
     expectMaterialParity(browser, {
       route,
       scenario: 'completed-step-icons',
-      steps: [clickNext, clickNext],
+      skipInitialCompare: true,
+      steps: [settled, clickNext, clickNext],
     }));
 
   test('custom-label', ({browser}) =>
-    expectMaterialParity(browser, {route, scenario: 'custom-label', steps: [clickHeader(1)]}));
+    expectMaterialParity(browser, {
+      route,
+      scenario: 'custom-label',
+      skipInitialCompare: true,
+      steps: [settled, clickHeader(1)],
+    }));
 
   test('label-position-bottom', ({browser}) =>
-    expectMaterialParity(browser, {route, scenario: 'label-position-bottom', steps: [clickNext]}));
+    expectMaterialParity(browser, {
+      route,
+      scenario: 'label-position-bottom',
+      skipInitialCompare: true,
+      steps: [settled, clickNext],
+    }));
 
   test('header-position-bottom', ({browser}) =>
     expectMaterialParity(browser, {
       route,
       scenario: 'header-position-bottom',
-      steps: [clickNext],
+      skipInitialCompare: true,
+      steps: [settled, clickNext],
     }));
 
   test('selected-index-initial', ({browser}) =>
     expectMaterialParity(browser, {
       route,
       scenario: 'selected-index-initial',
-      steps: [clickHeader(0)],
+      skipInitialCompare: true,
+      steps: [settled, clickHeader(0)],
     }));
 
   test('error-state', ({browser}) =>
     expectMaterialParity(browser, {
       route,
       scenario: 'error-state',
-      steps: [clickHeader(1), clickHeader(0), fillInput('Ada'), clickHeader(1)],
+      skipInitialCompare: true,
+      steps: [settled, clickHeader(1), clickHeader(0), fillInput('Ada'), clickHeader(1)],
     }));
 });
