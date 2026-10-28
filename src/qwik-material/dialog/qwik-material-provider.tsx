@@ -54,6 +54,8 @@ import type {MatInputConfig} from '../input/input-config';
 import {MAT_INPUT_CONFIG} from '../input/input-config';
 import type {StepperOptions} from '@angular-community/qwik-cdk/stepper';
 import {CDK_STEPPER_GLOBAL_OPTIONS} from '@angular-community/qwik-cdk/stepper';
+import type {MatTooltipDefaultOptions} from '../tooltip/mat-tooltip-tokens';
+import {MAT_TOOLTIP_DEFAULT_OPTIONS} from '../tooltip/mat-tooltip-tokens';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -109,6 +111,8 @@ export interface QwikMaterialProviderProps {
   /** Qwik-context equivalent of `@angular/cdk/stepper`'s `STEPPER_GLOBAL_OPTIONS`
    *  — applies to every MatStepper in this subtree. */
   stepperGlobalOptions?: StepperOptions;
+  /** Defaults merged into every `<MatTooltip>`'s resolved config in this subtree. */
+  matTooltipDefaults?: MatTooltipDefaultOptions;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -230,6 +234,12 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // STEPPER_GLOBAL_OPTIONS default: showError falls back to per-step
   // `hasError` overrides only, displayDefaultIndicatorType defaults true).
   useContextProvider(CDK_STEPPER_GLOBAL_OPTIONS, props.stepperGlobalOptions ?? {});
+  // MatTooltipDefaultOptions is a plain object with primitive fields — no
+  // noSerialize needed. Tooltips outside a provider get the hardcoded
+  // MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY fallbacks declared in
+  // mat-tooltip.tsx's `resolveConfig`; providing an empty object here is
+  // equivalent to accepting all of them.
+  useContextProvider(MAT_TOOLTIP_DEFAULT_OPTIONS, props.matTooltipDefaults ?? {});
 
   return <Slot />;
 });

@@ -1,5 +1,9 @@
 import {component$, useSignal, useVisibleTask$} from '@builder.io/qwik';
 import type {OverlayEntry} from './overlay-registry';
+import {
+  applyPopoverInsertionPoint,
+  resolvePopoverInsertionPoint,
+} from './position/popover-insertion';
 
 export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
   const hostRef = useSignal<HTMLElement>();
@@ -13,6 +17,7 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
   // still running — go through these via `_onAttached`'s `visuals` callbacks.
   const backdropShowing = useSignal(entry.state.backdropShowing.value);
   const backdropDetached = useSignal(entry.state.backdropDetached.value);
+  const panelClasses = useSignal(entry.state.panelClasses.value);
 
   // Drive the OverlayRef lifecycle (host/pane attach, strategy apply, cleanup)
   // directly from this component$'s visible-task. We deliberately don't route
@@ -27,7 +32,23 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
     ref._onAttached(hostRef.value, paneRef.value, {
       setBackdropShowing: v => (backdropShowing.value = v),
       setBackdropDetached: v => (backdropDetached.value = v),
+      setPanelClasses: v => (panelClasses.value = v),
     });
+
+    // Mirrors upstream `OverlayRef._attachHost()`: for a popover overlay
+    // whose position strategy names a non-'global' insertion point (e.g.
+    // `mat-select`'s inline `cdk-connected-overlay`), physically move the
+    // host next to its origin (or into a custom parent) instead of leaving
+    // it inside the shared `.cdk-overlay-container` this component just
+    // rendered it into — see position/popover-insertion.ts. A no-op (the
+    // overwhelmingly common case) whenever the strategy doesn't implement
+    // `getPopoverInsertionPoint` (e.g. `GlobalPositionStrategy`) or
+    // resolves to `'global'`.
+    applyPopoverInsertionPoint(
+      hostRef.value,
+      resolvePopoverInsertionPoint(entry.usePopover, entry.config.positionStrategy),
+    );
+
     cleanup(() => ref._onDetached());
   });
 
@@ -56,7 +77,7 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
       <div
         ref={paneRef}
         id={entry.id}
-        class={['cdk-overlay-pane', ...entry.state.panelClasses.value].join(' ')}
+        class={['cdk-overlay-pane', ...panelClasses.value].join(' ')}
         style={{
           width: entry.state.width.value,
           height: entry.state.height.value,
