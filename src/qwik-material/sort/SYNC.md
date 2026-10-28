@@ -113,3 +113,26 @@ Angular side either, same precedent as every other qwik-material config):
   arrowPosition" / "should render arrows in proper position"
   (`MAT_SORT_DEFAULT_OPTIONS = {arrowPosition: 'before'}`, no per-header
   override): every header gets `mat-sort-header-position-before`.
+
+## 2026-10-28 addendum — qwik-material/table integration
+
+Two small, additive changes made while porting `qwik-material/table`'s
+matSort integration (see its own SYNC.md "Deviations from upstream" #1 for
+the full rationale — upstream's `mat-sort-header`/`mat-header-cell` are two
+directives sharing one host element, which `<MatTable>` replicates by
+rendering `<MatSortHeader>` itself AS the merged header cell):
+
+- `MatSortHeaderProps` gained optional `role`/`style` props, both
+  `undefined` by default (no behavior change for any existing standalone
+  `<MatSortHeader>` usage, including every scenario in
+  `specs/material-sort/`). `<MatTable>` passes `role="columnheader"`
+  (matching upstream's `CdkHeaderCell` static host binding, which a bare
+  `<th mat-sort-header>` with no co-located `mat-header-cell` directive
+  never gets — native implicit role only) and a merged sticky `style`
+  object.
+- `sort-state.ts`'s `MAT_SORT_STATE` context id (+ `MatSortSharedState`/
+  `MatSortTableConfig`/`readSortState`) is now re-exported from
+  `public-api.ts`, so `<MatTable sort={...}>` can `useContextProvider` the
+  SAME context a `<MatSort>` wrapper would, without requiring one (which
+  would add an unwanted wrapper element — upstream's `matSort` attaches
+  directly to the table element, never a wrapper).
