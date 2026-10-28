@@ -33,6 +33,16 @@ export interface MatChipRowDef {
   removeButton?: MatChipRemoveButtonDef;
   onRemoved$?: QRL<() => void>;
   class?: string | ReadonlyArray<string>;
+  /**
+   * Set by the CONSUMER (not computed locally) on any row added after the initial mount —
+   * see `fixupRippleDisabled$`'s own doc comment for why this has to be the consumer's own,
+   * durable bookkeeping rather than `<MatChipGrid>`'s local "which rows did I see at MY OWN
+   * first render" set: `<MatChipGrid>` itself can be destroyed and recreated by Qwik (a
+   * confirmed-live, rare runtime limitation — see chips/SYNC.md's Deviations section), and a
+   * FRESH instance's own "at my mount" set would otherwise wrongly include a row that was
+   * genuinely added dynamically, well before THIS particular instance happened to exist.
+   */
+  dynamicallyAdded?: boolean;
 }
 
 /** The `input[matChipInputFor]` rendered as part of `<MatChipGrid>` — see
@@ -140,6 +150,128 @@ function queryRowEls(root: Element | undefined): HTMLElement[] {
 function queryPrimaryAction(rowEl: Element): HTMLElement | null {
   return rowEl.querySelector<HTMLElement>('[role="gridcell"].mat-mdc-chip-action');
 }
+
+interface ChipGridRowsProps {
+  rows: MatChipRowDef[];
+  disabled: boolean;
+  containerRef: Signal<Element | undefined>;
+  inputRef: Signal<Element | undefined>;
+}
+
+/**
+ * Renders `rows.map(...)` inside its OWN `component$` boundary, mainly for ordinary code
+ * organization (keeping the per-row JSX and its `wrappedRemoved$` closure out of
+ * `<MatChipGrid>`'s own, already-long render body).
+ *
+ * ## A real, rare Qwik 1.20 runtime limitation — and why the actual fix lives OUTSIDE this file
+ *
+ * Found live, intermittently (roughly 1 in 15-30 runs with realistic per-keystroke timing):
+ * adding the FIRST row ever created purely client-side (grid-input's "Mango" — unlike Lemon/
+ * Lime, which exist from the initial SSR render) can occasionally fail with Qwik logging
+ * "Rendering promises in JSX signals is not supported" (a logged, swallowed error, not a
+ * thrown one). Confirmed via a dedicated repro harness, this is NOT scoped to this file's
+ * `rows.map(...)` at all: `<MatChipGrid>`'s own HOST ELEMENT gets fully destroyed and
+ * recreated as part of EVERY successful add too (confirmed by tagging the original element
+ * and observing it gone even on success, replaced by a fresh one) — the bug is simply that
+ * specific recreation occasionally not completing. Extracting this `.map()` into its own
+ * component boundary, switching `rows`' delivery mechanism (prop-signal vs. a dedicated
+ * context), and several single/bounded-retry self-healing attempts INSIDE `<MatChipGrid>`
+ * were all tried and NONE measurably reduced the failure rate — consistent with the failure
+ * being at or above `<MatChipGrid>`'s OWN level, where nothing inside it (including this
+ * component) can meaningfully self-correct, since `<MatChipGrid>` itself may not exist to run
+ * that correction.
+ *
+ * The fix that DOES work lives in the consumer: since `<MatChipGrid>` sits inside
+ * `<MatFormField control={...}>}`'s frozen prop value, only an ANCESTOR with a live, reactive
+ * `key` on `<MatFormField>` itself can force a correct, from-scratch remount when this is
+ * detected (checking, after an add, whether `<mat-chip-grid>` still exists in the DOM at all).
+ * See `src/qwik-cdk-dev-app/src/routes/mat-chips/grid-input/index.tsx`'s
+ * `formFieldRemountNonce` for the actual, confirmed-working self-healing retry — chips/
+ * SYNC.md's Deviations section has the full write-up. `<MatChipGrid>` itself keeps
+ * subscribing to `props.rows` and re-rendering normally; this component just keeps the
+ * per-row JSX factored out.
+ */
+const ChipGridRows = component$<ChipGridRowsProps>(props => {
+  const containerRef = props.containerRef;
+  const inputRef = props.inputRef;
+  const disabled = props.disabled;
+  return (
+    <>
+      {props.rows.map((def, i) => {
+        // `rowOrigin` comes DIRECTLY from `<MatChipRow>`'s own remove handlers (see that
+        // file's `onRemoved$` doc comment) rather than being read back off the row's own
+        // `cdk-*-focused` class after the fact — confirmed live that the latter races the
+        // SAME click's own pending `focusin`-triggered class update and isn't reliable.
+        const wrappedRemoved$ = $(async (rowOrigin?: FocusOrigin) => {
+          if (!isBrowser) {
+            await def.onRemoved$?.();
+            return;
+          }
+          const rowEls = queryRowEls(containerRef.value);
+          const rowEl = rowEls[i];
+          const active = document.activeElement;
+          const hadFocus = !!rowEl && !!active && rowEl.contains(active);
+          const origin = rowOrigin ?? null;
+          const inner = def.onRemoved$;
+          if (inner) await inner();
+          if (hadFocus) {
+            requestAnimationFrame(() => {
+              const newRowEls = queryRowEls(containerRef.value);
+              // Strip any OTHER row's stale `cdk-*-focused` classes before redirecting:
+              // the removed row's own blur (moving focus away from it) should have already
+              // cleared whichever row ELSE happened to carry one from an earlier step (e.g.
+              // `grid-input`'s Backspace-focuses-last-chip, superseded by this removal — see
+              // angular-parity.spec.ts's own note on exactly this), but confirmed live that
+              // a DIFFERENT row's own `useFocusOrigin()` state can survive this specific
+              // combination (a sibling re-rendering because the array itself changed, not
+              // because of its own focus event) — the same category of "a signal written
+              // from this component's own `useOn()` listener is reliable, but a RE-RENDER
+              // for an unrelated reason can still re-assert stale classes" issue
+              // `mat-chip.tsx`'s `rippleDisabledInitial` hits, just for a different class
+              // set. One extra imperative pass keeps this deterministic either way.
+              for (const rowEl of newRowEls) {
+                rowEl.classList.remove(
+                  'cdk-focused',
+                  'cdk-touch-focused',
+                  'cdk-keyboard-focused',
+                  'cdk-mouse-focused',
+                  'cdk-program-focused',
+                );
+              }
+              if (newRowEls.length === 0) {
+                const input = inputRef.value as HTMLElement | undefined;
+                if (input) focusVia(input, origin);
+                return;
+              }
+              const newIndex = Math.min(i, newRowEls.length - 1);
+              const action = queryPrimaryAction(newRowEls[newIndex]);
+              if (action) focusVia(action, origin);
+            });
+          }
+        });
+        return (
+          <MatChipRow
+            key={def.key ?? def.id ?? i}
+            id={def.id}
+            disabled={def.disabled}
+            chipListDisabled={disabled}
+            highlighted={def.highlighted}
+            color={def.color}
+            removable={def.removable}
+            disableRipple={def.disableRipple}
+            avatar={def.avatar}
+            trailingIcon={def.trailingIcon}
+            removeButton={def.removeButton}
+            onRemoved$={wrappedRemoved$}
+            class={def.class}
+          >
+            {def.content}
+          </MatChipRow>
+        );
+      })}
+    </>
+  );
+});
 
 export const MatChipGrid = component$<MatChipGridProps>(props => {
   const config = useContext(MAT_CHIPS_CONFIG, MAT_CHIPS_CONFIG_DEFAULTS);
@@ -259,34 +391,48 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
   // write-up of this upstream construction-time quirk and why the correction has to be
   // IMPERATIVE, applied by the CONTAINER, deferred to the next frame.
   //
-  // Scoped to rows that existed AT MOUNT only — confirmed live (`grid-input`'s "Mango",
-  // added via `onTokenEnd$` AFTER the grid first rendered) that a row created dynamically,
-  // after the initial render, does NOT get this same correction from whatever later change-
-  // detection pass fixes the ORIGINAL rows: it stays ripple-disabled through every subsequent
-  // step this parity suite exercises. A `@ContentChildren`/`@ViewChild` query re-resolving for
-  // content added well after the component tree's own initial settle apparently needs
-  // something this suite never triggers; reproducing "never corrects" for such a row (by
-  // excluding it here) matches what's actually observed, rather than guessing at upstream's
-  // exact trigger.
-  const mountedRowKeys = useSignal(() => new Set(rows.map((d, i) => String(d.key ?? d.id ?? i))));
+  // Skips any row explicitly marked `dynamicallyAdded` — confirmed live (`grid-input`'s
+  // "Mango", added via `onTokenEnd$` AFTER the grid first rendered) that a row created
+  // dynamically, after the initial render, does NOT get this same correction from whatever
+  // later change-detection pass fixes the ORIGINAL rows: it stays ripple-disabled through
+  // every subsequent step this parity suite exercises. A `@ContentChildren`/`@ViewChild`
+  // query re-resolving for content added well after the component tree's own initial settle
+  // apparently needs something this suite never triggers; reproducing "never corrects" for
+  // such a row (by excluding it here) matches what's actually observed, rather than guessing
+  // at upstream's exact trigger. (Briefly tried applying the correction unconditionally to
+  // every row instead — confirmed live via a 40-run repeat that this is dramatically WORSE,
+  // not a timing-dependent wash: upstream reliably does NOT correct a dynamically-added row
+  // within this suite's interaction window, so excluding it here is the right default, not a
+  // coin-flip.)
+  //
+  // Deliberately an EXPLICIT, consumer-set `MatChipRowDef.dynamicallyAdded` flag, not a
+  // locally-computed "which rows did I see at MY OWN first render" set (an earlier version of
+  // this file used exactly that, a `mountedRowKeys` signal seeded once via `useSignal(() =>
+  // ...)`): `<MatChipGrid>` itself can be destroyed and recreated by Qwik well after the
+  // consumer's OWN state already reflects a dynamically-added row (a confirmed-live, rare
+  // runtime limitation — see chips/SYNC.md's Deviations section) — a FRESH instance's own
+  // "at my mount" set would then wrongly treat that row as present-from-the-start, since by
+  // the time THIS instance's `mountedRowKeys` would have been computed, the row was already
+  // in the array. The consumer's own `dynamicallyAdded` marking survives that recreation
+  // because it lives in the consumer's OWN state, never recomputed by `<MatChipGrid>` itself.
   const animationsDisabledForRipple = useAnimationsDisabled();
   const fixupRippleDisabled$ = $(() => {
     const root = containerRef.value;
     if (!root || !isBrowser) return;
     requestAnimationFrame(() => {
-      // Re-read `props.rows` LIVE here, rather than closing over the outer-scope `rows`
-      // const: `useOn()`'s registered handler reference can go stale (confirmed live — a
-      // sibling re-render that changes `rows` without ALSO re-triggering one of THIS
-      // listener's own events first leaves it holding an EARLIER render's closure), the
-      // same "stale QRL capture" pitfall `MatButtonToggleGroup` documents for its own
-      // onClick$. `props.rows` itself (the signal/array reference) stays live regardless.
+      // Re-read `props.rows`/the rows context LIVE here, rather than closing over the
+      // outer-scope `rows` const: `useOn()`'s registered handler reference can go stale
+      // (confirmed live — a sibling re-render that changes `rows` without ALSO re-triggering
+      // one of THIS listener's own events first leaves it holding an EARLIER render's
+      // closure), the same "stale QRL capture" pitfall `MatButtonToggleGroup` documents for
+      // its own onClick$. The signal/array reference itself stays live regardless.
       const liveRows = Array.isArray(props.rows) ? props.rows : props.rows.value;
       const liveDisabled = props.disabled ?? false;
       const rowEls = queryRowEls(root);
       rowEls.forEach((el, i) => {
         const def = liveRows[i];
         if (!def) return;
-        if (!mountedRowKeys.value.has(String(def.key ?? def.id ?? i))) return;
+        if (def.dynamicallyAdded) return;
         const rowDisabled = (def.disabled ?? false) || liveDisabled;
         const rowDisableRipple = def.disableRipple ?? false;
         if (!rowDisabled && !rowDisableRipple && !animationsDisabledForRipple.value) {
@@ -329,78 +475,12 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
       onFocus$={handleHostFocus$}
     >
       <div class="mdc-evolution-chip-set__chips" role="presentation">
-        {rows.map((def, i) => {
-          // `rowOrigin` comes DIRECTLY from `<MatChipRow>`'s own remove handlers (see that
-          // file's `onRemoved$` doc comment) rather than being read back off the row's own
-          // `cdk-*-focused` class after the fact — confirmed live that the latter races the
-          // SAME click's own pending `focusin`-triggered class update and isn't reliable.
-          const wrappedRemoved$ = $(async (rowOrigin?: FocusOrigin) => {
-            if (!isBrowser) {
-              await def.onRemoved$?.();
-              return;
-            }
-            const rowEls = queryRowEls(containerRef.value);
-            const rowEl = rowEls[i];
-            const active = document.activeElement;
-            const hadFocus = !!rowEl && !!active && rowEl.contains(active);
-            const origin = rowOrigin ?? null;
-            const inner = def.onRemoved$;
-            if (inner) await inner();
-            if (hadFocus) {
-              requestAnimationFrame(() => {
-                const newRowEls = queryRowEls(containerRef.value);
-                // Strip any OTHER row's stale `cdk-*-focused` classes before redirecting:
-                // the removed row's own blur (moving focus away from it) should have already
-                // cleared whichever row ELSE happened to carry one from an earlier step (e.g.
-                // `grid-input`'s Backspace-focuses-last-chip, superseded by this removal — see
-                // angular-parity.spec.ts's own note on exactly this), but confirmed live that
-                // a DIFFERENT row's own `useFocusOrigin()` state can survive this specific
-                // combination (a sibling re-rendering because the array itself changed, not
-                // because of its own focus event) — the same category of "a signal written
-                // from this component's own `useOn()` listener is reliable, but a RE-RENDER
-                // for an unrelated reason can still re-assert stale classes" issue
-                // `mat-chip.tsx`'s `rippleDisabledInitial` hits, just for a different class
-                // set. One extra imperative pass keeps this deterministic either way.
-                for (const rowEl of newRowEls) {
-                  rowEl.classList.remove(
-                    'cdk-focused',
-                    'cdk-touch-focused',
-                    'cdk-keyboard-focused',
-                    'cdk-mouse-focused',
-                    'cdk-program-focused',
-                  );
-                }
-                if (newRowEls.length === 0) {
-                  const input = inputRef.value as HTMLElement | undefined;
-                  if (input) focusVia(input, origin);
-                  return;
-                }
-                const newIndex = Math.min(i, newRowEls.length - 1);
-                const action = queryPrimaryAction(newRowEls[newIndex]);
-                if (action) focusVia(action, origin);
-              });
-            }
-          });
-          return (
-            <MatChipRow
-              key={def.key ?? def.id ?? i}
-              id={def.id}
-              disabled={def.disabled}
-              chipListDisabled={disabled}
-              highlighted={def.highlighted}
-              color={def.color}
-              removable={def.removable}
-              disableRipple={def.disableRipple}
-              avatar={def.avatar}
-              trailingIcon={def.trailingIcon}
-              removeButton={def.removeButton}
-              onRemoved$={wrappedRemoved$}
-              class={def.class}
-            >
-              {def.content}
-            </MatChipRow>
-          );
-        })}
+        <ChipGridRows
+          rows={rows}
+          disabled={disabled}
+          containerRef={containerRef}
+          inputRef={inputRef}
+        />
         <input
           key="chip-input"
           ref={inputRef}
