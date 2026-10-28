@@ -29,3 +29,5 @@ export type {
   UseFocusTrapReturn,
   AutoFocusTarget,
 } from './focus-trap/use-focus-trap';
+export type {LiveAnnouncer, AriaLivePoliteness} from './live-announcer/live-announcer';
+export {createLiveAnnouncer} from './live-announcer/live-announcer';

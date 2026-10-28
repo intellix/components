@@ -125,6 +125,28 @@
     can appear dozens of times per page in a long accordion, exactly the
     "components that appear many times per page" case rule 7 is about).
 
+### `LiveAnnouncer`
+
+- Source: `src/cdk/a11y/live-announcer/live-announcer.ts`
+- Destination: `src/qwik-cdk/a11y/live-announcer/live-announcer.ts`
+- Added 2026-10-28 (snack-bar port) — previously deferred per this directory's README.
+- Changes from CDK original:
+  - Removed `@Service()` decorator and all Angular DI (`inject`, `NgZone`, `DOCUMENT`,
+    `DomSanitizer`, `LIVE_ANNOUNCER_ELEMENT_TOKEN`/`LIVE_ANNOUNCER_DEFAULT_OPTIONS`). A plain
+    `createLiveAnnouncer()` factory, same pattern as `createFocusTrap`/
+    `createOverlayKeyboardDispatcher` elsewhere in this package.
+  - `LiveAnnouncerMessage` (`string | SafeHtml`) narrowed to `string` — no `DomSanitizer`/
+    `SafeHtml` concept in Qwik; the `_setInnerHtml` branch is dropped.
+  - **The live element is created lazily, on the first `announce()` call**, not eagerly when the
+    service is constructed — upstream creates its `<div class="cdk-live-announcer-element">` in
+    `document.body` the moment `inject(LiveAnnouncer)` runs, which has no Qwik equivalent that
+    doesn't also mean "ship + run JS for every page that merely imports this module" (lazy-
+    interactions remediation rule 7). Once created, the element is identical to upstream's (same
+    classes/attributes).
+  - `CdkAriaLive` (the `[cdkAriaLive]` attribute directive) not ported — out of scope for the
+    snack-bar port that motivated this file; no consumer yet.
+  - `ngOnDestroy` → `destroy()` (plain method, called explicitly by whoever owns the instance).
+
 ### `FocusTrap` / `useFocusTrap`
 
 - Source: `src/cdk/a11y/focus-trap/focus-trap.ts`
