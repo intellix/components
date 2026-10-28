@@ -1,0 +1,19 @@
+// Sort prebuilt CSS. Wraps the port's upstream-synced sort-header.scss with
+// :root defaults for the one component token it resolves through
+// (`--mat-sort-arrow-color`) plus the one `--mat-sys-*` system token that
+// token falls back to. See design spec §4 and SYNC.md.
+//
+// Compiled + grep-confirmed (`sass.compile('scss/sort/sort-header.scss')`):
+// the ONLY `var(--mat-…)` the synced file emits is
+// `color: var(--mat-sort-arrow-color, var(--mat-sys-on-surface));` on
+// `.mat-sort-header-arrow` — matching `_m3-sort.scss`'s single token
+// (`sort-arrow-color: map.get($system, on-surface)`). Value matches the
+// `--mat-sys-on-surface` default every other qwik-material prebuilt file
+// already defines (button/dialog/button-toggle/slide-toggle-prebuilt.scss).
+
+@use './sort-header';
+
+:root {
+  --mat-sort-arrow-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+}
