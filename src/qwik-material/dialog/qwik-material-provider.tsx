@@ -56,6 +56,10 @@ import type {StepperOptions} from '@angular-community/qwik-cdk/stepper';
 import {CDK_STEPPER_GLOBAL_OPTIONS} from '@angular-community/qwik-cdk/stepper';
 import type {MatChipsConfig} from '../chips/tokens';
 import {MAT_CHIPS_CONFIG} from '../chips/tokens';
+import type {MatTooltipDefaultOptions} from '../tooltip/mat-tooltip-tokens';
+import {MAT_TOOLTIP_DEFAULT_OPTIONS} from '../tooltip/mat-tooltip-tokens';
+import type {MatMenuDefaultOptions} from '../menu/mat-menu-tokens';
+import {MAT_MENU_DEFAULT_OPTIONS} from '../menu/mat-menu-tokens';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -114,6 +118,10 @@ export interface QwikMaterialProviderProps {
   /** Defaults applied to every MatChip family component in this subtree (separator keys,
    *  hideSingleSelectionIndicator, inputDisabledInteractive). */
   matChipsConfig?: MatChipsConfig;
+  /** Defaults merged into every `<MatTooltip>`'s resolved config in this subtree. */
+  matTooltipDefaults?: MatTooltipDefaultOptions;
+  /** Defaults merged into every `createMatMenu()`'s resolved config in this subtree. */
+  matMenuDefaults?: MatMenuDefaultOptions;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -241,6 +249,18 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // falls back per-field: `props.x ?? config.x ?? ownDefault`, same convention as checkbox/
   // radio/form-field).
   useContextProvider(MAT_CHIPS_CONFIG, props.matChipsConfig ?? {});
+  // MatTooltipDefaultOptions is a plain object with primitive fields — no
+  // noSerialize needed. Tooltips outside a provider get the hardcoded
+  // MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY fallbacks declared in
+  // mat-tooltip.tsx's `resolveConfig`; providing an empty object here is
+  // equivalent to accepting all of them.
+  useContextProvider(MAT_TOOLTIP_DEFAULT_OPTIONS, props.matTooltipDefaults ?? {});
+  // MatMenuDefaultOptions is a plain object with primitive fields — no
+  // noSerialize needed. Menus outside a provider get the hardcoded
+  // MAT_MENU_DEFAULT_OPTIONS_FACTORY fallbacks declared in
+  // menu-runtime.ts's `resolveMenuConfig`; providing an empty object here
+  // is equivalent to accepting all of them.
+  useContextProvider(MAT_MENU_DEFAULT_OPTIONS, props.matMenuDefaults ?? {});
 
   return <Slot />;
 });

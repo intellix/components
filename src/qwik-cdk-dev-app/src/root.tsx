@@ -27,6 +27,11 @@ import '@angular-community/qwik-material/bottom-sheet-prebuilt.css';
 import '@angular-community/qwik-material/form-field-prebuilt.css';
 import '@angular-community/qwik-material/stepper-prebuilt.css';
 import '@angular-community/qwik-material/chips-prebuilt.css';
+import '@angular-community/qwik-material/tooltip-prebuilt.css';
+import '@angular-community/qwik-material/slider-prebuilt.css';
+import '@angular-community/qwik-material/menu-prebuilt.css';
+import '@angular-community/qwik-material/table-prebuilt.css';
+import '@angular-community/qwik-material/tree-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>

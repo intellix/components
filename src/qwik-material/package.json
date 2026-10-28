@@ -164,6 +164,31 @@
       "types": "./dist/chips/index.d.ts",
       "import": "./dist/chips/index.js"
     },
+    "./tooltip": {
+      "qwik": "./tooltip/index.ts",
+      "types": "./dist/tooltip/index.d.ts",
+      "import": "./dist/tooltip/index.js"
+    },
+    "./slider": {
+      "qwik": "./slider/index.ts",
+      "types": "./dist/slider/index.d.ts",
+      "import": "./dist/slider/index.js"
+    },
+    "./menu": {
+      "qwik": "./menu/index.ts",
+      "types": "./dist/menu/index.d.ts",
+      "import": "./dist/menu/index.js"
+    },
+    "./table": {
+      "qwik": "./table/index.ts",
+      "types": "./dist/table/index.d.ts",
+      "import": "./dist/table/index.js"
+    },
+    "./tree": {
+      "qwik": "./tree/index.ts",
+      "types": "./dist/tree/index.d.ts",
+      "import": "./dist/tree/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -189,6 +214,11 @@
     "./form-field-prebuilt.css": "./dist/form-field-prebuilt.css",
     "./stepper-prebuilt.css": "./dist/stepper-prebuilt.css",
     "./chips-prebuilt.css": "./dist/chips-prebuilt.css",
+    "./tooltip-prebuilt.css": "./dist/tooltip-prebuilt.css",
+    "./slider-prebuilt.css": "./dist/slider-prebuilt.css",
+    "./menu-prebuilt.css": "./dist/menu-prebuilt.css",
+    "./table-prebuilt.css": "./dist/table-prebuilt.css",
+    "./tree-prebuilt.css": "./dist/tree-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

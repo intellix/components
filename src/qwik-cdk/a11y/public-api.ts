@@ -31,3 +31,19 @@ export type {
 } from './focus-trap/use-focus-trap';
 export type {LiveAnnouncer, AriaLivePoliteness} from './live-announcer/live-announcer';
 export {createLiveAnnouncer} from './live-announcer/live-announcer';
+export type {
+  ListKeyManager,
+  ListKeyManagerOption,
+  ListKeyManagerModifierKey,
+} from './key-manager/list-key-manager';
+export {createListKeyManager} from './key-manager/list-key-manager';
+export type {FocusKeyManager, FocusableOption} from './key-manager/focus-key-manager';
+export {createFocusKeyManager} from './key-manager/focus-key-manager';
+export type {Typeahead} from './key-manager/typeahead';
+export {createTypeahead} from './key-manager/typeahead';
+export type {
+  TreeKeyManagerItem,
+  TreeKeydownAction,
+  ResolveTreeKeydownOptions,
+} from './key-manager/tree-key-manager';
+export {resolveTreeKeydown} from './key-manager/tree-key-manager';

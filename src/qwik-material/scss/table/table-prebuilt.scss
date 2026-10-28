@@ -1,0 +1,57 @@
+// Table prebuilt CSS. Wraps the port's upstream-synced table.scss (which
+// `@use`s `./table-flex-styles` for the flex `<mat-table>` layout rules)
+// with :root defaults for every --mat-table-* / --mat-sys-* variable they
+// resolve through. Same reconciliation approach as every other
+// qwik-material prebuilt file (compile, add whatever var() names are still
+// unresolved, repeat) — see design spec §4 and SYNC.md.
+//
+// --mat-sys-* values are M3-ish literals, not a live theme (no runtime
+// theming system in this port) — reused verbatim from other prebuilt files
+// wherever they already define the same variable name (surface/on-surface/
+// outline/body-medium-*/title-small-*), so loading more than one of these
+// prebuilt CSS files on the same page doesn't produce conflicting defaults
+// for shared system tokens.
+
+@use './table';
+
+:root {
+  // ─── table ───
+  --mat-table-background-color: var(--mat-sys-surface, #fef7ff);
+  --mat-table-header-headline-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-table-header-headline-font: var(--mat-sys-title-small-font, Roboto, 'Helvetica Neue', sans-serif);
+  --mat-table-header-headline-line-height: var(--mat-sys-title-small-line-height, 1.25rem);
+  --mat-table-header-headline-size: var(--mat-sys-title-small-size, 0.875rem);
+  --mat-table-header-headline-weight: var(--mat-sys-title-small-weight, 500);
+  --mat-table-header-headline-tracking: var(--mat-sys-title-small-tracking, 0.006rem);
+  --mat-table-row-item-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-table-row-item-label-text-font: var(--mat-sys-body-medium-font, Roboto, 'Helvetica Neue', sans-serif);
+  --mat-table-row-item-label-text-line-height: var(--mat-sys-body-medium-line-height, 1.25rem);
+  --mat-table-row-item-label-text-size: var(--mat-sys-body-medium-size, 0.875rem);
+  --mat-table-row-item-label-text-weight: var(--mat-sys-body-medium-weight, 400);
+  --mat-table-row-item-label-text-tracking: var(--mat-sys-body-medium-tracking, 0.015625em);
+  --mat-table-row-item-outline-color: var(--mat-sys-outline, rgba(0, 0, 0, 0.12));
+  --mat-table-row-item-outline-width: 1px;
+  --mat-table-footer-supporting-text-font: var(--mat-sys-body-medium-font, Roboto, 'Helvetica Neue', sans-serif);
+  --mat-table-footer-supporting-text-line-height: var(--mat-sys-body-medium-line-height, 1.25rem);
+  --mat-table-footer-supporting-text-size: var(--mat-sys-body-medium-size, 0.875rem);
+  --mat-table-footer-supporting-text-weight: var(--mat-sys-body-medium-weight, 400);
+  --mat-table-footer-supporting-text-tracking: var(--mat-sys-body-medium-tracking, 0.015625em);
+  --mat-table-header-container-height: 56px;
+  --mat-table-footer-container-height: 52px;
+  --mat-table-row-item-container-height: 52px;
+
+  // ─── --mat-sys-* system tokens table's m3 tokens resolve through ───
+  --mat-sys-surface: #fef7ff;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-outline: rgba(0, 0, 0, 0.12);
+  --mat-sys-body-medium-font: Roboto, 'Helvetica Neue', sans-serif;
+  --mat-sys-body-medium-line-height: 1.25rem;
+  --mat-sys-body-medium-size: 0.875rem;
+  --mat-sys-body-medium-weight: 400;
+  --mat-sys-body-medium-tracking: 0.015625em;
+  --mat-sys-title-small-font: Roboto, 'Helvetica Neue', sans-serif;
+  --mat-sys-title-small-line-height: 1.25rem;
+  --mat-sys-title-small-size: 0.875rem;
+  --mat-sys-title-small-weight: 500;
+  --mat-sys-title-small-tracking: 0.006rem;
+}

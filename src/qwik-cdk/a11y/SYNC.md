@@ -124,6 +124,45 @@
     element up front (fine for one-off callers, but `MatExpansionPanelHeader`
     can appear dozens of times per page in a long accordion, exactly the
     "components that appear many times per page" case rule 7 is about).
+  - **2026-10-28 (tooltip port): `useFocusOrigin()`'s keyboard-vs-program
+    distinction reworked twice, both times to fix a real bug caught by
+    `qwik-material/tooltip`'s `message-change` scenario (bare
+    `element.focus()` after a hover must resolve `'program'`, not
+    `'keyboard'`) WITHOUT regressing every existing consumer's real
+    Tab-navigation case:
+    1. The hook previously read the browser's own `:focus-visible`
+       pseudo-class to decide `'keyboard'`. Confirmed live: Chromium's
+       native heuristic also matches `:focus-visible` for a bare scripted
+       `.focus()` call with no real keydown/mousedown behind it at all
+       (e.g. Playwright's `locator.focus()`) — conflating "scripted, no
+       recent interaction" with "real keyboard navigation", where upstream
+       `FocusMonitor.getFocusOrigin()` correctly falls through to
+       `'program'`. Replaced with tracking real `keydown` events directly.
+    2. Tracking `keydown`s only works if the tracking is truly eager — a
+       Tab press's own default action (advancing focus, then firing
+       `focusin`) can complete before ANY Qwik-lazy listener resolves
+       (`useOn`: component-scoped, so often not even attached to the
+       right element for Tab, which fires the keydown on the
+       *previously*-focused element, not the new target; `useOnDocument`:
+       document-scoped but still at least one microtask away even for an
+       already-cached chunk) — both attempts, in turn, intermittently lost
+       that race under real test-harness load and misreported a real Tab
+       press as `'program'` (see `material-expansion`'s
+       `tabIntoFirstHeader` step, which caught it). The fix that actually
+       holds: `focus-origin/recent-keydown.ts`'s state lives on `window`
+       (not a module-level `let` — nothing guarantees one shared module
+       instance across this package's separately-built entry points), set
+       by a literal inline `<script>` in `<QwikCdkRoot>`'s own SSR output
+       (`qwik-cdk/root.tsx`) — not a QRL at all, so it runs synchronously
+       as the browser parses that point in the HTML, before Qwik's own
+       bundle has even started loading. No time-based expiry either (an
+       earlier version used `FocusMonitor`'s own 1ms "IMMEDIATE mode"
+       window): the flag persists until the next `focusin` consumes it or
+       a newer `pointerdown` invalidates it, because unlike upstream
+       (which reads its `origin` variable synchronously, same listener
+       that set it) this hook's `focusin` handler is itself a lazily-
+       resolved QRL reading a DIFFERENT handler's flag — a short window
+       routinely closed before that resolution finished.
 
 ### `LiveAnnouncer`
 
@@ -164,3 +203,43 @@
     `_forceFocus()`'s temporary `tabindex="-1"` + blur/mousedown cleanup for non-natively-
     focusable targets), moved here from being dialog-specific since both `CdkDialogContainer`
     and `MatDialogContainer` need it identically.
+
+### `ListKeyManager` / `FocusKeyManager` / `Typeahead`
+
+- Source: `src/cdk/a11y/key-manager/{list-key-manager,focus-key-manager,typeahead}.ts`
+- Destination: `src/qwik-cdk/a11y/key-manager/{list-key-manager,focus-key-manager,typeahead}.ts`
+- Added 2026-10-28 (menu port) — first consumer is `qwik-material/menu`'s `MenuPanel`
+  (`menu-runtime.ts`'s `openMenu`), which builds a `FocusKeyManager` over the panel's rendered
+  `.mat-mdc-menu-item` elements once attached. Intended to be reusable as-is for
+  select/autocomplete/listbox later, per the remediation design doc.
+- Changes from CDK originals:
+  - `createListKeyManager(items)` / `createFocusKeyManager(items)` factory functions (not
+    classes) — same convention as `createFocusMonitor`/`createOverlayService` elsewhere in this
+    package.
+  - `tabOut`/`change` are plain callback-subscription sets (`onTabOut(cb)`/`onChange(cb)`, each
+    returning an unsubscribe function) instead of RxJS `Subject`s — qwik-cdk has no RxJS
+    dependency.
+  - `items` is a plain array snapshot (`setItems()` replaces it) — no `QueryList`/Angular
+    `Signal` constructor overload, since there's no Qwik equivalent of a live content query.
+    `MenuPanel` doesn't need live reactivity here: it builds the manager once, from the DOM, after
+    the (static, for one open instance) items have already rendered.
+  - Keyboard matching uses `event.key` string comparisons (`'ArrowDown'`, `'Home'`, …) instead of
+    numeric `keyCode` constants — matches this port's existing convention elsewhere (e.g.
+    `qwik-material/dialog`'s Escape handling) and needs no `qwik-cdk/keycodes` import beyond
+    `hasModifierKey`.
+  - `Typeahead` ported as `createTypeahead()`, with the RxJS `Subject`+`debounceTime` pipeline
+    replaced by a plain `setTimeout` debounce reproducing the same externally-observable
+    behaviour (buffer letters, search starting after the current selection, first non-skipped
+    label-prefix match wins).
+  - `ListKeyManager`/`FocusKeyManager`'s interface methods are typed to return `this` (not the
+    base `ListKeyManager<T>` interface type) specifically so a chained
+    `createFocusKeyManager(items).withWrap().withHomeAndEnd()` keeps `FocusKeyManager<T>`'s extra
+    `setFocusOrigin()` in its static type.
+  - `createFocusKeyManager()` reassigns the returned manager's OWN `setActiveItem` property
+    (shadowing the inherited one) rather than returning a separate wrapper object — needed because
+    `ListKeyManager`'s internal call sites (`setNextItemActive`, the typeahead `onSelect` callback
+    installed by a LATER `.withTypeAhead()` chain call) all invoke `this.setActiveItem(...)` with
+    `this` bound to the manager instance itself; a wrapper with a different identity would never
+    see those calls. See `focus-key-manager.ts`'s own doc comment for the full reasoning.
+  - `ActivedescendantKeyManager` / `TreeKeyManager` / `NoopTreeKeyManager` not ported — no
+    consumer needs them yet.

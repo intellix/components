@@ -15,6 +15,8 @@ const entries = [
   'stepper',
   'overlay',
   'dialog',
+  'table',
+  'tree',
 ];
 
 export default defineConfig({

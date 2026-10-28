@@ -30,6 +30,11 @@ const entries = [
   'input',
   'stepper',
   'chips',
+  'tooltip',
+  'slider',
+  'menu',
+  'table',
+  'tree',
 ];
 
 export default defineConfig({
@@ -72,6 +77,11 @@ export default defineConfig({
           ['scss/form-field/form-field-prebuilt.scss', 'dist/form-field-prebuilt.css'],
           ['scss/stepper/stepper-prebuilt.scss', 'dist/stepper-prebuilt.css'],
           ['scss/chips/chips-prebuilt.scss', 'dist/chips-prebuilt.css'],
+          ['scss/tooltip/tooltip-prebuilt.scss', 'dist/tooltip-prebuilt.css'],
+          ['scss/slider/slider-prebuilt.scss', 'dist/slider-prebuilt.css'],
+          ['scss/menu/menu-prebuilt.scss', 'dist/menu-prebuilt.css'],
+          ['scss/table/table-prebuilt.scss', 'dist/table-prebuilt.css'],
+          ['scss/tree/tree-prebuilt.scss', 'dist/tree-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);
@@ -130,6 +140,12 @@ export default defineConfig({
         '@builder.io/qwik-city',
         '@angular-community/qwik-cdk',
         /^@angular-community\/qwik-cdk\/.+$/,
+        // qwik-material/table depends on qwik-material/sort (MatSortHeader
+        // integration) — a same-package cross-entry import, the first of
+        // its kind here. Externalizing it (resolved via this package's own
+        // `exports` map at consume time, same as every qwik-cdk import
+        // above) avoids bundling sort's code into table's own output.
+        /^@angular-community\/qwik-material\/.+$/,
       ],
       output: {preserveModules: false, entryFileNames: '[name].js'},
     },

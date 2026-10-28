@@ -1,0 +1,65 @@
+import {component$} from '@builder.io/qwik';
+import {CdkTreeNodeToggle, type CdkTreeNodeInput} from '@angular-community/qwik-cdk/tree';
+import {MatTree} from '@angular-community/qwik-material/tree';
+
+// Mirrors src/dev-app/qwik-parity/tree.ts's `TreeNestedInitiallyExpanded`.
+interface FoodNode {
+  name: string;
+  children?: FoodNode[];
+  expanded?: boolean;
+}
+
+function foodData(): FoodNode[] {
+  const data: FoodNode[] = [
+    {name: 'Fruit', children: [{name: 'Apple'}, {name: 'Banana'}]},
+    {
+      name: 'Vegetables',
+      children: [
+        {name: 'Leafy greens', children: [{name: 'Spinach'}, {name: 'Kale'}]},
+        {name: 'Carrot'},
+      ],
+    },
+  ];
+  data[0].expanded = true; // Fruit starts expanded.
+  return data;
+}
+
+function slug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
+function buildNodes(data: FoodNode[]): CdkTreeNodeInput<FoodNode>[] {
+  return data.map(node => {
+    const key = slug(node.name);
+    if (!node.children?.length) {
+      return {key, data: node, content: node.name};
+    }
+    return {
+      key,
+      data: node,
+      isExpandable: true,
+      isExpanded: !!node.expanded,
+      content: (
+        <>
+          <CdkTreeNodeToggle
+            node={key}
+            aria-label={`Toggle ${node.name}`}
+            collapsedLabel="[+]"
+            expandedLabel="[-]"
+          />
+          {node.name}
+        </>
+      ),
+      children: buildNodes(node.children),
+    };
+  });
+}
+
+export default component$(() => (
+  <>
+    <div data-parity-root>
+      <MatTree variant="nested" nodes={buildNodes(foodData())} />
+    </div>
+    <main data-scenario-ready>ready</main>
+  </>
+));
