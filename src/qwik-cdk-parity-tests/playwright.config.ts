@@ -21,23 +21,8 @@ export default defineConfig({
   timeout: 60_000,
   expect: {timeout: 10_000},
   use: {trace: 'retain-on-failure'},
-  webServer: [
-    {
-      // PLACEHOLDER: Angular CDK dev-app — requires Bazel + ibazel.
-      // Substitute with your preferred Angular dev-app start command if needed.
-      // Actual URL served: http://localhost:4200
-      // Note: Angular's dialog demo is at /dialog NOT /dialog/basic — see README.
-      command: 'pnpm -C ../../ dev-app',
-      port: 4200,
-      reuseExistingServer: true,
-      timeout: 120_000,
-    },
-    {
-      // qwik-cdk dev-app — must build first, then preview (not dev) due to qwik-city bug.
-      command: 'pnpm -C ../qwik-cdk-dev-app preview',
-      port: 4173,
-      reuseExistingServer: true,
-      timeout: 60_000,
-    },
-  ],
+  // No `webServer` block: both dev-apps (Angular on 4200, Qwik on QWIK_URL) are shared,
+  // long-running servers started manually. Auto-starting/killing them from here races with
+  // other worktrees and the main checkout's own verification runs. Always pass QWIK_URL
+  // explicitly when running these specs.
 });
