@@ -1,5 +1,5 @@
 import {$, component$, Slot, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
-import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
+import {useFocusOrigin, useIdGenerator, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import type {MatChipRemoveButtonDef} from './mat-chip';
@@ -30,7 +30,16 @@ export interface MatChipRowProps {
   avatar?: JSXOutput;
   trailingIcon?: JSXOutput;
   removeButton?: MatChipRemoveButtonDef;
-  onRemoved$?: QRL<() => void>;
+  /**
+   * Fires when the row is removed. Receives the ORIGIN of the triggering interaction
+   * (`'mouse'` for a click, `'keyboard'` for Enter/Space on the remove button or Backspace/
+   * Delete on the row itself) — the owning `<MatChipGrid>` needs this to correctly replay it
+   * via `focusVia()` on whichever row slides into the removed one's place (confirmed live:
+   * reading the origin back off the removed row's OWN `cdk-*-focused` class, after the fact,
+   * races the same click's own pending `focusin` class update and isn't reliable — passing it
+   * through the call chain directly, from whichever handler actually knows it, is).
+   */
+  onRemoved$?: QRL<(origin?: FocusOrigin) => void>;
   /** Set by the owning `<MatChipGrid>` — mirrors upstream's `chip._chipListDisabled`. */
   chipListDisabled?: boolean;
   class?: string | ReadonlyArray<string>;
@@ -49,14 +58,19 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
 
   const hasAvatar = props.avatar != null;
   const hasTrailingIcon = props.trailingIcon != null || props.removeButton != null;
-  // Chip-row's primary action is always the gridcell `<span matChipAction>` — like
-  // chip-option, this always exists, so a row is never ripple-disabled via "no actions".
-  const hasInteractiveActions = true;
 
   const animationsDisabled = useAnimationsDisabled();
   const rippleInitialized = useRippleLoader();
-  const rippleDisabled =
-    disabled || disableRipple || animationsDisabled.value || !hasInteractiveActions;
+  // Confirmed live against real Angular: unlike `MatChipOption` (whose primary action is
+  // ALWAYS ripple-ENABLED from the very first render — a `<mat-chip-option>` with no remove
+  // button shows no `mat-ripple-loader-disabled` attribute at all, checked directly against a
+  // freshly-loaded page with zero interactions), a `<mat-chip-row>` DOES start permanently
+  // ripple-disabled at first paint, the same construction-time quirk `mat-chip.tsx`'s
+  // `rippleDisabledInitial` documents for the base `MatChip` (and for the SAME underlying
+  // reason: `ngDoCheck`'s later correction needs some OTHER change-detection-triggering event
+  // to happen anywhere on the page first). The owning `<MatChipGrid>` corrects it the same
+  // way `<MatChipSet>` corrects a base chip — see its own `fixupRippleDisabled$`.
+  const rippleDisabled = disabled || disableRipple || animationsDisabled.value || true;
 
   const focusOrigin = useFocusOrigin();
 
@@ -64,8 +78,8 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
 
   const removeDisabled = disabled || (props.removeButton?.disabled ?? false);
 
-  const remove$ = $(() => {
-    if (removable) props.onRemoved$?.();
+  const remove$ = $((origin?: FocusOrigin) => {
+    if (removable) props.onRemoved$?.(origin);
   });
 
   // Mirrors `_handleKeydown`: ENTER is swallowed entirely (editing isn't implemented, so
@@ -75,7 +89,7 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
     if (event.key === 'Enter') return;
     if ((event.key === 'Backspace' && !event.repeat) || event.key === 'Delete') {
       event.preventDefault();
-      remove$();
+      remove$('keyboard');
     }
   });
 
@@ -91,7 +105,7 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
     if (!removeDisabled) {
       event.stopPropagation();
       event.preventDefault();
-      remove$();
+      remove$('mouse');
     }
   });
 
@@ -99,7 +113,7 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
     if ((event.key === 'Enter' || event.key === ' ') && !removeDisabled) {
       event.stopPropagation();
       event.preventDefault();
-      remove$();
+      remove$('keyboard');
     }
   });
 
@@ -143,7 +157,7 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
       <span
         ref={primaryRef}
         {...({matchipaction: ''} as Record<string, string>)}
-        class="mat-mdc-chip-action mdc-evolution-chip__action mdc-evolution-chip__action--primary"
+        class="mdc-evolution-chip__cell mdc-evolution-chip__cell--primary mat-mdc-chip-action mdc-evolution-chip__action mdc-evolution-chip__action--primary"
         role="gridcell"
         tabIndex={disabled ? undefined : -1}
         {...(disabled ? {disabled: ''} : {})}
@@ -183,7 +197,7 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
               type="button"
               class="mat-mdc-chip-remove mat-mdc-chip-trailing-icon mat-focus-indicator mdc-evolution-chip__icon mdc-evolution-chip__icon--trailing mat-mdc-chip-action mdc-evolution-chip__action mdc-evolution-chip__action--secondary mdc-evolution-chip__action--trailing"
               role="button"
-              tabIndex={-1}
+              tabIndex={removeDisabled ? undefined : -1}
               aria-label={props.removeButton['aria-label']}
               disabled={removeDisabled || undefined}
               aria-disabled={removeDisabled ? 'true' : 'false'}

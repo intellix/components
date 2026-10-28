@@ -21,7 +21,7 @@ import {createContextId, type Signal} from '@builder.io/qwik';
  * fix — it would reset the option's identity (id, any internal state) on every selection
  * change, and upstream never destroys/recreates the chip on selection.
  *
- * The one thing proven to reliably reach a descendant reactively in this port, elsewhend too
+ * The one thing proven to reliably reach a descendant reactively in this port, elsewhere too
  * (`MatButtonToggleGroup`/`MatButtonToggle`, `MatFormField`/`MAT_FORM_FIELD_CONTROL_STATE`), is
  * a CONTEXT-PROVIDED SIGNAL: the provider reassigns `.value` on every one of ITS OWN renders,
  * and the CONSUMER reads `.value` directly during its OWN render — a fundamentally different

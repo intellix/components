@@ -230,7 +230,7 @@ export const MatChip = component$<MatChipProps>(props => {
               type="button"
               class="mat-mdc-chip-remove mat-mdc-chip-trailing-icon mat-focus-indicator mdc-evolution-chip__icon mdc-evolution-chip__icon--trailing mat-mdc-chip-action mdc-evolution-chip__action mdc-evolution-chip__action--secondary mdc-evolution-chip__action--trailing"
               role="button"
-              tabIndex={-1}
+              tabIndex={removeDisabled ? undefined : -1}
               aria-label={props.removeButton['aria-label']}
               disabled={removeDisabled || undefined}
               aria-disabled={removeDisabled ? 'true' : 'false'}
