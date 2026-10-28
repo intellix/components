@@ -119,6 +119,16 @@
       "types": "./dist/checkbox/index.d.ts",
       "import": "./dist/checkbox/index.js"
     },
+    "./form-field": {
+      "qwik": "./form-field/index.ts",
+      "types": "./dist/form-field/index.d.ts",
+      "import": "./dist/form-field/index.js"
+    },
+    "./input": {
+      "qwik": "./input/index.ts",
+      "types": "./dist/input/index.d.ts",
+      "import": "./dist/input/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -136,6 +146,7 @@
     "./expansion-prebuilt.css": "./dist/expansion-prebuilt.css",
     "./radio-prebuilt.css": "./dist/radio-prebuilt.css",
     "./checkbox-prebuilt.css": "./dist/checkbox-prebuilt.css",
+    "./form-field-prebuilt.css": "./dist/form-field-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

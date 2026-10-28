@@ -10,3 +10,25 @@ export {
 } from './mat-pseudo-checkbox';
 
 export {MatInternalFormField, type MatInternalFormFieldProps} from './mat-internal-form-field';
+
+export {
+  MAT_FORM_FIELD_CONTROL_STATE,
+  readControlProps,
+  type MatFormFieldControlProps,
+  type MatFormFieldControlState,
+} from './mat-form-field-control';
+
+export {
+  useMatFormControl,
+  matRequiredValidator,
+  matEmailValidator,
+  matValidationErrors,
+  matControlValid,
+  matControlInvalid,
+  matControlHasError,
+  matControlHasValidator,
+  type MatFormControl,
+  type MatFormControlOptions,
+  type MatValidatorFn,
+  type MatValidationErrors,
+} from './mat-form-control';
