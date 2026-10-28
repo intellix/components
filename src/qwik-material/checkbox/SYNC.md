@@ -93,28 +93,43 @@ affected (the prop defaults to `undefined`).
 
 ## Known flakiness (environmental, not a logic bug)
 
-A `click({force: true})` immediately after `waitForSelector('[data-parity-root]')`
-can occasionally race Qwik's qwikloader bootstrap on a cold page load — the
-loader's own registration script sits at the very end of the document
-(confirmed by inspecting the raw SSR HTML: an inline
-`window.qwikevents.push(...)` script is the last thing before `</html>`,
-and the actual loader module is fetched via an `async` `<script type=module>`
-plus a `requestIdleCallback`-gated prefetch, neither of which is guaranteed
-done by the time a `[data-parity-root]` wait resolves, since that element is
-present from the very first byte of the SSR response). This is a timing
-characteristic of the dev-app's stock QwikCity bootstrap (not anything
-checkbox-specific, nor edited here — out of scope for a single component's
-port), compounded by `waitForTransitionClassToClear`'s documented "resolves
-immediately if nothing to wait for" behavior masking a click whose handler
-hasn't loaded yet, which it never would where no race existed. Confirmed via
-*many* repeated isolated runs on an otherwise-idle machine: 13/13 scenarios
-pass consistently and quickly (~45s), 100% reliably, including every
-multi-click sequence tested up to 5 clicks in a row — not a logic defect in
-`MatCheckbox`. The failures actually observed during this port's own
-development all coincided with heavy concurrent load from *other* agent
-worktrees' Playwright/Chromium processes running on the same machine at the
-same time (confirmed via `ps aux` mid-run — sibling wave-1 ports for radio
-and expansion were running their own test suites concurrently); with that
-contention in play, an occasional single scenario — always the first test
-assigned to a given worker, consistent with a cold-browser-context qwikloader
-race — can flake. Re-running (or running in isolation) resolves it.
+`basic` (and, more rarely, other scenarios) can occasionally fail with the
+Qwik side's `mdc-checkbox--anim-<from>-<to>` transition class still present
+at a comparison that expected it cleared — i.e. `handleInputClick$`'s own
+`setTimeout(() => { transitionClass.value = ''; }, 1000)` (or the
+`waitForTransitionClassToClear` poll that waits for it) didn't complete in
+time. Two contributing timing effects, both confirmed, neither a logic
+defect:
+
+- **Cold qwikloader bootstrap.** The loader's registration script sits at
+  the very end of the SSR document (confirmed by inspecting the raw HTML: an
+  inline `window.qwikevents.push(...)` script is the last thing before
+  `</html>`; the actual loader module loads via an `async`
+  `<script type=module>` plus a `requestIdleCallback`-gated prefetch),
+  neither guaranteed done by the time a `[data-parity-root]` wait resolves
+  (present from the very first SSR byte). `waitForTransitionClassToClear`'s
+  documented "resolves immediately if nothing to wait for" behavior can mask
+  a click whose handler hasn't loaded yet as "already settled."
+- **Host CPU contention delaying the `setTimeout` itself.** Confirmed via
+  `npx playwright test ... -g basic --workers=1 --repeat-each=5` on a
+  heavily loaded machine (20+ concurrent Playwright/Chromium processes from
+  other agent worktrees, confirmed via `ps aux`): 2/5 repeats failed, both
+  at the `space checkbox 0` step (the *third* interaction, well past any
+  "first ever click" cold-start window) with the transition class still
+  present — consistent with the event loop itself being starved long enough
+  that a plain 1000ms timer, or the test's own polling, slips past the
+  comparison, not with anything specific to this component's logic.
+
+Neither effect is checkbox-specific or something to fix in `MatCheckbox` —
+both are inherent to timing-based waits (this spec's own
+`waitForTransitionClassToClear`, mirroring upstream's real
+`_ngZone.runOutsideAngular(() => setTimeout(...))` 1-second animation-clear
+window) under adversarial scheduling, not a structural/attribute/class
+mismatch. Confirmed via *many* repeated runs on an otherwise-idle machine:
+13/13 scenarios pass consistently and quickly (~45s), 100% reliably,
+including every multi-click sequence tested up to 5 clicks in a row (see
+`specs/material-checkbox/multi-click.spec.ts`). Every failure actually
+observed during this port's development coincided with heavy concurrent
+load from *other* agent worktrees' test suites running at the same time
+(sibling wave-1 ports for radio, expansion, and slide-toggle) — re-running,
+or running when the host is less contended, resolves it.
