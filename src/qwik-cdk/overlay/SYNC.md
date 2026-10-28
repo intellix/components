@@ -87,7 +87,7 @@ Skipped (Angular-only):
 
 ---
 
-### flexible-connected-position-strategy.spec.ts (14 ported / 9 skipped of ~120+ total CDK scenarios)
+### flexible-connected-position-strategy.spec.ts (43 ported / 2 skipped of ~120+ total CDK scenarios)
 
 Ported (pure-JS API surface):
 - constructs without error given an origin element
@@ -104,9 +104,33 @@ Ported (pure-JS API surface):
 - dispose() twice does not throw
 - detach() clears the overlay ref without error
 
-Skipped (DOM-render — geometry APIs return zeros in happy-dom; math covered by Playwright in Tasks 29/30):
-- All ~110+ geometry/pixel-position scenarios (positioning, fallback, bounding box, viewport
-  margin, flexible dimensions, push, scroll containers, positionChanges signal, etc.)
+Ported (withPopoverLocation / getPopoverInsertionPoint, 6 tests — 2026-10-28, tooltip port):
+- defaults to / explicit 'global' → null insertion point
+- 'inline' with an Element origin → returns the origin
+- 'inline' with a Point origin → null (no Element to anchor to)
+- {type: 'parent', element} → returned unchanged
+- switching location back to 'global' clears a previously-set 'inline'
+
+Ported (geometry, mocked `getBoundingClientRect()` — 13 tests, 2026-10-28, tooltip port; see the
+spec file's header comment for why happy-dom's lack of real layout doesn't actually block this):
+- exact position bottom-left of origin, LTR
+- exact position top-right of origin, LTR
+- exact position honouring RTL (origin.start → its right edge)
+- falls back to the next preferred position when the first overflows
+- bounding-box sizing for the default (flexible-dimensions) path
+- bounding-box width shrinks by the configured viewport margin
+- picks the greatest-area flexible fit when nothing fits completely (via a `minWidth` config)
+- pushes on-screen when nothing fits and canPush is true
+- does not push (uses the fallback as-is) when canPush is false
+- applies position.panelClass to the overlay pane
+- sets transform-origin on descendants matched by withTransformOriginOn
+- reports scroll-clipping against a withScrollableContainers() container
+- emits a positionChanges value with the chosen connectionPair after apply()
+
+Skipped (no isolated equivalent in this port — see each test's own comment):
+- recompute-on-scroll via a real ScrollDispatcher (qwik-cdk has none; scroll-driven
+  repositioning itself is covered by reposition-scroll-strategy.ts + its own spec)
+- Safari's zoomed-viewport negative-container-rect quirk (needs a real zoomed browser)
 
 ---
 
@@ -261,14 +285,15 @@ Skipped (Angular-only — ComponentPortal and ApplicationRef.tick()):
 |------|--------|---------|-----------------|
 | overlay-container.spec.ts | 3 | 4 | 7 |
 | overlay.spec.ts | 30 | 10 | ~70+ |
-| flexible-connected-position-strategy.spec.ts | 14 | 9 | ~120+ |
+| flexible-connected-position-strategy.spec.ts | 43 | 2 | ~120+ |
 | global-position-strategy.spec.ts | 15 | 9 | ~30 |
 | block-scroll-strategy.spec.ts | 6 | 7 | 9 |
 | close-scroll-strategy.spec.ts | 6 | 5 | 6 |
 | reposition-scroll-strategy.spec.ts | 6 | 4 | 6 |
 | overlay-keyboard-dispatcher.spec.ts | 9 | 6 | 11 |
 | overlay-outside-click-dispatcher.spec.ts | 10 | 9 | 16 |
-| **Total** | **99** | **63** | **~275+** |
+| popover-insertion.spec.ts (new, no CDK equivalent) | 13 | 0 | n/a |
+| **Total** | **141** | **56** | **~275+** |
 
 ---
 
@@ -324,6 +349,58 @@ Fixed (previously invented structure, now matches upstream):
   start the backdrop fading immediately on close, before the pane's animation finishes.
 
 Open deviations (unchanged by this pass):
-- `addPanelClass`/`updateSize` called on an `OverlayRef` *after* its `OverlayHost` has mounted
-  don't reactively update the rendered pane (see above) — no scenario currently exercises this,
-  so it's left as a known gap rather than fixed here.
+- `updateSize` called on an `OverlayRef` *after* its `OverlayHost` has mounted doesn't reactively
+  update the rendered pane (see above) — no scenario currently exercises this, so it's left as a
+  known gap rather than fixed here. (`addPanelClass`/`removePanelClass` had the same gap; fixed
+  2026-10-28, see below.)
+
+## `FlexibleConnectedPositionStrategy` + reposition scroll strategy (2026-10-28, tooltip port)
+
+Both were already ported (see "Ported files" table above — predates this pass, built as shared
+overlay infrastructure ahead of their first real consumer). This pass is `qwik-material/tooltip`
+actually exercising `FlexibleConnectedPositionStrategy.apply()` end-to-end in a browser for the
+first time (previous consumers — dialog, snack-bar, bottom-sheet — all use
+`GlobalPositionStrategy`); that surfaced two real bugs in shared code, both fixed here, neither
+specific to tooltip:
+
+- **`addPanelClass`/`removePanelClass` after mount didn't reactively update the rendered pane** —
+  the exact bug this file's own "Open deviations" note above already predicted ("a future
+  consumer that does call them post-open from outside the component tree would hit the same
+  non-reactivity bug"). `FlexibleConnectedPositionStrategy._applyPosition()` calls
+  `overlayRef.addPanelClass()`/`removePanelClass()` to add `mat-mdc-tooltip-panel-{above,below,
+  left,right}` — always *after* `OverlayHost` has already mounted (its position is only known
+  once `apply()` runs, which happens inside `_onAttached()`, called by `OverlayHost` itself).
+  Fixed the same way `backdropShowing`/`backdropDetached` already were: added
+  `setPanelClasses(classes)` to `OverlayVisualCallbacks` (`overlay-ref.ts`), `OverlayHost` now
+  owns a real `useSignal()` for panel classes (`overlay-host.tsx`) instead of reading
+  `entry.state.panelClasses.value` directly, and `OverlayRef.addPanelClass`/`removePanelClass`
+  call the new `visuals?.setPanelClasses(next)` in addition to updating `entry.state` (kept for
+  any other reader of `OverlayEntryState` directly).
+- **Popover insertion point was computed but never used.** `PositionStrategy.
+  getPopoverInsertionPoint()` and `FlexibleConnectedPositionStrategy.withPopoverLocation()`
+  existed, but nothing in `OverlayRef`/`OverlayHost` ever called the former — every popover-mode
+  overlay stayed inside `.cdk-overlay-container` regardless of `withPopoverLocation('inline' |
+  {type: 'parent', …})`, unlike upstream's `OverlayRef._attachHost()`. No current consumer
+  (tooltip always uses `'global'`) needs the other two locations, but `mat-select`'s
+  `cdk-connected-overlay` does (`'inline'`, anchoring its popover right next to the trigger it
+  opens from) — needed by the upcoming select/autocomplete/datepicker ports this strategy was
+  built to share. Added `position/popover-insertion.ts`
+  (`resolvePopoverInsertionPoint`/`applyPopoverInsertionPoint`, pure functions — see their own
+  doc comments) and wired them into `OverlayHost`'s existing `useVisibleTask$`, right after
+  `_onAttached()`: for a popover overlay whose strategy resolves a non-`'global'` insertion
+  point, the host (already declaratively rendered as a child of `.cdk-overlay-container` — Qwik
+  has no imperative "render into this other DOM node" primitive the way upstream's vanilla-DOM
+  `_attachHost()` does) is physically reparented via plain DOM APIs (`insertionPoint.after(host)`
+  / `parent.appendChild(host)`), mirroring upstream's one-time move. Qwik's event delegation
+  (qwikloader resolves the actual target dynamically at dispatch time, not via a subscription
+  fixed at listener-attach time) means this reparent doesn't break any already-wired `on:*`
+  handlers on the moved subtree. Covered by `position/popover-insertion.spec.ts`'s pure-function
+  unit tests (no live dev-app scenario needs it yet — no tooltip scenario uses a non-`'global'`
+  location, and it's shared infrastructure for components not yet ported).
+- Also added ~13 real geometry tests to `flexible-connected-position-strategy.spec.ts` using
+  `vi.spyOn(el, 'getBoundingClientRect')` + a mocked viewport (exact positioning in LTR/RTL,
+  fallback-position selection, viewport margin, flexible-dimension bounding-box sizing, push,
+  panel-class application, transform-origin, scroll-clipping, the `positionChanges` signal) and
+  6 for `withPopoverLocation`/`getPopoverInsertionPoint` — see that spec file's header comment
+  for why the file's original "happy-dom can't do real layout" skip rationale didn't actually
+  block mocking the one method (`getBoundingClientRect`) everything else derives from.

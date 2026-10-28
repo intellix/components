@@ -7,6 +7,20 @@ import type {ScrollStrategy} from './scroll/scroll-strategy';
 export interface OverlayVisualCallbacks {
   setBackdropShowing(value: boolean): void;
   setBackdropDetached(value: boolean): void;
+  /**
+   * Mirrors the backdrop setters above, for `addPanelClass`/`removePanelClass`
+   * calls made AFTER the overlay has already mounted (e.g. a
+   * `FlexibleConnectedPositionStrategy` consumer re-deriving
+   * `mat-mdc-tooltip-panel-{above,below,left,right}` once its position is
+   * known, which only happens once `hasAttached()` is true — i.e. always
+   * after `OverlayHost`'s first render). Previously only
+   * `entry.state.panelClasses` (a plain `{value}` carrier, not a real
+   * signal — see that field's doc comment) was updated, which is correct on
+   * first render but silently invisible to any already-mounted
+   * `OverlayHost`; confirmed live via `MatTooltip`, the first consumer to
+   * call `addPanelClass` post-mount.
+   */
+  setPanelClasses(classes: readonly string[]): void;
 }
 
 /**
@@ -149,15 +163,15 @@ export function createOverlayRef(deps: {
     },
     addPanelClass(classes) {
       const arr = Array.isArray(classes) ? classes : [classes];
-      deps.entry.state.panelClasses.value = [
-        ...new Set([...deps.entry.state.panelClasses.value, ...arr]),
-      ];
+      const next = [...new Set([...deps.entry.state.panelClasses.value, ...arr])];
+      deps.entry.state.panelClasses.value = next;
+      visuals?.setPanelClasses(next);
     },
     removePanelClass(classes) {
       const arr = Array.isArray(classes) ? classes : [classes];
-      deps.entry.state.panelClasses.value = deps.entry.state.panelClasses.value.filter(
-        c => !arr.includes(c),
-      );
+      const next = deps.entry.state.panelClasses.value.filter(c => !arr.includes(c));
+      deps.entry.state.panelClasses.value = next;
+      visuals?.setPanelClasses(next);
     },
   };
 

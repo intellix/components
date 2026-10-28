@@ -42,6 +42,11 @@ export {
 } from './position/flexible-connected-position-strategy';
 export type {OverlayPositionBuilder} from './position/overlay-position-builder';
 export {createOverlayPositionBuilder} from './position/overlay-position-builder';
+export type {PopoverInsertionPoint} from './position/popover-insertion';
+export {
+  applyPopoverInsertionPoint,
+  resolvePopoverInsertionPoint,
+} from './position/popover-insertion';
 export {createNoopScrollStrategy} from './scroll/noop-scroll-strategy';
 export {createBlockScrollStrategy} from './scroll/block-scroll-strategy';
 export {createCloseScrollStrategy} from './scroll/close-scroll-strategy';
