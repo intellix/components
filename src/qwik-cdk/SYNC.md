@@ -13,7 +13,8 @@ initial Dialog port landed).
 | coercion | `7ef5967ff` | green — pure function helpers ported verbatim |
 | keycodes | `7ef5967ff` | green — key constants + `hasModifierKey` ported verbatim |
 | portal   | `7ef5967ff` | green — collapsed Portal<P> type + `<CdkPortalOutlet>` only; ComponentPortal/TemplatePortal/DomPortal removed |
-| a11y     | `7ef5967ff` | partial — Dialog-required subset only (`_IdGenerator`, `InteractivityChecker`, `InputModalityDetector`, `FocusMonitor`, `FocusTrap`, `useFocusTrap`); LiveAnnouncer + key managers + `cdkTrapFocus` directive deferred (see a11y/SYNC.md) |
+| a11y     | `7ef5967ff` | partial — Dialog-required subset plus `useFocusOrigin()`'s `focusVia()` companion (2026-10-27, for expansion); LiveAnnouncer + key managers + `cdkTrapFocus` directive deferred (see a11y/SYNC.md) |
+| accordion | `7ef5967ff` | green (2026-10-27) — `useCdkAccordion`/`useCdkAccordionItem` hooks; `UniqueSelectionDispatcher` replaced by a per-instance `Signal` broadcast (see accordion/SYNC.md) |
 | overlay  | `7ef5967ff` | green — `OverlayConfig`, `OverlayRef`, `Overlay` service, position strategies (Global + FlexibleConnected), four scroll strategies, both dispatchers; `_CdkOverlayStyleLoader` replaced by Vite SCSS import |
 | dialog   | `7ef5967ff` | green — `Dialog`/`useDialog`/`DialogRef`/`DialogConfig`/`CdkDialogContainer` with `Promise<R>` + `QRL` callbacks replacing RxJS streams |
 
@@ -26,7 +27,7 @@ Replicates spec §11. Reproduced here so a syncer doesn't have to chase the spec
    ```
    git log <LAST_SHA>..main -- \
      src/cdk/dialog/ src/cdk/overlay/ src/cdk/portal/ src/cdk/a11y/ \
-     src/cdk/platform/ src/cdk/bidi/ src/cdk/coercion/ src/cdk/keycodes/
+     src/cdk/platform/ src/cdk/bidi/ src/cdk/coercion/ src/cdk/keycodes/ src/cdk/accordion/
    ```
 3. For each commit, inspect touched files. For each file:
    - Look it up in the relevant entry-point's `SYNC.md` "Synced files" table.
