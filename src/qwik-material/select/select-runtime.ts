@@ -17,7 +17,15 @@
  */
 import {noSerialize, type NoSerialize, type QRL, type Signal} from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
-import {A, ALT, ENTER, SPACE, DOWN_ARROW, UP_ARROW, hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
+import {
+  A,
+  ALT,
+  ENTER,
+  SPACE,
+  DOWN_ARROW,
+  UP_ARROW,
+  hasModifierKey,
+} from '@angular-community/qwik-cdk/keycodes';
 import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,
@@ -198,6 +206,7 @@ function buildKeyManager(
 
   manager.onChange(index => {
     signals.activeIndex.value = index;
+    if (signals.panelOpen.value) scrollOptionIntoView(index, flat, signals);
   });
   manager.onTabOut(() => {
     if (signals.panelOpen.value) {
@@ -227,6 +236,46 @@ function getKeyManager(
   return signals.keyManager.value as ListKeyManager<KeyManagerItem>;
 }
 
+/** Mirrors upstream `_getOptionScrollPosition` (`src/material/core/option/option.ts`). */
+export function getOptionScrollPosition(
+  optionOffset: number,
+  optionHeight: number,
+  currentScrollPosition: number,
+  panelHeight: number,
+): number {
+  if (optionOffset < currentScrollPosition) {
+    return optionOffset;
+  }
+  if (optionOffset + optionHeight > currentScrollPosition + panelHeight) {
+    return Math.max(0, optionOffset - panelHeight + optionHeight);
+  }
+  return currentScrollPosition;
+}
+
+/** Mirrors `MatSelect._scrollOptionIntoView()` — a visual-only nicety (sets
+ *  `scrollTop`, never observed by the structural DOM diff this port's
+ *  parity suite runs), kept for fidelity. A no-op if the panel or the
+ *  target option's DOM node isn't available (e.g. right after `open()`,
+ *  before the overlay has actually attached). */
+function scrollOptionIntoView(
+  index: number,
+  flat: readonly ResolvedSelectOption[],
+  signals: SelectRuntimeSignals,
+): void {
+  if (!isBrowser) return;
+  const panel = signals.panelEl.value as HTMLElement | undefined;
+  const option = flat[index];
+  if (!panel || !option) return;
+  const el = document.getElementById(option.id);
+  if (!el) return;
+  panel.scrollTop = getOptionScrollPosition(
+    (el as HTMLElement).offsetTop,
+    (el as HTMLElement).offsetHeight,
+    panel.scrollTop,
+    panel.offsetHeight,
+  );
+}
+
 function isSelected(value: unknown, option: ResolvedSelectOption, multiple: boolean): boolean {
   if (multiple) {
     return Array.isArray(value) && value.some(v => v === option.value);
@@ -242,7 +291,9 @@ function highlightCorrectOption(
 ): void {
   const manager = getKeyManager(flat, cfg, signals);
   const value = signals.value.value;
-  const empty = cfg.multiple ? !(Array.isArray(value) && value.length) : value == null || value === '';
+  const empty = cfg.multiple
+    ? !(Array.isArray(value) && value.length)
+    : value == null || value === '';
 
   if (empty) {
     const firstEnabled = flat.findIndex(o => !o.ownDisabled && !o.disabled);
@@ -335,6 +386,8 @@ export function openSelectPanel(
   );
   manager.withHorizontalOrientation(null);
   highlightCorrectOption(flat, cfg, signals);
+  if (signals.activeIndex.value >= 0)
+    scrollOptionIntoView(signals.activeIndex.value, flat, signals);
 
   // Sticky origin for the NEXT open — see the field's own doc comment.
   signals.stickyOrigin.value = noSerialize(
@@ -454,7 +507,10 @@ export function handleClosedKeydown(
     event.key === 'ArrowRight';
   const isOpenKey = event.keyCode === ENTER || event.keyCode === SPACE;
 
-  if ((!manager.isTyping() && isOpenKey && !hasModifierKey(event)) || ((cfg.multiple || event.altKey) && isArrowKey)) {
+  if (
+    (!manager.isTyping() && isOpenKey && !hasModifierKey(event)) ||
+    ((cfg.multiple || event.altKey) && isArrowKey)
+  ) {
     event.preventDefault();
     openSelectPanel(flat, tree, ctx, cfg, signals);
   } else if (!cfg.multiple) {
@@ -499,9 +555,7 @@ export function handleOpenKeydown(
     selectOption(manager.activeItem.option, true, flat, cfg, signals);
   } else if (!isTyping && cfg.multiple && event.keyCode === A && event.ctrlKey) {
     event.preventDefault();
-    const hasDeselected = flat.some(
-      o => !o.disabled && !isSelected(signals.value.value, o, true),
-    );
+    const hasDeselected = flat.some(o => !o.disabled && !isSelected(signals.value.value, o, true));
     const next = hasDeselected ? flat.filter(o => !o.disabled).map(o => o.value) : [];
     signals.value.value = next;
     cfg.onValueChange$?.(next);
