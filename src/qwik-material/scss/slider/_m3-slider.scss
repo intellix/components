@@ -64,6 +64,6 @@
       slider-label-label-text-tracking: map.get($system, label-medium-tracking),
       slider-label-label-text-weight: map.get($system, label-medium-weight),
     ),
-    density: ()
+    density: (),
   );
 }

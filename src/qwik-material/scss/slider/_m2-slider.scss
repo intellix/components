@@ -30,19 +30,16 @@
       slider-with-tick-marks-inactive-container-opacity: 0.6,
       slider-value-indicator-transform-origin: bottom,
     ),
-    color: map.merge(
-        private-get-color-palette-color-tokens($theme, primary),
-        (
-          slider-disabled-active-track-color: map.get($system, on-surface),
-          slider-disabled-handle-color: map.get($system, on-surface),
-          slider-disabled-inactive-track-color: map.get($system, on-surface),
-          slider-label-container-color: map.get($system, inverse-surface),
-          slider-label-label-text-color: map.get($system, inverse-on-surface),
-          slider-value-indicator-opacity: 1,
-          slider-with-overlap-handle-outline-color: map.get($system, on-surface),
-          slider-with-tick-marks-disabled-container-color: map.get($system, on-surface),
-        )
-      ),
+    color: map.merge(private-get-color-palette-color-tokens($theme, primary), (
+      slider-disabled-active-track-color: map.get($system, on-surface),
+      slider-disabled-handle-color: map.get($system, on-surface),
+      slider-disabled-inactive-track-color: map.get($system, on-surface),
+      slider-label-container-color: map.get($system, inverse-surface),
+      slider-label-label-text-color: map.get($system, inverse-on-surface),
+      slider-value-indicator-opacity: 1,
+      slider-with-overlap-handle-outline-color: map.get($system, on-surface),
+      slider-with-tick-marks-disabled-container-color: map.get($system, on-surface)),
+    ),
     typography: (
       slider-label-label-text-font: map.get($system, label-medium-font),
       slider-label-label-text-size: map.get($system, label-medium-size),
@@ -50,7 +47,7 @@
       slider-label-label-text-tracking: map.get($system, label-medium-tracking),
       slider-label-label-text-weight: map.get($system, label-medium-weight),
     ),
-    density: ()
+    density: (),
   );
 }
 
@@ -65,16 +62,12 @@
     slider-handle-color: map.get($system, primary),
     slider-hover-handle-color: map.get($system, primary),
     slider-focus-state-layer-color: m3-utils.color-with-opacity(
-        map.get($system, primary),
-        map.get($system, focus-state-layer-opacity)
-      ),
+        map.get($system, primary), map.get($system, focus-state-layer-opacity)),
     slider-hover-state-layer-color: m3-utils.color-with-opacity(
-        map.get($system, primary),
-        map.get($system, hover-state-layer-opacity)
-      ),
+        map.get($system, primary), map.get($system, hover-state-layer-opacity)),
     slider-inactive-track-color: map.get($system, primary),
     slider-ripple-color: map.get($system, primary),
     slider-with-tick-marks-active-container-color: map.get($system, on-primary),
-    slider-with-tick-marks-inactive-container-color: map.get($system, primary)
+    slider-with-tick-marks-inactive-container-color: map.get($system, primary),
   );
 }
