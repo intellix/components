@@ -99,6 +99,11 @@
       "types": "./dist/button-toggle/index.d.ts",
       "import": "./dist/button-toggle/index.js"
     },
+    "./expansion": {
+      "qwik": "./expansion/index.ts",
+      "types": "./dist/expansion/index.d.ts",
+      "import": "./dist/expansion/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -112,6 +117,7 @@
     "./grid-list-prebuilt.css": "./dist/grid-list-prebuilt.css",
     "./list-prebuilt.css": "./dist/list-prebuilt.css",
     "./button-toggle-prebuilt.css": "./dist/button-toggle-prebuilt.css",
+    "./expansion-prebuilt.css": "./dist/expansion-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
