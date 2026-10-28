@@ -34,15 +34,38 @@ function createContent(
     const hostRef = useSignal<HTMLElement>();
 
     // Mirrors `hostRef` into the shared `containerState.contentHostRef` once mounted, so a
-    // registering `MatDrawer`/`MatSidenav` can reach this element imperatively (see that
-    // field's doc comment in drawer-state.ts). `ref` itself can't be bound directly to
-    // `containerState.contentHostRef` — empirically found, while porting this component, to
-    // never actually populate a signal sourced from another component's scope; a plain
-    // `useVisibleTask$` copy (no `track()`, no cross-component signal read — just a one-time
-    // mount-driven assignment, the same justified exception category as the width-measurement
-    // task in `mat-drawer.tsx`) reliably does.
+    // registering `MatDrawer`/`MatSidenav` can reach this element imperatively for
+    // SUBSEQUENT updates (see that field's doc comment in drawer-state.ts). `ref` itself
+    // can't be bound directly to `containerState.contentHostRef` — empirically found, while
+    // porting this component, to never actually populate a signal sourced from another
+    // component's scope; a plain `useVisibleTask$` copy (no `track()`, no cross-component
+    // signal read — just a one-time mount-driven assignment, the same justified exception
+    // category as the width-measurement task in `mat-drawer.tsx`) reliably does.
+    //
+    // ALSO applies the current margins/`inert` to itself here, synchronously in the same
+    // task — relying solely on the (correct, but SSR/resume-only) reactive `style`/`inert`
+    // below left a gap for a drawer that's ALREADY `opened` at mount (e.g. `two-drawers`,
+    // `fixed-in-viewport`): `MatDrawer`'s own task (which applies every SUBSEQUENT margins/
+    // inert update, per the doc comment above) can run BEFORE this one on initial mount,
+    // when `contentHostRef` is still unset, so its very first write has nothing to act on —
+    // confirmed empirically while porting this component. This task running for itself,
+    // using its own just-available `hostRef`, has no such ordering dependency.
     useVisibleTask$(() => {
       containerState.contentHostRef.value = hostRef.value;
+      const el = hostRef.value;
+      if (!el) return;
+      const m = computeContentMargins(containerState.registry.value);
+      el.style.marginLeft = m.left != null ? `${m.left}px` : '';
+      el.style.marginRight = m.right != null ? `${m.right}px` : '';
+      const shouldBeInert = isShowingBackdrop(
+        containerState.registry.value,
+        containerState.backdropOverride.value,
+      );
+      if (shouldBeInert) {
+        el.setAttribute('inert', 'true');
+      } else {
+        el.removeAttribute('inert');
+      }
     });
 
     // Reads the container's shared registry directly (same context both `MatDrawerContainer`

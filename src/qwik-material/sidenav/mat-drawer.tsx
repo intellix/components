@@ -11,7 +11,7 @@ import {
   type QRL,
 } from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
-import {focusVia, useIdGenerator, type AutoFocusTarget} from '@angular-community/qwik-cdk/a11y';
+import {useIdGenerator, type AutoFocusTarget} from '@angular-community/qwik-cdk/a11y';
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import {applyDrawerAutoFocus} from './focus-helpers';
 import {
@@ -288,7 +288,18 @@ function createDrawer(
           if (hostEl && active && hostEl.contains(active)) {
             const target = previouslyFocused.value;
             if (target) {
-              focusVia(target, 'program');
+              // Plain `.focus()`, not `focusVia()`: the restored-to element is whatever the
+              // CONSUMER had focused before opening (e.g. a plain `<button>` in every scenario
+              // here) — `focusVia()`'s pending-origin handoff attribute
+              // (`data-cdk-pending-focus-origin`) is only ever consumed by a `useFocusOrigin()`
+              // listener on the SAME element, and a plain element has none, so the attribute
+              // would be set and never cleared, leaking into the DOM. Upstream's real
+              // `FocusMonitor.focusVia()` has no such DOM footprint (it tracks origin in a
+              // WeakMap, not an attribute) and only visibly applies `cdk-*-focused` classes to
+              // elements that separately opted into being monitored — a plain, unmonitored
+              // button gets none either way, so this is behaviorally equivalent for every
+              // scenario here. Confirmed empirically while porting this component.
+              target.focus();
             } else {
               hostEl.blur();
             }
