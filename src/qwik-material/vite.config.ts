@@ -19,6 +19,7 @@ const entries = [
   'button-toggle',
   'slide-toggle',
   'expansion',
+  'radio',
 ];
 
 export default defineConfig({
@@ -51,6 +52,7 @@ export default defineConfig({
           ['scss/button-toggle/button-toggle-prebuilt.scss', 'dist/button-toggle-prebuilt.css'],
           ['scss/slide-toggle/slide-toggle-prebuilt.scss', 'dist/slide-toggle-prebuilt.css'],
           ['scss/expansion/expansion-prebuilt.scss', 'dist/expansion-prebuilt.css'],
+          ['scss/radio/radio-prebuilt.scss', 'dist/radio-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

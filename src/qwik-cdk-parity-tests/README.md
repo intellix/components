@@ -105,6 +105,12 @@ Directive selector attributes that the consumer writes (`matFab`,
 `CONSUMER_SELECTOR_ATTRS`. Attributes Material's own templates emit (`matripple`,
 `mat-ripple-loader-*`) are compared and must be reproduced.
 
+Checkbox/radio inputs are compared on their live `.checked` state, not the
+`checked` attribute: Qwik's SSR writes `checked` so a selected control paints
+before JS runs, and that attribute is never updated afterwards (Angular's
+client-only dev-app never writes it). Known, accepted difference — consumer CSS
+should use `:checked`, not `[checked]`.
+
 Angular scenarios bind inputs with `[prop]` syntax. Angular also copies a
 static-attribute input (`value="x"`) onto the host element, which a Qwik component
 cannot tell apart from a prop — that echo is a known, accepted difference.

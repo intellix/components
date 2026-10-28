@@ -40,6 +40,20 @@ const IGNORE_ATTR_PREFIXES = [
   'on:',
   'on-document:',
   'on-window:',
+  // Qwik-specific declarative event-handling bookkeeping (e.g.
+  // `preventdefault:click`, `stoppropagation:click`) — these tell
+  // qwikloader's dispatcher to call `event.preventDefault()`/
+  // `stopPropagation()` *before* it resolves/invokes any handler (needed
+  // because a QRL handler body can't do this itself: Qwik's event dispatch
+  // always resolves the handler through a (micro)task-deferred `import()`,
+  // even when already cached, so by the time it could call
+  // `preventDefault()` a synchronous native default action — e.g. a
+  // checkbox/radio's click → checked-toggle — has already run). No Angular
+  // equivalent attribute exists (Angular components attach a true
+  // synchronous native listener instead), so this is framework bookkeeping
+  // with no cross-framework DOM meaning, same category as `on:`/`q:`.
+  'preventdefault:',
+  'stoppropagation:',
 ];
 const IGNORE_CLASSES = ['ng-star-inserted'];
 /**
@@ -202,6 +216,25 @@ export async function snapshotParityRoot(
             continue;
           }
           attrs[name] = opts.idAttrs.includes(name) ? normalizeIdValue(attr.value) : attr.value;
+        }
+        // `checked` (like `value`/`selected`) is a "non-reflected" IDL
+        // property: once set via JS, it diverges from its content attribute
+        // for good — unlike most boolean attributes (`disabled`,
+        // `required`, ...), which the browser keeps in sync with their
+        // property automatically. A framework that bakes a literal
+        // `checked` attribute into its *initial* SSR HTML (needed for a
+        // checked control to paint correctly before any JS runs, e.g. a
+        // Qwik radio/checkbox) leaves that attribute stuck forever once a
+        // later *property*-only update flips the live state — while a pure
+        // CSR app (this harness's Angular side has no SSR) never writes the
+        // attribute at all, checked or not. That's an SSR-vs-CSR
+        // architecture difference, orthogonal to actual rendered behavior
+        // (which already keys off the live property / `:checked`
+        // pseudo-class, never the attribute), so comparing the attribute
+        // directly would be a false-positive diff. Compare the live
+        // `.checked` property instead for any checkbox/radio input.
+        if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio')) {
+          attrs['checked'] = String(el.checked);
         }
         // Qwik's reconciler parks a `<Slot>`'s provided-but-not-currently-
         // rendered children in a hidden `<q:template q:slot>` element (e.g.

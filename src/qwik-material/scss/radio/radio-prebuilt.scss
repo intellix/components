@@ -1,0 +1,56 @@
+// Prebuilt Material Radio CSS entry.
+//
+// Emits: structural styles from radio.scss + a minimal set of M3 default
+// values for the `--mat-*` custom properties the structural rules reference.
+// Consumers import via `@angular-community/qwik-material/radio-prebuilt.css`.
+// For full custom theming, consumers should instead @use the radio-theme
+// mixin from `@angular-community/qwik-material/scss/radio/_radio-theme.scss`
+// once the qwik-material/core theming DSL lands.
+
+@use './radio';
+
+// Minimal Material Design 3 defaults (primary-colored selection, matching
+// upstream's M3 default `get-tokens()` with no color-variant override) so a
+// bare consumer sees a themed radio. Every value can be overridden by the
+// consumer at :root or on any ancestor of the radio host.
+:root {
+  --mat-sys-primary: #6750a4;
+  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
+  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
+  --mat-sys-body-medium-font: Roboto, "Helvetica Neue", sans-serif;
+  --mat-sys-body-medium-size: 0.875rem;
+  --mat-sys-body-medium-line-height: 1.25rem;
+  --mat-sys-body-medium-weight: 400;
+  --mat-sys-body-medium-tracking: 0.015625em;
+
+  --mat-radio-disabled-selected-icon-opacity: 0.38;
+  --mat-radio-disabled-unselected-icon-opacity: 0.38;
+  --mat-radio-state-layer-size: 40px;
+  --mat-radio-touch-target-size: 48px;
+  --mat-radio-touch-target-display: block;
+
+  --mat-radio-checked-ripple-color: var(--mat-sys-primary, #6750a4);
+  --mat-radio-disabled-label-color: color-mix(
+    in srgb,
+    var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87)) 38%,
+    transparent
+  );
+  --mat-radio-disabled-selected-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-radio-disabled-unselected-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-radio-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-radio-ripple-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-radio-selected-focus-icon-color: var(--mat-sys-primary, #6750a4);
+  --mat-radio-selected-hover-icon-color: var(--mat-sys-primary, #6750a4);
+  --mat-radio-selected-icon-color: var(--mat-sys-primary, #6750a4);
+  --mat-radio-selected-pressed-icon-color: var(--mat-sys-primary, #6750a4);
+  --mat-radio-unselected-focus-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-radio-unselected-hover-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+  --mat-radio-unselected-icon-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  --mat-radio-unselected-pressed-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
+
+  --mat-radio-label-text-font: var(--mat-sys-body-medium-font, Roboto, "Helvetica Neue", sans-serif);
+  --mat-radio-label-text-line-height: var(--mat-sys-body-medium-line-height, 1.25rem);
+  --mat-radio-label-text-size: var(--mat-sys-body-medium-size, 0.875rem);
+  --mat-radio-label-text-tracking: var(--mat-sys-body-medium-tracking, 0.015625em);
+  --mat-radio-label-text-weight: var(--mat-sys-body-medium-weight, 400);
+}

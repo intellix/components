@@ -31,6 +31,8 @@ import type {MatSlideToggleConfig} from '../slide-toggle/slide-toggle-config';
 import {MAT_SLIDE_TOGGLE_CONFIG} from '../slide-toggle/slide-toggle-config';
 import type {MatExpansionConfig} from '../expansion/expansion-config';
 import {MAT_EXPANSION_CONFIG} from '../expansion/expansion-config';
+import type {MatRadioConfig} from '../radio/radio-config';
+import {MAT_RADIO_CONFIG} from '../radio/radio-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -63,6 +65,8 @@ export interface QwikMaterialProviderProps {
   matSlideToggleConfig?: MatSlideToggleConfig;
   /** Defaults applied to every MatExpansionPanel / MatExpansionPanelHeader in this subtree. */
   matExpansionConfig?: MatExpansionConfig;
+  /** Defaults applied to every MatRadioGroup / MatRadioButton in this subtree. */
+  matRadioConfig?: MatRadioConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -129,6 +133,12 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // MatExpansionPanel/MatExpansionPanelHeader; providing an empty object is
   // equivalent to accepting all defaults.
   useContextProvider(MAT_EXPANSION_CONFIG, props.matExpansionConfig ?? {});
+  // MatRadioConfig falls back to {} here (same pattern as every other
+  // config above) when the prop is omitted — MatRadioButton's own
+  // color/disabledInteractive computation hardcodes the upstream
+  // ('accent'/false) defaults as its FINAL fallback regardless, so this
+  // stays correct even though {} isn't MAT_RADIO_CONFIG_DEFAULTS itself.
+  useContextProvider(MAT_RADIO_CONFIG, props.matRadioConfig ?? {});
 
   return <Slot />;
 });
