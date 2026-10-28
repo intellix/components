@@ -179,6 +179,11 @@
       "types": "./dist/menu/index.d.ts",
       "import": "./dist/menu/index.js"
     },
+    "./table": {
+      "qwik": "./table/index.ts",
+      "types": "./dist/table/index.d.ts",
+      "import": "./dist/table/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -207,6 +212,7 @@
     "./slider-prebuilt.css": "./dist/slider-prebuilt.css",
     "./select-prebuilt.css": "./dist/select-prebuilt.css",
     "./menu-prebuilt.css": "./dist/menu-prebuilt.css",
+    "./table-prebuilt.css": "./dist/table-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

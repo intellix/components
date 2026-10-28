@@ -88,6 +88,11 @@
       "types": "./dist/layout/index.d.ts",
       "import": "./dist/layout/index.js"
     },
+    "./table": {
+      "qwik": "./table/index.ts",
+      "types": "./dist/table/index.d.ts",
+      "import": "./dist/table/index.js"
+    },
     "./overlay-prebuilt.css": "./dist/overlay-prebuilt.css",
     "./a11y-prebuilt.css": "./dist/a11y-prebuilt.css",
     "./scss/*": "./scss/*"
