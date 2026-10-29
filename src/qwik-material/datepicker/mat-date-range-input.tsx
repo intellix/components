@@ -23,7 +23,7 @@
  * `for`) is how this control associates with that label instead, exactly mirroring
  * `_getAriaLabelledby()`.
  */
-import {$, component$, Slot, useContext, useSignal} from '@builder.io/qwik';
+import {component$, Slot, useContext, useSignal} from '@builder.io/qwik';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
   MAT_FORM_FIELD_CONNECTED_ORIGIN,
@@ -32,6 +32,7 @@ import {
 } from '../core/mat-form-field-control';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
+import {formatDateForDisplay} from './datepicker-runtime';
 import type {MatDateRangePickerHandle} from './use-mat-datepicker';
 
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
@@ -79,26 +80,23 @@ export const MatDateRangeInput = component$<MatDateRangeInputProps>(props => {
   const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];
   const ariaLabelledby = formField?.labelId || undefined;
 
-  // Live raw text of each input — drives the mirror spans + the hide-placeholders class. Mirrors
-  // `isEmpty()`/`getMirrorValue()`, tracked locally since no scenario needs this to survive a
-  // re-render of anything OTHER than this component.
-  const startRaw = useSignal('');
-  const endRaw = useSignal('');
-
-  const onStartInput$ = $((event: Event) => {
-    startRaw.value = (event.target as HTMLInputElement).value;
-  });
-  const onEndInput$ = $((event: Event) => {
-    endRaw.value = (event.target as HTMLInputElement).value;
-  });
-
+  // Mirrors `isEmpty()`/`getMirrorValue()` — derived LIVE from `picker.value` (the real,
+  // committed range — read reactively here, during render, not just once) rather than a
+  // typing-only local signal: no scenario in this port's contract ever TYPES into either native
+  // input (see this file's own doc comment), so the only way either side ever becomes non-empty
+  // is a calendar-cell selection committing straight to `picker.value`, which never touches
+  // either input's own `input` event. A local, typing-only signal would simply never update for
+  // that path — confirmed live (`range-basic`'s own first click), the mirror span kept showing
+  // the placeholder and `mat-form-field-hide-placeholder`/the floating label never updated.
   const startPlaceholder = props.startPlaceholder ?? '';
   const endPlaceholder = props.endPlaceholder ?? '';
-  const startMirror = startRaw.value.length > 0 ? startRaw.value : startPlaceholder;
-  const endMirror = endRaw.value.length > 0 ? endRaw.value : endPlaceholder;
-
-  const startEmpty = startRaw.value.length === 0;
-  const endEmpty = endRaw.value.length === 0;
+  const rangeValue = picker.value.value;
+  const startText = formatDateForDisplay(rangeValue.start);
+  const endText = formatDateForDisplay(rangeValue.end);
+  const startEmpty = startText.length === 0;
+  const endEmpty = endText.length === 0;
+  const startMirror = startEmpty ? startPlaceholder : startText;
+  const endMirror = endEmpty ? endPlaceholder : endText;
   const empty = startEmpty && endEmpty;
   // Mirrors `_shouldHidePlaceholders()`.
   const hidePlaceholders = !startEmpty;
@@ -113,26 +111,37 @@ export const MatDateRangeInput = component$<MatDateRangeInputProps>(props => {
   const minIso = minDate != null ? (adapter.toIso8601(minDate) as string) : undefined;
   const maxIso = maxDate != null ? (adapter.toIso8601(maxDate) as string) : undefined;
 
-  const sharedInputClasses = [
-    'mat-date-range-input-inner',
-    'mat-mdc-form-field-input-control',
-    'mdc-text-field__input',
-    'cdk-text-field-autofill-monitored',
-  ];
-
   // Stashed for `datepicker-runtime.ts`'s `openDateRangePickerPanel`/origin resolution — same
   // "plain field, read later from an event handler" safety argument as `MatDatepickerInput`'s own
   // `_formFieldOrigin` assignment.
   picker._formFieldOrigin = connectedOrigin;
   picker._formFieldLabelId = formField?.labelId;
 
+  // Live resync of `formField.empty`/`.shouldLabelFloat` from `picker.value` — same "guarded
+  // write during render" fix `MatDatepickerInput` needed, for the identical reason: a calendar
+  // selection never focuses/blurs either native input, so the event-driven
+  // `formField.empty`/`.shouldLabelFloat` writes alone would never fire for it. See that
+  // component's own doc comment for the full write-up.
+  if (formField && formField.empty !== empty) {
+    formField.empty = empty;
+    formField.shouldLabelFloat = formField.focused || !empty;
+  }
+
   return (
     <mat-date-range-input
       id={id}
       role="group"
+      // Mirrors the constructor's own imperative `classList.add('mat-mdc-input-element',
+      // 'mat-mdc-form-field-input-control', 'mdc-text-field__input')` — confirmed live these 3
+      // MDC classes land on THIS host element, not on the two inner `<input>`s (which carry
+      // neither these nor `cdk-text-field-autofill-monitored` at all — just their own
+      // `mat-start-date`/`mat-end-date` `mat-date-range-input-inner` pair).
       class={
         [
           'mat-date-range-input',
+          formField && 'mat-mdc-input-element',
+          formField && 'mat-mdc-form-field-input-control',
+          formField && 'mdc-text-field__input',
           hidePlaceholders && 'mat-date-range-input-hide-placeholders',
           ...(props.class ? (Array.isArray(props.class) ? props.class : [props.class]) : []),
         ].filter(Boolean) as string[]
@@ -146,13 +155,12 @@ export const MatDateRangeInput = component$<MatDateRangeInputProps>(props => {
           <input
             ref={picker._startInputRef}
             type="text"
-            class={['mat-start-date', ...sharedInputClasses]}
+            class={['mat-date-range-input-inner', 'mat-start-date']}
             placeholder={startPlaceholder || undefined}
             disabled={disabled || undefined}
             aria-haspopup="dialog"
             aria-owns={isOpen ? picker.id : undefined}
             {...{min: minIso, max: maxIso}}
-            onInput$={onStartInput$}
           />
           <span class="mat-date-range-input-mirror" aria-hidden="true">
             {startMirror}
@@ -174,13 +182,12 @@ export const MatDateRangeInput = component$<MatDateRangeInputProps>(props => {
           <input
             ref={picker._endInputRef}
             type="text"
-            class={['mat-end-date', ...sharedInputClasses]}
+            class={['mat-date-range-input-inner', 'mat-end-date']}
             placeholder={endPlaceholder || undefined}
             disabled={disabled || undefined}
             aria-haspopup="dialog"
             aria-owns={isOpen ? picker.id : undefined}
             {...{min: minIso, max: maxIso}}
-            onInput$={onEndInput$}
           />
           <span class="mat-date-range-input-mirror" aria-hidden="true">
             {endMirror}

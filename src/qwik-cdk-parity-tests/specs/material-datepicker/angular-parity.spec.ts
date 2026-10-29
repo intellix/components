@@ -200,6 +200,24 @@ const clickButton = (name: string, opts: {closes: boolean}): ParityStep => ({
   },
 });
 
+/** Waits out the fill appearance's line-ripple deactivation transition (~180ms) — see
+ *  material-select's/material-form-field's identical helper for the full mechanism writeup
+ *  (`typed-date-blur`'s own blur step races this exactly the same way). Does NOT fully resolve
+ *  this scenario's own known flake — see SYNC.md's "Open issues" for the evidence trail — but is
+ *  kept, matching the sibling specs' own established pattern, since it is still correct and
+ *  harmless on its own merits. */
+const waitForLineRippleSettled = (page: Page) =>
+  page
+    .waitForFunction(
+      () =>
+        !document.querySelector(
+          '[data-parity-root] .mdc-line-ripple--active.mdc-line-ripple--deactivating',
+        ),
+      undefined,
+      {timeout: 2000},
+    )
+    .catch(() => {});
+
 /** Replaces an input's value wholesale and blurs it (datepicker.ts's `typed-date-blur`). */
 const typeAndBlur = (text: string): ParityStep => ({
   name: `type "${text}" + blur`,
@@ -207,6 +225,7 @@ const typeAndBlur = (text: string): ParityStep => ({
     const input = page.locator('[data-parity-root] input');
     await input.fill(text);
     await input.blur();
+    await waitForLineRippleSettled(page);
     await page.waitForTimeout(150);
   },
 });
