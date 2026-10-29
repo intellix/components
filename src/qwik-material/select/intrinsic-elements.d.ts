@@ -10,6 +10,10 @@ declare module '@builder.io/qwik' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-select': QwikIntrinsicElements['div'];
+      /** `<mat-select-trigger>` — a plain pass-through host wrapping
+       *  `customTrigger`'s content; see `mat-select.tsx`'s own doc comment
+       *  on `customTrigger` for why the literal tag must stay in the DOM. */
+      'mat-select-trigger': QwikIntrinsicElements['span'];
     }
   }
 }

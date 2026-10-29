@@ -156,10 +156,24 @@ export interface MatSelectProps<T = unknown> extends Omit<MatFormFieldControlPro
   'aria-label'?: string;
   /** Mirrors `[aria-labelledby]`. */
   'aria-labelledby'?: string;
-  /** Mirrors `<mat-select-trigger>` content — see select.ts's header note:
-   *  a bare structural directive upstream with no host of its own, so this
-   *  port accepts its content directly as a prop instead of a dedicated
-   *  wrapper component (design-doc rule 4's "no extra wrapper elements"). */
+  /** Content for `<mat-select-trigger>` — see select.ts's header note: a
+   *  bare structural DIRECTIVE upstream (`@Directive({selector:
+   *  'mat-select-trigger'})`), not a component, so there's no template of
+   *  its own to port — but a directive, unlike a component, does NOT
+   *  replace or unwrap its host element; the literal `<mat-select-trigger>`
+   *  tag itself stays in the rendered DOM (upstream's `select.html`:
+   *  `<ng-content select="mat-select-trigger">` — `<ng-content>` projects
+   *  the consumer's element as-is, tag included, same as any other
+   *  `<ng-content>` projection). Confirmed live: a real diff
+   *  (`span[0]: child count 1 != 2`, i.e. exactly ONE child — the
+   *  `<mat-select-trigger>` wrapper itself — not the trigger's own inner
+   *  spans unwrapped into the parent). This port therefore wraps
+   *  `customTrigger` in a literal `<mat-select-trigger>` itself (see
+   *  render body below) rather than asking every consumer to write that
+   *  wrapper tag by hand — accepting plain content here, not a
+   *  `<MatSelectTrigger>` JSX element, is still the right call (design-doc
+   *  rule 4's "no extra wrapper COMPONENT" — a plain pass-through host
+   *  element, like `<mat-pseudo-checkbox>`, is not the same thing). */
   customTrigger?: JSXOutput;
   tabIndex?: number;
   class?: string | ReadonlyArray<string>;
@@ -449,7 +463,11 @@ export const MatSelect = component$<MatSelectProps>(props => {
             </span>
           ) : (
             <span class="mat-mdc-select-value-text">
-              {props.customTrigger ?? <span class="mat-mdc-select-min-line">{triggerValue}</span>}
+              {props.customTrigger ? (
+                <mat-select-trigger>{props.customTrigger}</mat-select-trigger>
+              ) : (
+                <span class="mat-mdc-select-min-line">{triggerValue}</span>
+              )}
             </span>
           )}
         </div>
