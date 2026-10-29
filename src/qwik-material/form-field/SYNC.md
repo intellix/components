@@ -359,15 +359,87 @@ but is a trap for anything that needs to change later.
     source order, not just the one `MatFormFieldControl` — `mat-paginator`'s page-size
     `<mat-form-field>` has a second infix child (`<div class="mat-mdc-paginator-touch-target">`,
     a sibling of `<mat-select>`). `MatFormField` now renders an `infixContent?: JSXOutput` prop
-    immediately after `controlSnapshot.value` inside the infix div. Read directly off `props` on
-    every render (NOT through `control`'s "frozen snapshot, read once" treatment above) — this
-    content is a plain host element with no `component$()` of its own, so none of the
-    reconciliation hazard deviation 9 documents applies to it. See
+    immediately after `controlSnapshot.value` inside the infix div. See
     `qwik-material/paginator/SYNC.md`. (`qwik-material/timepicker` does NOT use this prop — its
     own empty `<mat-timepicker>` marker is rendered as a Fragment sibling of the `<input>` from
     inside `MatTimepickerInput`'s own return value instead, since it's always a plain,
     never-changing host element colocated with the control rather than a second, independently
-    supplied slot — see `qwik-material/timepicker/SYNC.md`'s architecture section.)
+    supplied slot — see `qwik-material/timepicker/SYNC.md`'s architecture section.) **Updated
+    2026-10-29 by deviation 12 below: originally this paragraph claimed `infixContent` was read
+    directly off `props` on every render, "NOT through `control`'s frozen-snapshot treatment,"
+    reasoning that a plain host `<div>` with no `component$()` of its own could never hit
+    deviation 9's hazard. That reasoning was about the WRONG half of the mechanism — see
+    deviation 12 for why it's the PARENT's own `_fnSignal` CHILD-position binding for this prop,
+    not whatever the value itself renders to, that's unsafe, and why `infixContent` is now ALSO
+    frozen. `mat-paginator.tsx`'s own `infixContent` value (a static touch-target `<div>` whose
+    `onClick$` handler reads only live DOM state, never a captured closure variable) is
+    unaffected by the freeze — confirmed by inspection, see deviation 12.)
+
+12. **`label`/`iconPrefix`/`textPrefix`/`iconSuffix`/`textSuffix`/`hintStart`/`hintEnd`/
+    `infixContent` are now ALSO snapshotted ONCE, the SAME way deviation 9 already snapshots
+    `control`** (2026-10-29, found while fixing `qwik-material/timepicker`'s `min-max` crash —
+    see that package's own `SYNC.md` "Known open issue" section for the full investigation this
+    was found during). Confirmed by instrumenting the BUILT dist (`pnpm -C src/qwik-material
+    build`, then reading `dist/mat-form-field.tsx_MatFormField_component_*.js`), not inferred:
+    before this fix, every one of these props was rendered as a direct `{props.x}`-style single
+    child expression inside `MatFormField`'s own JSX (e.g. `<div class="...-icon-suffix">
+    {props.iconSuffix}</div>`), and the compiled output showed EACH ONE individually compiled by
+    Qwik's optimizer into its own `_fnSignal`-wrapped binding (`n((e) => e.value, [someSignal])`
+    once frozen; before this fix, `n((e) => e.iconSuffix, [e_props])` etc., reading `props`
+    directly) — the exact same mechanism deviation 9 already documents as unsafe for `control`:
+    any time the underlying value's REFERENCE changes to a different element whose component
+    hasn't had its render QRL resolved yet, Qwik core's `executeSignalOperation` (see deviation
+    9's own writeup for the exact code path and the `// TODO(misko): hook this up` dropped-
+    promises bug) can take the broken "fully replace" path, with the same failure mode.
+
+    This matters for ANY of these props whenever the CONSUMER's own enclosing component re-
+    renders for an unrelated reason after mount and reconstructs the JSX inline (the natural,
+    idiomatic way to write it — e.g. `iconSuffix={<MatTimepickerToggle picker={picker} />}`
+    written directly in a route's returned JSX, recreated fresh every time that route's render
+    function runs) — exactly deviation 9's own "consumer reconstructs its element inline" case,
+    just for a different named prop. Every one of these 8 props is now read via a dedicated
+    `useSignal(() => props.x)` snapshot (`labelSnapshot`/`iconPrefixSnapshot`/
+    `textPrefixSnapshot`/`iconSuffixSnapshot`/`textSuffixSnapshot`/`hintStartSnapshot`/
+    `hintEndSnapshot`/`infixContentSnapshot`), each read ONCE at this component's own first
+    render; `hasFloatingLabel`/`hasIconPrefix`/`hasTextPrefix`/`hasIconSuffix`/`hasTextSuffix` and
+    every render site now derive from the snapshot's `.value`, never from `props.x` again — same
+    "frozen reference, live content only through context/a signal passed as children" discipline
+    deviation 9 already established (and the SAME discipline the `touched`/`dirty`/`invalid`
+    section above documents as the one thing that's NOT safe to freeze, because those genuinely
+    need to change: by contrast, none of these 8 props need their OWN element reference to change
+    after mount for any scenario in this test suite — content that itself needs to change live
+    still can, exactly as `error-state`'s `errors` prop already proved, by passing a `Signal` as
+    the frozen element's own CHILD, e.g. `<MatLabel>{labelTextSignal}</MatLabel>`, never by
+    replacing the `<MatLabel>` element itself).
+
+    **`errors` did NOT need this same treatment, and still doesn't — confirmed by inspecting the
+    compiled dist, not by assumption.** `props.errors` is never read as a single `{props.errors}`-
+    style child expression anywhere in this file; it's first run through `toArray(props.errors)
+    .filter(SETTLE_SELECTED_FILTER)` into a local `errorsArray`, which the optimizer can't reduce
+    to the "bare prop access" shape it needs to extract an isolated `_fnSignal` for. The compiled
+    output confirms this: the `showErrors ? <div class="...-error-wrapper">{errorsArray.map(...)}
+    </div> : <div class="...-hint-wrapper">...</div>` ternary is plain, eagerly-evaluated code
+    inside `MatFormField`'s own render function — NOT wrapped in `n(...)` anywhere — so any time it
+    needs to re-run (because `MatFormField` itself re-renders, e.g. `touched`/`invalid` changing),
+    it goes through Qwik's NORMAL, safe top-level component diff (`renderComponent` →
+    `smartUpdateChildren` → `diffVnode`/`updateChildren` in `node_modules/@builder.io/qwik/dist/
+    core.mjs`, confirmed by reading that path: unlike `executeSignalOperation`'s broken branch, the
+    promises `createElm()` collects there DO get fed into the render's own `promiseAll(results)`
+    await chain) — never `executeSignalOperation`'s broken "replace" branch at all. This is
+    consistent with `qwik-material/form-field`'s own `error-state` scenario, which exercises this
+    EXACT "undefined → a brand-new `<MatError>` element, never frozen, reconstructed fresh on
+    every render" shape for its `errors` prop and has never shown this failure mode.
+
+    **This fix closes a real, confirmed category of unsafe bindings, but did NOT, by itself, fully
+    resolve `qwik-material/timepicker`'s `min-max` crash** — see that package's `SYNC.md` for the
+    ablation testing that found the crash still reproducible even with a `<MatFormField control=
+    {<MatTimepickerInput .../>} />` stripped of every other prop (`label`/`iconSuffix`/`errors`/
+    `touched`/`dirty`/`invalid` all removed), meaning at least one more trigger exists outside
+    this file's own slot-prop-forwarding architecture. No regression either way: `pnpm -C
+    src/qwik-material build && test && lint:no-ssr-leaks && typecheck` all pass, and no existing
+    scenario (`prefix-suffix-icon`/`prefix-suffix-text`/`hint-start-end`/`hint-label-end`/the
+    paginator's `infixContent` consumer) relies on any of these 8 props' element reference
+    changing after mount.
 
 ## `floatOverride` (2026-10-29, for `qwik-material/autocomplete`)
 

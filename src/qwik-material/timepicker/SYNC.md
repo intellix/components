@@ -312,56 +312,142 @@ would require `MatFormField` to forward a click handler prop it doesn't
 currently have (same category of gap `onWrapperClick$`'s own "no scenario
 exercises this" note already accepts for the plain focus-on-click case).
 
-## Known open issue: `min-max` scenario — a genuine Qwik 1.20 core crash on `errors`
+## Known open issue: `min-max` scenario — a genuine Qwik 1.20 core crash, narrowed but not fully closed (updated 2026-10-29)
 
 `angular-parity.spec.ts` passes 6/7 reliably (`basic-toggle`, `preset-value`, `interval`,
 `custom-options`, `disabled`, `keyboard-nav`). `min-max` — the one scenario that passes a real
 `errors` prop to `<MatFormField>` — hits a genuine, reproducible Qwik-core crash: `QWIK ERROR
 Rendering promises in JSX signals is not supported`, thrown from Qwik's own runtime (not
-application code) the first time `errors` needs to go from "nothing shown" to "a `<MatError>`
-visible". This is the SAME bug class `mat-form-field.tsx`'s own `controlSnapshot` doc comment
-already documents for `control` (replacing a `_fnSignal`-bound prop's element reference with a
-brand-new one drops a pending dynamic-import promise) — just reached through `errors` instead.
+application code), typically the first time `minError`/`maxError`/`parseError` flips true. This
+is the SAME bug class `form-field/SYNC.md`'s `controlSnapshot` doc comment (deviation 9)
+documents for `control` — replacing a `_fnSignal`-bound prop's element reference with a
+brand-new one, whose underlying component's render QRL isn't resolved yet client-side, drops a
+pending dynamic-import promise inside `executeSignalOperation`'s "replace" branch
+(`node_modules/@builder.io/qwik/dist/core.mjs`, the maintainer's own `// TODO(misko): hook this
+up`, confirmed by reading that exact code, not inferred).
 
-Confirmed, via extensive isolated diagnosis (standalone Playwright scripts hitting the Qwik
-preview server directly, bypassing the parity harness entirely), that:
+**2026-10-29 fix, applied and confirmed load-bearing but NOT sufficient on its own — read this
+section in full before touching this scenario again.**
 
-- It is **specific to this one route** — the other 6 scenarios (identical open/close/typing
-  mechanics, just without `min`/`max`/`errors`) pass reliably, repeatedly, including a
-  route-by-route isolation test that opened/closed `min-max`'s own panel with `errors`
-  completely removed (consistently fast and reliable) versus the real route (consistently slow
-  or crashing).
-- It does **not corrupt other scenarios** — each Playwright test gets a fresh browser context,
-  and the surrounding 6/7 scenarios pass cleanly in the same run.
-- The crash is **flaky in its exact manifestation** (sometimes a clean console error after the
-  first blur with the whole page then unresponsive; sometimes a silent hang on open; sometimes a
-  "browserContext already closed"/"guid handle not bound" Playwright-protocol-level error) but
-  **consistent in being triggered by this route** — strongly suggesting a genuine Qwik-core race
-  condition in `errors`' reactive-prop reconciliation, not a deterministic logic bug in this
-  port's own code.
-- **Attempted fix, confirmed insufficient:** mirroring `controlSnapshot`'s "freeze the element
-  reference, update only the live content" pattern — `useSignal(() => <MatError>{errorLabel}</MatError>)`
-  (passing the plain `errorLabel` signal itself, not `.value`, as `<MatError>`'s child, so
-  `errors` is *always* a non-undefined, single, never-replaced element reference; `MatFormField`'s
-  own `showErrors` gate, not the `errors` prop's presence, still correctly controls whether the
-  error wrapper actually renders) — reduces but does NOT eliminate the crash; it still
-  reproduces in a full official `angular-parity.spec.ts` run. The current route
-  (`src/qwik-cdk-dev-app/src/routes/mat-timepicker/min-max/index.tsx`) ships with this mitigation
-  anyway, since it's a correct, defensible pattern on its own merits (matches the project's own
-  established fix for the same bug class) even though it didn't fully close this specific case.
-- **Not pursued further** given the time already spent (multiple isolated repro scripts,
-  instrumented runtime logging, several fix attempts) without finding the exact trigger. A future
-  attempt should (a) try reproducing with a MINIMAL standalone Qwik app (no qwik-material) using
-  just `MatFormField`'s own hint↔error structural ternary plus a `MatError`, to rule out
-  anything timepicker-specific; (b) check whether upgrading past Qwik 1.20 resolves it upstream,
-  since this is a core-level defect, not something fixable from application code alone.
+### What was fixed, and confirmed via the compiled dist
 
-This means the "run the whole `angular-parity.spec.ts` suite 3×" bar is NOT met for `min-max`
-specifically — 6/7 scenarios meet it; `min-max` is a known, documented, reproducible failure
-tied to a Qwik-core defect, not a parity gap in this port's own DOM/behavior (the one time a full
-run completed without crashing — confirmed via an isolated diagnostic script hitting the exact
-same route/interactions directly — the resulting DOM matched Angular's exactly, consistent with
-every other scenario).
+`form-field/mat-form-field.tsx`'s `label`/`iconPrefix`/`textPrefix`/`iconSuffix`/`textSuffix`/
+`hintStart`/`hintEnd`/`infixContent` props were ALL, previously, rendered as a direct
+`{props.x}`-style child expression — the exact shape the Qwik optimizer compiles into an
+isolated, unsafe `_fnSignal` binding (confirmed in the pre-fix compiled
+`dist/mat-form-field.tsx_MatFormField_component_*.js`: `n((e) => e.iconSuffix, [e_props])` etc.,
+one such binding per prop). `min-max`'s own route passes `iconSuffix={<MatTimepickerToggle
+picker={picker} />}` and `label={<MatLabel>Pick a time</MatLabel>}` inline, reconstructed fresh
+every time the ROUTE itself re-renders — which it does on every value/validation change, since
+`invalid = picker.parseError.value || picker.minError.value || picker.maxError.value` is read in
+a non-isolatable expression. Every one of `min-max`'s 6 sibling scenarios ALSO writes
+`iconSuffix`/`label` this exact way, but only `min-max` ever actually triggers a POST-MOUNT
+route re-render that needs `minError`/`maxError`/`parseError` to transition — so `min-max` was
+uniquely exposed to this hazard for `iconSuffix`/`label`, independent of `errors` entirely. All 8
+props are now frozen via a dedicated `useSignal(() => props.x)` snapshot, read once, mirroring
+`controlSnapshot`'s already-established pattern exactly — see `form-field/SYNC.md`'s new
+deviation 12 for the full writeup, including compiled-dist confirmation that the unsafe
+`_fnSignal` wrapper is gone post-fix (now `n((e) => e.value, [frozenSignal])`, which never
+re-fires since the signal itself is never reassigned).
+
+`errors` itself did NOT need this treatment and still doesn't: it's read through
+`toArray(props.errors).filter(...)`, which the optimizer can't reduce to the "bare prop access"
+shape needed to extract an isolated `_fnSignal` — confirmed by inspecting the compiled dist, the
+`showErrors ? <error-wrapper> : <hint-wrapper>` ternary is plain code inside `MatFormField`'s own
+render function, going through Qwik's NORMAL, safe top-level component diff whenever
+`MatFormField` itself re-renders (`renderComponent` → `smartUpdateChildren` →
+`diffVnode`/`updateChildren`, confirmed by reading that path: its `promises` ARE fed into the
+render's own `promiseAll(results)` await chain, unlike `executeSignalOperation`'s broken branch).
+This is consistent with `qwik-material/form-field`'s own `error-state` scenario, which exercises
+this exact "undefined → a brand-new `<MatError>`, reconstructed fresh every render, never frozen"
+shape for `errors` and has never shown this failure mode — which is why the EARLIER mitigation in
+this route (freezing `errors` into a `useSignal(() => <MatError>{errorLabel}</MatError>)`,
+documented in previous revisions of this section) was a plausible-looking but ultimately
+unnecessary fix for the wrong prop; it has been removed, and the route now passes `errors` the
+plain, idiomatic way (an array of 3 independently-conditional `<MatError>` elements, one per
+upstream `@if`, mirroring `error-state`'s own established convention — see the route file).
+
+### What the fix did NOT resolve — confirmed via ablation, root cause still open
+
+Systematic ablation testing (a standalone Playwright script hitting the Qwik preview server
+directly, bypassing the parity harness, typing an out-of-range time and inspecting console
+errors / CPU usage) against the FIXED `form-field.tsx` found the SAME `Rendering promises in JSX
+signals is not supported` crash — and the SAME permanent, unrecoverable 100%+-CPU hang this bug
+class causes once triggered (confirmed via direct process CPU inspection: once hit, the renderer
+process never recovers, consistent with this section's own older "whole page then unresponsive"
+note) — reproducible even with `<MatFormField style="..." control={<MatTimepickerInput
+picker={picker} formBound value={...} />} />` **stripped of every other prop**: no `label`, no
+`iconSuffix`, no `errors`, no top-level `touched`/`dirty`/`invalid`. In that configuration,
+`MatFormField`'s own render has NO `JSXOutput`-valued `_fnSignal` binding left at all besides the
+already-frozen `controlSnapshot` — ruling out `form-field.tsx`'s own slot-prop-forwarding
+architecture as the (sole) remaining trigger for `min-max` specifically.
+
+This means at least one more trigger exists, most likely inside `MatTimepickerInput`'s own
+reactivity to `picker.minError`/`.maxError`/`.parseError` first becoming `true`, or in
+`timepicker-runtime.ts`'s `handleTimepickerInput`/`assignUserSelection`/`updateValidation` call
+chain, or in some Qwik-core mechanism not tied to the "JSX element forwarded as a child" pattern
+this investigation was built around — NOT isolated before time ran out. Direct instrumentation of
+`node_modules/@builder.io/qwik/dist/core.mjs` (which would have given an exact stack trace
+through application code, the way the ORIGINAL `control`/chips root-cause was found) was
+attempted but not completed in this pass — environment tooling declined the edit as a
+too-risky/irreversible change to a third-party dependency file; a future attempt with that
+permission granted should instrument `executeSignalOperation`'s two `logError('Rendering promises
+...')` call sites directly (see `form-field/SYNC.md` deviation 9's own code excerpt for the exact
+lines) to log the DOM element/component involved, which would identify the exact binding in one
+run instead of further ablation.
+
+**A confounding factor found during this investigation: reproduction rate is NOT constant.**
+Repeated ablation runs crashed 3/3 while several earlier Playwright processes were still pegging
+the CPU at 100%+ in the background (a separate hang from an earlier run, never recovering); once
+those cleared, 5/5 immediate re-runs of the identical script against the SAME build were clean.
+This is consistent with a genuine Qwik-core timing race (slower dynamic-import resolution under
+CPU contention makes the "component QRL not yet resolved" precondition more likely to hold when
+the replace path fires) rather than a deterministic logic bug — but it also means single-sample
+ablation results (crashed vs. clean) are not individually conclusive; the 2026-10-29 fix's actual
+effect on `min-max`'s failure RATE (as opposed to whether it's fully eliminated) was not cleanly
+measured, for the same reason — see "Verification blocked" below.
+
+### Verification blocked: the shared Angular reference app (port 4200) was down for this entire investigation
+
+`http://localhost:4200/qwik-parity/<any route>/<any scenario>` — including scenarios with no
+relationship to this fix (`mat-form-field/error-state`, `mat-timepicker/basic-toggle`) — returned
+a fast, clean `404 Not found - Error 404` throughout this work, and `http://localhost:4200/`
+itself 301-redirected to a raw Bazel runfiles filesystem path. The server process (`pid` serving
+port 4200, a Bazel-built `devserver.runfiles`-based static `history-api-fallback` server) was
+already running for 22+ hours at the time this was found, strongly suggesting its served output
+is stale relative to recent `src/dev-app/qwik-parity/*` changes (this branch's own `feat(multiple):
+merge port/timepicker` commit, for one) rather than anything this fix touched. Per this task's own
+constraints, this app is shared infrastructure that must never be restarted/rebuilt from here — it
+was not touched, and this finding is handed back as-is. Every `expectMaterialParity`-based spec
+(ALL of `material-timepicker`, `material-form-field`, `material-select`, `material-autocomplete`,
+`material-paginator`, `material-chips`, `material-stepper`) fails while this is down, regardless
+of qwik-material's own correctness — confirmed by running the baseline (pre-fix) code through the
+identical suite and observing the identical 100% failure signature. **The "passes 20/20"/"full
+suite passes 3×" bars in this task could not be executed to a conclusive result because of this,
+independent of whatever remains unresolved above.**
+
+### Summary
+
+- `pnpm -C src/qwik-material build && test && lint:no-ssr-leaks && typecheck` all pass with the
+  fix in place — no regression to any existing scenario.
+- The fix closes a real, confirmed, previously-undocumented category of unsafe `_fnSignal`
+  bindings (`label`/`iconPrefix`/`textPrefix`/`iconSuffix`/`textSuffix`/`hintStart`/`hintEnd`/
+  `infixContent`), generalizing deviation 9's `control` fix exactly as the architecture already
+  implied it should. It is a real, non-speculative improvement, independent of whether it fully
+  resolves `min-max`.
+- It does NOT, by itself, confirmed-eliminate `min-max`'s crash — ablation shows a trigger
+  remains outside `form-field.tsx`'s own rendering, most likely inside `MatTimepickerInput`/
+  `timepicker-runtime.ts`'s reaction to the picker's validation signals.
+- The Angular reference app being down blocked running this task's own specified verification
+  (`--repeat-each=20`, the 3× full-suite runs) to a real pass/fail result for ANY scenario, not
+  just `min-max`, independent of code correctness on either side.
+- A future attempt, with the Angular reference app restored and (ideally) permission to
+  instrument `node_modules/@builder.io/qwik/dist/core.mjs` directly, should (a) get an exact
+  application-level stack trace at `executeSignalOperation`'s crash site to find the remaining
+  trigger directly rather than by further ablation, and (b) re-run this task's own stress
+  methodology (batched headless-Chromium repeats hitting the Qwik preview server directly,
+  independent of Angular) under a quiescent system to get a real before/after failure-rate
+  number, since reproduction rate is confirmed non-constant under CPU contention.
 
 ## Deviations from upstream (summary)
 
