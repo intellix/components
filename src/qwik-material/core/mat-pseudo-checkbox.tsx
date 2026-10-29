@@ -27,6 +27,13 @@ export interface MatPseudoCheckboxProps {
   appearance?: 'minimal' | 'full';
   'aria-hidden'?: 'true' | 'false';
   class?: string | ReadonlyArray<string>;
+  /**
+   * Also render `state` / `appearance` as DOM attributes. Angular keeps them
+   * only when the parent template writes them statically (button-toggle.html:
+   * `state="checked" appearance="minimal"`); bound inputs (option.html:
+   * `[state]="…"`) leave no attribute. Default false.
+   */
+  echoAttributes?: boolean;
 }
 
 export const MatPseudoCheckbox = component$<MatPseudoCheckboxProps>(props => {
@@ -49,16 +56,9 @@ export const MatPseudoCheckbox = component$<MatPseudoCheckboxProps>(props => {
     <mat-pseudo-checkbox
       class={classes}
       aria-hidden={props['aria-hidden']}
-      // Echoed as literal attributes to match upstream: `state="checked"`
-      // and `appearance="minimal"` are STATIC (non-bracket) attributes in
-      // button-toggle.html, and Angular preserves a static template
-      // attribute on the DOM even when it also matches a component
-      // `@Input()` name — only *bound* ([state]="…") inputs are consumed
-      // without being echoed (see README's "static-attribute input echo"
-      // note). `disabled` below is deliberately NOT echoed: upstream's
-      // button-toggle.html binds it as `[disabled]="disabled"`.
-      state={state}
-      appearance={appearance}
+      // See `echoAttributes`. `disabled` is never echoed: upstream binds it.
+      state={props.echoAttributes ? state : undefined}
+      appearance={props.echoAttributes ? appearance : undefined}
     />
   );
 });

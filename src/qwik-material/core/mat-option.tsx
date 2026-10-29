@@ -129,6 +129,7 @@ export const MatOption = component$<MatOptionProps>(props => {
           state="checked"
           appearance="minimal"
           aria-hidden="true"
+          echoAttributes
         />
       )}
       {props.groupInertLabel != null && (

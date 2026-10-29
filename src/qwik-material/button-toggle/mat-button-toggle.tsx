@@ -197,6 +197,7 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
               state="checked"
               aria-hidden="true"
               appearance="minimal"
+              echoAttributes
             />
           </div>
         )}
