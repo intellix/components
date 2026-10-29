@@ -36,3 +36,21 @@ export {
   type MatValidatorFn,
   type MatValidationErrors,
 } from './mat-form-control';
+
+// Date adapter abstraction (upstream `src/material/core/datetime/*`) — shared by
+// `qwik-material/timepicker` today, intended for a future date picker too. See
+// `datetime/date-adapter.ts`'s module doc comment.
+export type {DateAdapter} from './datetime/date-adapter';
+export {
+  compareDateDefault,
+  compareTimeDefault,
+  sameDateDefault,
+  sameTimeDefault,
+  clampDateDefault,
+  getValidDateOrNullDefault,
+  deserializeDefault,
+} from './datetime/date-adapter';
+export {createNativeDateAdapter, DEFAULT_DATE_ADAPTER} from './datetime/native-date-adapter';
+export {MAT_DATE_FORMATS, type MatDateFormats} from './datetime/date-formats';
+export {MAT_NATIVE_DATE_FORMATS} from './datetime/native-date-formats';
+export {MAT_DATE_ADAPTER, useDateAdapter, useDateFormats} from './datetime/use-date-adapter';

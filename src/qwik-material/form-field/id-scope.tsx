@@ -31,7 +31,23 @@ export const MatIdScope = component$<{id: string}>(props => {
   return <Slot />;
 });
 
-/** Reads the `MAT_ASSIGNED_ID` context, or `undefined` outside a scope. */
+/** Sentinel passed as `useContext`'s default — see `useAssignedId()`'s own doc comment for why
+ *  the literal value `undefined` can't be used as that default directly. Module-private. */
+const NO_SCOPE = Symbol('no-id-scope');
+
+/**
+ * Reads the `MAT_ASSIGNED_ID` context, or `undefined` outside a scope.
+ *
+ * Can't simply call `useContext(MAT_ASSIGNED_ID, undefined)` — confirmed live (a genuine Qwik
+ * 1.20 core bug, not a guess): `useContext`'s own implementation checks `defaultValue !==
+ * undefined` to decide whether a default was supplied at all, so passing the literal value
+ * `undefined` as the default is indistinguishable from passing none, and it throws
+ * `QError_notFoundContext` instead of returning it. Only matters for a `<MatHint>`/`<MatError>`
+ * rendered with no `MatIdScope`/`MatFormField` ancestor at all (every in-product usage has one;
+ * this surfaced via a dev-app route rendering a lone, chunk-warming `<MatError>` outside any
+ * form field). Routing through a private sentinel default sidesteps the bug entirely.
+ */
 export function useAssignedId(): string | undefined {
-  return useContext(MAT_ASSIGNED_ID, undefined);
+  const value = useContext(MAT_ASSIGNED_ID, NO_SCOPE as unknown as string | undefined);
+  return value === (NO_SCOPE as unknown as string | undefined) ? undefined : value;
 }

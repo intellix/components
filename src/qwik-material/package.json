@@ -179,6 +179,11 @@
       "types": "./dist/select/index.d.ts",
       "import": "./dist/select/index.js"
     },
+    "./timepicker": {
+      "qwik": "./timepicker/index.ts",
+      "types": "./dist/timepicker/index.d.ts",
+      "import": "./dist/timepicker/index.js"
+    },
     "./menu": {
       "qwik": "./menu/index.ts",
       "types": "./dist/menu/index.d.ts",
@@ -232,6 +237,7 @@
     "./tooltip-prebuilt.css": "./dist/tooltip-prebuilt.css",
     "./slider-prebuilt.css": "./dist/slider-prebuilt.css",
     "./select-prebuilt.css": "./dist/select-prebuilt.css",
+    "./timepicker-prebuilt.css": "./dist/timepicker-prebuilt.css",
     "./menu-prebuilt.css": "./dist/menu-prebuilt.css",
     "./table-prebuilt.css": "./dist/table-prebuilt.css",
     "./tree-prebuilt.css": "./dist/tree-prebuilt.css",

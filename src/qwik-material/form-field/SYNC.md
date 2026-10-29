@@ -339,7 +339,22 @@ but is a trap for anything that needs to change later.
    OTHER, genuinely-live half of this contract — top-level `touched`/`dirty`/`invalid` — still
    passes).
 
-10. **`infixContent` prop added for `qwik-material/paginator`.** Upstream's single unnamed
+10. **`hostClasses`' `ng-valid`/`ng-invalid` pair is now additionally gated by `!disabled`** —
+    `formBound && !disabled && (invalid ? 'ng-invalid' : 'ng-valid')`, where it was previously
+    `formBound && (invalid ? 'ng-invalid' : 'ng-valid')` (always exactly one of the two whenever
+    `formBound`). Mirrors upstream's two INDEPENDENT host bindings, `[class.ng-valid]:
+    '_shouldForward("valid")'` / `[class.ng-invalid]: '_shouldForward("invalid")'`, each reading
+    `AbstractControl.valid`/`.invalid` — both of which report `false` while the control's status
+    is `DISABLED` (`AbstractControl`'s own getters: `valid`/`invalid` are literal `status ===
+    'VALID'`/`'INVALID'` checks, neither of which holds for `'DISABLED'`). This port's single
+    ternary couldn't represent "neither" until this fix. Found via `qwik-material/timepicker`'s
+    own `disabled` parity scenario — the first control port to combine `formBound` with
+    `disabled` (every prior `formBound` scenario, e.g. select's/input's own `error-state`/
+    `required-error-state`, is never also disabled) — confirmed live: Angular's `<mat-form-field>`
+    carries `ng-pristine ng-untouched` but NEITHER `ng-valid` nor `ng-invalid` while disabled.
+    No-op for every existing non-disabled-`formBound` scenario (`!disabled` is `true` there).
+
+11. **`infixContent` prop added for `qwik-material/paginator`.** Upstream's single unnamed
     `<ng-content>` inside `.mat-mdc-form-field-infix` projects every non-prefix/suffix child in
     source order, not just the one `MatFormFieldControl` — `mat-paginator`'s page-size
     `<mat-form-field>` has a second infix child (`<div class="mat-mdc-paginator-touch-target">`,
@@ -348,7 +363,12 @@ but is a trap for anything that needs to change later.
     every render (NOT through `control`'s "frozen snapshot, read once" treatment above) — this
     content is a plain host element with no `component$()` of its own, so none of the
     reconciliation hazard deviation 9 documents applies to it. See
-    `qwik-material/paginator/SYNC.md`.
+    `qwik-material/paginator/SYNC.md`. (`qwik-material/timepicker` does NOT use this prop — its
+    own empty `<mat-timepicker>` marker is rendered as a Fragment sibling of the `<input>` from
+    inside `MatTimepickerInput`'s own return value instead, since it's always a plain,
+    never-changing host element colocated with the control rather than a second, independently
+    supplied slot — see `qwik-material/timepicker/SYNC.md`'s architecture section.)
+
 ## `floatOverride` (2026-10-29, for `qwik-material/autocomplete`)
 
 `alwaysFloat` (`floatLabel === 'always'`) is now ORed with a new

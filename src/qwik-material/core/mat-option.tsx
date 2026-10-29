@@ -41,13 +41,17 @@ export interface MatOptionProps<T = unknown> {
    *  Set `echoValueAttr={false}` to suppress this — needed by `qwik-material/paginator`'s
    *  page-size options, whose real upstream template (`paginator.html`) writes a genuine
    *  property binding (`<mat-option [value]="pageSizeOption">`), which Angular does NOT echo
-   *  as a DOM attribute at all. See `qwik-material/paginator/SYNC.md`. */
+   *  as a DOM attribute at all (see `qwik-material/paginator/SYNC.md`), and by
+   *  `qwik-material/timepicker`'s own options, whose upstream `timepicker.html` is the same
+   *  shape (`<mat-option [value]="option.value">`) — confirmed live there too: a real
+   *  timepicker `<mat-option>` has NO `value` attribute at all (see
+   *  `qwik-material/timepicker/SYNC.md`). */
   value?: T;
   /**
    * Whether `value` is echoed as a literal DOM attribute. Angular keeps it only
    * when the consuming template writes it statically (`<mat-option value="x">`);
    * a bound `[value]` leaves no attribute. Default `true` (select's scenarios);
-   * paginator and some autocomplete scenarios bind it.
+   * paginator, timepicker, and some autocomplete scenarios bind it.
    */
   echoValueAttr?: boolean;
   /** Mirrors `MatOption.id` (`_IdGenerator().getId('mat-option-')`).

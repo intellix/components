@@ -174,13 +174,64 @@ scenario.
 
 All additive; `MatInput`'s existing behavior is unchanged.
 
-## `MatOption.echoValueAttr` / `MatFormFieldControlState.floatOverride` (2026-10-29, for `qwik-material/autocomplete`)
+## Date adapter abstraction — new, added 2026-10-29 for `qwik-material/timepicker`
+
+| File | Upstream path | Sync state | Notes |
+| --- | --- | --- | --- |
+| `core/datetime/date-adapter.ts` | `src/material/core/datetime/date-adapter.ts` | ported | `DateAdapter<D>` is a plain TS **interface**, not an abstract class (Qwik's factory-function convention — see the module doc comment); upstream's CONCRETE base-class methods (`compareDate`/`compareTime`/`sameDate`/`sameTime`/`clampDate`/`getValidDateOrNull`/`deserialize`'s default) are ported as plain exported functions (`compareDateDefault`, etc.) any adapter implementation can delegate to, the same way `NativeDateAdapter extends DateAdapter` reused them upstream. `MAT_DATE_LOCALE`/`setLocale`/`localeChanges` are NOT ported — see below. |
+| `core/datetime/native-date-adapter.ts` | `src/material/core/datetime/native-date-adapter.ts` | ported | `createNativeDateAdapter(locale = 'en-US')` factory, 1:1 port of every method incl. the UTC-stamping DST workaround (`_format` → `formatWithUtcWorkaround`), the lenient `TIME_REGEX` time parser, and the ISO-8601 `deserialize` override. Exports `DEFAULT_DATE_ADAPTER` — a process-wide `en-US` singleton (see below). |
+| `core/datetime/date-formats.ts` | `src/material/core/datetime/date-formats.ts` | ported | `MatDateFormats` type (`unknown` instead of `any` for the per-field format options) + `MAT_DATE_FORMATS` **context id** (not an Angular `InjectionToken` — no provider is wired yet, see below). |
+| `core/datetime/native-date-formats.ts` | `src/material/core/datetime/native-date-formats.ts` | synced | `MAT_NATIVE_DATE_FORMATS` — identical field values. |
+| `core/datetime/use-date-adapter.ts` | n/a | new | `MAT_DATE_ADAPTER` context id + `useDateAdapter()`/`useDateFormats()` hooks, each falling back to the `en-US` native singleton/`MAT_NATIVE_DATE_FORMATS` via `useContext`'s default-value parameter (never `useContextProvider()`) — see the file's own doc comment for why a context's *default* argument needs no `noSerialize()` handling even though the value is a plain object of closures: it's computed identically on server and client, never written into serialized component state. |
+
+### Deviations from upstream
+
+- **No live locale switching.** `createNativeDateAdapter(locale)`'s `locale`
+  is fixed at creation; `setLocale()`/`localeChanges` (an RxJS `Subject`
+  upstream) have no port. No scenario in `qwik-material/timepicker`
+  overrides or changes the locale after creation — `MAT_DATE_LOCALE` itself
+  isn't ported either, since nothing reads it. A future consumer needing
+  live switching should add a `Signal`-based mechanism analogous to
+  `qwik-cdk/a11y`'s other reactive primitives, not resurrect RxJS.
+- **No `QwikMaterialProvider` prop wires `MAT_DATE_ADAPTER`/`MAT_DATE_FORMATS`
+  yet.** Both contexts exist (for naming parity with upstream's injection
+  tokens, and as the forward-compatible extension point a later provider
+  prop can use), but nothing calls `useContextProvider()` for either — every
+  consumer gets the `en-US` native default. Would need `noSerialize()`
+  wrapping if added (a `DateAdapter` is a plain object of closures, the same
+  category `qwik-cdk`'s `keyboardDispatcher`/`outsideClickDispatcher`
+  already need it for).
+- **`qwik-material/timepicker`'s own INTERACTIVE runtime code
+  (`timepicker-runtime.ts`) never calls `useDateAdapter()`/`useDateFormats()`**
+  — a `$()`-wrapped event handler isn't a component render context, so
+  hooks can't be called from inside one. It imports `DEFAULT_DATE_ADAPTER`/
+  `MAT_NATIVE_DATE_FORMATS` directly as plain module-level constants instead
+  (safe: never placed into Qwik state, nothing to serialize). The two hooks
+  exist for render-time/future use (e.g. a date picker formatting a
+  calendar cell) and are unused by timepicker's own call sites today.
+- **No `ngDevMode`-gated throws** (`createDate`'s month/date range checks
+  and `setTime`'s hour/minute/second range checks ARE ported as plain
+  `throw Error(...)` calls, unconditionally — these are real bugs, not dev-
+  mode assertions upstream itself gates; only the `ngDevMode &&`
+  conditionality itself is dropped, matching every other port in this
+  project).
+
+## `MatOption.echoValueAttr` / `MatFormFieldControlState.floatOverride` (2026-10-29, for `qwik-material/autocomplete`, `qwik-material/paginator`, `qwik-material/timepicker`)
 
 - `core/mat-option.tsx` gained an `echoValueAttr?: boolean` prop (default
   `true`, so `qwik-material/select`'s own usage — always static value
-  bindings — is unaffected). See `qwik-material/autocomplete/SYNC.md`'s own
-  write-up for why autocomplete's scenarios are a genuine mix of
-  static/bound `value` attributes, unlike select's.
+  bindings — is unaffected). Needed because several later consumers'
+  scenarios bind `value` as a property (`[value]="..."`), which Angular
+  never reflects as a DOM attribute, unlike a static `value="apple"`
+  binding:
+  - `qwik-material/autocomplete` — a genuine mix of static/bound `value`
+    attributes; see that package's own `SYNC.md`.
+  - `qwik-material/paginator` — its page-size `<mat-option>`s always bind
+    `[value]`; see `qwik-material/paginator/SYNC.md`.
+  - `qwik-material/timepicker` — upstream's own `timepicker.html` always
+    writes `<mat-option [value]="option.value">`; confirmed live, a real
+    timepicker `<mat-option>` has no `value` attribute at all. See
+    `qwik-material/timepicker/SYNC.md`.
 - `core/mat-form-field-control.ts`'s `MatFormFieldControlState` gained
   `floatOverride: boolean` (default `false`) — a manual label-float
   override a control can set independently of the form field's own
