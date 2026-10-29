@@ -417,3 +417,38 @@ specific to tooltip:
   6 for `withPopoverLocation`/`getPopoverInsertionPoint` — see that spec file's header comment
   for why the file's original "happy-dom can't do real layout" skip rationale didn't actually
   block mocking the one method (`getBoundingClientRect`) everything else derives from.
+
+## Reparented hosts never actually got torn down (2026-10-29, select port's parity pass)
+
+The note above ("no live dev-app scenario needs it yet") undersold the risk: the reparenting
+itself worked (confirmed by `mat-select`'s panel appearing in the right place), but **detaching**
+a reparented overlay did not — `mat-select` is the first consumer to exercise a full
+open-then-CLOSE cycle for a non-`'global'` popover in a real browser, and closing left the panel
+permanently stuck in the live DOM (confirmed live: `.cdk-overlay-popover` still a child of
+`<mat-select>`, `.cdk-overlay-container` simultaneously showing 0 children). Root cause:
+`OverlayRef.detach()` only ever did `registry.remove(entry.id)`, relying on
+`OverlayContainerOutlet`'s list-keyed `ctx.entries.value.map(...)` re-render to find and remove
+the corresponding `<OverlayHost>` — which only knows how to look where it ORIGINALLY rendered the
+node (inside `.cdk-overlay-container`); once `applyPopoverInsertionPoint` has physically moved it
+elsewhere, that lookup finds nothing, so Qwik correctly clears its own container-side bookkeeping
+(hence the "0 children" observation) without ever reaching into the orphaned subtree to tear it
+down — confirmed live: the detached `MatSelectPanel` kept re-rendering (still subscribed to its
+`exiting` signal) well after `detach()` ran.
+
+Fixed in `overlay-ref.ts`/`overlay-host.tsx`: `OverlayHost` now owns a real `detached` signal
+(the same `useSignal` + `visuals`-callback pattern `backdropShowing`/`panelClasses` already use,
+for the same "`entry.state.*` is a non-reactive plain carrier" reason) and conditionally returns
+`null` once it flips true — a component's own per-render output change is torn down via a direct
+node reference Qwik still holds, unaffected by where that node currently lives, unlike the
+parent's list-keyed removal. `OverlayRef` gained `_onReparented()`, called by `OverlayHost`
+exactly when `applyPopoverInsertionPoint` actually relocated the host (never for `'global'`),
+which flips `detach()` onto a `visuals.setDetached(true)` path instead of the plain
+`registry.remove()`. Confirmed live that `setDetached(true)` and `registry.remove()` can't run in
+the same synchronous tick either — the array-shrink observably wins that race, leaving nothing
+subscribed to react to the `detached` write — so the registry removal is deferred one
+`setTimeout(…, 0)` tick past it (a `queueMicrotask` was tried first and still lost). Both changes
+are gated on `reparented` (`false` for every `'global'` consumer — tooltip/menu/dialog), so
+`detach()`'s prior synchronous contract, and the unit tests pinning it (`overlay.spec.ts`'s
+`dispose() removes the entry from the registry`), are unaffected. See
+`qwik-material/select/SYNC.md`'s own write-up for the full root-cause narrative and the two other
+(select-local) bugs fixed in the same pass.
