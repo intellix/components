@@ -27,28 +27,33 @@ const fallbackIdGen = createIdGenerator();
  * `qwik-cdk/a11y/key-manager/list-key-manager.ts`'s doc comment).
  */
 export interface MatOptionProps<T = unknown> {
-  /** Mirrors `MatOption.value`. Upstream's `MatOption` has no `[attr.value]` host binding at
-   *  all (`option.ts`'s `host` object has no `value` entry); whether the real Angular DOM ends
-   *  up with a literal `value` ATTRIBUTE depends entirely on how the CONSUMER's template writes
-   *  it — see {@link echoValueAttribute}. */
+  /** Mirrors `MatOption.value`. Rendered as a literal `value` DOM attribute
+   *  — NOT because upstream's `MatOption` has any `[attr.value]` host
+   *  binding (it doesn't: `option.ts`'s `host` object has no `value` entry
+   *  at all) but because every parity scenario's Angular template writes
+   *  the STATIC (bracket-less) `<mat-option value="apple">` — and Angular
+   *  keeps a plain static attribute in the rendered DOM regardless of
+   *  whether it also happens to match an `@Input()` name. Confirmed live:
+   *  omitting this produced a real `attr 'value' 'apple' != 'undefined'`
+   *  diff on every option, every scenario, once the id-generator infinite
+   *  loop (see mat-select.tsx's doc comment) stopped masking it.
+   *
+   *  Set `echoValueAttr={false}` to suppress this — needed by `qwik-material/paginator`'s
+   *  page-size options, whose real upstream template (`paginator.html`) writes a genuine
+   *  property binding (`<mat-option [value]="pageSizeOption">`), which Angular does NOT echo
+   *  as a DOM attribute at all (see `qwik-material/paginator/SYNC.md`), and by
+   *  `qwik-material/timepicker`'s own options, whose upstream `timepicker.html` is the same
+   *  shape (`<mat-option [value]="option.value">`) — confirmed live there too: a real
+   *  timepicker `<mat-option>` has NO `value` attribute at all (see
+   *  `qwik-material/timepicker/SYNC.md`). */
   value?: T;
   /**
-   * Whether to also render {@link value} as a literal `value` DOM attribute. Default `true`,
-   * matching `qwik-material/select`'s usage: every select parity scenario's Angular template
-   * writes the STATIC (bracket-less) `<mat-option value="apple">`, and Angular keeps a plain
-   * static attribute in the rendered DOM regardless of whether it also happens to match an
-   * `@Input()` name (confirmed live: omitting it produced a real `attr 'value' 'apple' !=
-   * 'undefined'` diff on every option, every select scenario).
-   *
-   * `qwik-material/timepicker` passes `false`: upstream's OWN `timepicker.html` writes
-   * `<mat-option [value]="option.value">` — a PROPERTY BINDING, not a static attribute — and a
-   * plain `@Input()` with no host binding never reflects as a DOM attribute from a property
-   * binding. Confirmed live (a genuine, repeatable parity failure, not a guess): the real
-   * Angular `<mat-option>` inside an OPEN timepicker panel has NO `value` attribute at all,
-   * while this port's default (echoing it) produced one holding the option's raw `Date.toString()`
-   * on every option, every scenario that opens the panel.
+   * Whether `value` is echoed as a literal DOM attribute. Angular keeps it only
+   * when the consuming template writes it statically (`<mat-option value="x">`);
+   * a bound `[value]` leaves no attribute. Default `true` (select's scenarios);
+   * paginator, timepicker, and some autocomplete scenarios bind it.
    */
-  echoValueAttribute?: boolean;
+  echoValueAttr?: boolean;
   /** Mirrors `MatOption.id` (`_IdGenerator().getId('mat-option-')`).
    *  Optional here — see the module doc comment's `fallbackIdGen`: a
    *  consumer-facing `<MatOption value="apple">Apple</MatOption>`
@@ -88,7 +93,6 @@ export const MatOption = component$<MatOptionProps>(props => {
   const active = props.active ?? false;
   const multiple = props.multiple ?? false;
   const hideSingleSelectionIndicator = props.hideSingleSelectionIndicator ?? false;
-  const echoValueAttribute = props.echoValueAttribute ?? true;
   const id = props.id ?? fallbackIdGen.getId('mat-option-');
 
   const classes = [
@@ -117,7 +121,7 @@ export const MatOption = component$<MatOptionProps>(props => {
       role="option"
       id={id}
       class={classes}
-      value={echoValueAttribute && props.value != null ? String(props.value) : undefined}
+      value={props.echoValueAttr !== false && props.value != null ? String(props.value) : undefined}
       aria-selected={selected ? 'true' : 'false'}
       aria-disabled={disabled ? 'true' : 'false'}
       onClick$={onClick$}

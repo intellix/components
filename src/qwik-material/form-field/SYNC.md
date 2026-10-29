@@ -354,6 +354,34 @@ but is a trap for anything that needs to change later.
     carries `ng-pristine ng-untouched` but NEITHER `ng-valid` nor `ng-invalid` while disabled.
     No-op for every existing non-disabled-`formBound` scenario (`!disabled` is `true` there).
 
+11. **`infixContent` prop added for `qwik-material/paginator`.** Upstream's single unnamed
+    `<ng-content>` inside `.mat-mdc-form-field-infix` projects every non-prefix/suffix child in
+    source order, not just the one `MatFormFieldControl` — `mat-paginator`'s page-size
+    `<mat-form-field>` has a second infix child (`<div class="mat-mdc-paginator-touch-target">`,
+    a sibling of `<mat-select>`). `MatFormField` now renders an `infixContent?: JSXOutput` prop
+    immediately after `controlSnapshot.value` inside the infix div. Read directly off `props` on
+    every render (NOT through `control`'s "frozen snapshot, read once" treatment above) — this
+    content is a plain host element with no `component$()` of its own, so none of the
+    reconciliation hazard deviation 9 documents applies to it. See
+    `qwik-material/paginator/SYNC.md`. (`qwik-material/timepicker` does NOT use this prop — its
+    own empty `<mat-timepicker>` marker is rendered as a Fragment sibling of the `<input>` from
+    inside `MatTimepickerInput`'s own return value instead, since it's always a plain,
+    never-changing host element colocated with the control rather than a second, independently
+    supplied slot — see `qwik-material/timepicker/SYNC.md`'s architecture section.)
+
+## `floatOverride` (2026-10-29, for `qwik-material/autocomplete`)
+
+`alwaysFloat` (`floatLabel === 'always'`) is now ORed with a new
+`controlState.floatOverride` read (`alwaysFloatNow`, used everywhere the
+old bare `alwaysFloat` drove `shouldLabelFloat`/`mat-mdc-form-field-label-
+always-float`/the outline-notch-width task) — a control-driven manual
+override, mirroring upstream `MatFormField._shouldAlwaysFloat()`'s override
+half. See `core/mat-form-field-control.ts`'s own `floatOverride` doc
+comment and `qwik-material/autocomplete/SYNC.md` for the full write-up
+(first consumer: `MatAutocomplete`, forcing the label floated for as long
+as its panel overlay is attached). Defaults `false`; no existing control
+sets it, so `MatInput`/`MatSelect` are unaffected.
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/form-field/ 2>/dev/null` → 0

@@ -71,6 +71,7 @@ export const MatSelectPanel = component$<MatSelectPanelProps>(props => {
       key={option.id}
       id={option.id}
       value={option.value}
+      echoValueAttr={option.echoValueAttr}
       disabled={option.disabled}
       selected={isSelected(props.value.value, option, props.multiple)}
       active={!props.activeOptionHidden.value && props.activeIndex.value === option.index}

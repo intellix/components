@@ -37,6 +37,8 @@ const entries = [
   'menu',
   'table',
   'tree',
+  'paginator',
+  'autocomplete',
 ];
 
 export default defineConfig({
@@ -86,6 +88,8 @@ export default defineConfig({
           ['scss/menu/menu-prebuilt.scss', 'dist/menu-prebuilt.css'],
           ['scss/table/table-prebuilt.scss', 'dist/table-prebuilt.css'],
           ['scss/tree/tree-prebuilt.scss', 'dist/tree-prebuilt.css'],
+          ['scss/paginator/paginator-prebuilt.scss', 'dist/paginator-prebuilt.css'],
+          ['scss/autocomplete/autocomplete-prebuilt.scss', 'dist/autocomplete-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

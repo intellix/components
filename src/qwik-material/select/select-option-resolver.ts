@@ -62,6 +62,11 @@ export interface MatSelectOptionDef<T = unknown> {
   disabled?: boolean;
   /** Explicit id. Auto-generated (`mat-option-N`) when omitted. */
   id?: string;
+  /** Mirrors `MatOptionProps.echoValueAttr` — default `true`. Set `false` when the real
+   *  upstream template binds this option's value as a genuine property binding (`[value]="..."`,
+   *  never echoed as a DOM attribute) rather than a static one — see that prop's own doc comment
+   *  and `qwik-material/paginator/SYNC.md`. */
+  echoValueAttr?: boolean;
 }
 
 /** One `<mat-optgroup>`, wrapping its own options. */
@@ -98,6 +103,8 @@ export interface ResolvedSelectOption {
   content: JSXOutput;
   /** Index into {@link ResolvedSelectOptions.groups}, if inside a group. */
   groupIndex: number | undefined;
+  /** See {@link MatSelectOptionDef.echoValueAttr}. */
+  echoValueAttr: boolean;
 }
 
 export interface ResolvedSelectGroup {
@@ -143,6 +150,7 @@ function resolveOption(
     label: def.label,
     content: def.content ?? def.label,
     groupIndex,
+    echoValueAttr: def.echoValueAttr ?? true,
   };
 }
 

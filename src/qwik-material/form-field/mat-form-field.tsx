@@ -59,7 +59,31 @@ export interface MatFormFieldProps {
   floatLabel?: MatFormFieldFloatLabelType;
   hideRequiredMarker?: boolean;
   subscriptSizing?: MatFormFieldSubscriptSizing;
-  color?: MatFormFieldColor;
+  /**
+   * Mirrors upstream `MatFormField.color: ThemePalette = 'primary'`.
+   *
+   * `undefined` (the common case — prop simply omitted) falls back through `config.color` to
+   * `'primary'`, same as every other config field here. `null` is a DIFFERENT, deliberate
+   * sentinel: "force this to resolve as literally unset," needed because Angular's own default
+   * class-field initializer (`'primary'`) is PRESERVED only when a template never binds
+   * `[color]` AT ALL — a template that writes `[color]="expr"` UNCONDITIONALLY (even when
+   * `expr` evaluates to `undefined`) OVERWRITES that default with the literal `undefined`,
+   * because a property binding always assigns on every change-detection run regardless of the
+   * bound value. `qwik-material/paginator`'s embedded page-size form field is exactly this case
+   * (`paginator.html`: `[color]="color"`, where `MatPaginator`'s own `color` input has no
+   * default and is unset in every parity scenario) — confirmed live, its `<mat-select>` panel
+   * gets `mat-undefined` (`_parentFormField?.color` read literally falsy), NOT `mat-primary`,
+   * unlike every OTHER select scenario's `<mat-form-field>` (which never binds `[color]` at
+   * all, so the class-field default survives untouched). JSX can't distinguish "prop omitted"
+   * from "prop bound to an undefined expression" (both are just `undefined`), so `MatPaginator`
+   * passes `null` explicitly for this one case — see `mat-paginator.tsx`. This only affects the
+   * value exposed to the embedded CONTROL via `MAT_FORM_FIELD_CONTROL_STATE.color`; the form
+   * field's OWN host classes below are unaffected either way (`!== 'accent' && !== 'warn'` is
+   * true for `undefined` exactly as it is for `'primary'`, matching upstream's OWN host-class
+   * formula, which — unlike the ternary `_parentFormField?.color === 'primary'` a CHILD like
+   * `MatSelect` reads — never distinguishes the two).
+   */
+  color?: MatFormFieldColor | null;
   /** Mirrors `[hintLabel]` — rendered as a `<mat-hint>` the form field
    *  manufactures itself (distinct from `hintStart`/`hintEnd`, which the
    *  consumer supplies as explicit `<MatHint>` elements). */
@@ -89,6 +113,20 @@ export interface MatFormFieldProps {
    *  `core/mat-form-field-control.ts` for the `MatFormFieldControlProps`
    *  contract any control's own props should satisfy. */
   control?: JSXOutput;
+  /**
+   * Extra content rendered inside `.mat-mdc-form-field-infix`, immediately AFTER `control` —
+   * mirrors a second, unnamed `<ng-content>` projection landing as a sibling of the control at
+   * that same nesting level (upstream's single unnamed `<ng-content>` inside the infix projects
+   * EVERY non-prefix/suffix child in source order, not just the one `MatFormFieldControl`;
+   * `mat-paginator`'s page-size `<mat-form-field>` is the first consumer — its
+   * `<div class="mat-mdc-paginator-touch-target" (click)="selectRef.open()">` is a sibling of
+   * `<mat-select>` inside the SAME infix in `paginator.html`, not a prefix/suffix). Unlike
+   * `control`, this is plain host-element content with no `component$()` of its own, so it's
+   * read directly off `props` on every render — it doesn't need `control`'s own "read once, via
+   * a frozen snapshot" treatment (see that prop's doc comment): there is no nested reactive
+   * state here that a fresh element reference on every render could disrupt.
+   */
+  infixContent?: JSXOutput;
   /**
    * Live counterparts of the SAME fields on `control`'s own props
    * (`MatFormFieldControlProps.touched`/`.dirty`/`.invalid`) — pass these
@@ -144,7 +182,13 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const alwaysFloat = floatLabel === 'always';
   const hideRequiredMarker = props.hideRequiredMarker ?? config.hideRequiredMarker ?? false;
   const subscriptSizing = props.subscriptSizing ?? config.subscriptSizing ?? 'fixed';
-  const color = props.color ?? config.color ?? 'primary';
+  // `null` forces an unset result (bypassing the `config.color ?? 'primary'` fallback chain
+  // entirely) — see the `color` prop's own doc comment for why. The host classes below treat
+  // this identically to `'primary'` (`!== 'accent' && !== 'warn'` is true either way, matching
+  // upstream's OWN host-class formula) — only `MAT_FORM_FIELD_CONTROL_STATE.color` (which a
+  // child like `MatSelect` reads with a STRICT `=== 'primary'` check) actually distinguishes
+  // this from `'primary'`.
+  const color = props.color === null ? undefined : (props.color ?? config.color ?? 'primary');
   const hintLabel = props.hintLabel ?? '';
 
   const hasFloatingLabel = props.label != null;
@@ -262,12 +306,20 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     touched,
     dirty,
     invalid,
+    floatOverride: false,
   });
   useContextProvider(MAT_FORM_FIELD_CONTROL_STATE, controlState);
 
+  // `_shouldAlwaysFloat()`: the form field's own `floatLabel === 'always'`
+  // OR a control-driven manual override (see `MatFormFieldControlState.
+  // floatOverride`'s own doc comment — `MatAutocomplete` is the first real
+  // consumer). Both halves drive `mat-mdc-form-field-label-always-float`
+  // identically; `alwaysFloat` was ONLY the first half before this control
+  // existed.
+  const alwaysFloatNow = alwaysFloat || controlState.floatOverride;
   // `_shouldLabelFloat()`: only meaningful when there's a floating label at
   // all; otherwise always floating ("always") or the control's own report.
-  const shouldLabelFloat = hasFloatingLabel && (controlState.shouldLabelFloat || alwaysFloat);
+  const shouldLabelFloat = hasFloatingLabel && (controlState.shouldLabelFloat || alwaysFloatNow);
   const hidePlaceholder = hasFloatingLabel && !shouldLabelFloat;
 
   // ── ids ──
@@ -445,7 +497,8 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     // callback that just returns an already-computed outer primitive
     // establishes no subscription at all and would never re-run reactively.
     const controlFloat = track(() => controlState.shouldLabelFloat);
-    const floating = hasFloatingLabel && (controlFloat || alwaysFloat);
+    const floatOverride = track(() => controlState.floatOverride);
+    const floating = hasFloatingLabel && (controlFloat || alwaysFloat || floatOverride);
     const notch = notchRef.value as HTMLElement | undefined;
     if (!notch || !hasOutline) return;
     const label = labelRef.value as HTMLElement | undefined;
@@ -509,7 +562,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const hostClasses = [
     'mat-mdc-form-field',
     `mat-mdc-form-field-type-${controlType}`,
-    alwaysFloat && 'mat-mdc-form-field-label-always-float',
+    alwaysFloatNow && 'mat-mdc-form-field-label-always-float',
     hasIconPrefix && 'mat-mdc-form-field-has-icon-prefix',
     hasIconSuffix && 'mat-mdc-form-field-has-icon-suffix',
     errorState && 'mat-form-field-invalid',
@@ -647,6 +700,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
           <div class="mat-mdc-form-field-infix">
             {!hasOutline && labelContent}
             {controlSnapshot.value}
+            {props.infixContent}
           </div>
 
           {hasTextSuffix && <div class="mat-mdc-form-field-text-suffix">{props.textSuffix}</div>}

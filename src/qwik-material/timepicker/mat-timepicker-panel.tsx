@@ -62,8 +62,8 @@ export const MatTimepickerPanel = component$<MatTimepickerPanelProps>(props => {
           id={option.id}
           value={option.value}
           // Upstream's `[value]="option.value"` is a property binding, never a DOM attribute —
-          // see `MatOptionProps.echoValueAttribute`'s own doc comment.
-          echoValueAttribute={false}
+          // see `MatOptionProps.echoValueAttr`'s own doc comment.
+          echoValueAttr={false}
           selected={props.value.value != null && adapter.sameTime(option.value, props.value.value)}
           active={props.activeIndex.value === index}
           onSelectInteraction$={() => props.onOptionSelect(option)}

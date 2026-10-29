@@ -64,6 +64,12 @@ import type {MatMenuDefaultOptions} from '../menu/mat-menu-tokens';
 import {MAT_MENU_DEFAULT_OPTIONS} from '../menu/mat-menu-tokens';
 import type {MatTimepickerConfig} from '../timepicker/timepicker-config';
 import {MAT_TIMEPICKER_CONFIG} from '../timepicker/timepicker-config';
+import type {MatPaginatorConfig} from '../paginator/paginator-config';
+import {MAT_PAGINATOR_CONFIG} from '../paginator/paginator-config';
+import type {MatPaginatorIntl} from '../paginator/paginator-intl';
+import {MAT_PAGINATOR_INTL, DEFAULT_PAGINATOR_INTL} from '../paginator/paginator-intl';
+import type {MatAutocompleteConfig} from '../autocomplete/autocomplete-config';
+import {MAT_AUTOCOMPLETE_CONFIG} from '../autocomplete/autocomplete-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -130,6 +136,15 @@ export interface QwikMaterialProviderProps {
   matMenuDefaults?: MatMenuDefaultOptions;
   /** Defaults applied to every `useMatTimepicker()` / `<MatTimepickerToggle>` in this subtree. */
   matTimepickerConfig?: MatTimepickerConfig;
+  /** Defaults applied to every MatPaginator in this subtree (field-by-field fallback, like
+   *  MatCheckboxConfig). */
+  matPaginatorConfig?: MatPaginatorConfig;
+  /** REPLACES the whole `MatPaginatorIntl` string bag for every MatPaginator in this subtree —
+   *  mirrors upstream's `providers: [{provide: MatPaginatorIntl, useClass: ...}]` (a consumer
+   *  supplies every field, not a per-field fallback merge — see paginator/paginator-intl.ts). */
+  matPaginatorIntl?: MatPaginatorIntl;
+  /** Defaults applied to every MatAutocomplete in this subtree. */
+  matAutocompleteConfig?: MatAutocompleteConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -279,6 +294,20 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // defaults declared in use-mat-timepicker.ts's own option resolution;
   // providing an empty object here is equivalent to accepting all of them.
   useContextProvider(MAT_TIMEPICKER_CONFIG, props.matTimepickerConfig ?? {});
+  // MatPaginatorConfig is a plain object with primitive fields — no noSerialize needed.
+  // Paginators outside a provider get {} (MatPaginator itself falls back per-field:
+  // `props.x ?? config.x ?? <upstream's own hardcoded default>`, same convention as
+  // checkbox/radio/form-field above).
+  useContextProvider(MAT_PAGINATOR_CONFIG, props.matPaginatorConfig ?? {});
+  // Unlike every config above, MatPaginatorIntl is NOT merged field-by-field — see
+  // paginator/paginator-intl.ts's module doc comment. Paginators outside a provider get the
+  // hardcoded English DEFAULT_PAGINATOR_INTL declared there.
+  useContextProvider(MAT_PAGINATOR_INTL, props.matPaginatorIntl ?? DEFAULT_PAGINATOR_INTL);
+  // MatAutocompleteConfig is a plain object with primitive fields — no
+  // noSerialize needed. Autocompletes outside a provider get the hardcoded
+  // defaults declared in mat-autocomplete.tsx's own prop resolution;
+  // providing an empty object here is equivalent to accepting all of them.
+  useContextProvider(MAT_AUTOCOMPLETE_CONFIG, props.matAutocompleteConfig ?? {});
 
   return <Slot />;
 });

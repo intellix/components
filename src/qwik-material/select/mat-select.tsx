@@ -449,6 +449,17 @@ export const MatSelect = component$<MatSelectProps>(props => {
       aria-invalid={errorState ? 'true' : 'false'}
       aria-activedescendant={ariaActiveDescendant}
       aria-describedby={ariaDescribedBy}
+      // Mirrors `hideSingleSelectionIndicator` written as a BARE, static HTML attribute directly
+      // on a consumer's `<mat-select>` (e.g. `paginator.html`'s page-size select) — unlike a
+      // genuine `[hideSingleSelectionIndicator]="expr"` property binding (which, upstream, would
+      // only set the `@Input`, never touch the DOM attribute), Angular leaves a literal, static
+      // template attribute in the rendered DOM verbatim. This port has no way to distinguish
+      // "bound statically" from "bound dynamically" (both resolve to the same
+      // `cfg.hideSingleSelectionIndicator` boolean), so it echoes the attribute whenever that
+      // resolved value is true — a reasonable approximation, since every current consumer of a
+      // true value (`mat-paginator`) writes it as the bare static form upstream too. See
+      // `qwik-material/paginator/SYNC.md`.
+      {...{hidesingleselectionindicator: cfg.hideSingleSelectionIndicator ? '' : undefined}}
       onKeyDown$={onHostKeyDown$}
       onFocus$={onHostFocus$}
       onBlur$={onHostBlur$}

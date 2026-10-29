@@ -199,6 +199,16 @@
       "types": "./dist/tree/index.d.ts",
       "import": "./dist/tree/index.js"
     },
+    "./paginator": {
+      "qwik": "./paginator/index.ts",
+      "types": "./dist/paginator/index.d.ts",
+      "import": "./dist/paginator/index.js"
+    },
+    "./autocomplete": {
+      "qwik": "./autocomplete/index.ts",
+      "types": "./dist/autocomplete/index.d.ts",
+      "import": "./dist/autocomplete/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -231,6 +241,8 @@
     "./menu-prebuilt.css": "./dist/menu-prebuilt.css",
     "./table-prebuilt.css": "./dist/table-prebuilt.css",
     "./tree-prebuilt.css": "./dist/tree-prebuilt.css",
+    "./paginator-prebuilt.css": "./dist/paginator-prebuilt.css",
+    "./autocomplete-prebuilt.css": "./dist/autocomplete-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

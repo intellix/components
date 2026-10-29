@@ -216,15 +216,28 @@ All additive; `MatInput`'s existing behavior is unchanged.
   conditionality itself is dropped, matching every other port in this
   project).
 
-## `core/mat-option.tsx`: `echoValueAttribute` prop — new, added 2026-10-29 for `qwik-material/timepicker`
+## `MatOption.echoValueAttr` / `MatFormFieldControlState.floatOverride` (2026-10-29, for `qwik-material/autocomplete`, `qwik-material/paginator`, `qwik-material/timepicker`)
 
-`MatOptionProps.value` previously always echoed as a literal `value` DOM
-attribute (needed for `mat-select`, whose scenarios write the STATIC
-`<mat-option value="apple">` in the Angular template). `timepicker.html`
-instead writes `<mat-option [value]="option.value">` — a property binding,
-which never produces a DOM attribute since `MatOption` has no `[attr.value]`
-host binding. Added `echoValueAttribute` (default `true`, preserving
-`mat-select`'s existing behavior byte-for-byte); `qwik-material/timepicker`'s
-`mat-timepicker-panel.tsx` is the only caller passing `false`. See
-`qwik-material/timepicker/SYNC.md` for the full write-up (confirmed-live
-diff, not a guess).
+- `core/mat-option.tsx` gained an `echoValueAttr?: boolean` prop (default
+  `true`, so `qwik-material/select`'s own usage — always static value
+  bindings — is unaffected). Needed because several later consumers'
+  scenarios bind `value` as a property (`[value]="..."`), which Angular
+  never reflects as a DOM attribute, unlike a static `value="apple"`
+  binding:
+  - `qwik-material/autocomplete` — a genuine mix of static/bound `value`
+    attributes; see that package's own `SYNC.md`.
+  - `qwik-material/paginator` — its page-size `<mat-option>`s always bind
+    `[value]`; see `qwik-material/paginator/SYNC.md`.
+  - `qwik-material/timepicker` — upstream's own `timepicker.html` always
+    writes `<mat-option [value]="option.value">`; confirmed live, a real
+    timepicker `<mat-option>` has no `value` attribute at all. See
+    `qwik-material/timepicker/SYNC.md`.
+- `core/mat-form-field-control.ts`'s `MatFormFieldControlState` gained
+  `floatOverride: boolean` (default `false`) — a manual label-float
+  override a control can set independently of the form field's own
+  `floatLabel` setting, mirroring upstream `MatFormField._shouldAlwaysFloat()`'s
+  override half. `form-field/mat-form-field.tsx` ORs it into its own
+  `alwaysFloat` computation. See `qwik-material/autocomplete/SYNC.md` for
+  the full write-up (first and so far only consumer).
+
+Both additive; `MatInput`'s/`MatSelect`'s existing behavior is unchanged.
