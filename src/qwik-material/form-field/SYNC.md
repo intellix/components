@@ -313,6 +313,32 @@ but is a trap for anything that needs to change later.
    refs/tasks. `exportAs: 'matFormField'` → N/A. `ViewEncapsulation.None` +
    host bindings → plain JSX attribute/class computation.
 
+9. **`props.control` is snapshotted ONCE (into a `useSignal`) on `MatFormField`'s own first
+   render, and `props.control` is never read again after that — a deliberate deviation added
+   to work around a genuine Qwik 1.20 CORE bug, not an upstream behavior difference.** `{props.control}`
+   rendered directly, as a prop forwarded straight through from a parent, compiles to a
+   `_fnSignal`-wrapped binding (this is the SAME mechanism this file's own architecture
+   section relies on for live reactivity elsewhere) that Qwik re-evaluates via
+   `executeSignalOperation` whenever `control`'s JSX-object reference changes — which happens
+   on every parent re-render for any consumer that reconstructs its control element inline
+   (the natural way to write it, e.g. `control={<MatChipGrid rows={rowsSignal} .../>}`).
+   Confirmed live by instrumenting Qwik's own built dist: that binding's "replace the old
+   element" path collects async QRL-resolution promises from `createElm()` into an array the
+   dist's own source marks `// TODO(misko): hook this up` and then never awaits — logged as
+   "Rendering promises in JSX signals is not supported" — before unconditionally running
+   `insertBefore`/`removeNode` anyway, which can leave the replacement element transiently
+   (usually ~1ms, not always) disconnected from the live DOM. This surfaced as `qwik-material/
+   chips`' `grid-input` scenario intermittently losing `<mat-chip-grid>` entirely — see
+   `chips/SYNC.md`'s Deviation #8 for the full root-cause writeup and verification evidence.
+   Freezing `control`'s reference here means the `_fnSignal` binding for it never fires again
+   after mount, so the broken path is never reached, for ANY current or future consumer —
+   with no new constraint on top of what was already documented: `control`'s nested prop
+   VALUES were already "read once, never again" for everything that matters (deviation
+   addressed in the architecture section above), so freezing the reference too changes
+   nothing for any already-supported use case (confirmed: `error-state`, which exercises the
+   OTHER, genuinely-live half of this contract — top-level `touched`/`dirty`/`invalid` — still
+   passes).
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/form-field/ 2>/dev/null` → 0

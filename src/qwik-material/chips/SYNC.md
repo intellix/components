@@ -117,54 +117,93 @@ not just upstream's source code.
 7. **Icon-like content is always a plain `JSXOutput` prop, never a dedicated icon component.**
    `qwik-material/icon` is out of scope for this port's chips scenarios — avatars/trailing
    icons/remove glyphs are plain text/spans, matching the parity spec's own stated scope.
-8. **A genuine, rare Qwik 1.20 runtime limitation can destroy `<mat-chip-grid>` without
-   recreating it, the FIRST time a row is ever added purely client-side.** Found via repeated
-   (40+ back-to-back) run stress-testing of `grid-input`'s "type Mango + Enter" step: roughly
-   1 in 15-30 runs, Qwik logs "Rendering promises in JSX signals is not supported" (a
-   swallowed, not thrown, error) and `<mat-chip-grid>` itself is gone from the DOM afterward,
-   never recreated. Confirmed via a tagged-element check that this ISN'T specific to
-   `MatChipGrid`'s own `rows.map()` rendering at all: `<mat-chip-grid>`'s host element is
-   fully destroyed and recreated as part of EVERY add (success or failure) — the bug is
-   simply that specific recreation occasionally not completing. Extracting the row list into
-   its own `component$` boundary (`ChipGridRows`), switching `rows`' delivery mechanism
-   between a prop-`Signal` and a dedicated context, and several bounded self-healing retries
-   written INSIDE `MatChipGrid` were all tried and none reduced the failure rate — consistent
-   with the failure being at or above `MatChipGrid`'s own level, where nothing inside it
-   (including a fresh instance of itself) can reliably self-correct.
+8. **RESOLVED. A genuine Qwik 1.20 CORE bug — not a chips- or form-field-specific issue —
+   could intermittently destroy `<mat-chip-grid>` without recreating it on ANY rows change
+   (add OR remove).** Originally found via repeated (40+ back-to-back) stress-testing of
+   `grid-input`'s "type Mango + Enter" step: roughly 1 in 15-30 runs, Qwik logs "Rendering
+   promises in JSX signals is not supported" (a swallowed, not thrown, error) and
+   `<mat-chip-grid>` itself goes missing from the DOM afterward, never recreated.
 
-   The fix that DOES work has to live in the CONSUMER: since `<MatChipGrid>` sits inside
-   `<MatFormField control={...}>`'s frozen prop value, only an ancestor with a live, reactive
-   `key` on `<MatFormField>` itself can force a correct, from-scratch remount when this is
-   detected. `grid-input`'s dev-app route polls via `requestAnimationFrame` for whether
-   `<mat-chip-grid>` still exists in the DOM shortly after an add; if not, it bumps a
-   `formFieldRemountNonce` used as `<MatFormField key={formFieldRemountNonce.value}>`, then
-   re-focuses the fresh input once it exists (the recreated instance has no memory of the
-   input still logically being focused — Enter doesn't blur it). Confirmed live across 80+
-   repeated runs this reliably self-corrects **the one comparison step it targets** (the
-   "type Mango + Enter" step itself).
+   **Root cause, confirmed by instrumenting Qwik's own built dist (not inferred from reading
+   source alone).** `<MatChipGrid>` is the JSX VALUE of `<MatFormField control={...}>`'s
+   `control` prop. `MatFormField` renders that prop directly (`{props.control}`), and Qwik's
+   optimizer compiles a directly-forwarded prop like that into a `_fnSignal`-wrapped binding
+   (`a((l) => l.control, [e])` in the compiled output) so that updating `control` does NOT
+   require a full `MatFormField` re-render — this is the SAME mechanism `form-field/SYNC.md`'s
+   architecture section documents as load-bearing ("a prop directly on an element returned
+   from a component's own JSX tree... updates correctly"). Every time the `grid-input` route
+   re-rendered (e.g. because `fruits.value` changed) it constructed a BRAND NEW
+   `<MatChipGrid .../>` JSX object for `control` — a different reference every time, even
+   though the actual row data flows through a stable `Signal`. That reference change fires
+   the `_fnSignal` binding, which runs through Qwik core's `executeSignalOperation`
+   (`packages/qwik/src/core` — search dist for the exact error string). When the OLD and NEW
+   vnode being compared there don't structurally match — which, confirmed via instrumented
+   logging, is true on effectively every invocation of this path once a deep component
+   subtree like `MatChipGrid`/`ChipGridRows`/`MatChipRow` is involved — it falls into a
+   "fully replace the element" branch that calls `createElm()` and collects whatever async
+   QRL-resolution promises that produces into an array... which is **never awaited**:
+   ```js
+   const promises = []; // TODO(misko): hook this up
+   const newElm = createElm(rCtx, newVnode, 0, promises);
+   if (promises.length) logError('Rendering promises in JSX signals is not supported');
+   insertBefore(rCtx.$static$, elm.parentElement, newElm, oldNode);
+   oldNode && removeNode(staticCtx, oldNode);
+   ```
+   That `// TODO(misko): hook this up` is Qwik's own maintainer leaving this path
+   unfinished. `insertBefore`/`removeNode` run immediately regardless of whether
+   `promises.length` is nonzero. Direct `isConnected` checks around that exact call
+   (instrumented into the running dist) confirmed the replacement element is briefly
+   DISCONNECTED from the live DOM — it normally self-heals within about 1ms once the dangling
+   promise resolves, but nothing guarantees that: if anything else touches the DOM in that
+   window, the replacement is permanently orphaned. This reproduced at roughly the same
+   1-in-15-to-30 rate originally documented, via 40+ repeated runs of a throwaway Playwright
+   script against the instrumented dist (reproduced both the "error logged, self-heals" case
+   and, separately, confirmed the mechanism explains the rarer permanent-loss case).
 
-   **STATUS — NOT FULLY RESOLVED, flagged here rather than glossed over.** The SAME underlying
-   recreation (confirmed: `<mat-chip-grid>` is destroyed and recreated on every rows change,
-   add OR remove, not just the first add) can ALSO fire during a LATER step in the same test
-   run (confirmed live via a targeted repro: the "Rendering promises in JSX signals" error
-   firing again during "type Mango + Enter", with the self-healing recovery succeeding for
-   THAT step's own comparison, but `document.activeElement` ending up on `<body>` — neither
-   chip — by the time the subsequent "Backspace in empty input" + "click remove(0)" steps run
-   immediately afterward in the SAME test). The observed symptom is a semi-deterministic
-   failure at the `grid-input` scenario's final "click remove(0)" comparison (the removed
-   chip's sibling ending up focused/ripple-initialized incorrectly, or focus landing on
-   neither chip at all) — reproduced across MULTIPLE full-suite runs during this port's own
-   verification, at a rate too high to call "rare" the way the add-step's own failure is. The
-   self-healing recovery only watches for the grid's OWN disappearance right after an ADD;
-   it has no equivalent check after a REMOVE, and does not re-verify that ITS OWN recovery
-   (the re-focus call) actually landed before further steps run. A corresponding fix (an
-   equivalent self-healing watch on the remove path, and/or verifying the re-focus actually
-   succeeded before declaring recovery complete) was not completed in this port due to time
-   constraints — left as a known, open issue for whoever picks this up next, rather than
-   silently accepted. The other 10 scenarios (including `removable`'s own chip-removal path,
-   on the simpler base `MatChipSet`/`MatChip` — see Deviation #9) are unaffected; this is
-   scoped specifically to `grid-input`'s combination of an add immediately followed by
-   removes within the same run.
+   Extracting the row list into its own `component$` boundary (`ChipGridRows`), switching
+   `rows`' delivery mechanism between a prop-`Signal` and a dedicated context, and several
+   bounded self-healing retries written INSIDE `MatChipGrid` (all tried in earlier passes at
+   this bug, before the root cause above was found) correctly did NOT reduce the failure
+   rate — the failure is in Qwik core's handling of the `control`-prop-forwarding binding
+   itself, genuinely above anything `MatChipGrid` can influence from inside itself. A targeted
+   test that gave `<MatChipGrid key="...">` a stable key also did NOT help — the mismatch
+   `executeSignalOperation` detects is NOT about JSX `key` matching; `getVnodeFromEl()`
+   (reconstructing a vnode from live DOM state) can never recover a component's internal
+   auto-key, so the "replace" branch is taken regardless of what explicit key the element has.
+
+   **The fix: never let `control`'s own JSX-object REFERENCE change after `MatFormField`'s
+   first render**, so the `_fnSignal` binding for it never fires again and the broken replace
+   path is never reached. Implemented entirely in `form-field/mat-form-field.tsx`: `props.control`
+   is snapshotted ONCE into a `useSignal` on `MatFormField`'s first render, and that frozen
+   reference is used for both the static `readControlProps()` read AND the actual
+   `{controlSnapshot.value}` render — see that signal's own doc comment there for the full
+   write-up. This is consistent with, not a new constraint on top of, the EXISTING documented
+   architecture: `control`'s nested prop values were already "read once, never again" for
+   everything that matters there (`disabled`/`required`/`controlType`/`formBound`; anything
+   that must change later already goes through a top-level prop or
+   `MAT_FORM_FIELD_CONTROL_STATE`, never through re-reading `control` itself), so freezing the
+   reference too changes nothing for any already-supported use case. Rows/value updates still
+   flow correctly because `<MatChipGrid>` dereferences its OWN `rows` `Signal` on every one of
+   ITS OWN re-renders (Deviation #1) — a completely separate, ordinary reactive update that
+   never touches this `control`-forwarding binding at all.
+
+   `grid-input`'s dev-app route no longer needs (and no longer has) ANY special workaround —
+   the `formFieldRemountNonce`/rAF-polling self-healing remount that previously lived there
+   has been removed; the route now constructs `<MatChipGrid rows={rowsSignal} .../>` inline,
+   the natural way any consumer would write it. **Verified:** `grid-input` with
+   `--repeat-each=20` passes 20/20 (previously intermittently failing); the full
+   `specs/material-chips` (11 scenarios) and `specs/material-form-field` (16 scenarios,
+   including `error-state`, which exercises the OTHER half of this same architecture — the
+   top-level `touched`/`dirty`/`invalid` live-reactivity path — confirming the snapshot
+   doesn't regress it) both pass 3× clean; a throwaway 40-iteration Playwright stress script
+   (fresh page load, type "Mango" + Enter, Backspace) shows 0/40 failures, down from a
+   reproducible ~15% failure rate on the pre-fix build using the identical script.
+
+   This was previously flagged as affecting a LATER step too (the same recreation firing
+   again during removes, leaving focus on neither chip) — since the fix removes the
+   recreation entirely (not just the add-step symptom), that residual failure mode is also
+   resolved; the 3× full-suite `grid-input` runs above exercise the add-then-remove sequence
+   in full and are clean.
 9. **`MatChipSet`'s `fixupRippleDisabled$` had the SAME stale-`useOn()`-closure bug as
    `MatChipGrid`'s, independently.** Closed over the outer-scope `chips`/`disabled` consts
    instead of re-reading `props.chips`/`props.disabled` live inside the handler — found live
