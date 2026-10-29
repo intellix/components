@@ -143,18 +143,28 @@ data, not an array of JSX element descriptors — no matter how tempting the
 `readControlProps`-style introspection looks, and even though it will
 *appear* to work during manual testing of the very first render.
 
-### Why `MatSelectTrigger` isn't a component
+### Why `MatSelectTrigger` isn't a component (but its tag still appears in the DOM)
 
 Upstream's `mat-select-trigger` selector matches a bare structural
 directive — `@Directive({selector: 'mat-select-trigger'})`, no component, no
-host, no template of its own; its own host element is whatever
-native/Material tag the consumer wrote it on (every parity scenario, and
-upstream's own `select-custom-trigger` example, use a plain `<span>`). There
-is nothing for a Qwik component to wrap. `MatSelect`'s own `customTrigger`
-prop (`JSXOutput`) takes the projected content directly — the same
-"directive on a consumer element → polymorphic `as` prop" pattern
-(design-doc rule 4) taken to its logical conclusion when there's no wrapper
-element at all to be polymorphic about.
+host, no template of its own. **This does NOT mean the `<mat-select-trigger>`
+tag disappears from the rendered DOM** — a directive, unlike a component,
+never replaces or unwraps its host element; it only adds behavior to
+whatever element the consumer wrote the selector on. Upstream's
+`select.html` projects it with a plain `<ng-content select="mat-select-trigger">`,
+and `<ng-content>` always projects the consumer's element exactly as
+written, tag included. An earlier version of this port got this backwards
+(assumed the tag vanished, so `customTrigger` rendered as unwrapped plain
+content) and hit a real, confirmed-live diff (`span[0]: child count 1 != 2`
+— Angular's wrapping span has exactly ONE child, the `<mat-select-trigger>`
+element itself, not `customTrigger`'s own children unwrapped into it).
+`MatSelect` now wraps `customTrigger` in a literal `<mat-select-trigger>`
+element itself (a plain pass-through host, same category as
+`<mat-pseudo-checkbox>` — see `mat-select.tsx`'s own doc comment on the
+prop) rather than asking every consumer to write that wrapper tag by hand.
+`customTrigger` staying a plain `JSXOutput` prop (not a dedicated
+`<MatSelectTrigger>` JSX element) is still the right call — design-doc rule
+4's "no extra wrapper COMPONENT," not "no extra wrapper element."
 
 ### Why `value` is not a live, reactive prop
 
@@ -210,23 +220,97 @@ that feeds the overlay directive is only re-evaluated by the *next* CD pass
 This port does **not** replicate that CD-staleness mechanism — there's
 nothing analogous to replicate (Qwik has no comparable "stale template
 binding" artifact). Instead, `SelectRuntimeSignals.stickyOrigin` directly
-reproduces the two *observable* DOM shapes: `openSelectPanel()` reads
+reproduces the *observable* DOM-insertion shape: `openSelectPanel()` reads
 `stickyOrigin.value` (`undefined` on the very first call) to pick this
-open's origin, falling back to the select's own trigger element when unset,
-then — *after* using it — sets `stickyOrigin.value` to the form field's
-wrapper (`MAT_FORM_FIELD_CONNECTED_ORIGIN`), or the trigger again if there's
-no form field. First open: `stickyOrigin` is `undefined` → origin is the
-trigger → overlay host lands inside `<mat-select>`. Every open after that:
-`stickyOrigin` is the form-field wrapper → overlay host lands inside
-`<mat-form-field>`. Exactly matches the two Angular-confirmed shapes at
-exactly the same steps, without needing the timing bug itself.
+open's INSERTION point, falling back to the select's own trigger element
+when unset, then — *after* using it — sets `stickyOrigin.value` to the
+form field's wrapper (`MAT_FORM_FIELD_CONNECTED_ORIGIN`), or the trigger
+again if there's no form field. First open: `stickyOrigin` is `undefined`
+→ insertion point is the trigger → overlay host lands inside
+`<mat-select>`. Every open after that: `stickyOrigin` is the form-field
+wrapper → overlay host lands inside `<mat-form-field>`. Exactly matches the
+two Angular-confirmed shapes at exactly the same steps, without needing the
+timing bug itself.
 
-Panel **width** (`_getOverlayWidth`) is unaffected by any of this — it's
-always measured off the form-field wrapper (falling back to the select's
-own host) directly, matching upstream's own `_getOverlayWidth` reading the
-*current* `_preferredOverlayOrigin` synchronously inside `open()`, unaffected
-by the separate template-binding staleness that only affects the connected-
-overlay directive's own `origin` input.
+**This is INSERTION only, not position** — a correction to an earlier
+version of this port, which used the SAME sticky value for the position
+strategy's own origin (`setOrigin()`) too. Confirmed live, with exact pixel
+arithmetic, that this was wrong: on the real Angular app's first open, the
+panel's actual `top`/`left` match the form-field WRAPPER's rect exactly
+(`wrapper.bottom`/`wrapper.left`, to the pixel) — never the trigger's, even
+though the trigger is genuinely where the overlay host gets INSERTED that
+same open. `openSelectPanel()` now computes these as two independent
+locals: `positionOriginEl` (always `formFieldOriginRef?.value ?? triggerRef.value`
+— no stickiness, every open) feeds `setOrigin()`; `insertionOriginEl` (the
+sticky value above, unchanged) feeds `qwik-cdk/overlay`'s new
+`withPopoverInsertionOrigin()`, which exists specifically so these two can
+differ (see that method's own doc comment in
+`flexible-connected-position-strategy.ts`).
+
+Panel **width** (`_getOverlayWidth`) was already unaffected by any of this
+— it's always measured off the form-field wrapper (falling back to the
+select's own host) directly, matching upstream's own `_getOverlayWidth`
+reading the *current* `_preferredOverlayOrigin` synchronously inside
+`open()`, unaffected by the separate template-binding staleness that only
+affects the connected-overlay directive's own `origin` input.
+
+### Known, accepted test-fixture limitation: absolute panel position
+
+`mat-select` is the first parity-tested component whose overlay panel's
+absolutely-positioned `style` lives INSIDE the compared `[data-parity-root]`
+subtree (see `angular-parity.spec.ts`'s own "ONE ROOT ONLY" header note —
+every prior overlay component's panel lives in the separate, uncompared
+`.cdk-overlay-container` root). Since `FlexibleConnectedPositionStrategy`
+computes real, viewport-relative pixel coordinates, comparing that `style`
+attribute byte-for-byte only makes sense when both pages' trigger sits at
+the identical viewport position. The two dev-apps' surrounding page chrome
+differs (Angular's own shell wraps every scenario in a 64px toolbar + 32px
+content padding; this port's dev-app routes are bare pages), so this one
+`style` attribute currently shows a real, understood, and judged-benign diff
+(e.g. `top: 152px` vs `top: 64px` on `fill-basic`) — the position
+ALGORITHM itself is confirmed correct (both sides' `top + height` sum to
+the same real `720px` viewport height; only the *input* geometry differs).
+
+A route-group layout (`src/qwik-cdk-dev-app/src/routes/mat-select/layout.tsx`)
+reproducing Angular's exact chrome offset was tried and DELIBERATELY
+reverted: a wrapping `<div style="padding-left:…;padding-top:…">` around
+`<Slot/>`, scoped to only `/mat-select/*` routes, made the absolute position
+match exactly — but, confirmed live and repeatably (controlled A/B
+rebuilds, holding everything else fixed), made `MatSelect`'s panel
+INTERMITTENTLY fail to open at all: a genuine Qwik scheduler crash
+(`Cannot read properties of undefined (reading 'S')`, deep inside Qwik's
+own minified runtime — not a call this port's code makes directly), with
+no thrown error on other occasions but the panel simply never appearing.
+Root cause not pinned down (every select-specific line in this port was
+ruled out — the crash reproduced identically with every one of them
+reverted); a crash is a strictly worse failure mode than a documented,
+understood, non-blocking style diff, so this was not pursued further. A
+future attempt should start by bisecting the EXACT wrapper shape/values
+that trigger it (confirmed non-obvious: some padding values crashed
+reliably, others reliably did not, with no style tag involved either way)
+rather than assuming the most recently-tried shape is representative.
+
+## Known open issue: `multiple`/`custom-trigger`'s pseudo-checkbox attrs occasionally unsettled
+
+`multiple` and `custom-trigger` (the two scenarios with `multiple`, hence
+leading `<mat-pseudo-checkbox>`s on every option) can show a transient diff
+right after `open()` — `mat-pseudo-checkbox[N]: attr 'state'/'appearance'
+'undefined' != '…'` — i.e. the attribute is momentarily absent on the Qwik
+side. Confirmed NOT a missing attribute in `MatOption`/`MatPseudoCheckbox`'s
+own rendering: a direct, isolated `outerHTML` inspection (not part of the
+parity harness) shows the fully-settled element with the correct
+`state="unchecked" appearance="full"` moments later. This is a genuine
+timing gap between the panel's own `.mat-mdc-select-panel` host div
+attaching (all `waitForSelectPanel` currently waits for) and its
+`<mat-option>` children's own lazy render finishing — narrower than the
+form-field mount-timer gaps this port/the harness already waits out
+elsewhere. An attempt to close this gap by also waiting, inside
+`waitForSelectPanel`, for every in-panel `<mat-pseudo-checkbox>` to have a
+`state` attribute made things WORSE (the wait itself started timing out),
+so it was reverted rather than shipped half-working; not pursued further
+given time spent. A future fix should look at WHY `<mat-option>`'s own
+render lags the panel host's so much in this one case, not just add more
+waiting.
 
 ## Deviations from upstream
 
@@ -275,8 +359,12 @@ overlay directive's own `origin` input.
   + `OverlayHost`'s `applyPopoverInsertionPoint()` reparenting were defined
   (with unit tests) during the tooltip port, but tooltip itself always uses
   `'global'` — select is the first consumer to exercise the reparenting
-  path end-to-end in a real browser. No bugs found in it specifically; see
-  "First-open vs. later-open" above for how this port drives it.
+  path end-to-end in a real browser. See "First-open vs. later-open" above
+  for how this port drives it, and for the real bug this surfaced: `'inline'`
+  tied the insertion point to the SAME element as the position strategy's
+  own origin, but select genuinely needs these to differ on its first open.
+  Fixed by adding `withPopoverInsertionOrigin()` — purely additive, no other
+  current `'inline'`/`'global'` consumer is affected.
 - **`core/mat-form-field-control.ts`: `MAT_FORM_FIELD_CONNECTED_ORIGIN`,
   `MatFormFieldControlState.labelId`/`.color`,
   `MatFormFieldControlProps.disableAutomaticLabeling`.** See

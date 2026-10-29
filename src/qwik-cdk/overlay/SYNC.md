@@ -111,6 +111,19 @@ Ported (withPopoverLocation / getPopoverInsertionPoint, 6 tests — 2026-10-28, 
 - {type: 'parent', element} → returned unchanged
 - switching location back to 'global' clears a previously-set 'inline'
 
+**`withPopoverInsertionOrigin(element)` — new, not part of upstream CDK, added
+2026-10-29 (select port).** Upstream has no concept of this: a consumer there
+only ever has ONE origin (its own `_preferredOverlayOrigin`-equivalent) for
+both the position strategy's math AND the popover's insertion point.
+`qwik-material/select` genuinely needs these to differ on a select's very
+first open (confirmed live: the panel's real pixel position always matches
+the form-field wrapper's rect, even on the first open, while the panel's DOM
+insertion point is the trigger on that SAME first open — see
+`qwik-material/select/SYNC.md`'s "First-open vs. later-open" section for the
+full story). When set, `getPopoverInsertionPoint()` returns this element
+instead of `setOrigin()`'s own one, for `'inline'` location only; omitting it
+(every consumer but select, currently) keeps the exact prior behavior.
+
 Ported (geometry, mocked `getBoundingClientRect()` — 13 tests, 2026-10-28, tooltip port; see the
 spec file's header comment for why happy-dom's lack of real layout doesn't actually block this):
 - exact position bottom-left of origin, LTR
