@@ -191,11 +191,32 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const color = props.color === null ? undefined : (props.color ?? config.color ?? 'primary');
   const hintLabel = props.hintLabel ?? '';
 
-  const hasFloatingLabel = props.label != null;
-  const hasIconPrefix = props.iconPrefix != null;
-  const hasTextPrefix = props.textPrefix != null;
-  const hasIconSuffix = props.iconSuffix != null;
-  const hasTextSuffix = props.textSuffix != null;
+  // `props.control`/`.label`/`.iconPrefix`/`.textPrefix`/`.iconSuffix`/`.textSuffix`/`.hintStart`/
+  // `.hintEnd`/`.infixContent` are EVERY SLOT PROP that renders a `JSXOutput` value directly —
+  // and every one of them is snapshotted ONCE, at this component's own first render, into a
+  // dedicated `useSignal`. The frozen reference (`xSnapshot.value`), never `props.x` itself, is
+  // what both the `hasXxx` presence checks AND the actual render further down use from this
+  // point on — see `controlSnapshot`'s own doc comment immediately below for the full root-cause
+  // writeup (originally diagnosed for `control` alone; confirmed via the compiled dist — see
+  // `SYNC.md` deviation 12 — to apply identically to every other `JSXOutput`-valued prop rendered
+  // via a direct `{props.x}` child expression in this file's own JSX, which the Qwik optimizer
+  // compiles into the exact same unsafe `_fnSignal` binding regardless of WHICH prop it is).
+  // `errors` is the one exception needing no such treatment — see that prop's own render site
+  // below for why its existing `toArray()`/`.filter()` handling already sidesteps this.
+  const labelSnapshot = useSignal<JSXOutput | undefined>(() => props.label);
+  const iconPrefixSnapshot = useSignal<JSXOutput | undefined>(() => props.iconPrefix);
+  const textPrefixSnapshot = useSignal<JSXOutput | undefined>(() => props.textPrefix);
+  const iconSuffixSnapshot = useSignal<JSXOutput | undefined>(() => props.iconSuffix);
+  const textSuffixSnapshot = useSignal<JSXOutput | undefined>(() => props.textSuffix);
+  const hintStartSnapshot = useSignal<JSXOutput | undefined>(() => props.hintStart);
+  const hintEndSnapshot = useSignal<JSXOutput | undefined>(() => props.hintEnd);
+  const infixContentSnapshot = useSignal<JSXOutput | undefined>(() => props.infixContent);
+
+  const hasFloatingLabel = labelSnapshot.value != null;
+  const hasIconPrefix = iconPrefixSnapshot.value != null;
+  const hasTextPrefix = textPrefixSnapshot.value != null;
+  const hasIconSuffix = iconSuffixSnapshot.value != null;
+  const hasTextSuffix = textSuffixSnapshot.value != null;
 
   // `props.control` is snapshotted ONCE, at this component's own first render, and that SAME
   // frozen reference is used both for the static `readControlProps()` read below AND for the
@@ -388,11 +409,11 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     }
     return errorIdCache.value[i];
   });
-  const hintStartId = props.hintStart
-    ? (explicitId(props.hintStart) ?? generatedHintStartId.value)
+  const hintStartId = hintStartSnapshot.value
+    ? (explicitId(hintStartSnapshot.value) ?? generatedHintStartId.value)
     : undefined;
-  const hintEndId = props.hintEnd
-    ? (explicitId(props.hintEnd) ?? generatedHintEndId.value)
+  const hintEndId = hintEndSnapshot.value
+    ? (explicitId(hintEndSnapshot.value) ?? generatedHintEndId.value)
     : undefined;
 
   // Upstream `_syncDescribedByIds`.
@@ -649,7 +670,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
       }
       ref={labelRef}
     >
-      {props.label}
+      {labelSnapshot.value}
       {!hideRequiredMarker && required && (
         <span
           aria-hidden="true"
@@ -694,17 +715,25 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
             </div>
           )}
 
-          {hasIconPrefix && <div class="mat-mdc-form-field-icon-prefix">{props.iconPrefix}</div>}
-          {hasTextPrefix && <div class="mat-mdc-form-field-text-prefix">{props.textPrefix}</div>}
+          {hasIconPrefix && (
+            <div class="mat-mdc-form-field-icon-prefix">{iconPrefixSnapshot.value}</div>
+          )}
+          {hasTextPrefix && (
+            <div class="mat-mdc-form-field-text-prefix">{textPrefixSnapshot.value}</div>
+          )}
 
           <div class="mat-mdc-form-field-infix">
             {!hasOutline && labelContent}
             {controlSnapshot.value}
-            {props.infixContent}
+            {infixContentSnapshot.value}
           </div>
 
-          {hasTextSuffix && <div class="mat-mdc-form-field-text-suffix">{props.textSuffix}</div>}
-          {hasIconSuffix && <div class="mat-mdc-form-field-icon-suffix">{props.iconSuffix}</div>}
+          {hasTextSuffix && (
+            <div class="mat-mdc-form-field-text-suffix">{textSuffixSnapshot.value}</div>
+          )}
+          {hasIconSuffix && (
+            <div class="mat-mdc-form-field-icon-suffix">{iconSuffixSnapshot.value}</div>
+          )}
         </div>
 
         {!hasOutline && (
@@ -742,11 +771,13 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
                 {hintLabel}
               </mat-hint>
             )}
-            {props.hintStart && (
-              <MatIdScope id={hintStartId as string}>{props.hintStart}</MatIdScope>
+            {hintStartSnapshot.value && (
+              <MatIdScope id={hintStartId as string}>{hintStartSnapshot.value}</MatIdScope>
             )}
             <div class="mat-mdc-form-field-hint-spacer" />
-            {props.hintEnd && <MatIdScope id={hintEndId as string}>{props.hintEnd}</MatIdScope>}
+            {hintEndSnapshot.value && (
+              <MatIdScope id={hintEndId as string}>{hintEndSnapshot.value}</MatIdScope>
+            )}
           </div>
         )}
       </div>
