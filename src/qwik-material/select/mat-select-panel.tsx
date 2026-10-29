@@ -31,6 +31,9 @@ export interface MatSelectPanelProps {
   multiple: boolean;
   value: Signal<unknown>;
   activeIndex: Signal<number>;
+  /** See `SelectRuntimeSignals.activeOptionHidden`'s own doc comment
+   *  (select-runtime.ts). */
+  activeOptionHidden: Signal<boolean>;
   exiting: Signal<boolean>;
   hideSingleSelectionIndicator: boolean;
   panelClass: readonly string[];
@@ -70,7 +73,7 @@ export const MatSelectPanel = component$<MatSelectPanelProps>(props => {
       value={option.value}
       disabled={option.disabled}
       selected={isSelected(props.value.value, option, props.multiple)}
-      active={props.activeIndex.value === option.index}
+      active={!props.activeOptionHidden.value && props.activeIndex.value === option.index}
       multiple={props.multiple}
       hideSingleSelectionIndicator={props.hideSingleSelectionIndicator}
       groupInertLabel={groupInertLabel}

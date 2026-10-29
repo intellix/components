@@ -21,6 +21,30 @@ export interface OverlayVisualCallbacks {
    * call `addPanelClass` post-mount.
    */
   setPanelClasses(classes: readonly string[]): void;
+  /**
+   * ONLY called for a reparented host (see `_onReparented()` below) — never
+   * for the common 'global' case, to avoid any behavior change there (see
+   * that method's own doc comment for why this must stay opt-in).
+   *
+   * `OverlayContainerOutlet`'s own `ctx.entries.value` array-removal (the
+   * normal way a detached overlay's `<OverlayHost>` gets torn down) only
+   * knows how to find/remove a host element at the DOM position it
+   * ORIGINALLY rendered it into. A popover using a non-`'global'` insertion
+   * point (e.g. `mat-select`'s inline overlay — see
+   * `position/popover-insertion.ts`) gets its host physically relocated by
+   * `OverlayHost`'s own `useVisibleTask$` right after mount, so by the time
+   * the array shrinks, the host is no longer where that list-keyed removal
+   * looks for it: confirmed live, the relocated host (and everything inside
+   * it) is orphaned in the DOM forever — invisible to `ctx.entries` but
+   * still fully attached to `document` — see `qwik-material/select/SYNC.md`.
+   * `detach()` calls this (instead of just removing the registry entry) so
+   * `OverlayHost` can unmount ITS OWN previously-rendered output via a
+   * normal conditional-render (`detached.value` flips its return value from
+   * the host `<div>` to `null`), which Qwik's per-component diff handles via
+   * a direct node reference, unaffected by where that node currently lives —
+   * unlike the parent's list-keyed removal.
+   */
+  setDetached(value: boolean): void;
 }
 
 /**
@@ -50,6 +74,25 @@ export interface OverlayRef {
    */
   _onAttached(host: HTMLElement, pane: HTMLElement, visuals?: OverlayVisualCallbacks): void;
   _onDetached(): void;
+  /**
+   * Called by `OverlayHost` right after `applyPopoverInsertionPoint`
+   * physically relocates the host element out of the declarative
+   * `.cdk-overlay-container` tree it was originally rendered into — i.e.
+   * exactly when `getPopoverInsertionPoint()` returns a real, non-null
+   * insertion point (currently only `mat-select`'s inline overlay; see
+   * `setDetached`'s doc comment for the full "why"). Flips how `detach()`
+   * tears this overlay down: a reparented host can't rely on the registry's
+   * array-shrink to find/remove it, so `detach()` goes through
+   * `visuals.setDetached()` instead (confirmed live: calling BOTH in the
+   * same synchronous tick races Qwik's own render scheduling — the array
+   * removal observably wins, leaving the `detached` signal write with
+   * nothing left subscribed to react to it, which is why the registry
+   * removal is deferred one tick past it instead of run eagerly). Never
+   * called for a 'global' overlay — `detach()`'s existing synchronous
+   * registry-removal path (and the unit tests pinning its synchronous
+   * contract) is completely unaffected.
+   */
+  _onReparented(): void;
   /** Removes the overlay from the registry without disposing strategies. */
   detach(): void;
   /** Detaches AND disposes any owned position strategy. */
@@ -87,6 +130,7 @@ export function createOverlayRef(deps: {
   let hostEl: HTMLElement | null = null;
   let paneEl: HTMLElement | null = null;
   let visuals: OverlayVisualCallbacks | null = null;
+  let reparented = false;
 
   const ref: OverlayRef = {
     get config() {
@@ -135,10 +179,23 @@ export function createOverlayRef(deps: {
       paneEl = null;
       visuals = null;
     },
+    _onReparented() {
+      reparented = true;
+    },
     detach() {
       ref.detachBackdrop();
       deps.entry.state.detached.value = true;
-      deps.registry.remove(deps.entry.id);
+      if (reparented) {
+        // See `_onReparented()`'s doc comment: the array-shrink below can't
+        // find this host to remove it once it's been physically relocated,
+        // so tell `OverlayHost` to unmount itself directly instead — and
+        // defer the registry removal one tick so it doesn't race (and win
+        // against) that re-render.
+        visuals?.setDetached(true);
+        setTimeout(() => deps.registry.remove(deps.entry.id), 0);
+      } else {
+        deps.registry.remove(deps.entry.id);
+      }
     },
     dispose() {
       ref.detach();

@@ -97,6 +97,37 @@ interface KeyManagerItem extends ListKeyManagerOption {
 export interface SelectRuntimeSignals {
   panelOpen: Signal<boolean>;
   activeIndex: Signal<number>;
+  /**
+   * Mirrors a real, independently-observable upstream quirk: `MatOption`'s
+   * `mat-mdc-option-active` class is driven by the option's OWN `_active`
+   * field (set by `ActiveDescendantKeyManager.setActiveItem()`'s
+   * `setActiveStyles()`/`setInactiveStyles()` calls), which is NOT the same
+   * state as `aria-activedescendant` (driven by the key manager's own
+   * `activeItemIndex` — `activeIndex` above). For a `multiple` select,
+   * confirmed live: clicking an option calls `_onSelect()` →
+   * `_keyManager.setActiveItem(option)` (sets BOTH `activeItemIndex` AND,
+   * momentarily, that option's `_active`) → `this.focus()`. But a `multiple`
+   * select's bound `[value]`/`[(value)]` template binding is ALWAYS
+   * re-evaluated by Angular's next change-detection pass (which runs
+   * synchronously once the click handler returns), and `_assignValue`
+   * unconditionally re-runs `_setSelectionByValue` for "`multiple` +
+   * `Array.isArray(newValue)`" regardless of reference equality ("always
+   * re-assign an array, because it might have been mutated" — see
+   * `select.ts`'s own comment) — which calls `this.options.forEach(option =>
+   * option.setInactiveStyles())`, wiping EVERY option's `_active` class, and
+   * (unlike the non-multiple branch) never restores one. Net effect,
+   * confirmed live: after ANY interactive multi-select toggle, NO option has
+   * `mat-mdc-option-active`, even though `aria-activedescendant` still
+   * names the just-clicked option. `activeIndex` alone can't reproduce
+   * this (it drives `aria-activedescendant`, which must still point at the
+   * clicked option) — this flag independently suppresses just the VISUAL
+   * class. Cleared back to `false` by `buildKeyManager`'s own `onChange`
+   * (any legitimate open/nav/typeahead re-highlight un-suppresses it, same
+   * as `ActiveDescendantKeyManager.setActiveItem()`'s override unconditionally
+   * calling `setActiveStyles()` the next time it runs); set to `true` only
+   * by `selectOption`'s own `multiple` + `isUserInput` branch.
+   */
+  activeOptionHidden: Signal<boolean>;
   exiting: Signal<boolean>;
   overlayRef: Signal<NoSerialize<OverlayRef> | undefined>;
   /** "Sticky" preferred overlay origin — see select/SYNC.md's "overlay
@@ -206,7 +237,35 @@ function buildKeyManager(
 
   manager.onChange(index => {
     signals.activeIndex.value = index;
-    if (signals.panelOpen.value) scrollOptionIntoView(index, flat, signals);
+    // Any legitimate active-item change un-suppresses the visual active
+    // class — see `activeOptionHidden`'s own doc comment.
+    signals.activeOptionHidden.value = false;
+    if (signals.panelOpen.value) {
+      scrollOptionIntoView(index, flat, signals);
+    } else if (!cfg.multiple) {
+      // Mirrors upstream `_initKeyManager`'s own `_keyManager.change.subscribe`
+      // (NOT `_handleClosedKeydown`'s own synchronous check — see
+      // `handleClosedKeydown`'s doc comment for why that distinction matters):
+      // this is the ONE place guaranteed to fire whenever the active item
+      // actually changes while the select is closed, whether synchronously
+      // (arrow/Home/End — `onKeydown`'s own switch cases call `setActiveItem`
+      // inline) or 200ms later (a letter key's debounced typeahead match —
+      // see `typeahead.ts`'s `runSearch`/`setTimeout`). Confirmed live: a
+      // version of this port that instead compared `manager.activeItem`
+      // immediately before/after `handleClosedKeydown`'s own
+      // `manager.onKeydown(event)` call silently never selected anything for
+      // a typeahead letter, since the debounce means that comparison always
+      // ran before the match had actually landed.
+      const item = flat[index];
+      if (item) {
+        selectOption(item, true, flat, cfg, signals);
+        if (isBrowser) {
+          const announcer = signals.liveAnnouncer.value ?? noSerialize(createLiveAnnouncer());
+          signals.liveAnnouncer.value = announcer;
+          announcer?.announce(item.label, 'polite', 10000);
+        }
+      }
+    }
   });
   manager.onTabOut(() => {
     if (signals.panelOpen.value) {
@@ -354,6 +413,7 @@ export function openSelectPanel(
       multiple: cfg.multiple,
       value: signals.value,
       activeIndex: signals.activeIndex,
+      activeOptionHidden: signals.activeOptionHidden,
       exiting: signals.exiting,
       hideSingleSelectionIndicator: cfg.hideSingleSelectionIndicator,
       panelClass: cfg.panelClass,
@@ -482,6 +542,19 @@ function selectOption(
     signals.value.value = next;
     if (isUserInput) {
       signals.keyManager.value?.setActiveItem(option.index);
+      // Mirrors `_onSelect()`'s own `this.focus()` call (always run for a
+      // `multiple` select's user-driven toggle, unconditionally — contrast
+      // with the single-select branch below, which only focuses as part of
+      // closing). Confirmed live: a multi-select toggle leaves the FORM
+      // FIELD focused (`mat-focused`/`mdc-text-field--focused`/
+      // `mdc-line-ripple--active`), not just the panel open.
+      signals.hostRef.value?.focus();
+      // Mirrors the circular `[value]`/`[(value)]` re-assignment's
+      // `setInactiveStyles()` sweep — see `activeOptionHidden`'s own doc
+      // comment for the full "why". Set AFTER `setActiveItem` above (whose
+      // own `onChange` firing just un-suppressed it) so the final state is
+      // "suppressed", matching upstream's actual DOM.
+      signals.activeOptionHidden.value = true;
     }
     cfg.onValueChange$?.(next);
     return;
@@ -529,17 +602,14 @@ export function handleClosedKeydown(
     event.preventDefault();
     openSelectPanel(flat, tree, ctx, cfg, signals);
   } else if (!cfg.multiple) {
-    const previouslySelected = manager.activeItem;
+    // Mirrors upstream `_handleClosedKeydown`'s own fallthrough branch:
+    // `onKeydown` alone drives navigation here — the actual select (+ live
+    // announce) happens uniformly in `buildKeyManager`'s own `onChange`
+    // handler above, which (unlike a check made directly against
+    // `manager.activeItem` right after this very call) also correctly
+    // fires for a letter key's 200ms-debounced typeahead match. See that
+    // handler's own doc comment.
     manager.onKeydown(event);
-    const selected = manager.activeItem;
-    if (selected && selected !== previouslySelected) {
-      selectOption(selected.option, true, flat, cfg, signals);
-      if (isBrowser) {
-        const announcer = signals.liveAnnouncer.value ?? noSerialize(createLiveAnnouncer());
-        signals.liveAnnouncer.value = announcer;
-        announcer?.announce(selected.option.label, 'polite', 10000);
-      }
-    }
   }
 }
 

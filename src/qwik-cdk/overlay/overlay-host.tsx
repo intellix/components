@@ -18,6 +18,12 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
   const backdropShowing = useSignal(entry.state.backdropShowing.value);
   const backdropDetached = useSignal(entry.state.backdropDetached.value);
   const panelClasses = useSignal(entry.state.panelClasses.value);
+  // See `OverlayVisualCallbacks.setDetached`'s doc comment (overlay-ref.ts):
+  // this component unmounts its OWN previously-rendered host via a normal
+  // conditional return (not the parent's list-keyed removal), which is the
+  // only teardown path that still works once the host has been physically
+  // relocated by `applyPopoverInsertionPoint` below.
+  const detached = useSignal(entry.state.detached.value);
 
   // Drive the OverlayRef lifecycle (host/pane attach, strategy apply, cleanup)
   // directly from this component$'s visible-task. We deliberately don't route
@@ -33,6 +39,7 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
       setBackdropShowing: v => (backdropShowing.value = v),
       setBackdropDetached: v => (backdropDetached.value = v),
       setPanelClasses: v => (panelClasses.value = v),
+      setDetached: v => (detached.value = v),
     });
 
     // Mirrors upstream `OverlayRef._attachHost()`: for a popover overlay
@@ -44,13 +51,20 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
     // overwhelmingly common case) whenever the strategy doesn't implement
     // `getPopoverInsertionPoint` (e.g. `GlobalPositionStrategy`) or
     // resolves to `'global'`.
-    applyPopoverInsertionPoint(
-      hostRef.value,
-      resolvePopoverInsertionPoint(entry.usePopover, entry.config.positionStrategy),
+    const insertionPoint = resolvePopoverInsertionPoint(
+      entry.usePopover,
+      entry.config.positionStrategy,
     );
+    applyPopoverInsertionPoint(hostRef.value, insertionPoint);
+    // Tell the ref it needs the `setDetached` teardown path — see
+    // `OverlayRef._onReparented()`'s doc comment.
+    if (insertionPoint) ref._onReparented();
 
     cleanup(() => ref._onDetached());
   });
+
+  // See the `detached` signal's own doc comment above.
+  if (detached.value) return null;
 
   const Comp = entry.Component;
   return (
