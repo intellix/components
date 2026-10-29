@@ -1,11 +1,13 @@
 import {component$, useSignal} from '@builder.io/qwik';
-import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
+import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
 import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
 
 // Mirrors src/dev-app/qwik-parity/autocomplete.ts's
 // AutocompleteHideSingleSelectionIndicator. Deliberately the closest
 // possible pairing with basic-filter so the ONE difference
-// (`hideSingleSelectionIndicator`) is isolated.
+// (`hideSingleSelectionIndicator`) is isolated. See basic-filter's own
+// comment for why `formBound`/`touched`/`dirty` are wired through
+// `useMatFormControl()`.
 const FRUITS = ['Apple', 'Banana', 'Cherry', 'Date'];
 
 function filterFruits(val: string): string[] {
@@ -14,6 +16,7 @@ function filterFruits(val: string): string[] {
 }
 
 export default component$(() => {
+  const fc = useMatFormControl();
   const value = useSignal('');
   const filteredFruits = useSignal<string[]>(FRUITS.slice());
 
@@ -23,11 +26,22 @@ export default component$(() => {
         <MatFormField
           style="width: 300px"
           label={<MatLabel>Fruit</MatLabel>}
+          touched={fc.touched}
+          dirty={fc.dirty}
+          invalid={false}
           control={
             <MatAutocomplete
               hideSingleSelectionIndicator
+              formBound
+              touched={fc.touched}
+              dirty={fc.dirty}
+              invalid={false}
               value={value.value}
-              onValueChange$={v => (value.value = v as string)}
+              onValueChange$={v => {
+                fc.markAsDirty$();
+                value.value = v as string;
+              }}
+              onTouched$={fc.markAsTouched$}
               options={filteredFruits.value.map(fruit => ({value: fruit, label: fruit}))}
               onInput$={(_, el) => (filteredFruits.value = filterFruits(el.value))}
               onFocus$={(_, el) => (filteredFruits.value = filterFruits(el.value))}

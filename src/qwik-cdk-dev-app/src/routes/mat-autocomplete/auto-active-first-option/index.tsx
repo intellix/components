@@ -1,5 +1,5 @@
 import {component$, useSignal} from '@builder.io/qwik';
-import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
+import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
 import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
 
 // Mirrors src/dev-app/qwik-parity/autocomplete.ts's
@@ -12,7 +12,10 @@ function filterOptions(val: string): string[] {
   return OPTIONS.filter(option => option.toLowerCase().includes(filterValue));
 }
 
+// See basic-filter's own comment for why `formBound`/`touched`/`dirty` are
+// wired through `useMatFormControl()`.
 export default component$(() => {
+  const fc = useMatFormControl();
   const value = useSignal('');
   const filteredOptions = useSignal<string[]>(OPTIONS.slice());
 
@@ -22,11 +25,22 @@ export default component$(() => {
         <MatFormField
           style="width: 300px"
           label={<MatLabel>Number</MatLabel>}
+          touched={fc.touched}
+          dirty={fc.dirty}
+          invalid={false}
           control={
             <MatAutocomplete
               autoActiveFirstOption
+              formBound
+              touched={fc.touched}
+              dirty={fc.dirty}
+              invalid={false}
               value={value.value}
-              onValueChange$={v => (value.value = v as string)}
+              onValueChange$={v => {
+                fc.markAsDirty$();
+                value.value = v as string;
+              }}
+              onTouched$={fc.markAsTouched$}
               options={filteredOptions.value.map(option => ({value: option, label: option}))}
               onInput$={(_, el) => (filteredOptions.value = filterOptions(el.value))}
               onFocus$={(_, el) => (filteredOptions.value = filterOptions(el.value))}
