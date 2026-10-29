@@ -58,6 +58,8 @@ import type {MatChipsConfig} from '../chips/tokens';
 import {MAT_CHIPS_CONFIG} from '../chips/tokens';
 import type {MatTooltipDefaultOptions} from '../tooltip/mat-tooltip-tokens';
 import {MAT_TOOLTIP_DEFAULT_OPTIONS} from '../tooltip/mat-tooltip-tokens';
+import type {MatSelectConfig} from '../select/select-config';
+import {MAT_SELECT_CONFIG} from '../select/select-config';
 import type {MatMenuDefaultOptions} from '../menu/mat-menu-tokens';
 import {MAT_MENU_DEFAULT_OPTIONS} from '../menu/mat-menu-tokens';
 
@@ -120,6 +122,8 @@ export interface QwikMaterialProviderProps {
   matChipsConfig?: MatChipsConfig;
   /** Defaults merged into every `<MatTooltip>`'s resolved config in this subtree. */
   matTooltipDefaults?: MatTooltipDefaultOptions;
+  /** Defaults applied to every MatSelect in this subtree. */
+  matSelectConfig?: MatSelectConfig;
   /** Defaults merged into every `createMatMenu()`'s resolved config in this subtree. */
   matMenuDefaults?: MatMenuDefaultOptions;
 }
@@ -255,6 +259,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // mat-tooltip.tsx's `resolveConfig`; providing an empty object here is
   // equivalent to accepting all of them.
   useContextProvider(MAT_TOOLTIP_DEFAULT_OPTIONS, props.matTooltipDefaults ?? {});
+  // MatSelectConfig is a plain object with primitive fields — no
+  // noSerialize needed. Selects outside a provider get the hardcoded
+  // defaults declared in mat-select.tsx's own prop resolution; providing an
+  // empty object here is equivalent to accepting all of them.
+  useContextProvider(MAT_SELECT_CONFIG, props.matSelectConfig ?? {});
   // MatMenuDefaultOptions is a plain object with primitive fields — no
   // noSerialize needed. Menus outside a provider get the hardcoded
   // MAT_MENU_DEFAULT_OPTIONS_FACTORY fallbacks declared in

@@ -463,6 +463,41 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Select</h2>
+        <ul>
+          <li>
+            <a href="/mat-select/fill-basic/">fill-basic</a>
+          </li>
+          <li>
+            <a href="/mat-select/outline-basic/">outline-basic</a>
+          </li>
+          <li>
+            <a href="/mat-select/preselected-value/">preselected-value</a>
+          </li>
+          <li>
+            <a href="/mat-select/placeholder/">placeholder</a>
+          </li>
+          <li>
+            <a href="/mat-select/multiple/">multiple</a>
+          </li>
+          <li>
+            <a href="/mat-select/optgroups/">optgroups</a>
+          </li>
+          <li>
+            <a href="/mat-select/disabled/">disabled</a>
+          </li>
+          <li>
+            <a href="/mat-select/required-error-state/">required-error-state</a>
+          </li>
+          <li>
+            <a href="/mat-select/panel-class/">panel-class</a>
+          </li>
+          <li>
+            <a href="/mat-select/custom-trigger/">custom-trigger</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });

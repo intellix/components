@@ -1,4 +1,10 @@
-import {createContextId, type JSXOutput} from '@builder.io/qwik';
+import {createContextId, type JSXOutput, type Signal} from '@builder.io/qwik';
+
+/** Mirrors `form-field/form-field-config.ts`'s `MatFormFieldColor` — redeclared
+ *  here (rather than imported) so `core/` (the lower-level package) never
+ *  depends upward on `form-field/` (a higher-level entry point); both types
+ *  must be kept in sync by hand (narrow enough that this is unlikely to drift). */
+type MatFormFieldColor = 'primary' | 'accent' | 'warn';
 
 /**
  * The Qwik port's equivalent of upstream's `MatFormFieldControl<T>` abstract
@@ -128,10 +134,30 @@ export interface MatFormFieldControlProps {
   id?: string;
   /**
    * Class suffix for `mat-mdc-form-field-type-<controlType>` on the host.
-   * `MatInput` always passes `'mat-input'`.
+   * Read directly off the `control` prop's STATIC JSX descriptor (see this
+   * module's big doc comment) — there is no mechanism for a control
+   * component to inject this into its own descriptor after the fact, so
+   * whichever value a consumer's `<MatInput>`/`<MatSelect>` JSX literally
+   * carries (or doesn't) is final. `MatInput` can omit it entirely, because
+   * `'mat-input'` is `MatFormField`'s own hardcoded fallback when this is
+   * absent (`controlProps?.controlType ?? 'mat-input'`) — but any OTHER
+   * control type (`MatSelect`'s `controlType="mat-select"`) MUST pass it
+   * explicitly on every usage, or it silently defaults to the 'mat-input'
+   * fallback (wrong id prefix, wrong `mat-mdc-form-field-type-*` class).
+   * See `qwik-material/select`'s `MatSelect` doc comment and SYNC.md.
    */
   controlType?: string;
   'aria-describedby'?: string;
+  /**
+   * Mirrors upstream `MatFormFieldControl.disableAutomaticLabeling` —
+   * `true` for `MatSelect` only (set "to avoid issues like #27241" — see
+   * `select.ts`). When true, `MatFormField`'s floating `<label>` never gets
+   * a `for` attribute pointing at this control (confirmed live: the label
+   * still floats/behaves the same visually; only the `for`/id-association
+   * is skipped). Every other control (`MatInput`) omits this, which is the
+   * same as `false`.
+   */
+  disableAutomaticLabeling?: boolean;
   /**
    * Whether this control is bound to a reactive-forms-like primitive
    * (`useMatFormControl()` or equivalent) — mirrors upstream's
@@ -175,6 +201,25 @@ export interface MatFormFieldControlState {
    * no such issue (confirmed by the same repro once switched).
    */
   assignedId: string;
+  /**
+   * The id of `MatFormField`'s OWN floating `<label>` element
+   * (`mat-mdc-form-field-label-N`), when it has one — mirrors upstream
+   * `MatFormField.getLabelId()`. `MatSelect` reads this (NOT `assignedId`)
+   * to build its own `aria-labelledby` (`_getTriggerAriaLabelledby`/
+   * `_getPanelAriaLabelledby`), since `disableAutomaticLabeling` means the
+   * label's `for` never points the other way — see
+   * `MatFormFieldControlProps.disableAutomaticLabeling`'s doc comment.
+   * `undefined` when there's no floating label at all (e.g. the
+   * `placeholder` select scenario).
+   */
+  labelId: string | undefined;
+  /** The form field's resolved theme color (`'primary'`/`'accent'`/`'warn'`)
+   *  — mirrors `MatSelect`'s panel-class bindings
+   *  (`[class.mat-primary]="_parentFormField?.color === 'primary'"`, etc.,
+   *  `mat-undefined` when there's no form field at all). Static — written
+   *  once, never changes after mount (no scenario changes a form field's
+   *  color dynamically). */
+  color: MatFormFieldColor;
   /** Mirrors upstream's `_syncDescribedByIds()` result — the control
    *  renders this directly as its `aria-describedby` (already merged with
    *  the control's own explicit `aria-describedby`, if any, by
@@ -203,6 +248,26 @@ export interface MatFormFieldControlState {
  */
 export const MAT_FORM_FIELD_CONTROL_STATE = createContextId<MatFormFieldControlState>(
   'qwik-material/form-field-control-state',
+);
+
+/**
+ * Context id a `<MatFormField>` instance provides, carrying a live
+ * `Signal` ref to its own rendered `.mat-mdc-text-field-wrapper` div —
+ * the Qwik-port equivalent of upstream `MatFormField.getConnectedOverlayOrigin()`
+ * (`src/material/form-field/form-field.ts`), which returns
+ * `this._textField` (an `ElementRef` to that same wrapper).
+ *
+ * First consumer: `qwik-material/select`'s `MatSelect`, which uses the
+ * wrapper as the "preferred" connected-overlay origin for its panel once a
+ * `<MatFormField>` ancestor exists — see `mat-select.tsx`'s own doc comment
+ * and `select/SYNC.md`'s "overlay origin / first-open vs. later-open" write-up
+ * for why a plain ref signal (read once per `open()` call, never subscribed
+ * to for rendering) is all that's needed here — no reactivity subtleties,
+ * unlike {@link MAT_FORM_FIELD_CONTROL_STATE}'s fields. A future
+ * autocomplete/datepicker/chips port can read the same context the same way.
+ */
+export const MAT_FORM_FIELD_CONNECTED_ORIGIN = createContextId<Signal<Element | undefined>>(
+  'qwik-material/form-field-connected-origin',
 );
 
 /**

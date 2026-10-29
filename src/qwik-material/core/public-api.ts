@@ -11,8 +11,12 @@ export {
 
 export {MatInternalFormField, type MatInternalFormFieldProps} from './mat-internal-form-field';
 
+export {MatOption, type MatOptionProps} from './mat-option';
+export {MatOptgroup, type MatOptgroupProps} from './mat-optgroup';
+
 export {
   MAT_FORM_FIELD_CONTROL_STATE,
+  MAT_FORM_FIELD_CONNECTED_ORIGIN,
   readControlProps,
   type MatFormFieldControlProps,
   type MatFormFieldControlState,

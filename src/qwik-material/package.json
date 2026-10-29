@@ -174,6 +174,11 @@
       "types": "./dist/slider/index.d.ts",
       "import": "./dist/slider/index.js"
     },
+    "./select": {
+      "qwik": "./select/index.ts",
+      "types": "./dist/select/index.d.ts",
+      "import": "./dist/select/index.js"
+    },
     "./menu": {
       "qwik": "./menu/index.ts",
       "types": "./dist/menu/index.d.ts",
@@ -216,6 +221,7 @@
     "./chips-prebuilt.css": "./dist/chips-prebuilt.css",
     "./tooltip-prebuilt.css": "./dist/tooltip-prebuilt.css",
     "./slider-prebuilt.css": "./dist/slider-prebuilt.css",
+    "./select-prebuilt.css": "./dist/select-prebuilt.css",
     "./menu-prebuilt.css": "./dist/menu-prebuilt.css",
     "./table-prebuilt.css": "./dist/table-prebuilt.css",
     "./tree-prebuilt.css": "./dist/tree-prebuilt.css",

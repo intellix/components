@@ -30,6 +30,7 @@ import '@angular-community/qwik-material/chips-prebuilt.css';
 import '@angular-community/qwik-material/tooltip-prebuilt.css';
 import '@angular-community/qwik-material/slider-prebuilt.css';
 import '@angular-community/qwik-material/menu-prebuilt.css';
+import '@angular-community/qwik-material/select-prebuilt.css';
 import '@angular-community/qwik-material/table-prebuilt.css';
 import '@angular-community/qwik-material/tree-prebuilt.css';
 
