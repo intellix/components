@@ -339,6 +339,21 @@ but is a trap for anything that needs to change later.
    OTHER, genuinely-live half of this contract — top-level `touched`/`dirty`/`invalid` — still
    passes).
 
+10. **`hostClasses`' `ng-valid`/`ng-invalid` pair is now additionally gated by `!disabled`** —
+    `formBound && !disabled && (invalid ? 'ng-invalid' : 'ng-valid')`, where it was previously
+    `formBound && (invalid ? 'ng-invalid' : 'ng-valid')` (always exactly one of the two whenever
+    `formBound`). Mirrors upstream's two INDEPENDENT host bindings, `[class.ng-valid]:
+    '_shouldForward("valid")'` / `[class.ng-invalid]: '_shouldForward("invalid")'`, each reading
+    `AbstractControl.valid`/`.invalid` — both of which report `false` while the control's status
+    is `DISABLED` (`AbstractControl`'s own getters: `valid`/`invalid` are literal `status ===
+    'VALID'`/`'INVALID'` checks, neither of which holds for `'DISABLED'`). This port's single
+    ternary couldn't represent "neither" until this fix. Found via `qwik-material/timepicker`'s
+    own `disabled` parity scenario — the first control port to combine `formBound` with
+    `disabled` (every prior `formBound` scenario, e.g. select's/input's own `error-state`/
+    `required-error-state`, is never also disabled) — confirmed live: Angular's `<mat-form-field>`
+    carries `ng-pristine ng-untouched` but NEITHER `ng-valid` nor `ng-invalid` while disabled.
+    No-op for every existing non-disabled-`formBound` scenario (`!disabled` is `true` there).
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/form-field/ 2>/dev/null` → 0

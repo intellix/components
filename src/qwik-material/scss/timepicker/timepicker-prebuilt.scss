@@ -1,0 +1,7 @@
+// Timepicker prebuilt CSS. timepicker.scss's token-utils.slot(...) calls already carry real
+// fallback values baked in from m3-timepicker.get-tokens() — a byte-for-byte synced upstream
+// file that resolves the default M3 system theme (core/tokens/m3/_theme.scss's $sys-theme) to
+// concrete values at Sass compile time. Same "no :root overrides needed" situation as
+// select-prebuilt.scss's/list-prebuilt.scss's majority case — every --mat-timepicker-* variable
+// already has a real fallback, so there is nothing dangling to patch here.
+@use './timepicker';

@@ -522,7 +522,14 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     color === 'warn' && 'mat-warn',
     formBound && (touched ? 'ng-touched' : 'ng-untouched'),
     formBound && (dirty ? 'ng-dirty' : 'ng-pristine'),
-    formBound && (invalid ? 'ng-invalid' : 'ng-valid'),
+    // Mirrors `AbstractControl.valid`/`.invalid` BOTH reporting `false` while the control's
+    // status is `DISABLED` (`_shouldForward('valid')`/`_shouldForward('invalid')` are two
+    // INDEPENDENT host bindings upstream, unlike this port's single ternary — disabled is the
+    // one case where neither ever applies). Confirmed live via `qwik-material/timepicker`'s own
+    // `disabled` parity scenario (the first control port to combine `formBound` + `disabled`):
+    // Angular's `<mat-form-field>` carries `ng-pristine ng-untouched` but NEITHER `ng-valid` nor
+    // `ng-invalid` while disabled.
+    formBound && !disabled && (invalid ? 'ng-invalid' : 'ng-valid'),
     animationsEnabled.value && 'mat-form-field-animations-enabled',
     controlState.focused && 'mat-focused',
     props.class,
