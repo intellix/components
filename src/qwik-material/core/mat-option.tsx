@@ -36,8 +36,15 @@ export interface MatOptionProps<T = unknown> {
    *  whether it also happens to match an `@Input()` name. Confirmed live:
    *  omitting this produced a real `attr 'value' 'apple' != 'undefined'`
    *  diff on every option, every scenario, once the id-generator infinite
-   *  loop (see mat-select.tsx's doc comment) stopped masking it. */
+   *  loop (see mat-select.tsx's doc comment) stopped masking it.
+   *
+   *  Set `echoValueAttr={false}` to suppress this — needed by `qwik-material/paginator`'s
+   *  page-size options, whose real upstream template (`paginator.html`) writes a genuine
+   *  property binding (`<mat-option [value]="pageSizeOption">`), which Angular does NOT echo
+   *  as a DOM attribute at all. See `qwik-material/paginator/SYNC.md`. */
   value?: T;
+  /** Default `true` — see the `value` doc comment above. */
+  echoValueAttr?: boolean;
   /** Mirrors `MatOption.id` (`_IdGenerator().getId('mat-option-')`).
    *  Optional here — see the module doc comment's `fallbackIdGen`: a
    *  consumer-facing `<MatOption value="apple">Apple</MatOption>`
@@ -105,7 +112,7 @@ export const MatOption = component$<MatOptionProps>(props => {
       role="option"
       id={id}
       class={classes}
-      value={props.value != null ? String(props.value) : undefined}
+      value={props.echoValueAttr !== false && props.value != null ? String(props.value) : undefined}
       aria-selected={selected ? 'true' : 'false'}
       aria-disabled={disabled ? 'true' : 'false'}
       onClick$={onClick$}

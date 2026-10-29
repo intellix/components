@@ -213,13 +213,14 @@ export interface MatFormFieldControlState {
    * `placeholder` select scenario).
    */
   labelId: string | undefined;
-  /** The form field's resolved theme color (`'primary'`/`'accent'`/`'warn'`)
-   *  — mirrors `MatSelect`'s panel-class bindings
+  /** The form field's resolved theme color (`'primary'`/`'accent'`/`'warn'`, or `undefined` when
+   *  `<MatFormField>`'s own `color` prop was explicitly `null` — see that prop's own doc
+   *  comment in `form-field/mat-form-field.tsx` for why `undefined` is distinct from
+   *  `'primary'` here) — mirrors `MatSelect`'s panel-class bindings
    *  (`[class.mat-primary]="_parentFormField?.color === 'primary'"`, etc.,
-   *  `mat-undefined` when there's no form field at all). Static — written
-   *  once, never changes after mount (no scenario changes a form field's
-   *  color dynamically). */
-  color: MatFormFieldColor;
+   *  `mat-undefined` when falsy). Static — written once, never changes after mount (no scenario
+   *  changes a form field's color dynamically). */
+  color: MatFormFieldColor | undefined;
   /** Mirrors upstream's `_syncDescribedByIds()` result — the control
    *  renders this directly as its `aria-describedby` (already merged with
    *  the control's own explicit `aria-describedby`, if any, by

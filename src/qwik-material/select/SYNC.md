@@ -516,3 +516,10 @@ times; `specs/material-form-field`, `material-menu`, `material-chips`,
   tests, not just select's, but is a no-op (resolves instantly) for any
   scenario where the class has already settled by the time `open()` runs —
   confirmed by re-running `specs/material-form-field` after this change.
+- **`mat-select.tsx`: echoes a literal `hidesingleselectionindicator` DOM attribute on
+  `<mat-select>` whenever `cfg.hideSingleSelectionIndicator` resolves `true`.** Needed by
+  `qwik-material/paginator`'s page-size select — `paginator.html` writes
+  `hideSingleSelectionIndicator` as a BARE, static HTML attribute (not a scenario choice),
+  which Angular leaves in the live DOM verbatim (same category as a directive-selector
+  attribute Material's own template emits). No existing select scenario sets this prop true, so
+  this is purely additive. See `qwik-material/paginator/SYNC.md`.

@@ -59,7 +59,31 @@ export interface MatFormFieldProps {
   floatLabel?: MatFormFieldFloatLabelType;
   hideRequiredMarker?: boolean;
   subscriptSizing?: MatFormFieldSubscriptSizing;
-  color?: MatFormFieldColor;
+  /**
+   * Mirrors upstream `MatFormField.color: ThemePalette = 'primary'`.
+   *
+   * `undefined` (the common case — prop simply omitted) falls back through `config.color` to
+   * `'primary'`, same as every other config field here. `null` is a DIFFERENT, deliberate
+   * sentinel: "force this to resolve as literally unset," needed because Angular's own default
+   * class-field initializer (`'primary'`) is PRESERVED only when a template never binds
+   * `[color]` AT ALL — a template that writes `[color]="expr"` UNCONDITIONALLY (even when
+   * `expr` evaluates to `undefined`) OVERWRITES that default with the literal `undefined`,
+   * because a property binding always assigns on every change-detection run regardless of the
+   * bound value. `qwik-material/paginator`'s embedded page-size form field is exactly this case
+   * (`paginator.html`: `[color]="color"`, where `MatPaginator`'s own `color` input has no
+   * default and is unset in every parity scenario) — confirmed live, its `<mat-select>` panel
+   * gets `mat-undefined` (`_parentFormField?.color` read literally falsy), NOT `mat-primary`,
+   * unlike every OTHER select scenario's `<mat-form-field>` (which never binds `[color]` at
+   * all, so the class-field default survives untouched). JSX can't distinguish "prop omitted"
+   * from "prop bound to an undefined expression" (both are just `undefined`), so `MatPaginator`
+   * passes `null` explicitly for this one case — see `mat-paginator.tsx`. This only affects the
+   * value exposed to the embedded CONTROL via `MAT_FORM_FIELD_CONTROL_STATE.color`; the form
+   * field's OWN host classes below are unaffected either way (`!== 'accent' && !== 'warn'` is
+   * true for `undefined` exactly as it is for `'primary'`, matching upstream's OWN host-class
+   * formula, which — unlike the ternary `_parentFormField?.color === 'primary'` a CHILD like
+   * `MatSelect` reads — never distinguishes the two).
+   */
+  color?: MatFormFieldColor | null;
   /** Mirrors `[hintLabel]` — rendered as a `<mat-hint>` the form field
    *  manufactures itself (distinct from `hintStart`/`hintEnd`, which the
    *  consumer supplies as explicit `<MatHint>` elements). */
@@ -158,7 +182,13 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const alwaysFloat = floatLabel === 'always';
   const hideRequiredMarker = props.hideRequiredMarker ?? config.hideRequiredMarker ?? false;
   const subscriptSizing = props.subscriptSizing ?? config.subscriptSizing ?? 'fixed';
-  const color = props.color ?? config.color ?? 'primary';
+  // `null` forces an unset result (bypassing the `config.color ?? 'primary'` fallback chain
+  // entirely) — see the `color` prop's own doc comment for why. The host classes below treat
+  // this identically to `'primary'` (`!== 'accent' && !== 'warn'` is true either way, matching
+  // upstream's OWN host-class formula) — only `MAT_FORM_FIELD_CONTROL_STATE.color` (which a
+  // child like `MatSelect` reads with a STRICT `=== 'primary'` check) actually distinguishes
+  // this from `'primary'`.
+  const color = props.color === null ? undefined : (props.color ?? config.color ?? 'primary');
   const hintLabel = props.hintLabel ?? '';
 
   const hasFloatingLabel = props.label != null;

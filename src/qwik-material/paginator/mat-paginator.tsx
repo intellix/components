@@ -8,6 +8,7 @@ import {PaginatorNavButton} from './paginator-nav-button';
 import {
   computeChangedPageIndex,
   computeDisplayedPageSizeOptions,
+  defaultRangeLabel,
   getNumberOfPages,
   nextButtonsDisabled,
   normalizeLength,
@@ -97,6 +98,16 @@ export interface MatPaginatorProps {
   color?: MatPaginatorColor;
   /** Mirrors `(page)`. */
   onPage$?: QRL<(event: PageEvent) => void>;
+  /**
+   * Overrides the computed range-label text entirely (default: `defaultRangeLabel` —
+   * `paginator-math.ts`, upstream's own English format). Mirrors upstream
+   * `MatPaginatorIntl.getRangeLabel`'s CUSTOMIZABILITY, but as a plain string a consumer computes
+   * themselves (from the same `pageIndex`/`pageSize`/`length` their own `onPage$` handler already
+   * receives), rather than a pluggable function on the intl object — see
+   * `paginator-intl.ts`'s module doc comment for why (a plain function can't safely cross Qwik's
+   * SSR-resumability serialization boundary the way `MAT_PAGINATOR_INTL`'s other fields can).
+   */
+  rangeLabel?: string;
   'aria-label'?: string;
   id?: string;
   class?: string | ReadonlyArray<string>;
@@ -149,7 +160,8 @@ export const MatPaginator = component$<MatPaginatorProps>(props => {
 
   const previousDisabled = previousButtonsDisabled(pageIndexSig.value, pageSizeSig.value, disabled);
   const nextDisabled = nextButtonsDisabled(pageIndexSig.value, pageSizeSig.value, length, disabled);
-  const rangeLabel = intl.getRangeLabel(pageIndexSig.value, pageSizeSig.value, length);
+  const rangeLabel =
+    props.rangeLabel ?? defaultRangeLabel(pageIndexSig.value, pageSizeSig.value, length);
 
   // Every handler below reads `props`/the signals LIVE, at the moment it actually runs — never a
   // plain local hoisted from the render body above and merely closed over (design doc pitfall:
@@ -234,18 +246,33 @@ export const MatPaginator = component$<MatPaginatorProps>(props => {
   // select's own `disabled` guard no-op'ing it for free when the paginator is disabled).
   // `event.target`, never `event.currentTarget` — see `PaginatorNavButton`'s matching doc comment
   // for why (QRL handlers resolve lazily, after the DOM has already reset `currentTarget`).
+  //
+  // The explicit `.focus()` call mirrors a SEPARATE upstream mechanism this took confirming live
+  // to find: `form-field.html`'s wrapper carries `(click)="_control.onContainerClick($event)"`,
+  // and `MatSelect.onContainerClick()` (`select.ts`) calls `this.focus(); this.open();` for any
+  // click landing anywhere in the form field's own container — including the touch-target, which
+  // lives inside it (see `MatFormField.infixContent`). Without this, the embedded form field
+  // never gains `mat-focused`/`mdc-text-field--focused` after a touch-target-driven open —
+  // confirmed live as a real diff. Native `.focus()` on `<mat-select>` triggers this port's own
+  // `onHostFocus$` (mat-select.tsx), which writes `formField.focused = true` the same way a
+  // direct `.focus()`/Tab-to-select interaction already does elsewhere in this project.
   const onTouchTargetClick$ = $((event: Event) => {
     const touchTarget = event.target as HTMLElement;
     const select = touchTarget.previousElementSibling as HTMLElement | null;
+    select?.focus();
     const trigger = select?.querySelector<HTMLElement>('.mat-mdc-select-trigger');
     trigger?.click();
   });
 
   const hostClasses = ['mat-mdc-paginator', props.class].filter(Boolean) as string[];
 
+  // `echoValueAttr: false` — upstream's REAL `<mat-option [value]="pageSizeOption">`
+  // (paginator.html) is a genuine property binding, never echoed as a DOM attribute. See
+  // `MatOptionProps.echoValueAttr`'s doc comment (core/mat-option.tsx).
   const selectOptions: MatSelectOptionDef<number>[] = displayedPageSizeOptions.map(n => ({
     value: n,
     label: String(n),
+    echoValueAttr: false,
   }));
 
   return (
@@ -271,7 +298,13 @@ export const MatPaginator = component$<MatPaginatorProps>(props => {
               {displayedPageSizeOptions.length > 1 ? (
                 <MatFormField
                   appearance={formFieldAppearance}
-                  color={props.color}
+                  // `?? null`, not just `props.color` — upstream's `paginator.html` ALWAYS
+                  // binds `[color]="color"`, even when MatPaginator's own `color` is unset, which
+                  // OVERWRITES MatFormField's own class-field default ('primary') with literal
+                  // `undefined` — distinct from every OTHER select scenario's `<mat-form-field>`,
+                  // which never binds `[color]` at all (default survives untouched). See
+                  // `MatFormFieldProps.color`'s own doc comment (form-field/mat-form-field.tsx).
+                  color={props.color ?? null}
                   class="mat-mdc-paginator-page-size-select"
                   control={
                     <MatSelect
