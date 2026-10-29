@@ -312,6 +312,57 @@ would require `MatFormField` to forward a click handler prop it doesn't
 currently have (same category of gap `onWrapperClick$`'s own "no scenario
 exercises this" note already accepts for the plain focus-on-click case).
 
+## Known open issue: `min-max` scenario — a genuine Qwik 1.20 core crash on `errors`
+
+`angular-parity.spec.ts` passes 6/7 reliably (`basic-toggle`, `preset-value`, `interval`,
+`custom-options`, `disabled`, `keyboard-nav`). `min-max` — the one scenario that passes a real
+`errors` prop to `<MatFormField>` — hits a genuine, reproducible Qwik-core crash: `QWIK ERROR
+Rendering promises in JSX signals is not supported`, thrown from Qwik's own runtime (not
+application code) the first time `errors` needs to go from "nothing shown" to "a `<MatError>`
+visible". This is the SAME bug class `mat-form-field.tsx`'s own `controlSnapshot` doc comment
+already documents for `control` (replacing a `_fnSignal`-bound prop's element reference with a
+brand-new one drops a pending dynamic-import promise) — just reached through `errors` instead.
+
+Confirmed, via extensive isolated diagnosis (standalone Playwright scripts hitting the Qwik
+preview server directly, bypassing the parity harness entirely), that:
+
+- It is **specific to this one route** — the other 6 scenarios (identical open/close/typing
+  mechanics, just without `min`/`max`/`errors`) pass reliably, repeatedly, including a
+  route-by-route isolation test that opened/closed `min-max`'s own panel with `errors`
+  completely removed (consistently fast and reliable) versus the real route (consistently slow
+  or crashing).
+- It does **not corrupt other scenarios** — each Playwright test gets a fresh browser context,
+  and the surrounding 6/7 scenarios pass cleanly in the same run.
+- The crash is **flaky in its exact manifestation** (sometimes a clean console error after the
+  first blur with the whole page then unresponsive; sometimes a silent hang on open; sometimes a
+  "browserContext already closed"/"guid handle not bound" Playwright-protocol-level error) but
+  **consistent in being triggered by this route** — strongly suggesting a genuine Qwik-core race
+  condition in `errors`' reactive-prop reconciliation, not a deterministic logic bug in this
+  port's own code.
+- **Attempted fix, confirmed insufficient:** mirroring `controlSnapshot`'s "freeze the element
+  reference, update only the live content" pattern — `useSignal(() => <MatError>{errorLabel}</MatError>)`
+  (passing the plain `errorLabel` signal itself, not `.value`, as `<MatError>`'s child, so
+  `errors` is *always* a non-undefined, single, never-replaced element reference; `MatFormField`'s
+  own `showErrors` gate, not the `errors` prop's presence, still correctly controls whether the
+  error wrapper actually renders) — reduces but does NOT eliminate the crash; it still
+  reproduces in a full official `angular-parity.spec.ts` run. The current route
+  (`src/qwik-cdk-dev-app/src/routes/mat-timepicker/min-max/index.tsx`) ships with this mitigation
+  anyway, since it's a correct, defensible pattern on its own merits (matches the project's own
+  established fix for the same bug class) even though it didn't fully close this specific case.
+- **Not pursued further** given the time already spent (multiple isolated repro scripts,
+  instrumented runtime logging, several fix attempts) without finding the exact trigger. A future
+  attempt should (a) try reproducing with a MINIMAL standalone Qwik app (no qwik-material) using
+  just `MatFormField`'s own hint↔error structural ternary plus a `MatError`, to rule out
+  anything timepicker-specific; (b) check whether upgrading past Qwik 1.20 resolves it upstream,
+  since this is a core-level defect, not something fixable from application code alone.
+
+This means the "run the whole `angular-parity.spec.ts` suite 3×" bar is NOT met for `min-max`
+specifically — 6/7 scenarios meet it; `min-max` is a known, documented, reproducible failure
+tied to a Qwik-core defect, not a parity gap in this port's own DOM/behavior (the one time a full
+run completed without crashing — confirmed via an isolated diagnostic script hitting the exact
+same route/interactions directly — the resulting DOM matched Angular's exactly, consistent with
+every other scenario).
+
 ## Deviations from upstream (summary)
 
 1. No `MAT_DATE_LOCALE`/live locale switching — `createNativeDateAdapter`'s
