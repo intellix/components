@@ -37,10 +37,13 @@ export interface MatChipRowDef {
    * Set by the CONSUMER (not computed locally) on any row added after the initial mount —
    * see `fixupRippleDisabled$`'s own doc comment for why this has to be the consumer's own,
    * durable bookkeeping rather than `<MatChipGrid>`'s local "which rows did I see at MY OWN
-   * first render" set: `<MatChipGrid>` itself can be destroyed and recreated by Qwik (a
-   * confirmed-live, rare runtime limitation — see chips/SYNC.md's Deviations section), and a
-   * FRESH instance's own "at my mount" set would otherwise wrongly include a row that was
-   * genuinely added dynamically, well before THIS particular instance happened to exist.
+   * first render" set. Originally motivated by `<MatChipGrid>` being destroyable and
+   * recreatable by Qwik mid-session (a Qwik 1.20 core bug — see chips/SYNC.md's Deviation #8,
+   * now fixed in `form-field/mat-form-field.tsx` so this no longer happens in practice), but
+   * kept as the design even after that fix: a FRESH instance's own "at my mount" set would
+   * otherwise wrongly include a row that was genuinely added dynamically, well before THIS
+   * particular instance happened to exist, and the consumer's own durable state has no such
+   * failure mode regardless of why a fresh instance might exist.
    */
   dynamicallyAdded?: boolean;
 }
@@ -163,33 +166,29 @@ interface ChipGridRowsProps {
  * organization (keeping the per-row JSX and its `wrappedRemoved$` closure out of
  * `<MatChipGrid>`'s own, already-long render body).
  *
- * ## A real, rare Qwik 1.20 runtime limitation — and why the actual fix lives OUTSIDE this file
+ * ## RESOLVED: a real Qwik 1.20 core bug this file used to be vulnerable to — fixed upstream
+ * ## of this file, in `form-field/mat-form-field.tsx`
  *
- * Found live, intermittently (roughly 1 in 15-30 runs with realistic per-keystroke timing):
- * adding the FIRST row ever created purely client-side (grid-input's "Mango" — unlike Lemon/
- * Lime, which exist from the initial SSR render) can occasionally fail with Qwik logging
- * "Rendering promises in JSX signals is not supported" (a logged, swallowed error, not a
- * thrown one). Confirmed via a dedicated repro harness, this is NOT scoped to this file's
- * `rows.map(...)` at all: `<MatChipGrid>`'s own HOST ELEMENT gets fully destroyed and
- * recreated as part of EVERY successful add too (confirmed by tagging the original element
- * and observing it gone even on success, replaced by a fresh one) — the bug is simply that
- * specific recreation occasionally not completing. Extracting this `.map()` into its own
- * component boundary, switching `rows`' delivery mechanism (prop-signal vs. a dedicated
- * context), and several single/bounded-retry self-healing attempts INSIDE `<MatChipGrid>`
- * were all tried and NONE measurably reduced the failure rate — consistent with the failure
- * being at or above `<MatChipGrid>`'s OWN level, where nothing inside it (including this
- * component) can meaningfully self-correct, since `<MatChipGrid>` itself may not exist to run
- * that correction.
- *
- * The fix that DOES work lives in the consumer: since `<MatChipGrid>` sits inside
- * `<MatFormField control={...}>}`'s frozen prop value, only an ANCESTOR with a live, reactive
- * `key` on `<MatFormField>` itself can force a correct, from-scratch remount when this is
- * detected (checking, after an add, whether `<mat-chip-grid>` still exists in the DOM at all).
- * See `src/qwik-cdk-dev-app/src/routes/mat-chips/grid-input/index.tsx`'s
- * `formFieldRemountNonce` for the actual, confirmed-working self-healing retry — chips/
- * SYNC.md's Deviations section has the full write-up. `<MatChipGrid>` itself keeps
- * subscribing to `props.rows` and re-rendering normally; this component just keeps the
- * per-row JSX factored out.
+ * Previously found live, intermittently (roughly 1 in 15-30 runs with realistic per-keystroke
+ * timing): adding a row purely client-side (grid-input's "Mango") could occasionally fail with
+ * Qwik logging "Rendering promises in JSX signals is not supported" (a logged, swallowed
+ * error), and `<MatChipGrid>`'s own HOST ELEMENT would be destroyed and never recreated.
+ * Confirmed via a dedicated repro harness this was NOT scoped to this file's `rows.map(...)`
+ * at all — extracting this `.map()` into its own component boundary (this file), switching
+ * `rows`' delivery mechanism (prop-signal vs. a dedicated context), and several single/
+ * bounded-retry self-healing attempts INSIDE `<MatChipGrid>` were all tried and NONE
+ * measurably reduced the failure rate, because the actual bug was never in `<MatChipGrid>` or
+ * anything inside it: `<MatChipGrid>` is the value of `<MatFormField control={...}>`'s
+ * `control` prop, and Qwik's optimizer compiles `MatFormField`'s direct `{props.control}`
+ * render into a `_fnSignal`-wrapped binding whose "replace the element" code path (in Qwik
+ * core, not this package) collects async QRL-resolution promises and never awaits them before
+ * mutating the DOM — see `form-field/SYNC.md`'s deviation on `controlSnapshot` and `chips/
+ * SYNC.md`'s Deviation #8 for the full root-cause writeup and fix. The fix lives entirely in
+ * `MatFormField` (it snapshots `props.control` once on mount, so that binding never fires
+ * again) — `<MatChipGrid>` and this component need no special handling at all, and consumers
+ * no longer need any self-healing workaround either; `<MatChipGrid>` just keeps subscribing to
+ * `props.rows` and re-rendering normally, and this component just keeps the per-row JSX
+ * factored out.
  */
 const ChipGridRows = component$<ChipGridRowsProps>(props => {
   const containerRef = props.containerRef;
@@ -411,13 +410,15 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
   // Deliberately an EXPLICIT, consumer-set `MatChipRowDef.dynamicallyAdded` flag, not a
   // locally-computed "which rows did I see at MY OWN first render" set (an earlier version of
   // this file used exactly that, a `mountedRowKeys` signal seeded once via `useSignal(() =>
-  // ...)`): `<MatChipGrid>` itself can be destroyed and recreated by Qwik well after the
-  // consumer's OWN state already reflects a dynamically-added row (a confirmed-live, rare
-  // runtime limitation — see chips/SYNC.md's Deviations section) — a FRESH instance's own
-  // "at my mount" set would then wrongly treat that row as present-from-the-start, since by
-  // the time THIS instance's `mountedRowKeys` would have been computed, the row was already
-  // in the array. The consumer's own `dynamicallyAdded` marking survives that recreation
-  // because it lives in the consumer's OWN state, never recomputed by `<MatChipGrid>` itself.
+  // ...)`): originally motivated by `<MatChipGrid>` being destroyable and recreatable by Qwik
+  // well after the consumer's OWN state already reflects a dynamically-added row (a Qwik 1.20
+  // core bug — see chips/SYNC.md's Deviation #8, now fixed in `form-field/mat-form-field.tsx`)
+  // — a FRESH instance's own "at my mount" set would then wrongly treat that row as
+  // present-from-the-start, since by the time THIS instance's `mountedRowKeys` would have been
+  // computed, the row was already in the array. Kept even after that fix: the consumer's own
+  // `dynamicallyAdded` marking has no such failure mode regardless of why a fresh instance
+  // might exist, since it lives in the consumer's OWN state, never recomputed by
+  // `<MatChipGrid>` itself.
   const animationsDisabledForRipple = useAnimationsDisabled();
   const fixupRippleDisabled$ = $(() => {
     const root = containerRef.value;
