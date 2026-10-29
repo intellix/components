@@ -1,15 +1,30 @@
 import {component$, useSignal} from '@builder.io/qwik';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
-import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
+import {
+  MatAutocomplete,
+  type MatAutocompleteOptionDef,
+} from '@angular-community/qwik-material/autocomplete';
 
 // Mirrors src/dev-app/qwik-parity/autocomplete.ts's AutocompleteBasicFilter.
 // Deliberately the same 4-item fruit list select.ts's `fill-basic` uses —
 // see that file's own header comment.
 const FRUITS = ['Apple', 'Banana', 'Cherry', 'Date'];
 
-function filterFruits(val: string): string[] {
+// Returns resolved option DEFS directly (not a bare string[]) — `options`
+// MUST be passed as the live `Signal` itself (`options={filteredFruits}`),
+// never `.value` — see `MatAutocompleteProps.options`'s own doc comment for
+// why: `<MatFormField control={...}>` reads `control` exactly once, so a
+// plain array value nested inside it would never update again.
+function filterFruits(val: string): MatAutocompleteOptionDef[] {
   const filterValue = (val || '').toLowerCase();
-  return FRUITS.filter(fruit => fruit.toLowerCase().includes(filterValue));
+  return FRUITS.filter(fruit => fruit.toLowerCase().includes(filterValue)).map(fruit => ({
+    value: fruit,
+    label: fruit,
+  }));
 }
 
 // `[(ngModel)]` makes Angular apply `NgControlStatus`'s `ng-pristine`/
@@ -26,10 +41,22 @@ function filterFruits(val: string): string[] {
 // keystroke here, since this scenario has no `requireSelection`); `touched`
 // is marked from `onTouched$` (mirrors `_onTouched()`, fired unconditionally
 // on blur).
+//
+// `onValueChange$` ALSO refilters (`filteredFruits.value = filterFruits(v)`)
+// — mirrors the Angular scenario's `(ngModelChange)="filteredFruits =
+// filterFruits($event)"` binding, which fires on EVERY invocation of the
+// CVA's `_onChange` — not just raw typing, but ALSO the selection-commit
+// path (`_setValueAndClose`'s own `_onChange(toSelect.value)`). CONFIRMED
+// LIVE: selecting "Banana" via Enter immediately narrows `filteredFruits`
+// to `['Banana']`, BEFORE the panel even closes — this is what makes the
+// REOPEN step correctly show just the one (selected) option, not the
+// stale "a"-filtered three-item list from the last keystroke. Wiring this
+// through `onInput$` alone (as `require-selection` does, deliberately —
+// see that route's own comment) would miss this.
 export default component$(() => {
   const fc = useMatFormControl();
   const value = useSignal('');
-  const filteredFruits = useSignal<string[]>(FRUITS.slice());
+  const filteredFruits = useSignal<MatAutocompleteOptionDef[]>(filterFruits(''));
 
   return (
     <>
@@ -50,9 +77,10 @@ export default component$(() => {
               onValueChange$={v => {
                 fc.markAsDirty$();
                 value.value = v as string;
+                filteredFruits.value = filterFruits(v as string);
               }}
               onTouched$={fc.markAsTouched$}
-              options={filteredFruits.value.map(fruit => ({value: fruit, label: fruit}))}
+              options={filteredFruits}
               onInput$={(_, el) => (filteredFruits.value = filterFruits(el.value))}
               onFocus$={(_, el) => (filteredFruits.value = filterFruits(el.value))}
             />

@@ -1,5 +1,9 @@
 import {component$, useSignal} from '@builder.io/qwik';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
 import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
 
 // Mirrors src/dev-app/qwik-parity/autocomplete.ts's
@@ -10,9 +14,23 @@ import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
 // applies `NgControlStatus` classes — see basic-filter's own comment for
 // why `formBound`/`touched`/`dirty` are wired through
 // `useMatFormControl()` regardless.
+//
+// `echoValueAttr: true` on every option — the ONE scenario in this
+// directory whose Angular mirror writes a STATIC, bracket-less
+// `<mat-option value="Apple">` (every other scenario here binds
+// `[value]="…"`, never reflected as a DOM attribute) — see
+// `core/mat-option.tsx`'s `echoValue` doc comment.
 export default component$(() => {
   const fc = useMatFormControl();
   const value = useSignal('');
+  // Static (never reassigned), but `options` still requires the live
+  // `Signal` itself — see `MatAutocompleteProps.options`'s own doc comment.
+  const options = useSignal([
+    {value: 'Apple', label: 'Apple', echoValueAttr: true},
+    {value: 'Banana', label: 'Banana', disabled: true, echoValueAttr: true},
+    {value: 'Cherry', label: 'Cherry', echoValueAttr: true},
+    {value: 'Date', label: 'Date', echoValueAttr: true},
+  ]);
 
   return (
     <>
@@ -35,12 +53,7 @@ export default component$(() => {
                 value.value = v as string;
               }}
               onTouched$={fc.markAsTouched$}
-              options={[
-                {value: 'Apple', label: 'Apple'},
-                {value: 'Banana', label: 'Banana', disabled: true},
-                {value: 'Cherry', label: 'Cherry'},
-                {value: 'Date', label: 'Date'},
-              ]}
+              options={options}
             />
           }
         />

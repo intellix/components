@@ -1,23 +1,35 @@
 import {component$, useSignal} from '@builder.io/qwik';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
-import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
+import {
+  MatAutocomplete,
+  type MatAutocompleteOptionDef,
+} from '@angular-community/qwik-material/autocomplete';
 
 // Mirrors src/dev-app/qwik-parity/autocomplete.ts's
 // AutocompleteAutoActiveFirstOption. Same 3-option list upstream's own
 // autocomplete-auto-active-first-option-example uses.
 const OPTIONS = ['One', 'Two', 'Three'];
 
-function filterOptions(val: string): string[] {
+function filterOptions(val: string): MatAutocompleteOptionDef[] {
   const filterValue = (val || '').toLowerCase();
-  return OPTIONS.filter(option => option.toLowerCase().includes(filterValue));
+  return OPTIONS.filter(option => option.toLowerCase().includes(filterValue)).map(option => ({
+    value: option,
+    label: option,
+  }));
 }
 
 // See basic-filter's own comment for why `formBound`/`touched`/`dirty` are
-// wired through `useMatFormControl()`.
+// wired through `useMatFormControl()`, for why `options` must be the live
+// `Signal` itself (never `.value`), and for why `onValueChange$` ALSO
+// refilters.
 export default component$(() => {
   const fc = useMatFormControl();
   const value = useSignal('');
-  const filteredOptions = useSignal<string[]>(OPTIONS.slice());
+  const filteredOptions = useSignal<MatAutocompleteOptionDef[]>(filterOptions(''));
 
   return (
     <>
@@ -39,9 +51,10 @@ export default component$(() => {
               onValueChange$={v => {
                 fc.markAsDirty$();
                 value.value = v as string;
+                filteredOptions.value = filterOptions(v as string);
               }}
               onTouched$={fc.markAsTouched$}
-              options={filteredOptions.value.map(option => ({value: option, label: option}))}
+              options={filteredOptions}
               onInput$={(_, el) => (filteredOptions.value = filterOptions(el.value))}
               onFocus$={(_, el) => (filteredOptions.value = filterOptions(el.value))}
             />

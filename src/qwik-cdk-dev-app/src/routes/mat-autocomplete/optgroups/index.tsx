@@ -1,6 +1,13 @@
 import {component$, useSignal} from '@builder.io/qwik';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
-import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
+import {
+  MatAutocomplete,
+  type MatAutocompleteGroupDef,
+} from '@angular-community/qwik-material/autocomplete';
 
 // Mirrors src/dev-app/qwik-parity/autocomplete.ts's AutocompleteOptgroups.
 // "Fruits" (Apple, Banana) / "Vegetables" (Carrot, Celery) — deliberately
@@ -10,22 +17,32 @@ const GROUPS = [
   {letter: 'Vegetables', items: ['Carrot', 'Celery']},
 ];
 
-function filterGroups(val: string) {
+// Returns resolved group DEFS directly — see basic-filter's own comment
+// for why `options` must be the live `Signal` itself, never `.value`.
+function filterGroups(val: string): MatAutocompleteGroupDef[] {
   const filterValue = (val || '').toLowerCase();
-  if (!filterValue) return GROUPS;
-  return GROUPS.map(group => ({
-    letter: group.letter,
-    items: group.items.filter(item => item.toLowerCase().includes(filterValue)),
-  })).filter(group => group.items.length > 0);
+  const groups = !filterValue
+    ? GROUPS
+    : GROUPS.map(group => ({
+        letter: group.letter,
+        items: group.items.filter(item => item.toLowerCase().includes(filterValue)),
+      })).filter(group => group.items.length > 0);
+  return groups.map(group => ({
+    label: group.letter,
+    options: group.items.map(item => ({value: item, label: item})),
+  }));
 }
 
 // See basic-filter's own comment for why `formBound`/`touched`/`dirty` are
 // wired through `useMatFormControl()` — every scenario in this directory
-// needs it (`[(ngModel)]` applies `NgControlStatus` classes in Angular).
+// needs it (`[(ngModel)]` applies `NgControlStatus` classes in Angular) —
+// and for why `onValueChange$` ALSO refilters (mirrors `(ngModelChange)`
+// firing on the selection-commit path too, narrowing the reopened panel to
+// just the selected item).
 export default component$(() => {
   const fc = useMatFormControl();
   const value = useSignal('');
-  const filteredGroups = useSignal(GROUPS);
+  const filteredGroups = useSignal<MatAutocompleteGroupDef[]>(filterGroups(''));
 
   return (
     <>
@@ -46,12 +63,10 @@ export default component$(() => {
               onValueChange$={v => {
                 fc.markAsDirty$();
                 value.value = v as string;
+                filteredGroups.value = filterGroups(v as string);
               }}
               onTouched$={fc.markAsTouched$}
-              options={filteredGroups.value.map(group => ({
-                label: group.letter,
-                options: group.items.map(item => ({value: item, label: item})),
-              }))}
+              options={filteredGroups}
               onInput$={(_, el) => (filteredGroups.value = filterGroups(el.value))}
               onFocus$={(_, el) => (filteredGroups.value = filterGroups(el.value))}
             />

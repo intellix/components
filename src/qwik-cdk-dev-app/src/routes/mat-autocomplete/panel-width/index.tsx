@@ -1,23 +1,34 @@
 import {component$, useSignal} from '@builder.io/qwik';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
-import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
+import {
+  MatAutocomplete,
+  type MatAutocompleteOptionDef,
+} from '@angular-community/qwik-material/autocomplete';
 
 // Mirrors src/dev-app/qwik-parity/autocomplete.ts's AutocompletePanelWidth.
 // Same 4-item fruit list as basic-filter, against the usual 300px-wide
 // field, isolating just the `panelWidth` geometry. See basic-filter's own
 // comment for why `formBound`/`touched`/`dirty` are wired through
-// `useMatFormControl()`.
+// `useMatFormControl()`, and for why `options` must be the live `Signal`
+// itself, never `.value`.
 const FRUITS = ['Apple', 'Banana', 'Cherry', 'Date'];
 
-function filterFruits(val: string): string[] {
+function filterFruits(val: string): MatAutocompleteOptionDef[] {
   const filterValue = (val || '').toLowerCase();
-  return FRUITS.filter(fruit => fruit.toLowerCase().includes(filterValue));
+  return FRUITS.filter(fruit => fruit.toLowerCase().includes(filterValue)).map(fruit => ({
+    value: fruit,
+    label: fruit,
+  }));
 }
 
 export default component$(() => {
   const fc = useMatFormControl();
   const value = useSignal('');
-  const filteredFruits = useSignal<string[]>(FRUITS.slice());
+  const filteredFruits = useSignal<MatAutocompleteOptionDef[]>(filterFruits(''));
 
   return (
     <>
@@ -39,9 +50,10 @@ export default component$(() => {
               onValueChange$={v => {
                 fc.markAsDirty$();
                 value.value = v as string;
+                filteredFruits.value = filterFruits(v as string);
               }}
               onTouched$={fc.markAsTouched$}
-              options={filteredFruits.value.map(fruit => ({value: fruit, label: fruit}))}
+              options={filteredFruits}
               onInput$={(_, el) => (filteredFruits.value = filterFruits(el.value))}
               onFocus$={(_, el) => (filteredFruits.value = filterFruits(el.value))}
             />

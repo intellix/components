@@ -1,6 +1,13 @@
 import {$, component$, useSignal} from '@builder.io/qwik';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
-import {MatAutocomplete} from '@angular-community/qwik-material/autocomplete';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
+import {
+  MatAutocomplete,
+  type MatAutocompleteOptionDef,
+} from '@angular-community/qwik-material/autocomplete';
 
 // Mirrors src/dev-app/qwik-parity/autocomplete.ts's AutocompleteDisplayWith.
 // Same {name: string} object-valued option list upstream's own
@@ -12,10 +19,15 @@ interface AcUser {
 
 const USERS: AcUser[] = [{name: 'Mary'}, {name: 'Shelley'}, {name: 'Igor'}];
 
-function filterUsers(val: string | AcUser): AcUser[] {
-  const name = typeof val === 'string' ? val : val?.name ?? '';
+// Returns resolved option DEFS directly — see basic-filter's own comment
+// for why `options` must be the live `Signal` itself, never `.value`.
+function filterUsers(val: string | AcUser): MatAutocompleteOptionDef[] {
+  const name = typeof val === 'string' ? val : (val?.name ?? '');
   const filterValue = name.toLowerCase();
-  return USERS.filter(user => user.name.toLowerCase().includes(filterValue));
+  return USERS.filter(user => user.name.toLowerCase().includes(filterValue)).map(user => ({
+    value: user,
+    label: user.name,
+  }));
 }
 
 // See basic-filter's own comment for why `formBound`/`touched`/`dirty` are
@@ -23,7 +35,7 @@ function filterUsers(val: string | AcUser): AcUser[] {
 export default component$(() => {
   const fc = useMatFormControl();
   const value = useSignal<string | AcUser>('');
-  const filteredUsers = useSignal<AcUser[]>(USERS.slice());
+  const filteredUsers = useSignal<MatAutocompleteOptionDef[]>(filterUsers(''));
 
   const displayWith$ = $((val: unknown) => {
     const user = val as AcUser | null | undefined;
@@ -49,10 +61,11 @@ export default component$(() => {
               onValueChange$={v => {
                 fc.markAsDirty$();
                 value.value = v as string | AcUser;
+                filteredUsers.value = filterUsers(v as string | AcUser);
               }}
               onTouched$={fc.markAsTouched$}
               displayWith$={displayWith$}
-              options={filteredUsers.value.map(user => ({value: user, label: user.name}))}
+              options={filteredUsers}
               onInput$={(_, el) => (filteredUsers.value = filterUsers(el.value))}
               onFocus$={(_, el) => (filteredUsers.value = filterUsers(el.value))}
             />
