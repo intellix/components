@@ -24,6 +24,20 @@
  * ordinary `<MatButton onClick$={$(() => applyDatepickerSelection(picker))}>` elements, calling
  * `applyDatepickerSelection`/`cancelDatepickerSelection` (or the range variants) directly — see
  * `SYNC.md`'s usage example.
+ *
+ * `_actionsContent.value` is written UNCONDITIONALLY, every render — deliberately never guarded
+ * by first reading it back (`if (picker._actionsContent.value !== props.actions) ...` was tried
+ * first). Confirmed live (`actions`'s own Apply click) that the guard's READ, combined with the
+ * write, hits design-doc rule 2 ("never read and write the same signal during render"): the
+ * ROUTE's `value`/`range` signal changing (from `onValueChange$`, fired by Apply) re-renders the
+ * WHOLE route, rebuilding BOTH `<MatFormField>` trees with a brand-new `<MatDatepicker
+ * actions={...}>` JSX reference each time (plain JSX, never frozen in a `useSignal` the way
+ * `mat-form-field.tsx`'s own `controlSnapshot` freezes `control`) — so the guard's condition was
+ * true on EVERY one of those re-renders, not just the first. With the read removed, this is a
+ * plain, unconditional, write-only signal update — the same safe shape `_formFieldOrigin`'s own
+ * plain-field assignment already establishes, just via a `Signal` instead of a bare field (see
+ * `use-mat-datepicker.ts`'s `_actionsContent` doc comment for why a `Signal` is still needed
+ * here, unlike `_formFieldOrigin`).
  */
 import {component$, type JSXOutput} from '@builder.io/qwik';
 import type {MatDatepickerHandle, MatDateRangePickerHandle} from './use-mat-datepicker';
@@ -35,9 +49,7 @@ export interface MatDatepickerProps<D = unknown> {
 }
 
 export const MatDatepicker = component$<MatDatepickerProps>(props => {
-  if (props.picker._actionsContent.value !== props.actions) {
-    props.picker._actionsContent.value = props.actions;
-  }
+  props.picker._actionsContent.value = props.actions;
   return <mat-datepicker />;
 });
 
@@ -48,8 +60,6 @@ export interface MatDateRangePickerProps<D = unknown> {
 }
 
 export const MatDateRangePicker = component$<MatDateRangePickerProps>(props => {
-  if (props.picker._actionsContent.value !== props.actions) {
-    props.picker._actionsContent.value = props.actions;
-  }
+  props.picker._actionsContent.value = props.actions;
   return <mat-date-range-picker />;
 });
