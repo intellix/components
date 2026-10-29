@@ -155,6 +155,9 @@ class _FlexibleConnectedPositionStrategyImpl implements PositionStrategy {
   /** Configures where in the DOM to insert the overlay when popovers are enabled. */
   private _popoverLocation: FlexibleOverlayPopoverLocation = 'global';
 
+  /** See {@link withPopoverInsertionOrigin}'s doc comment. */
+  private _popoverInsertionOrigin: Element | undefined;
+
   /** Ordered list of preferred positions, from most to least desirable. */
   get positions(): ConnectionPositionPair[] {
     return this._preferredPositions;
@@ -530,6 +533,32 @@ class _FlexibleConnectedPositionStrategyImpl implements PositionStrategy {
     return this;
   }
 
+  /**
+   * Overrides WHICH element `'inline'` popover location inserts the overlay
+   * next to (sibling, via `.after()` — see `popover-insertion.ts`'s
+   * `applyPopoverInsertionPoint`), decoupled from {@link setOrigin}'s
+   * element — which always drives the actual POSITION math (where the
+   * overlay's connected edges land), never insertion.
+   *
+   * Not part of upstream CDK (which has no such concept — a consumer there
+   * only ever has ONE origin for both jobs, via its own always-correct
+   * `_preferredOverlayOrigin`-equivalent). Added for `qwik-material/select`,
+   * whose two jobs genuinely need different elements on a select's very
+   * first open: the overlay's PANEL POSITION must be computed relative to
+   * the form field's `.mat-mdc-text-field-wrapper` (confirmed live against
+   * the real Angular app — using the trigger instead produces numbers
+   * 8–16px off on every axis), while the panel's DOM INSERTION POINT must
+   * still land as a sibling of the select's own TRIGGER (confirmed live,
+   * separately — the panel visibly lands inside `<mat-select>` on the
+   * first open, `<mat-form-field>` on every open after). Omit this call
+   * (the default) to keep exactly the prior behavior: `'inline'` inserts
+   * next to {@link setOrigin}'s own element, same as upstream.
+   */
+  withPopoverInsertionOrigin(origin: Element | undefined): this {
+    this._popoverInsertionOrigin = origin;
+    return this;
+  }
+
   /** @docs-private */
   getPopoverInsertionPoint(): Element | null | {type: 'parent'; element: Element} {
     if (this._popoverLocation === 'global') {
@@ -538,6 +567,9 @@ class _FlexibleConnectedPositionStrategyImpl implements PositionStrategy {
       return this._popoverLocation;
     }
 
+    if (this._popoverInsertionOrigin instanceof Element) {
+      return this._popoverInsertionOrigin;
+    }
     if (this._origin instanceof Element) {
       return this._origin;
     } else {
