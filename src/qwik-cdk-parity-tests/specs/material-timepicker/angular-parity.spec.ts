@@ -245,6 +245,7 @@ const typeAndBlur = (text: string, index = 0): ParityStep => ({
 test.describe('mat-timepicker — Angular DOM parity', () => {
   test('basic-toggle', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'basic-toggle',
       steps: [openViaToggle(), clickOutside(), openViaToggle(), clickOption('1:00 AM')],
@@ -252,6 +253,7 @@ test.describe('mat-timepicker — Angular DOM parity', () => {
 
   test('preset-value', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'preset-value',
       steps: [openViaInput(), keyClose('Escape')],
@@ -259,6 +261,7 @@ test.describe('mat-timepicker — Angular DOM parity', () => {
 
   test('interval', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'interval',
       steps: [openViaToggle(), clickOption('6:00 PM')],
@@ -266,6 +269,7 @@ test.describe('mat-timepicker — Angular DOM parity', () => {
 
   test('min-max', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'min-max',
       steps: [
@@ -278,15 +282,22 @@ test.describe('mat-timepicker — Angular DOM parity', () => {
 
   test('custom-options', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'custom-options',
       steps: [openViaToggle(), clickOption('Lunch')],
     }));
 
-  test('disabled', ({browser}) => expectMaterialParity(browser, {route, scenario: 'disabled'}));
+  test('disabled', ({browser}) =>
+    expectMaterialParity(browser, {
+      pinRoot: true,
+      route,
+      scenario: 'disabled',
+    }));
 
   test('keyboard-nav', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'keyboard-nav',
       steps: [

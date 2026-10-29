@@ -273,6 +273,7 @@ const clickOutside: ParityStep = {
 test.describe('mat-autocomplete — Angular DOM parity', () => {
   test('basic-filter', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'basic-filter',
       steps: [
@@ -289,6 +290,7 @@ test.describe('mat-autocomplete — Angular DOM parity', () => {
 
   test('optgroups', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'optgroups',
       steps: [
@@ -303,6 +305,7 @@ test.describe('mat-autocomplete — Angular DOM parity', () => {
 
   test('auto-active-first-option', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'auto-active-first-option',
       steps: [
@@ -315,6 +318,7 @@ test.describe('mat-autocomplete — Angular DOM parity', () => {
 
   test('require-selection', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'require-selection',
       steps: [
@@ -330,6 +334,7 @@ test.describe('mat-autocomplete — Angular DOM parity', () => {
 
   test('display-with', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'display-with',
       steps: [
@@ -343,6 +348,7 @@ test.describe('mat-autocomplete — Angular DOM parity', () => {
 
   test('disabled-option', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'disabled-option',
       steps: [
@@ -357,6 +363,7 @@ test.describe('mat-autocomplete — Angular DOM parity', () => {
 
   test('panel-width', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'panel-width',
       steps: [settle, open, keyTo('Escape')],
@@ -364,6 +371,7 @@ test.describe('mat-autocomplete — Angular DOM parity', () => {
 
   test('hide-single-selection-indicator', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'hide-single-selection-indicator',
       steps: [

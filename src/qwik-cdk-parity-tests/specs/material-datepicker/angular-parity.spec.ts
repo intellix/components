@@ -215,9 +215,20 @@ const typeAndBlur = (text: string): ParityStep => ({
  * the calendar overlay (`.cdk-overlay-container`) — see file header for why both matter here. */
 function parityBoth(scenario: string, steps: ParityStep[] = []) {
   test(`${scenario} (field)`, ({browser}) =>
-    expectMaterialParity(browser, {route, scenario, steps}));
+    expectMaterialParity(browser, {
+      pinRoot: true,
+      route,
+      scenario,
+      steps,
+    }));
   test(`${scenario} (calendar)`, ({browser}) =>
-    expectMaterialParity(browser, {route, scenario, steps, rootSelector: OVERLAY_ROOT}));
+    expectMaterialParity(browser, {
+      pinRoot: true,
+      route,
+      scenario,
+      steps,
+      rootSelector: OVERLAY_ROOT,
+    }));
 }
 
 test.describe('mat-datepicker — Angular DOM parity', () => {
@@ -248,6 +259,7 @@ test.describe('mat-datepicker — Angular DOM parity', () => {
   // Single root: no popup/overlay is ever created by this scenario (see file header).
   test('inline-calendar', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'inline-calendar',
       steps: [clickCellStayOpen('January 20, 2024'), clickCellStayOpen('January 5, 2024')],
@@ -263,6 +275,7 @@ test.describe('mat-datepicker — Angular DOM parity', () => {
   // Single root: these steps never open the popup (see file header).
   test('typed-date-blur', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'typed-date-blur',
       steps: [

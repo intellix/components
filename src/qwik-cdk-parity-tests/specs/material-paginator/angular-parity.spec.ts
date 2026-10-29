@@ -152,10 +152,16 @@ const choosePageSize = (value: string): ParityStep => ({
 });
 
 test.describe('mat-paginator — Angular DOM parity', () => {
-  test('basic', ({browser}) => expectMaterialParity(browser, {route, scenario: 'basic'}));
+  test('basic', ({browser}) =>
+    expectMaterialParity(browser, {
+      pinRoot: true,
+      route,
+      scenario: 'basic',
+    }));
 
   test('show-first-last', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'show-first-last',
       steps: [clickNav('last'), clickNav('first')],
@@ -163,6 +169,7 @@ test.describe('mat-paginator — Angular DOM parity', () => {
 
   test('hide-page-size', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'hide-page-size',
       steps: [clickNav('next')],
@@ -170,6 +177,7 @@ test.describe('mat-paginator — Angular DOM parity', () => {
 
   test('disabled', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'disabled',
       steps: [clickNav('next', /* disabled */ true)],
@@ -177,6 +185,7 @@ test.describe('mat-paginator — Angular DOM parity', () => {
 
   test('custom-intl', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'custom-intl',
       steps: [clickNav('next'), clickNav('last')],
@@ -184,6 +193,7 @@ test.describe('mat-paginator — Angular DOM parity', () => {
 
   test('length-zero', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'length-zero',
       steps: [clickNav('next', /* disabled */ true)],
@@ -191,6 +201,7 @@ test.describe('mat-paginator — Angular DOM parity', () => {
 
   test('interactions', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'interactions',
       steps: [
