@@ -152,10 +152,52 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const hasIconSuffix = props.iconSuffix != null;
   const hasTextSuffix = props.textSuffix != null;
 
+  // `props.control` is snapshotted ONCE, at this component's own first render, and that SAME
+  // frozen reference is used both for the static `readControlProps()` read below AND for the
+  // actual render further down ({controlSnapshot.value}) — `props.control` itself is never
+  // read again after this line.
+  //
+  // This is deliberate, not an oversight: a genuine Qwik 1.20 CORE bug (confirmed live by
+  // instrumenting node_modules/@builder.io/qwik's own dist, not inferred) means rendering
+  // `{props.control}` directly is unsafe whenever a CONSUMER reconstructs that JSX element
+  // fresh on every one of ITS OWN re-renders (the common, idiomatic way to write it — e.g.
+  // `control={<MatChipGrid rows={rowsSignal} .../>}` written inline in a route's return JSX).
+  // Qwik's optimizer compiles a directly-forwarded prop like `{props.control}` into a
+  // `_fnSignal`-wrapped binding so that updating it does NOT require a full `MatFormField`
+  // re-render — confirmed load-bearing elsewhere in this file's own architecture (see the
+  // module doc comment: "a prop directly on an element returned from a component's own JSX
+  // tree... updates correctly"). When that binding's value changes to a NEW element whose
+  // underlying component (chips' `MatChipGrid`/`ChipGridRows`/`MatChipRow`, in the case that
+  // surfaced this) hasn't had its render QRL resolved client-side yet, Qwik's core
+  // (`executeSignalOperation` in packages/qwik/src/core — look for
+  // "Rendering promises in JSX signals is not supported") takes a "fully replace the old
+  // element" path whose `promises` array (collected from `createElm()`) is LITERALLY never
+  // awaited — the dist ships the maintainer's own `// TODO(misko): hook this up` left
+  // unfinished. `insertBefore`/`removeNode` run immediately regardless, and the replacement
+  // element can be observed briefly disconnected from the DOM (confirmed via direct
+  // `isConnected` checks around that exact call) before the dangling promise resolves —
+  // usually self-healing within ~1ms, but not always: if anything else touches the DOM in
+  // that window, the replacement can be permanently orphaned. This reproduced at roughly the
+  // same 1-in-15-to-30 rate `chips/SYNC.md`'s Deviation 8 originally documented, confirmed via
+  // 40+ repeated runs of a throwaway Playwright repro against the instrumented dist.
+  //
+  // The actual fix: avoid ever handing that binding a NEW element reference after mount.
+  // `props.control`'s nested prop VALUES were already documented as "read once, never again"
+  // for everything that matters (`disabled`/`required`/`controlType`/`formBound` — see
+  // `controlProps` below; anything that must change later already goes through a top-level
+  // prop or `MAT_FORM_FIELD_CONTROL_STATE`, never through re-reading `control` itself) — so
+  // freezing the REFERENCE too changes nothing for any already-supported use case, and
+  // confirmed via the SAME repro (0/40, then the real `grid-input`/`grid-disabled` parity
+  // specs repeated 20×) that it removes the failure mode entirely: Qwik's `_fnSignal` binding
+  // for `control` never fires again after the first render, so the broken replace path is
+  // simply never reached. This also means CONSUMERS no longer need to do anything special —
+  // reconstructing `control` inline on every render, the natural way to write it, is fine.
+  const controlSnapshot = useSignal<JSXOutput | undefined>(() => props.control);
+
   // ── Control introspection (static half of the contract) ──
   // Read directly off the `control` prop's JSX descriptor, WITHOUT
   // rendering it — see the module doc comment / core/mat-form-field-control.ts.
-  const controlProps = readControlProps(props.control);
+  const controlProps = readControlProps(controlSnapshot.value);
   const disabled = controlProps?.disabled ?? false;
   const required = controlProps?.required ?? false;
   const controlType = controlProps?.controlType ?? 'mat-input';
@@ -561,7 +603,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
 
           <div class="mat-mdc-form-field-infix">
             {!hasOutline && labelContent}
-            {props.control}
+            {controlSnapshot.value}
           </div>
 
           {hasTextSuffix && <div class="mat-mdc-form-field-text-suffix">{props.textSuffix}</div>}
