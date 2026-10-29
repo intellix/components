@@ -17,6 +17,9 @@ import {
   isSelected,
   monthActiveDateDelta,
   multiYearActiveDateDelta,
+  nextPeriodEnabled,
+  periodDelta,
+  previousPeriodEnabled,
   shouldEnableDate,
   shouldEnableMonth,
   shouldEnableYear,
@@ -232,5 +235,28 @@ describe('shouldEnableYear', () => {
     expect(shouldEnableYear(adapter, 2024, null, d(2023, 0, 1), undefined)).toBe(false);
     expect(shouldEnableYear(adapter, 2024, null, null, () => false)).toBe(false);
     expect(shouldEnableYear(adapter, 2024, null, null, undefined)).toBe(true);
+  });
+});
+
+describe('calendar-header prev/next enablement — min-max-filter scenario', () => {
+  it('both prev AND next are disabled when startAt, min, and max fall in the same month', () => {
+    const activeDate = d(2024, 0, 15);
+    const min = d(2024, 0, 10);
+    const max = d(2024, 0, 20);
+    expect(previousPeriodEnabled(adapter, 'month', activeDate, min, max)).toBe(false);
+    expect(nextPeriodEnabled(adapter, 'month', activeDate, min, max)).toBe(false);
+  });
+
+  it('both enabled with no min/max', () => {
+    const activeDate = d(2024, 0, 15);
+    expect(previousPeriodEnabled(adapter, 'month', activeDate, null, null)).toBe(true);
+    expect(nextPeriodEnabled(adapter, 'month', activeDate, null, null)).toBe(true);
+  });
+
+  it('periodDelta moves by month/year/24-years depending on view', () => {
+    const activeDate = d(2024, 0, 15);
+    expect(adapter.getMonth(periodDelta(adapter, 'month', activeDate, 1))).toBe(1);
+    expect(adapter.getYear(periodDelta(adapter, 'year', activeDate, 1))).toBe(2025);
+    expect(adapter.getYear(periodDelta(adapter, 'multi-year', activeDate, 1))).toBe(2048);
   });
 });

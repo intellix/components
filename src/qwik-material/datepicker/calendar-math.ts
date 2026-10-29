@@ -11,8 +11,35 @@
  */
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import type {MatDateFormats} from '../core/datetime/date-formats';
+import type {DateRange} from './date-range-selection';
 
 const DAYS_PER_WEEK = 7;
+
+/** A calendar's `selected` prop is either a single date or a range — mirrors upstream
+ *  `DateRange<D> | D | null` union accepted by `MatCalendar.selected`/`MatMonthView.selected`. */
+export type SelectionValue<D> = D | DateRange<D> | null;
+
+function isDateRange<D>(value: SelectionValue<D>): value is DateRange<D> {
+  return value !== null && typeof value === 'object' && 'start' in (value as object);
+}
+
+/** Mirrors `MatMonthView._setRanges()`/`MatYearView._setSelectedMonth()`'s "treat a plain date
+ *  as a degenerate start===end range" normalization — used by every view to compute
+ *  calendar-body's `startValue`/`endValue` inputs uniformly regardless of single/range mode. */
+export function toStartEndCompareValues<D>(
+  adapter: DateAdapter<D>,
+  selected: SelectionValue<D>,
+): {startValue: number | null; endValue: number | null; isRange: boolean} {
+  if (isDateRange(selected)) {
+    return {
+      startValue: getCellCompareValue(adapter, selected.start),
+      endValue: getCellCompareValue(adapter, selected.end),
+      isRange: true,
+    };
+  }
+  const value = getCellCompareValue(adapter, selected);
+  return {startValue: value, endValue: value, isRange: false};
+}
 
 /** One renderable calendar cell — mirrors upstream `MatCalendarCell`. */
 export interface CalendarCell<D> {
@@ -520,4 +547,65 @@ export function cellPaddingPercent(cellAspectRatio: number, numCols: number): st
 }
 export function cellWidthPercent(numCols: number): string {
   return `${100 / numCols}%`;
+}
+
+// ============================================================================================
+// Calendar-header helpers — mirrors `MatCalendarHeader._isSameView`/`previousEnabled`/
+// `nextEnabled`.
+// ============================================================================================
+
+export type CalendarView = 'month' | 'year' | 'multi-year';
+
+/** Mirrors `MatCalendarHeader._isSameView(date1, date2)`. */
+export function isSameCalendarView<D>(
+  adapter: DateAdapter<D>,
+  view: CalendarView,
+  date1: D,
+  date2: D,
+  minDate: D | null,
+  maxDate: D | null,
+): boolean {
+  if (view === 'month') {
+    return (
+      adapter.getYear(date1) === adapter.getYear(date2) &&
+      adapter.getMonth(date1) === adapter.getMonth(date2)
+    );
+  }
+  if (view === 'year') {
+    return adapter.getYear(date1) === adapter.getYear(date2);
+  }
+  return isSameMultiYearPage(adapter, date1, date2, minDate, maxDate);
+}
+
+/** Mirrors `MatCalendarHeader.previousEnabled()`. */
+export function previousPeriodEnabled<D>(
+  adapter: DateAdapter<D>,
+  view: CalendarView,
+  activeDate: D,
+  minDate: D | null,
+  maxDate: D | null,
+): boolean {
+  return !minDate || !isSameCalendarView(adapter, view, activeDate, minDate, minDate, maxDate);
+}
+
+/** Mirrors `MatCalendarHeader.nextEnabled()`. */
+export function nextPeriodEnabled<D>(
+  adapter: DateAdapter<D>,
+  view: CalendarView,
+  activeDate: D,
+  minDate: D | null,
+  maxDate: D | null,
+): boolean {
+  return !maxDate || !isSameCalendarView(adapter, view, activeDate, maxDate, minDate, maxDate);
+}
+
+/** Mirrors `MatCalendarHeader.previousClicked()`/`nextClicked()`'s date arithmetic. */
+export function periodDelta<D>(
+  adapter: DateAdapter<D>,
+  view: CalendarView,
+  activeDate: D,
+  direction: 1 | -1,
+): D {
+  if (view === 'month') return adapter.addCalendarMonths(activeDate, direction);
+  return adapter.addCalendarYears(activeDate, direction * (view === 'year' ? 1 : YEARS_PER_PAGE));
 }
