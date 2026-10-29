@@ -1,5 +1,8 @@
 import {describe, it, expect} from 'vitest';
-import {resolveAutocompleteOptions, type MatAutocompleteEntryDef} from './autocomplete-option-resolver';
+import {
+  resolveAutocompleteOptions,
+  type MatAutocompleteEntryDef,
+} from './autocomplete-option-resolver';
 
 function idGen() {
   let n = 0;
@@ -95,7 +98,7 @@ describe('resolveAutocompleteOptions', () => {
     expect(second.flat[1].id).not.toBe(appleId);
   });
 
-  it('uses an object value\'s label as the stability key when value has no useful string form', () => {
+  it("uses an object value's label as the stability key when value has no useful string form", () => {
     const cache = new Map<string, string>();
     const gen = idGen();
     const mary = {name: 'Mary'};

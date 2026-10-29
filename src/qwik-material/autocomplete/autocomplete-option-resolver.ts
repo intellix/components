@@ -84,6 +84,14 @@ export interface MatAutocompleteOptionDef<T = unknown> {
    *  `value`'s own `String(...)` form wouldn't be a useful/unique key (an
    *  object value). Defaults to `String(value)`, then `label`. */
   key?: string;
+  /** Whether `value` should be echoed as a literal `value` DOM attribute
+   *  on the rendered `<mat-option>` — see `core/mat-option.tsx`'s
+   *  `echoValue` doc comment for the full "why this varies per scenario"
+   *  write-up. Defaults `false` (most of this port's scenarios bind
+   *  `[value]`, never reflected as an attribute by Angular); the one
+   *  scenario using a static, bracket-less binding (`disabled-option`)
+   *  passes `true` explicitly, per option. */
+  echoValueAttr?: boolean;
 }
 
 /** One `<mat-optgroup>`, wrapping its own options. */
@@ -118,6 +126,8 @@ export interface ResolvedAutocompleteOption {
   label: string;
   /** Content to render — `def.content` if given, else `def.label` as plain text. */
   content: JSXOutput;
+  /** See `MatAutocompleteOptionDef.echoValueAttr`'s doc comment. */
+  echoValueAttr: boolean;
 }
 
 export interface ResolvedAutocompleteGroup {
@@ -170,6 +180,7 @@ function resolveOption(
     id,
     label: def.label,
     content: def.content ?? def.label,
+    echoValueAttr: def.echoValueAttr ?? false,
   };
 }
 

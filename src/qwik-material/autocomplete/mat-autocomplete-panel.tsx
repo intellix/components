@@ -1,7 +1,10 @@
 import {component$, type Signal} from '@builder.io/qwik';
 import {MatOption} from '../core/mat-option';
 import {MatOptgroup} from '../core/mat-optgroup';
-import type {ResolvedAutocompleteNode, ResolvedAutocompleteOption} from './autocomplete-option-resolver';
+import type {
+  ResolvedAutocompleteNode,
+  ResolvedAutocompleteOption,
+} from './autocomplete-option-resolver';
 
 /**
  * The content `MatAutocomplete` attaches to its overlay — the literal
@@ -76,6 +79,7 @@ export const MatAutocompletePanel = component$<MatAutocompletePanelProps>(props 
       key={option.id}
       id={option.id}
       value={option.value}
+      echoValue={option.echoValueAttr}
       disabled={option.disabled}
       selected={props.value.value === option.value}
       active={props.activeIndex.value === option.index}

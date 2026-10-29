@@ -12,7 +12,11 @@ import {
 import {isBrowser} from '@builder.io/qwik/build';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
-import {createIdGenerator, useIdGenerator, type ListKeyManager} from '@angular-community/qwik-cdk/a11y';
+import {
+  createIdGenerator,
+  useIdGenerator,
+  type ListKeyManager,
+} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {
   MAT_FORM_FIELD_CONNECTED_ORIGIN,
@@ -117,7 +121,7 @@ function panelAriaLabelledby(
  *     <MatAutocomplete
  *       value={value.value}
  *       onValueChange$={(v) => (value.value = v as string)}
- *       options={filteredFruits.value}
+ *       options={filteredFruits}
  *       onInput$={(_, el) => (filteredFruits.value = filterFruits(el.value))}
  *       onFocus$={(_, el) => (filteredFruits.value = filterFruits(el.value))}
  *     />
@@ -150,10 +154,35 @@ function panelAriaLabelledby(
  * own `<p>Value: …}` paragraph exercises.
  */
 export interface MatAutocompleteProps extends Omit<MatFormFieldControlProps, 'value'> {
-  /** Plain-data option/group definitions — see the module doc comment.
-   *  DELIBERATELY reactive (unlike `qwik-material/select`'s `options`) —
-   *  pass a freshly-filtered array on every keystroke. */
-  options: ReadonlyArray<MatAutocompleteEntryDef>;
+  /**
+   * Plain-data option/group definitions — see the module doc comment.
+   * DELIBERATELY reactive (unlike `qwik-material/select`'s `options`) —
+   * the consumer writes a freshly-filtered array into this SIGNAL on every
+   * keystroke.
+   *
+   * **Must be the `Signal` itself** (`options={filteredFruits}`), never
+   * `.value` (`options={filteredFruits.value}`) — a hard requirement this
+   * port's `select`/`chips`/`form-field` ports didn't have, because none
+   * of them need `MatFormField`'s `control` prop to carry genuinely LIVE
+   * data. `MatFormField` reads its own `control` prop EXACTLY ONCE
+   * (`controlSnapshot = useSignal(() => props.control)` in
+   * `mat-form-field.tsx` — confirmed by its own doc comment: freezing the
+   * REFERENCE, not just the nested prop values, is a deliberate fix for a
+   * real Qwik 1.20 core crash) — so a plain array value nested inside
+   * `<MatFormField control={<MatAutocomplete options={...} />}>` is
+   * captured once, at first render, and NEVER updates again, no matter how
+   * many times the consumer's own route re-renders with a fresh filtered
+   * array. A `Signal` sidesteps this the same way `select-runtime.ts`'s
+   * `value`/`activeIndex` signals already do for `MatSelectPanel`: the
+   * SIGNAL OBJECT reference is what gets frozen into the snapshot, but
+   * that object is still the exact same live, mutable signal the consumer
+   * keeps writing to — reading `.value` off it (in render, in the
+   * `useTask$` below, and in every `$()` handler) always sees the CURRENT
+   * value, unaffected by the outer props snapshot being stale. See
+   * `autocomplete-option-resolver.ts`'s doc comment for the complementary
+   * "why re-resolving on every read is safe" half of this design.
+   */
+  options: Signal<ReadonlyArray<MatAutocompleteEntryDef>>;
   /** Current value. Read ONCE to seed internal state — mirrors
    *  `qwik-material/select`'s own "`value` is not a live reactive prop"
    *  deviation (see that package's SYNC.md): nothing in this port's
@@ -259,6 +288,8 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
     valueOnAttach,
     inputRef,
     formFieldOriginRef: formFieldOrigin,
+    formField,
+    emptySignal,
   };
 
   const cfg: AutocompleteRuntimeConfig = {
@@ -298,7 +329,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   // comment. A no-op (both at SSR and at every render where the overlay
   // isn't attached) via that function's own early return.
   useTask$(({track}) => {
-    const options = track(() => props.options);
+    const options = track(() => props.options.value);
     if (!isBrowser) return;
     const cache = ensureIdCache(idCache);
     const {flat, tree} = resolveAutocompleteOptions(options, cache, autocompleteOptionIdGen);
@@ -309,15 +340,30 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   // active option's OWN id) and for deriving `panelOpen` below. Cheap and
   // id-stable across refilters — see `autocomplete-option-resolver.ts`'s
   // doc comment.
-  const {flat} = resolveAutocompleteOptions(props.options, ensureIdCache(idCache), autocompleteOptionIdGen);
+  const {flat} = resolveAutocompleteOptions(
+    props.options.value,
+    ensureIdCache(idCache),
+    autocompleteOptionIdGen,
+  );
   // Mirrors `MatAutocompleteTrigger.panelOpen` getter: `_overlayAttached &&
   // autocomplete.showPanel` — ALWAYS derived, never a separate stored flag,
   // so it can never drift from the current (possibly just-refiltered-to-
-  // empty) option count. `countFlatOptions` (id-free) would also work here;
-  // reusing the already-resolved `flat.length` avoids a second walk.
+  // empty) option count.
   const panelOpen = overlayAttached.value && flat.length > 0;
   const activeOptionId =
     panelOpen && activeIndex.value >= 0 ? flat[activeIndex.value]?.id : undefined;
+
+  // Mirrors `_floatLabel()`/`_resetLabel()` — forces the form field's label
+  // to stay floated for as long as the overlay is ATTACHED (not merely
+  // "visibly showing options" — matches upstream's own `_overlayAttached`-
+  // driven timing, independent of `showPanel`). See
+  // `MatFormFieldControlState.floatOverride`'s own doc comment. Driven
+  // directly off `overlayAttached` (not a separate copy) so it can never
+  // drift; guarded so the write is a no-op once settled (same pattern as
+  // every other context-store write in this file/`mat-input.tsx`).
+  if (formField && formField.floatOverride !== overlayAttached.value) {
+    formField.floatOverride = overlayAttached.value;
+  }
 
   const handleFocus$ = $((event: FocusEvent) => {
     if (disabled) return;
@@ -327,7 +373,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
     }
     const cache = ensureIdCache(idCache);
     const {flat: liveFlat, tree: liveTree} = resolveAutocompleteOptions(
-      props.options,
+      props.options.value,
       cache,
       autocompleteOptionIdGen,
     );
@@ -354,7 +400,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
     emptySignal.value = !rawValue;
     const cache = ensureIdCache(idCache);
     const {flat: liveFlat, tree: liveTree} = resolveAutocompleteOptions(
-      props.options,
+      props.options.value,
       cache,
       autocompleteOptionIdGen,
     );
@@ -366,7 +412,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
     if (disabled) return;
     const cache = ensureIdCache(idCache);
     const {flat: liveFlat, tree: liveTree} = resolveAutocompleteOptions(
-      props.options,
+      props.options.value,
       cache,
       autocompleteOptionIdGen,
     );
@@ -376,7 +422,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   const handleKeyDown$ = $((event: KeyboardEvent) => {
     const cache = ensureIdCache(idCache);
     const {flat: liveFlat, tree: liveTree} = resolveAutocompleteOptions(
-      props.options,
+      props.options.value,
       cache,
       autocompleteOptionIdGen,
     );

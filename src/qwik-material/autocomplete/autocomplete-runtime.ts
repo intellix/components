@@ -56,6 +56,7 @@
 import {noSerialize, type NoSerialize, type QRL, type Signal} from '@builder.io/qwik';
 import {isBrowser} from '@builder.io/qwik/build';
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
+import type {MatFormFieldControlState} from '../core/mat-form-field-control';
 import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,
@@ -66,9 +67,16 @@ import {
   type OverlayRef,
   type OverlayRegistry,
 } from '@angular-community/qwik-cdk/overlay';
-import {createListKeyManager, type ListKeyManager, type ListKeyManagerOption} from '@angular-community/qwik-cdk/a11y';
+import {
+  createListKeyManager,
+  type ListKeyManager,
+  type ListKeyManagerOption,
+} from '@angular-community/qwik-cdk/a11y';
 import {MatAutocompletePanel} from './mat-autocomplete-panel';
-import type {ResolvedAutocompleteNode, ResolvedAutocompleteOption} from './autocomplete-option-resolver';
+import type {
+  ResolvedAutocompleteNode,
+  ResolvedAutocompleteOption,
+} from './autocomplete-option-resolver';
 
 /** Mirrors upstream `MatAutocompleteTrigger._setStrategyPositions()`'s
  *  default (`position: 'auto'`) — below positions, then above. */
@@ -137,6 +145,17 @@ export interface AutocompleteRuntimeSignals {
   /** `MAT_FORM_FIELD_CONNECTED_ORIGIN`, when nested in a `<MatFormField>` —
    *  read `.value` live, never dereferenced ahead of time. */
   formFieldOriginRef: Signal<Element | undefined> | undefined;
+  /** `MAT_FORM_FIELD_CONTROL_STATE`, when nested in a `<MatFormField>` —
+   *  `undefined` for standalone usage. Needed here (not just read by
+   *  `mat-autocomplete.tsx`'s own `handleBlur$`) specifically for the
+   *  `requireSelection` reset-on-close path (`closeAutocompletePanelWithResetCheck`)
+   *  — see that function's own doc comment for why blur's own empty/float
+   *  update runs TOO EARLY to see the reset. */
+  formField: MatFormFieldControlState | undefined;
+  /** Local "is the control empty" signal — mirrors `mat-input.tsx`'s own
+   *  `emptySignal`. Updated here for the same reset-timing reason as
+   *  `formField` above. */
+  emptySignal: Signal<boolean>;
 }
 
 export interface AutocompleteRuntimeConfig {
@@ -190,7 +209,10 @@ function makeRegistry(ctx: QwikCdkInternals): OverlayRegistry {
 }
 
 /** Mirrors `MatAutocompleteTrigger._getHostWidth()`/`_getPanelWidth()`. */
-function getOverlayWidth(cfg: AutocompleteRuntimeConfig, signals: AutocompleteRuntimeSignals): string | number {
+function getOverlayWidth(
+  cfg: AutocompleteRuntimeConfig,
+  signals: AutocompleteRuntimeSignals,
+): string | number {
   if (cfg.panelWidth) return cfg.panelWidth;
   const el = signals.formFieldOriginRef?.value ?? signals.inputRef.value;
   return el?.getBoundingClientRect().width ?? '';
@@ -214,7 +236,9 @@ function buildKeyManager(
   flat: readonly ResolvedAutocompleteOption[],
   signals: AutocompleteRuntimeSignals,
 ): ListKeyManager<KeyManagerItem> {
-  const manager = createListKeyManager(flat.map(toKeyManagerItem)).withWrap().skipPredicate(() => false);
+  const manager = createListKeyManager(flat.map(toKeyManagerItem))
+    .withWrap()
+    .skipPredicate(() => false);
   manager.onChange(index => {
     signals.activeIndex.value = index;
   });
@@ -238,7 +262,11 @@ function getKeyManager(
  *  are independent, and a reopen always starts with no active item unless
  *  `autoActiveFirstOption`). Called on every open AND every refilter while
  *  open. */
-function resetActiveItem(flat: readonly ResolvedAutocompleteOption[], cfg: AutocompleteRuntimeConfig, signals: AutocompleteRuntimeSignals): void {
+function resetActiveItem(
+  flat: readonly ResolvedAutocompleteOption[],
+  cfg: AutocompleteRuntimeConfig,
+  signals: AutocompleteRuntimeSignals,
+): void {
   const manager = getKeyManager(flat, signals);
   if (cfg.autoActiveFirstOption) {
     manager.setActiveItem(flat.findIndex(o => !o.disabled));
@@ -333,7 +361,10 @@ export function openAutocompletePanel(
     // happens here, not in that function.
     keyboardDispatcher.add(overlayRef, {
       onKeydown(e) {
-        if ((e.key === 'Escape' && !hasModifierKey(e)) || (e.key === 'ArrowUp' && hasModifierKey(e, 'altKey'))) {
+        if (
+          (e.key === 'Escape' && !hasModifierKey(e)) ||
+          (e.key === 'ArrowUp' && hasModifierKey(e, 'altKey'))
+        ) {
           e.preventDefault();
           e.stopPropagation();
           closeAutocompletePanelWithResetCheck(cfg, signals);
@@ -392,15 +423,56 @@ export async function selectAutocompleteOption(
     : displayValueSync(option.value);
   if (inputEl) inputEl.value = display;
   cfg.onValueChange$?.(option.value);
+  // Mirrors `_setValueAndClose()`'s EXACT order — `focus()` BEFORE
+  // `closePanel()`, not after. This is load-bearing, not cosmetic:
+  // clicking an option (unlike pressing Enter) genuinely blurs the input
+  // first (confirmed live against the real Angular app — a plain,
+  // non-focusable click target blurs whatever was previously focused, the
+  // ordinary browser behavior for mousedown on a non-focusable element;
+  // `<mat-option>` carries no tabindex either side). `focus()` here is
+  // therefore a REAL, synchronous re-focus, not a no-op — and because
+  // `MatAutocomplete`'s own `handleFocus$` reopens the panel on ANY
+  // genuine focus event (mirrors upstream's own `_handleFocus()`, which
+  // has no "already open" guard either — see that function's own
+  // comment), this refocus ITSELF re-triggers `openAutocompletePanel`
+  // synchronously, before this function's next line ever runs. Calling
+  // `detachOverlay` AFTER `focus()` (matching upstream's own
+  // `_setValueAndClose` → `this.closePanel()` ordering, which also runs
+  // after its own `focus()` call) means that spurious reopen is the one
+  // that gets closed — settling correctly within this same synchronous
+  // call. Reversing this order (detach, then focus) was tried first and
+  // reproduced the browser's own close synchronously being undone by the
+  // LATER reopen, leaving the panel incorrectly open — confirmed live.
+  inputEl?.focus();
   detachOverlay(signals);
   cfg.onOpenedChange$?.(false);
-  inputEl?.focus();
 }
 
 /** Mirrors `closePanel()` + `_setValueAndClose()`'s "no selection" branch
  *  (the `requireSelection` reset-on-close check). Used by Escape, Tab, and
  *  an outside click — every close path that does NOT stem from picking an
- *  option directly. */
+ *  option directly.
+ *
+ * ## Why this ALSO updates `formField`/`emptySignal` directly, unlike the
+ * other close paths
+ *
+ * For a genuine outside click, the NATIVE blur (moving focus away from the
+ * input) fires BEFORE the click event that this function is ultimately
+ * called from (standard browser event order: focus-related events, then
+ * click) — confirmed live. `mat-autocomplete.tsx`'s own `handleBlur$` has
+ * therefore ALREADY run, and already computed `shouldLabelFloat` from
+ * whatever the input's value was AT THAT MOMENT — which, for
+ * `requireSelection`, is still the STALE, about-to-be-discarded text (e.g.
+ * "zzz"), not the post-reset empty string this function is about to write.
+ * Left alone, the label would incorrectly stay floated (the stale value
+ * read at blur time was non-empty) even though the control is about to
+ * become genuinely empty — confirmed live against the real Angular app
+ * (see `src/dev-app/qwik-parity/autocomplete.ts`'s LABEL-FLOATING note:
+ * "a close that BOTH blurs the input AND leaves the value empty" is the
+ * one case that visibly unfloats it). So the reset branch below
+ * recomputes `empty`/`shouldLabelFloat` itself, from the (already-false,
+ * since blur already ran) `formField.focused` and the NEW empty value —
+ * the one synchronous update `handleBlur$` can't retroactively make. */
 export function closeAutocompletePanelWithResetCheck(
   cfg: AutocompleteRuntimeConfig,
   signals: AutocompleteRuntimeSignals,
@@ -411,6 +483,11 @@ export function closeAutocompletePanelWithResetCheck(
     signals.selectedValue.value = undefined;
     inputEl.value = '';
     cfg.onValueChange$?.(undefined);
+    signals.emptySignal.value = true;
+    if (signals.formField) {
+      signals.formField.empty = true;
+      signals.formField.shouldLabelFloat = signals.formField.focused;
+    }
   }
   detachOverlay(signals);
   cfg.onOpenedChange$?.(false);
@@ -509,7 +586,8 @@ export function handleAutocompleteKeydown(
 
   const manager = getKeyManager(flat, signals);
   manager.setItems(flat.map(toKeyManagerItem));
-  const isArrowKey = key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight';
+  const isArrowKey =
+    key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight';
 
   if (panelOpen && key === 'Enter' && !hasModifier) {
     const active = manager.activeItem;
