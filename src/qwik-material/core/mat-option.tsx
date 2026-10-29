@@ -38,6 +38,22 @@ export interface MatOptionProps<T = unknown> {
    *  diff on every option, every scenario, once the id-generator infinite
    *  loop (see mat-select.tsx's doc comment) stopped masking it. */
   value?: T;
+  /**
+   * Whether {@link value} is actually echoed as a literal DOM attribute —
+   * see that prop's own doc comment for why the attribute's presence
+   * depends entirely on how the CONSUMING template wrote the binding
+   * (static/bracket-less vs. a bound `[value]`), not on `MatOption` itself.
+   * Defaults `true` (every `qwik-material/select` scenario uses a static
+   * binding). `qwik-material/autocomplete`'s own scenarios are a genuine
+   * MIX — confirmed live against the real Angular app: 7 of 8 use a bound
+   * `[value]="fruit"` (no DOM attribute at all), while `disabled-option`
+   * alone uses the static, bracket-less form (`<mat-option
+   * value="Apple">`, a real attribute) — so that port passes this
+   * explicitly per-option (see `autocomplete-option-resolver.ts`'s
+   * `echoValueAttr`), rather than assuming one blanket answer the way
+   * `qwik-material/select` safely can.
+   */
+  echoValue?: boolean;
   /** Mirrors `MatOption.id` (`_IdGenerator().getId('mat-option-')`).
    *  Optional here — see the module doc comment's `fallbackIdGen`: a
    *  consumer-facing `<MatOption value="apple">Apple</MatOption>`
@@ -105,7 +121,7 @@ export const MatOption = component$<MatOptionProps>(props => {
       role="option"
       id={id}
       class={classes}
-      value={props.value != null ? String(props.value) : undefined}
+      value={(props.echoValue ?? true) && props.value != null ? String(props.value) : undefined}
       aria-selected={selected ? 'true' : 'false'}
       aria-disabled={disabled ? 'true' : 'false'}
       onClick$={onClick$}

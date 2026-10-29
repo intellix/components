@@ -339,6 +339,19 @@ but is a trap for anything that needs to change later.
    OTHER, genuinely-live half of this contract — top-level `touched`/`dirty`/`invalid` — still
    passes).
 
+## `floatOverride` (2026-10-29, for `qwik-material/autocomplete`)
+
+`alwaysFloat` (`floatLabel === 'always'`) is now ORed with a new
+`controlState.floatOverride` read (`alwaysFloatNow`, used everywhere the
+old bare `alwaysFloat` drove `shouldLabelFloat`/`mat-mdc-form-field-label-
+always-float`/the outline-notch-width task) — a control-driven manual
+override, mirroring upstream `MatFormField._shouldAlwaysFloat()`'s override
+half. See `core/mat-form-field-control.ts`'s own `floatOverride` doc
+comment and `qwik-material/autocomplete/SYNC.md` for the full write-up
+(first consumer: `MatAutocomplete`, forcing the label floated for as long
+as its panel overlay is attached). Defaults `false`; no existing control
+sets it, so `MatInput`/`MatSelect` are unaffected.
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/form-field/ 2>/dev/null` → 0
