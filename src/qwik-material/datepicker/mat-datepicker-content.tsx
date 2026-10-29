@@ -28,24 +28,18 @@
  * flanking `.mat-datepicker-content-container` are `useFocusTrap`'s OWN `attachAnchors()` work
  * (`qwik-cdk/a11y`'s `createFocusTrap`, called with `containerRef` below) — they are NEVER
  * rendered as JSX children of this component. `autoFocus`/`restoreFocus` are deliberately left at
- * their "off" defaults: this component does its OWN focus-into-the-active-cell (mirrors
- * `MatDatepickerContent.ngAfterViewInit`'s explicit `this._calendar.focusActiveCell()`, NOT a
- * generic "first tabbable element" — the period button would win that race instead) and
- * `datepicker-runtime.ts`'s `closeDatepickerPanel` does its OWN focus-restore (via `focusVia(...,
- * 'program')`, matching the contract's confirmed-live `cdk-program-focused` class — see
- * `use-mat-datepicker.ts`'s `_focusedElementBeforeOpen` doc comment), so `useFocusTrap`'s own
- * built-in restore (which doesn't know about `focusVia`) would double up/race it.
+ * their "off" defaults: `<MatCalendar autoFocusActiveCell>` below does the OWN initial
+ * focus-into-the-active-cell (mirrors `MatDatepickerContent.ngAfterViewInit`'s explicit
+ * `this._calendar.focusActiveCell()`, NOT a generic "first tabbable element" — the period button
+ * would win that race instead; see `mat-calendar.tsx`'s own doc comment for why this moved there,
+ * not a task local to this component) and `datepicker-runtime.ts`'s `closeDatepickerPanel` does
+ * its OWN focus-restore (via `focusVia(..., 'program')`, matching the contract's confirmed-live
+ * `cdk-program-focused` class — see `use-mat-datepicker.ts`'s `_focusedElementBeforeOpen` doc
+ * comment), so `useFocusTrap`'s own built-in restore (which doesn't know about `focusVia`) would
+ * double up/race it.
  */
-import {
-  $,
-  component$,
-  useSignal,
-  useVisibleTask$,
-  type JSXOutput,
-  type QRL,
-  type Signal,
-} from '@builder.io/qwik';
-import {focusVia, useFocusTrap} from '@angular-community/qwik-cdk/a11y';
+import {$, component$, useSignal, type JSXOutput, type QRL, type Signal} from '@builder.io/qwik';
+import {useFocusTrap} from '@angular-community/qwik-cdk/a11y';
 import {MatButton} from '../button/mat-button';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
@@ -93,23 +87,6 @@ export const MatDatepickerContent = component$<MatDatepickerContentProps>(props 
   // Pure tab-wrapping + anchors — see this file's own doc comment for why `autoFocus`/
   // `restoreFocus` are both left off.
   useFocusTrap(containerRef);
-
-  // Mirrors `ngAfterViewInit()`'s `this._calendar.focusActiveCell()` — moves real DOM focus onto
-  // the active cell (`.mat-calendar-body-active`, the one cell with `tabIndex=0`) once mounted.
-  // Forced to origin `'mouse'` (via `focusVia`, not a plain `.focus()`) — confirmed live: every
-  // scenario in this port's contract opens via a toggle CLICK, and Angular's real `FocusMonitor`
-  // tracks input modality GLOBALLY (a document-level mousedown listener, not scoped to the
-  // element being focused), so the active cell's `focus` event is still classified 'mouse' by
-  // the time this runs, even though nothing _on the cell itself_ was clicked. This port's own
-  // `useFocusOrigin()` is deliberately per-element (see its doc comment), so it has no such
-  // global state to read — forcing `'mouse'` here reproduces the observed result for every
-  // click-triggered open this contract exercises. A keyboard-triggered open (Enter/Space on the
-  // toggle, Alt+Down on the input) is not exercised by any scenario and would get the WRONG
-  // class with this simplification — documented in SYNC.md.
-  useVisibleTask$(() => {
-    const active = containerRef.value?.querySelector<HTMLElement>('.mat-calendar-body-active');
-    if (active) focusVia(active, 'mouse');
-  });
 
   // Range hover preview — purely local/visual, never touches the committed/pending model. See
   // this file's own doc comment: `MatCalendar`'s `previewStart`/`previewEnd` are plain
@@ -164,6 +141,7 @@ export const MatDatepickerContent = component$<MatDatepickerContentProps>(props 
       >
         <MatCalendar
           id={props.calendarId}
+          autoFocusActiveCell
           startAt={props.startAt}
           startView={props.startView}
           selected={props.isRange ? currentRange : (props.selected.value as unknown)}

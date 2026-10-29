@@ -29,7 +29,8 @@ export interface MatYearViewProps<D = unknown> {
   maxDate?: D | null;
   dateFilter?: QRL<(date: D) => boolean>;
   isRtl?: boolean;
-  onActiveDateChange$: QRL<(date: D) => void>;
+  /** See `mat-month-view.tsx`'s identical prop doc comment for the `origin` param. */
+  onActiveDateChange$: QRL<(date: D, origin: 'mouse' | 'keyboard') => void>;
   /** Mirrors `monthSelected` — "the user drilled into this month", NOT a value commit. */
   onMonthSelected$: QRL<(date: D) => void>;
 }
@@ -80,7 +81,7 @@ export const MatYearView = component$<MatYearViewProps>(props => {
       props.isRtl ?? false,
     );
     if (delta != null) {
-      props.onActiveDateChange$(delta);
+      props.onActiveDateChange$(delta, 'keyboard');
       event.preventDefault();
     }
   });
@@ -97,7 +98,7 @@ export const MatYearView = component$<MatYearViewProps>(props => {
   });
 
   const onCellFocus$ = $((cell: CalendarCell<unknown>) => {
-    props.onActiveDateChange$(cell.rawValue as never);
+    props.onActiveDateChange$(cell.rawValue as never, 'mouse');
   });
 
   return (

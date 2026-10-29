@@ -58,8 +58,14 @@ export interface MatMonthViewProps<D = unknown> {
   startDateAccessibleName?: string | null;
   endDateAccessibleName?: string | null;
   isRtl?: boolean;
-  /** Mirrors `activeDateChange` — fires whenever keyboard nav/focus moves the active cell. */
-  onActiveDateChange$: QRL<(date: D) => void>;
+  /** Mirrors `activeDateChange` — fires whenever keyboard nav/focus moves the active cell. The
+   *  `origin` tells `MatCalendar`'s own re-focus task (see that file's doc comment) which
+   *  `focusVia()` origin to force: `'keyboard'` for an arrow-key delta, `'mouse'` for a cell
+   *  natively gaining focus via a real click's `mousedown` (the only other way this fires —
+   *  confirmed live, needed so a plain SELECTION click on a not-yet-active cell, e.g.
+   *  `range-basic`'s first click, doesn't get mis-classified `'keyboard'` by this port's own
+   *  re-focus task). */
+  onActiveDateChange$: QRL<(date: D, origin: 'mouse' | 'keyboard') => void>;
   /** Mirrors `_userSelection` — fires on a real click/Enter selection AND on an Escape-clear
    *  mid-range-preview (value `null` in that case). */
   onUserSelect$: QRL<(date: D | null) => void>;
@@ -125,7 +131,7 @@ export const MatMonthView = component$<MatMonthViewProps>(props => {
       props.isRtl ?? false,
     );
     if (delta != null) {
-      props.onActiveDateChange$(delta);
+      props.onActiveDateChange$(delta, 'keyboard');
       event.preventDefault();
     }
   });
@@ -144,8 +150,12 @@ export const MatMonthView = component$<MatMonthViewProps>(props => {
     props.onUserSelect$(cell.rawValue);
   });
 
+  // The only other way a cell's `onFocus$` fires (besides this port's OWN explicit
+  // `focusVia()` re-focus calls, which this component's `onActiveDateChange$` guard — see
+  // `mat-calendar.tsx` — no-ops as a redundant same-date write) is a REAL click's native
+  // `mousedown`-triggered focus — always `'mouse'`.
   const onCellFocus$ = $((cell: CalendarCell<unknown>) => {
-    props.onActiveDateChange$(cell.rawValue as never);
+    props.onActiveDateChange$(cell.rawValue as never, 'mouse');
   });
 
   const onCellMouseEnter$ = $((cell: CalendarCell<unknown> | null) => {
