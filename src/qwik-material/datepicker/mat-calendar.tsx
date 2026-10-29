@@ -52,12 +52,13 @@
  * Angular side's non-existent counterpart). A plain `.focus()` plus the explicit `focusOrigin`
  * signal write needs no such attribute at all.
  *
- * `refocusActiveCell()` itself doesn't touch the DOM — it only sets a `pendingFocusOrigin`
- * signal, consumed by a separate `useVisibleTask$` that ALSO tracks `activeDate`/`currentView`
- * (see that task's own doc comment). Querying `.mat-calendar-body-active` and calling `.focus()`
- * INLINE, right inside the handler that just wrote `activeDate`/`currentView`, was tried first
- * and found live to be unreliable even behind a `requestAnimationFrame`+`setTimeout(0)` defer
- * (mirroring upstream's own `afterNextRender()`+`setTimeout()` in `_focusActiveCell()`):
+ * Every handler below writes `pendingFocusOrigin.value = <origin>` directly (NOT via a shared
+ * local helper function — see that signal's own doc comment just above its declaration for why),
+ * consumed by a separate `useVisibleTask$` that ALSO tracks `activeDate`/`currentView` (see that
+ * task's own doc comment). Querying `.mat-calendar-body-active` and calling `.focus()` INLINE,
+ * right inside the handler that just wrote `activeDate`/`currentView`, was tried first and found
+ * live to be unreliable even behind a `requestAnimationFrame`+`setTimeout(0)` defer (mirroring
+ * upstream's own `afterNextRender()`+`setTimeout()` in `_focusActiveCell()`):
  * `start-view-multi-year`'s multi-year→year drill-down sometimes still queried the OLD view's
  * (about to be removed) active cell, confirmed via a live trace — however long the defer, there
  * is no fixed duration guaranteed to land after Qwik's own render for that SPECIFIC write has
@@ -140,24 +141,37 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
   const activeDate = useSignal<unknown>(() => props.startAt ?? adapter.today());
   const currentView = useSignal<CalendarView>(() => props.startView ?? 'month');
   const calendarRef = useSignal<HTMLElement>();
-  // See this file's own doc comment — written explicitly by every handler below (via
-  // `refocusActiveCell`), read directly by `CalendarContent`, never inferred from a
-  // `focusin`/`focusout` event.
+  // See this file's own doc comment — written explicitly by every handler below (a direct
+  // `pendingFocusOrigin.value = ...` write, not a shared helper call — see that signal's own
+  // doc comment), read directly by `CalendarContent`, never inferred from a `focusin`/`focusout`
+  // event.
   const focusOrigin = useSignal<CalendarFocusOrigin>(null);
   // The origin for a focus move THIS component itself just requested, consumed (and reset to
-  // `null`) by the reactive task right below — see `refocusActiveCell`'s own doc comment for why
+  // `null`) by the reactive task right below — see the doc comment right above that task for why
   // this is a signal, not a direct DOM query/`.focus()` call made inline.
   const pendingFocusOrigin = useSignal<CalendarFocusOrigin>(null);
 
   /** Mirrors `focusActiveCell()`/`_moveFocusOnNextTick`'s `focusActiveCell()`/
-   *  `_focusActiveCellAfterViewChecked()` — see this file's own doc comment. Called explicitly
-   *  from every handler below, right after it changes `activeDate`/`currentView` (or, once, on
-   *  mount — see the task right below), with the origin the caller already knows.
+   *  `_focusActiveCellAfterViewChecked()` — see this file's own doc comment. Every handler below
+   *  writes `pendingFocusOrigin.value = <origin>` directly (right after it changes
+   *  `activeDate`/`currentView`, or once on mount — see the task right below), rather than
+   *  calling a shared local helper: a plain (non-`$()`) arrow function defined in THIS component's
+   *  scope, referenced from inside MULTIPLE separate `$()` handlers (`onPeriodClick$`,
+   *  `onPrevious$`, `onNext$`, `onActiveDateChange$`, the two drill-down handlers, and the mount
+   *  task), is exactly the shape Qwik's optimizer cannot always inline — confirmed live as the
+   *  cause of `inline-calendar`'s intermittent SSR crash (`QError_verifySerializable`/"Code(3)",
+   *  thrown from `beforeClose` while serializing a QRL's captured scope, with the unserializable
+   *  value logging as a bare `[Function]`): the optimizer captured the shared helper itself as a
+   *  runtime closure value instead of inlining its one-line body into each chunk, and a plain
+   *  function cannot be serialized into the resumability state. Module-level consts (`adapter`)
+   *  and signals are fine to share across `$()` boundaries this way — only a component-local
+   *  PLAIN FUNCTION shared across more than one `$()` call site hits this.
    *
-   *  Does NOT query the DOM or call `.focus()` itself — it only sets `pendingFocusOrigin`, which
-   *  the reactive task below (which also tracks `activeDate`/`currentView`) picks up once Qwik's
-   *  OWN render for THIS SAME batch of signal writes has actually landed. Querying inline, right
-   *  here, was tried first and found live to be genuinely too early: even deferring the query via
+   *  The write itself does NOT query the DOM or call `.focus()` — it only sets
+   *  `pendingFocusOrigin`, which the reactive task below (which also tracks
+   *  `activeDate`/`currentView`) picks up once Qwik's OWN render for THIS SAME batch of signal
+   *  writes has actually landed. Querying inline, right at the write site, was tried first and
+   *  found live to be genuinely too early: even deferring the query via
    *  `requestAnimationFrame`+`setTimeout(0)` (mirroring upstream's own `afterNextRender()`+
    *  `setTimeout()` in `_focusActiveCell()`) still sometimes found the OLD active cell on a
    *  drill-down (`start-view-multi-year`'s multi-year→year step) — confirmed via a live trace,
@@ -165,9 +179,6 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
    *  reliably after it, however long the defer. A `useVisibleTask$` that `track()`s the SAME
    *  signals this handler just wrote is Qwik's own, correct way to say "run once whatever just
    *  changed has actually rendered" — no timing guess required. */
-  const refocusActiveCell = (origin: 'mouse' | 'keyboard') => {
-    pendingFocusOrigin.value = origin;
-  };
 
   useVisibleTask$(({track}) => {
     track(() => activeDate.value);
@@ -185,7 +196,7 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
   // `track()`s has "changed" yet). Only when the caller asked for it (see
   // `autoFocusActiveCell`'s own doc comment) — the `inline-calendar` scenario never does.
   useVisibleTask$(() => {
-    if (props.autoFocusActiveCell) refocusActiveCell('mouse');
+    if (props.autoFocusActiveCell) pendingFocusOrigin.value = 'mouse';
   });
 
   const minDate = props.minDate ?? null;
@@ -195,18 +206,18 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
   // click in this port's contract — see this file's own doc comment.
   const onPeriodClick$ = $(() => {
     currentView.value = currentView.value === 'month' ? 'multi-year' : 'month';
-    refocusActiveCell('mouse');
+    pendingFocusOrigin.value = 'mouse';
   });
   const onPrevious$ = $(() => {
     activeDate.value = periodDelta(adapter, currentView.value, activeDate.value, -1);
-    refocusActiveCell('mouse');
+    pendingFocusOrigin.value = 'mouse';
   });
   const onNext$ = $(() => {
     activeDate.value = periodDelta(adapter, currentView.value, activeDate.value, 1);
-    refocusActiveCell('mouse');
+    pendingFocusOrigin.value = 'mouse';
   });
-  // Guarded write (not an unconditional assignment): `refocusActiveCell`'s eventual `.focus()`
-  // call on the active cell fires a REAL focus event, which bubbles to `MatCalendarBody`'s
+  // Guarded write (not an unconditional assignment): the eventual `.focus()` call this triggers
+  // on the active cell fires a REAL focus event, which bubbles to `MatCalendarBody`'s
   // per-cell `onFocus$` and lands right back here with a FRESH `Date` object representing the
   // SAME day, tagged `'mouse'` (see `mat-month-view.tsx`'s doc comment) regardless of what
   // ACTUALLY triggered the real navigation — an unconditional write/refocus would both loop
@@ -216,18 +227,18 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
   const onActiveDateChange$ = $((date: unknown, origin: 'mouse' | 'keyboard') => {
     if (!adapter.sameDate(date, activeDate.value)) {
       activeDate.value = date;
-      refocusActiveCell(origin);
+      pendingFocusOrigin.value = origin;
     }
   });
   const onMonthSelectedInYearView$ = $((date: unknown) => {
     activeDate.value = date;
     currentView.value = 'month';
-    refocusActiveCell('mouse');
+    pendingFocusOrigin.value = 'mouse';
   });
   const onYearSelectedInMultiYearView$ = $((date: unknown) => {
     activeDate.value = date;
     currentView.value = 'year';
-    refocusActiveCell('mouse');
+    pendingFocusOrigin.value = 'mouse';
   });
   const onUserSelect$ = $((date: unknown) => {
     props.onUserSelect$?.(date as never);
