@@ -132,77 +132,19 @@ every other entry point uses.
    of `isRange`/comparison-range support (neither ported — see deviation 1), so the 2 comparison
    spans' text is non-empty on every view, not just range ones.
 
-## Open issue: a hang reproduces when interacting with `inline-calendar` — NOT fully diagnosed
+## Resolved: the `inline-calendar` click hang
 
-**This is the one thing blocking further progress and needs attention before continuing the
-port.** Symptom: running `inline-calendar`'s real `angular-parity.spec.ts` test (or a hand-rolled
-Playwright script doing the same thing) past the FIRST click/focus on a calendar cell causes the
-QWIK page to stop responding to ANY further CDP command (including a plain `locator.count()` or
-even `Profiler.stop()`) for 20-60+ seconds, well past what a `waitForTimeout(150)` (a pure
-Node-side timer, confirmed via trace inspection to never fire its `after` event until the browser
-context is eventually force-closed by the test timeout) should ever take. The REAL Angular page
-never exhibits this.
+Root cause: `mat-calendar-body.tsx` and `mat-calendar-header.tsx` called `idGen.getId(...)` in their
+render bodies. `getId` does `counter.value++` on the shared `ID_GENERATOR_COUNTER` signal, so every
+client-side re-render subscribed to AND bumped that counter, re-rendering every subscriber forever
+(SSR renders once, so the initial compare always passed). Fixed by generating ids once per mount via
+`useSignal(() => ...)` — the same fix `select` needed. Always memoize `getId` calls.
 
-**What was ruled out / learned, in order:**
-
-1. It is NOT the `useVisibleTask$`-based DOM-repair for the 4 hidden-label spans — confirmed by
-   fully disabling that task (reverting to a no-op): the hang still reproduced. (An EARLIER,
-   now-superseded version of this investigation incorrectly concluded the DOM-repair task was the
-   cause, because disabling it made the test fail FAST on the `compare('initial')` structural
-   diff — i.e. it never even reached the click steps that trigger the real hang. That version of
-   the fix — "move the misplaced spans via `appendChild`" — is real and worth keeping regardless
-   (see deviation 5), but it is not what's causing THIS hang.)
-2. Adding `console.log` instrumentation with an explicit call-count circuit breaker to
-   `onActiveDateChange$`/`onUserSelect$` (`mat-calendar.tsx`) showed each firing EXACTLY ONCE per
-   click/focus in isolated manual Playwright scripts — i.e. not a tight, ever-incrementing
-   call-count loop in application code that a circuit breaker could catch.
-3. A `Profiler.start()`/`stop()` CDP session (meant to capture a flame graph of whatever's
-   spinning during the hang) itself never returned — strong evidence the renderer's main thread is
-   genuinely, synchronously unresponsive for the whole window, not just "many renders spread over
-   time with gaps a profiler could sample."
-4. **A real, separate, confirmed problem was found and is almost certainly at least partially
-   responsible for the inconsistent timings observed while debugging this**: this session's own
-   earlier diagnostic scripts left **7 orphaned `chrome-headless-shell --type=renderer` processes
-   each pegged at 100-113% CPU** (confirmed via `ps aux`), from Node-side script processes that
-   were force-killed mid-run without their spawned Chromium subprocess being cleanly closed
-   first. With 7 renderer processes competing for the CPU, ANY new Playwright-driven browser
-   instance in this sandbox is severely CPU-starved — fully consistent with the observed
-   inconsistency (some manual repro attempts completed in under 400ms; others, running the
-   identical script, hung for 15-30+ seconds). **This session's sandbox permission layer denied
-   every attempt to kill these stray processes** (both a broad `pkill -f chrome-headless-shell`
-   and a targeted `kill -9 <specific 7 PIDs>` were refused by the auto-mode classifier as
-   "Interfere With Workloads"), so this could not be cleaned up or ruled out as the sole cause.
-5. A targeted code change was still made and kept regardless of root-cause uncertainty (cheap,
-   plausible, no downside): `mat-month-view.tsx`/`mat-year-view.tsx`/`mat-multi-year-view.tsx`'s
-   `useTask$` callbacks were changed from unconditionally `async` to synchronous-unless-a-real-
-   filter-needs-resolving (deviation 3 above), reducing the window where this task's own
-   microtask chain could overlap with a near-simultaneous second re-render triggered by a
-   different handler (e.g. a single click firing both a native `focus` event, handled by
-   `onCellFocus$`, and a `click` event, handled by `onCellClick$`, each writing a DIFFERENT
-   signal). **This did not resolve the hang** when retested (still reproduced after the stray
-   processes were confirmed still present) — but it's a reasonable, low-risk change on its own
-   merits, so it stays.
-
-**Next steps for whoever picks this up:**
-
-- **First**, get a clean environment: kill every stray `chrome-headless-shell`/`chromium` process
-  left over from this session (`ps aux | grep chrome-headless-shell`, then kill each PID) before
-  attempting to reproduce anything — this session's own sandbox would not allow it, but a fresh
-  session/shell should be able to.
-- Re-run `inline-calendar`'s `angular-parity.spec.ts` test (just that one, `-g inline-calendar`)
-  in the clean environment. If it now passes reliably (3x, per the task's own bar), the hang WAS
-  purely the stray-process CPU contention and no further code changes are needed here — proceed
-  to `basic-popup` per the task's own prescribed order.
-- If it still hangs in a verified-clean environment, the next diagnostic step not yet tried: bisect
-  by removing `onCellFocus$`'s `props.onActiveDateChange$(...)` call entirely (confirmed, in this
-  session, that this alone — with the DOM-repair task also disabled — eliminates the hang in
-  isolated manual scripts) and re-test with the REAL harness (not a manual script) to confirm
-  whether the combination of "real test harness's click sequencing" + "activeDate update on
-  focus" is what's needed to reproduce it, as opposed to either alone. If confirmed, the fix is
-  likely to decouple the focus-driven active-cell tracking from the signal write that triggers
-  `mat-month-view.tsx`'s `useTask$` re-run (e.g. writing to a plain, untracked field instead of a
-  signal for the "visual active cell" concern specifically, separate from the real `activeDate`
-  signal used for keyboard navigation).
+The earlier theories (CPU contention from stray Chromium processes, the hidden-label DOM repair,
+`onCellFocus$`'s `activeDate` write) were all wrong. Two real diffs surfaced once the hang was gone:
+the hidden-label spans are dropped by Qwik's reconciliation of the `<tbody>` rows (now restored by a
+`MutationObserver`), and `.mat-calendar-content`'s `cdkMonitorSubtreeFocus` classes (now a
+`CalendarContent` sub-component using `useFocusOrigin()`).
 
 ## Done when (status against the task's own bar)
 

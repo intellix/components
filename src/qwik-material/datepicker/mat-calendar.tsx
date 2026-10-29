@@ -22,7 +22,8 @@
  * this port's contract (every drill-down scenario proceeds by mouse click, and no scenario
  * inspects focus immediately after a drill-down).
  */
-import {$, component$, useSignal, type QRL} from '@builder.io/qwik';
+import {$, component$, Slot, useSignal, type QRL} from '@builder.io/qwik';
+import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MatCalendarHeader} from './mat-calendar-header';
@@ -53,6 +54,27 @@ export interface MatCalendarProps<D = unknown> {
   /** Range-only — mirrors month-view's hover-preview output. */
   onPreviewChange$?: QRL<(date: D | null) => void>;
 }
+
+/**
+ * `<div class="mat-calendar-content" cdkMonitorSubtreeFocus>` — its own component so
+ * `useFocusOrigin()` attaches to this div (not `<mat-calendar>`, which also holds the header).
+ */
+const CalendarContent = component$(() => {
+  const focusOrigin = useFocusOrigin();
+  return (
+    <div
+      class={[
+        'mat-calendar-content',
+        focusOrigin.value && 'cdk-focused',
+        focusOrigin.value && `cdk-${focusOrigin.value}-focused`,
+      ]}
+      {...{cdkmonitorsubtreefocus: ''}}
+      tabIndex={-1}
+    >
+      <Slot />
+    </div>
+  );
+});
 
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 
@@ -106,7 +128,7 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
         onPrevious$={onPrevious$}
         onNext$={onNext$}
       />
-      <div class="mat-calendar-content" {...{cdkmonitorsubtreefocus: ''}} tabIndex={-1}>
+      <CalendarContent>
         {currentView.value === 'month' && (
           <MatMonthView
             activeDate={activeDate.value}
@@ -148,7 +170,7 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
             onYearSelected$={onYearSelectedInMultiYearView$}
           />
         )}
-      </div>
+      </CalendarContent>
     </mat-calendar>
   );
 });

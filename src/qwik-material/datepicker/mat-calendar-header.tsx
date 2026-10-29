@@ -18,7 +18,7 @@
  * so (also matching `PaginatorNavButton`) the actual tooltip show/hide interaction is not wired —
  * only the static `mat-mdc-tooltip-trigger` class is reproduced.
  */
-import {$, component$, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatButton} from '../button/mat-button';
 import {FocusIndicator} from '../button/internal/focus-indicator';
@@ -122,7 +122,8 @@ const formats = MAT_NATIVE_DATE_FORMATS;
 
 export const MatCalendarHeader = component$<MatCalendarHeaderProps>(props => {
   const idGen = useIdGenerator();
-  const periodLabelId = idGen.getId('mat-calendar-period-label-');
+  // Once per mount — see mat-calendar-body.tsx's ids.
+  const periodLabelId = useSignal(() => idGen.getId('mat-calendar-period-label-')).value;
 
   const minDate = props.minDate ?? null;
   const maxDate = props.maxDate ?? null;

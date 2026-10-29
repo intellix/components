@@ -23,13 +23,9 @@
  *
  * This is a browser HTML-parsing behavior, not a Qwik bug, and it is unavoidable through JSX
  * restructuring alone (position within tbody doesn't matter to the algorithm). The first fix
- * attempted here *moved* the misplaced JSX-rendered spans into the tbody after the fact (a
- * `useVisibleTask$` doing `tbody.appendChild(misplacedSpan)`) — this DOES fix the structural
- * diff, but confirmed, the hard way (a bisection that reproduced the failure with the move in
- * place and never without it): it corrupts Qwik's own reconciliation bookkeeping for this
- * component, because Qwik still believes those spans live at their ORIGINAL (JSX-declared)
- * position. The NEXT state-driven re-render of this same component instance (e.g. the next
- * keyboard-nav step moving the active cell) then hangs the page outright.
+ * attempted here *moved* the misplaced JSX-rendered spans into the tbody after mount; creating
+ * them outside JSX is simpler. (A page hang once blamed on that move was actually an unmemoized
+ * `getId` call — see SYNC.md.)
  *
  * The fix that works: don't give Qwik a JSX descriptor for these 4 spans AT ALL — create them
  * with plain `document.createElement`/`appendChild` calls in a `useVisibleTask$`, keyed by id so
@@ -107,10 +103,15 @@ function describedBy(
 // site); passing a concrete `MatCalendarBodyProps<Date>` here still type-checks structurally.
 export const MatCalendarBody = component$<MatCalendarBodyProps>(props => {
   const idGen = useIdGenerator();
-  const startId = idGen.getId('mat-calendar-body-start-');
-  const endId = idGen.getId('mat-calendar-body-end-');
-  const comparisonStartId = idGen.getId('mat-calendar-body-comparison-start-');
-  const comparisonEndId = idGen.getId('mat-calendar-body-comparison-end-');
+  // Generated once per mount: `getId` writes the shared counter signal, so calling it on every
+  // render would subscribe to and bump that counter, re-rendering forever.
+  const ids = useSignal(() => ({
+    startId: idGen.getId('mat-calendar-body-start-'),
+    endId: idGen.getId('mat-calendar-body-end-'),
+    comparisonStartId: idGen.getId('mat-calendar-body-comparison-start-'),
+    comparisonEndId: idGen.getId('mat-calendar-body-comparison-end-'),
+  }));
+  const {startId, endId, comparisonStartId, comparisonEndId} = ids.value;
 
   const numCols = props.numCols ?? 7;
   const cellAspectRatio = props.cellAspectRatio ?? 1;
@@ -123,21 +124,9 @@ export const MatCalendarBody = component$<MatCalendarBodyProps>(props => {
   const tbodyRef = useSignal<HTMLElement>();
   const startLabel = props.startDateAccessibleName ?? '';
   const endLabel = props.endDateAccessibleName ?? '';
-  // See this file's own "Foster parenting" doc comment above. Confirmed (the hard way — an
-  // earlier version of this fix *moved* the parser-misplaced JSX-rendered spans via
-  // `appendChild`, which fixed the structural diff but corrupted Qwik's own reconciliation
-  // bookkeeping for this component: a LATER re-render — e.g. the next keyboard-nav step — would
-  // then hang the page, confirmed via a bisection that reproduced the hang with the move in place
-  // and never reproduced it with the move removed) that these 4 elements must stay entirely
-  // OUTSIDE Qwik's own JSX/vdom tracking, not just "fixed up after the fact": created here via
-  // plain DOM APIs (never JSX), Qwik has no memory of them at all, so no future render of this
-  // same component instance (new `rows`, new active cell, …) can ever try to reconcile them.
-  // `useVisibleTask$` (client-only) rather than `useTask$`, since this needs a REAL DOM — this
-  // never runs during SSR regardless, so there's no "runs once during SSR, skipped, never
-  // reruns on the client" gap `useTask$` would have here (unlike the dateFilter-resolution tasks
-  // in mat-month-view.tsx etc., which genuinely need the SSR-side run — see that file's doc
-  // comment — and therefore must stay `useTask$`).
-  useVisibleTask$(({track}) => {
+  // See this file's "Foster parenting" doc comment above. `useVisibleTask$` (client-only) because
+  // this needs a real DOM.
+  useVisibleTask$(({track, cleanup}) => {
     const start = track(() => startLabel);
     const end = track(() => endLabel);
     const tbody = tbodyRef.value;
@@ -152,10 +141,24 @@ export const MatCalendarBody = component$<MatCalendarBodyProps>(props => {
       }
       if (el.textContent !== text) el.textContent = text;
     };
-    ensure(startId, start);
-    ensure(endId, end);
-    ensure(comparisonStartId, `${COMPARISON_DATE_LABEL} ${start}`);
-    ensure(comparisonEndId, `${COMPARISON_DATE_LABEL} ${end}`);
+    const ensureAll = () => {
+      ensure(startId, start);
+      ensure(endId, end);
+      ensure(comparisonStartId, `${COMPARISON_DATE_LABEL} ${start}`);
+      ensure(comparisonEndId, `${COMPARISON_DATE_LABEL} ${end}`);
+    };
+    ensureAll();
+    // Qwik's reconciliation of the `<tr>` rows drops children it didn't render (these spans) and
+    // may insert new rows after them; restore them as the trailing children after every change.
+    const ids = [startId, endId, comparisonStartId, comparisonEndId];
+    const observer = new MutationObserver(() => {
+      const tail = Array.from(tbody.children).slice(-ids.length);
+      if (tail.length === ids.length && tail.every((el, i) => el.id === ids[i])) return;
+      ensureAll();
+      for (const id of ids) tbody.appendChild(tbody.querySelector(`#${CSS.escape(id)}`)!);
+    });
+    observer.observe(tbody, {childList: true});
+    cleanup(() => observer.disconnect());
   });
 
   return (
