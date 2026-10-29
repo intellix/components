@@ -76,6 +76,12 @@ const MAT_SELECT_CONFIG_DEFAULTS: MatSelectConfig = {};
  * problem. See `select-option-resolver.ts`'s doc comment and
  * `select/SYNC.md` for the full write-up.
  *
+ * Plain data fixed THAT problem, but resolving it is still not something to
+ * do as a bare, unmemoized call in the render body — see the `resolved`
+ * `useSignal(() => ...)` below for a second, unrelated hazard this port hit
+ * (an infinite reactive loop via the shared id-generator counter) and why
+ * resolution must be memoized.
+ *
  * ```tsx
  * <MatFormField
  *   label={<MatLabel>Fruit</MatLabel>}
@@ -223,10 +229,36 @@ export const MatSelect = component$<MatSelectProps>(props => {
   const focused = useSignal(false);
 
   // `options` is plain data (no embedded component-function references) —
-  // see the module doc comment for why that matters. Safe to recompute as
-  // a plain local on every render, exactly like every other derived local
-  // in this file.
-  const {flat, tree} = resolveSelectOptions(props.options, idGen);
+  // see the module doc comment for why that matters — but resolving it is
+  // NOT safe to do as a plain, unmemoized local on every render, unlike
+  // every other derived local in this file: `resolveSelectOptions()` calls
+  // `idGen.getId(...)` once per option/group lacking an explicit `id`
+  // (every scenario here), and `useIdGenerator()`'s `getId` both READS and
+  // WRITES the shared, context-provided `ID_GENERATOR_COUNTER` signal
+  // (`core/mat-form-field-control.ts`... no — see `qwik-cdk/a11y/
+  // id-generator.ts`'s own doc comment). Calling it inline in the render
+  // body subscribes `MatSelect` to that counter (by reading it) AND
+  // notifies every subscriber of it (by incrementing it) on every single
+  // render — including `MatSelect` ITSELF, which re-renders in response,
+  // calls `resolveSelectOptions` again, increments the counter again,
+  // forever: a self-perpetuating reactive loop pegging the main thread at
+  // 100% CPU, starting the moment any OTHER mount-time signal write (e.g.
+  // form-field's own 300ms `animations-enabled` timer) triggers this
+  // component's first post-SSR re-render. Confirmed live via a CDP
+  // debugger pause (minified prod stack: `vt → Rt → (anon) → E → (anon) →
+  // Rt → vt → …`, Qwik's scheduler re-entering itself) and via render-count
+  // instrumentation (`MatSelect` re-rendering 40+ times within the same
+  // millisecond, every guarded `formField.*` write already a no-op — the
+  // trigger was never the form-field ping-pong, it was this). This is
+  // exactly the hazard `mat-form-field.tsx`'s own "ids must be memoized"
+  // comment warns about, just reached through a helper function instead of
+  // a bare `idGen.getId(...)` call. Fixed the same way: memoized via
+  // `useSignal(() => ...)`, run exactly once per component instance — ids
+  // don't need to be live-reactive to `props.options` (no scenario ever
+  // changes the option list after mount; mirrors `value`'s own "seeded
+  // once" treatment above).
+  const resolved = useSignal(() => resolveSelectOptions(props.options, idGen));
+  const {flat, tree} = resolved.value;
 
   const touched = isInFormField ? formField.touched : (props.touched ?? false);
   const dirty = isInFormField ? formField.dirty : (props.dirty ?? false);

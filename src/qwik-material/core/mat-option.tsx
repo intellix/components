@@ -27,8 +27,16 @@ const fallbackIdGen = createIdGenerator();
  * `qwik-cdk/a11y/key-manager/list-key-manager.ts`'s doc comment).
  */
 export interface MatOptionProps<T = unknown> {
-  /** Mirrors `MatOption.value`. Not rendered directly (no native `value`
-   *  attribute on a non-form element) — read back by the owner on select. */
+  /** Mirrors `MatOption.value`. Rendered as a literal `value` DOM attribute
+   *  — NOT because upstream's `MatOption` has any `[attr.value]` host
+   *  binding (it doesn't: `option.ts`'s `host` object has no `value` entry
+   *  at all) but because every parity scenario's Angular template writes
+   *  the STATIC (bracket-less) `<mat-option value="apple">` — and Angular
+   *  keeps a plain static attribute in the rendered DOM regardless of
+   *  whether it also happens to match an `@Input()` name. Confirmed live:
+   *  omitting this produced a real `attr 'value' 'apple' != 'undefined'`
+   *  diff on every option, every scenario, once the id-generator infinite
+   *  loop (see mat-select.tsx's doc comment) stopped masking it. */
   value?: T;
   /** Mirrors `MatOption.id` (`_IdGenerator().getId('mat-option-')`).
    *  Optional here — see the module doc comment's `fallbackIdGen`: a
@@ -97,6 +105,7 @@ export const MatOption = component$<MatOptionProps>(props => {
       role="option"
       id={id}
       class={classes}
+      value={props.value != null ? String(props.value) : undefined}
       aria-selected={selected ? 'true' : 'false'}
       aria-disabled={disabled ? 'true' : 'false'}
       onClick$={onClick$}
@@ -125,8 +134,16 @@ export const MatOption = component$<MatOptionProps>(props => {
       {props.groupInertLabel != null && (
         <span class="cdk-visually-hidden">({props.groupInertLabel})</span>
       )}
+      {/* `mat-ripple` is both the bare directive-selector attribute AND a
+          literal class — same "attribute + class" convention established by
+          radio/tabs/slide-toggle's own ripple containers (see e.g.
+          mat-radio-button.tsx's matching comment). Confirmed live: the real
+          Angular DOM's ripple div classes are `[mat-focus-indicator
+          mat-mdc-option-ripple mat-ripple]`, not just the two static
+          classes the template literally writes — `MatRipple` the directive
+          adds its own `mat-ripple` class at runtime. */}
       <div
-        class="mat-mdc-option-ripple mat-focus-indicator"
+        class="mat-mdc-option-ripple mat-focus-indicator mat-ripple"
         aria-hidden="true"
         {...({'mat-ripple': ''} as Record<string, string>)}
       />
