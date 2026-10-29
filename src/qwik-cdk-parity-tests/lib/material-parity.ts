@@ -181,6 +181,14 @@ export interface ParityScenario {
    * both sides (auto-opening dialogs), the first step waits for it instead.
    */
   skipInitialCompare?: boolean;
+  /**
+   * Pin `[data-parity-root]` to the same fixed viewport box on both pages.
+   * The two dev-apps have different page chrome (Angular's shell adds a
+   * toolbar and padding), so anything positioned relative to the viewport —
+   * connected overlays/popovers anchored to content inside the root — gets
+   * different pixel offsets unless the root itself sits at the same place.
+   */
+  pinRoot?: boolean;
 }
 
 /** Captures the `[data-parity-root]` subtree as a normalized DomNode. */
@@ -429,19 +437,24 @@ async function waitForFormFieldAnimationsSettled(page: Page): Promise<void> {
     .catch(() => {});
 }
 
-async function open(browser: Browser, url: string): Promise<Page> {
+const PIN_ROOT_CSS =
+  '[data-parity-root]{position:fixed!important;top:40px!important;left:40px!important;' +
+  'width:800px!important;margin:0!important;padding:0!important}';
+
+async function open(browser: Browser, url: string, pinRoot = false): Promise<Page> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.goto(url);
   await page.waitForSelector('[data-parity-root]', {state: 'attached'});
+  if (pinRoot) await page.addStyleTag({content: PIN_ROOT_CSS});
   await waitForFormFieldAnimationsSettled(page);
   return page;
 }
 
 /** Asserts the Angular and Qwik renderings of a scenario are DOM-identical, before and after each step. */
 export async function expectMaterialParity(browser: Browser, s: ParityScenario): Promise<void> {
-  const angular = await open(browser, `${ANGULAR_URL}/${s.route}/${s.scenario}`);
-  const qwik = await open(browser, `${QWIK_URL}/${s.route}/${s.scenario}/`);
+  const angular = await open(browser, `${ANGULAR_URL}/${s.route}/${s.scenario}`, s.pinRoot);
+  const qwik = await open(browser, `${QWIK_URL}/${s.route}/${s.scenario}/`, s.pinRoot);
   // Qwik resumes lazily; make sure the scenario's own readiness marker exists.
   await qwik.waitForSelector('[data-scenario-ready]', {state: 'attached'});
 
@@ -451,14 +464,14 @@ export async function expectMaterialParity(browser: Browser, s: ParityScenario):
       // creates it; then both sides must agree that it is absent.
       const root = s.rootSelector ?? '[data-parity-root]';
       // Eventually-consistent compare (like Playwright's expect.poll): the
-      // contract is the settled DOM, and a multi-hop reactive update can need
-      // more than one settle() to land on either side. A real difference still
+      // contract is the settled DOM, and a multi-hop reactive or lazily-rendered
+      // update can need several frames to land on either side (polled for ~2s). A real difference still
       // fails after the last attempt; intermediate frames are never the contract.
-      const maxAttempts = 5;
+      const deadline = Date.now() + 2000;
       let aCount = 0;
       let qCount = 0;
       let diffs: string[] = [];
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      for (let attempt = 0; ; attempt++) {
         aCount = await angular.locator(root).count();
         qCount = await qwik.locator(root).count();
         if (aCount === qCount) {
@@ -469,7 +482,9 @@ export async function expectMaterialParity(browser: Browser, s: ParityScenario):
           );
           if (diffs.length === 0) return;
         }
-        if (attempt < maxAttempts - 1) await Promise.all([settle(angular), settle(qwik)]);
+        if (Date.now() >= deadline) break;
+        await Promise.all([settle(angular), settle(qwik)]);
+        await angular.waitForTimeout(50);
       }
       expect(qCount, `${s.route}/${s.scenario} [${label}] count of ${root}`).toBe(aCount);
       expect(diffs, `${s.route}/${s.scenario} [${label}]\n${diffs.join('\n')}`).toEqual([]);

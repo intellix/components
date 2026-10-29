@@ -293,6 +293,7 @@ const backdropClick = (expectedPanelCount: number): ParityStep => ({
 test.describe('mat-select — Angular DOM parity', () => {
   test('fill-basic', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'fill-basic',
       steps: [
@@ -315,6 +316,7 @@ test.describe('mat-select — Angular DOM parity', () => {
 
   test('outline-basic', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'outline-basic',
       steps: [open(), nav('ArrowDown'), keyTo('Enter', 0), open(), keyTo('Escape', 0)],
@@ -322,6 +324,7 @@ test.describe('mat-select — Angular DOM parity', () => {
 
   test('preselected-value', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'preselected-value',
       steps: [open(), nav('ArrowDown'), keyTo('Escape', 0)],
@@ -329,6 +332,7 @@ test.describe('mat-select — Angular DOM parity', () => {
 
   test('placeholder', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'placeholder',
       steps: [open(), clickOption('Banana', 0)],
@@ -336,6 +340,7 @@ test.describe('mat-select — Angular DOM parity', () => {
 
   test('multiple', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'multiple',
       steps: [
@@ -348,15 +353,22 @@ test.describe('mat-select — Angular DOM parity', () => {
 
   test('optgroups', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'optgroups',
       steps: [open(), nav('End'), keyTo('Escape', 0)],
     }));
 
-  test('disabled', ({browser}) => expectMaterialParity(browser, {route, scenario: 'disabled'}));
+  test('disabled', ({browser}) =>
+    expectMaterialParity(browser, {
+      pinRoot: true,
+      route,
+      scenario: 'disabled',
+    }));
 
   test('required-error-state', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'required-error-state',
       steps: [
@@ -370,6 +382,7 @@ test.describe('mat-select — Angular DOM parity', () => {
 
   test('panel-class', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'panel-class',
       steps: [open(), keyTo('Escape', 0)],
@@ -377,6 +390,7 @@ test.describe('mat-select — Angular DOM parity', () => {
 
   test('custom-trigger', ({browser}) =>
     expectMaterialParity(browser, {
+      pinRoot: true,
       route,
       scenario: 'custom-trigger',
       steps: [open(), clickOption('Onion', 1), keyTo('Escape', 0)],
