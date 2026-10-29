@@ -181,12 +181,7 @@ export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(
           snackBarRef?.[MARK_DISMISSED]();
         }
       } else if (event.animationName === ENTER_ANIMATION) {
-        // Deliberately NOT clearing the enter fallback timer here (upstream
-        // does): upstream calls enter() before the container's first render,
-        // so its 150ms enter animation always ends after the 200ms fallback
-        // and `mat-snack-bar-fallback-visible` is always present in Angular's
-        // DOM. This port mounts first and animates immediately, so clearing
-        // here would drop a class Angular reliably renders.
+        clearTimeout(enterFallbackId.value);
         if (!opened.value) {
           opened.value = true;
           snackBarRef?.[MARK_OPENED]();

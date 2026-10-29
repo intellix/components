@@ -164,10 +164,9 @@ Run `pnpm -C src/qwik-material test` (filter: `snack-bar`) to verify the package
 
 ## 200ms enter/exit fallbacks (2026-10-29, coordinator)
 
-Ported upstream's `_enterFallback` / `_exitFallback`. The exit fallback matches
-upstream. The enter fallback always adds `mat-snack-bar-fallback-visible` after
-200ms: upstream clears it on the enter `animationend`, but because Angular calls
-`enter()` before the container's first render, its 150ms animation always ends
-after the 200ms timer, so the class is always present in Angular's DOM. This
-port mounts and animates immediately; clearing the timer there would drop the
-class. Verified by recording animation events on both apps.
+Ported upstream's `_enterFallback` / `_exitFallback` as-is: the enter fallback
+adds `mat-snack-bar-fallback-visible` only if the enter `animationend` hasn't
+cleared it within 200ms. Whether that happens is timing-dependent in Angular
+itself (it depends on how quickly the container renders after `enter()`), so
+the parity harness ignores that one class (see `IGNORE_CLASSES` in
+qwik-cdk-parity-tests/lib/material-parity.ts).

@@ -55,7 +55,10 @@ const IGNORE_ATTR_PREFIXES = [
   'preventdefault:',
   'stoppropagation:',
 ];
-const IGNORE_CLASSES = ['ng-star-inserted'];
+// `mat-snack-bar-fallback-visible`: added by snack-bar's 200ms enter fallback
+// only if the enter animation hasn't ended by then — a render-speed race even
+// within Angular itself, so it can't be part of a deterministic DOM contract.
+const IGNORE_CLASSES = ['ng-star-inserted', 'mat-snack-bar-fallback-visible'];
 /**
  * Directive selector attributes the *consumer* writes in an Angular template
  * (`<button matFab>`, `<img mat-card-avatar>`). Which spelling appears depends
