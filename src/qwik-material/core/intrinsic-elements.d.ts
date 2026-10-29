@@ -15,8 +15,12 @@ declare module '@builder.io/qwik' {
         /** Echoed as a literal attribute — see mat-pseudo-checkbox.tsx. */
         appearance?: string;
       };
-      /** `<mat-option>` — see mat-option.tsx. */
-      'mat-option': QwikIntrinsicElements['div'];
+      'mat-option': QwikIntrinsicElements['div'] & {
+        /** Echoed as a literal attribute — see mat-option.tsx's `value`
+         *  doc comment for why (mirrors Angular's static-attribute-syntax
+         *  side effect, not a real `[attr.value]` host binding upstream). */
+        value?: string;
+      };
       /** `<mat-optgroup>` — see mat-optgroup.tsx. */
       'mat-optgroup': QwikIntrinsicElements['div'];
     }
