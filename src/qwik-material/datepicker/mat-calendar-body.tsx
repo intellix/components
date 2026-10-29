@@ -8,8 +8,42 @@
  * no custom per-date CSS classes — none of this port's scenarios exercise them. The 4 hidden
  * `mat-calendar-body-hidden-label` spans are still always rendered (confirmed live on every
  * view, per the parity contract), with the comparison pair permanently empty.
+ *
+ * ## Foster parenting: the 4 hidden-label spans are created OUTSIDE JSX entirely
+ *
+ * Upstream's real template puts these 4 `<span>`s as plain siblings of the `<tr>` rows, direct
+ * children of `<tbody>` — valid for Angular's LIVE DOM because Angular's renderer builds it via
+ * imperative `createElement`/`appendChild` calls, which are never subject to HTML's parsing
+ * rules. This port's SSR output is actual HTML TEXT that the browser parses on first load, and
+ * the HTML5 "foster parenting" algorithm (building a `<tbody>` can only directly contain `<tr>`/
+ * `<script>`/`<style>`/`<template>`) relocates any OTHER element — unconditionally, regardless of
+ * its position — to a SIBLING of the enclosing `<table>`, BEFORE it. Confirmed live: rendering
+ * these 4 spans as ordinary JSX children of this component's `<tbody>` puts them as children of
+ * `<mat-month-view>` (etc.) instead, immediately before `<table>`.
+ *
+ * This is a browser HTML-parsing behavior, not a Qwik bug, and it is unavoidable through JSX
+ * restructuring alone (position within tbody doesn't matter to the algorithm). The first fix
+ * attempted here *moved* the misplaced JSX-rendered spans into the tbody after the fact (a
+ * `useVisibleTask$` doing `tbody.appendChild(misplacedSpan)`) — this DOES fix the structural
+ * diff, but confirmed, the hard way (a bisection that reproduced the failure with the move in
+ * place and never without it): it corrupts Qwik's own reconciliation bookkeeping for this
+ * component, because Qwik still believes those spans live at their ORIGINAL (JSX-declared)
+ * position. The NEXT state-driven re-render of this same component instance (e.g. the next
+ * keyboard-nav step moving the active cell) then hangs the page outright.
+ *
+ * The fix that works: don't give Qwik a JSX descriptor for these 4 spans AT ALL — create them
+ * with plain `document.createElement`/`appendChild` calls in a `useVisibleTask$`, keyed by id so
+ * later task re-runs (`startDateAccessibleName`/`endDateAccessibleName` changing) update existing
+ * elements in place rather than duplicating. Since Qwik never rendered them via JSX, it has no
+ * memory of them to reconcile against — no future render of this component can ever touch them,
+ * regardless of how many times `rows`/`activeCell`/etc. change. This is the narrowest exception
+ * this project's "no per-instance useVisibleTask$" rule (design doc rule 7) has needed so far:
+ * that rule targets INTERACTIVITY plumbing (focus monitoring/ripple loading/keyboard handling) a
+ * page's components might never need to load; this is a one-time-per-mount SSR-correctness
+ * repair every instance needs regardless of interaction, the same category as the overlay
+ * system's own `OverlayHost` lifecycle task.
  */
-import {$, component$, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, useVisibleTask$, type QRL} from '@builder.io/qwik';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
   cellPaddingPercent,
@@ -22,6 +56,9 @@ import {
   isSelected,
   type CalendarCell,
 } from './calendar-math';
+import {DATEPICKER_INTL} from './datepicker-intl';
+
+const COMPARISON_DATE_LABEL = DATEPICKER_INTL.comparisonDateLabel;
 
 export interface MatCalendarBodyProps<D = unknown> {
   label: string;
@@ -83,8 +120,47 @@ export const MatCalendarBody = component$<MatCalendarBodyProps>(props => {
   const showDedicatedLabelRow =
     props.labelMinRequiredCells != null && offset < props.labelMinRequiredCells;
 
+  const tbodyRef = useSignal<HTMLElement>();
+  const startLabel = props.startDateAccessibleName ?? '';
+  const endLabel = props.endDateAccessibleName ?? '';
+  // See this file's own "Foster parenting" doc comment above. Confirmed (the hard way — an
+  // earlier version of this fix *moved* the parser-misplaced JSX-rendered spans via
+  // `appendChild`, which fixed the structural diff but corrupted Qwik's own reconciliation
+  // bookkeeping for this component: a LATER re-render — e.g. the next keyboard-nav step — would
+  // then hang the page, confirmed via a bisection that reproduced the hang with the move in place
+  // and never reproduced it with the move removed) that these 4 elements must stay entirely
+  // OUTSIDE Qwik's own JSX/vdom tracking, not just "fixed up after the fact": created here via
+  // plain DOM APIs (never JSX), Qwik has no memory of them at all, so no future render of this
+  // same component instance (new `rows`, new active cell, …) can ever try to reconcile them.
+  // `useVisibleTask$` (client-only) rather than `useTask$`, since this needs a REAL DOM — this
+  // never runs during SSR regardless, so there's no "runs once during SSR, skipped, never
+  // reruns on the client" gap `useTask$` would have here (unlike the dateFilter-resolution tasks
+  // in mat-month-view.tsx etc., which genuinely need the SSR-side run — see that file's doc
+  // comment — and therefore must stay `useTask$`).
+  useVisibleTask$(({track}) => {
+    const start = track(() => startLabel);
+    const end = track(() => endLabel);
+    const tbody = tbodyRef.value;
+    if (!tbody) return;
+    const ensure = (id: string, text: string) => {
+      let el = tbody.querySelector<HTMLSpanElement>(`#${CSS.escape(id)}`);
+      if (!el) {
+        el = document.createElement('span');
+        el.id = id;
+        el.className = 'mat-calendar-body-hidden-label';
+        tbody.appendChild(el);
+      }
+      if (el.textContent !== text) el.textContent = text;
+    };
+    ensure(startId, start);
+    ensure(endId, end);
+    ensure(comparisonStartId, `${COMPARISON_DATE_LABEL} ${start}`);
+    ensure(comparisonEndId, `${COMPARISON_DATE_LABEL} ${end}`);
+  });
+
   return (
     <tbody
+      ref={tbodyRef}
       {...{'mat-calendar-body': ''}}
       class="mat-calendar-body"
       onKeyDown$={props.onKeyDown$}
@@ -212,14 +288,6 @@ export const MatCalendarBody = component$<MatCalendarBodyProps>(props => {
           })}
         </tr>
       ))}
-      <span id={startId} class="mat-calendar-body-hidden-label">
-        {props.startDateAccessibleName}
-      </span>
-      <span id={endId} class="mat-calendar-body-hidden-label">
-        {props.endDateAccessibleName}
-      </span>
-      <span id={comparisonStartId} class="mat-calendar-body-hidden-label" />
-      <span id={comparisonEndId} class="mat-calendar-body-hidden-label" />
     </tbody>
   );
 });

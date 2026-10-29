@@ -17,6 +17,7 @@ export const DATEPICKER_INTL = {
   nextMultiYearLabel: 'Next 24 years',
   switchToMonthViewLabel: 'Choose date',
   switchToMultiYearViewLabel: 'Choose month and year',
+  comparisonDateLabel: 'Comparison range',
 };
 
 /** Mirrors `formatYearRange` — en-dash-joined, used for the VISIBLE multi-year period text. */

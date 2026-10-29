@@ -5,17 +5,25 @@
  * `MatCalendar` (no `ComponentPortal`/custom-header seam — no scenario in this port's contract
  * needs a custom header, see SYNC.md).
  *
- * The period button reuses `qwik-material/button`'s `<MatButton>`; the prev/next buttons reuse
- * `<MatIconButton>` (handles `disabledInteractive`/`aria-disabled`/ripple-loader-disabled
- * correctly already) plus a manually-added `mat-mdc-tooltip-trigger` class — no scenario in this
- * port's contract ever hovers a prev/next button (same documented gap `qwik-material/paginator`'s
- * `PaginatorNavButton` already accepts for its own nav buttons), so the actual tooltip
- * show/hide interaction is NOT wired here; only the static trigger-side class is reproduced.
+ * The period button reuses `qwik-material/button`'s `<MatButton>`. The prev/next buttons do NOT
+ * use `<MatIconButton>` — confirmed live, upstream's real DOM has a literal `disabledinteractive`
+ * attribute on these buttons (the bare, non-bracketed `disabledInteractive` attribute in
+ * `calendar-header.html`'s template, echoed verbatim same as every other static-attribute-echo
+ * case in this project), but `MatIconButton`'s own `disabledInteractive` prop is CONSUMED only
+ * (drives `aria-disabled`/classes), never echoed as a literal attribute — the exact same gap
+ * `qwik-material/paginator`'s `PaginatorNavButton` already works around for its own nav buttons
+ * (see that file's doc comment) rather than widening `MatIconButton` itself for every existing
+ * caller. `CalendarNavButton` below mirrors that same workaround, reusing `MatIconButton`'s own
+ * internal pieces directly. No scenario in this port's contract ever hovers a prev/next button,
+ * so (also matching `PaginatorNavButton`) the actual tooltip show/hide interaction is not wired —
+ * only the static `mat-mdc-tooltip-trigger` class is reproduced.
  */
-import {$, component$, type QRL} from '@builder.io/qwik';
-import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
+import {$, component$, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatButton} from '../button/mat-button';
-import {MatIconButton} from '../button/mat-icon-button';
+import {FocusIndicator} from '../button/internal/focus-indicator';
+import {TouchTarget} from '../button/internal/touch-target';
+import {rippleLoaderHostAttrs, useRippleLoader} from '../button/internal/ripple-loader';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';
@@ -27,6 +35,61 @@ import {
   type CalendarView,
 } from './calendar-math';
 import {DATEPICKER_INTL, formatYearRange, formatYearRangeLabel} from './datepicker-intl';
+
+interface CalendarNavButtonProps {
+  class: string;
+  label: string;
+  disabled: boolean;
+  onClick$: QRL<() => void>;
+  icon: JSXOutput;
+}
+
+/** The prev/next nav button — see this file's own doc comment for why it doesn't reuse
+ *  `<MatIconButton>`. Mirrors `qwik-material/paginator`'s `PaginatorNavButton` structure. */
+const CalendarNavButton = component$<CalendarNavButtonProps>(props => {
+  const focusOrigin = useFocusOrigin();
+  const rippleInitialized = useRippleLoader();
+  const rippleAttrs = rippleLoaderHostAttrs({
+    className: 'mat-mdc-button-ripple',
+    centered: true,
+    disabled: props.disabled,
+  });
+
+  const classes = [
+    'mat-mdc-button-base',
+    'mdc-icon-button',
+    'mat-mdc-icon-button',
+    'mat-unthemed',
+    props.disabled && 'mat-mdc-button-disabled',
+    'mat-mdc-button-disabled-interactive',
+    focusOrigin.value && 'cdk-focused',
+    focusOrigin.value === 'touch' && 'cdk-touch-focused',
+    focusOrigin.value === 'keyboard' && 'cdk-keyboard-focused',
+    focusOrigin.value === 'mouse' && 'cdk-mouse-focused',
+    focusOrigin.value === 'program' && 'cdk-program-focused',
+    'mat-mdc-tooltip-trigger',
+    props.class,
+  ].filter(Boolean) as string[];
+
+  return (
+    <button
+      type="button"
+      class={classes}
+      aria-label={props.label}
+      aria-disabled={props.disabled ? 'true' : undefined}
+      onClick$={props.onClick$}
+      {...{disabledinteractive: ''}}
+      {...rippleAttrs}
+      mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
+    >
+      <span class="mat-mdc-button-persistent-ripple mdc-icon-button__ripple" />
+      {props.icon}
+      <FocusIndicator />
+      <TouchTarget />
+      {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
+    </button>
+  );
+});
 
 export interface MatCalendarHeaderProps<D = unknown> {
   currentView: CalendarView;
@@ -140,35 +203,33 @@ export const MatCalendarHeader = component$<MatCalendarHeaderProps>(props => {
 
           <div class="mat-calendar-spacer" />
 
-          <MatIconButton
-            type="button"
-            class={['mat-calendar-previous-button', 'mat-mdc-tooltip-trigger']}
+          <CalendarNavButton
+            class="mat-calendar-previous-button"
+            label={prevButtonLabel}
             disabled={!prevEnabled}
-            disabledInteractive
-            ariaLabel={prevButtonLabel}
             onClick$={$(() => {
               if (prevEnabled) props.onPrevious$();
             })}
-          >
-            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-              <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-            </svg>
-          </MatIconButton>
+            icon={
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+              </svg>
+            }
+          />
 
-          <MatIconButton
-            type="button"
-            class={['mat-calendar-next-button', 'mat-mdc-tooltip-trigger']}
+          <CalendarNavButton
+            class="mat-calendar-next-button"
+            label={nextButtonLabel}
             disabled={!nextEnabled}
-            disabledInteractive
-            ariaLabel={nextButtonLabel}
             onClick$={$(() => {
               if (nextEnabled) props.onNext$();
             })}
-          >
-            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-              <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-            </svg>
-          </MatIconButton>
+            icon={
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+              </svg>
+            }
+          />
         </div>
       </div>
     </mat-calendar-header>
