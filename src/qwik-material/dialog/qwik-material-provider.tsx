@@ -62,6 +62,10 @@ import type {MatSelectConfig} from '../select/select-config';
 import {MAT_SELECT_CONFIG} from '../select/select-config';
 import type {MatMenuDefaultOptions} from '../menu/mat-menu-tokens';
 import {MAT_MENU_DEFAULT_OPTIONS} from '../menu/mat-menu-tokens';
+import type {MatPaginatorConfig} from '../paginator/paginator-config';
+import {MAT_PAGINATOR_CONFIG} from '../paginator/paginator-config';
+import type {MatPaginatorIntl} from '../paginator/paginator-intl';
+import {MAT_PAGINATOR_INTL, DEFAULT_PAGINATOR_INTL} from '../paginator/paginator-intl';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -126,6 +130,13 @@ export interface QwikMaterialProviderProps {
   matSelectConfig?: MatSelectConfig;
   /** Defaults merged into every `createMatMenu()`'s resolved config in this subtree. */
   matMenuDefaults?: MatMenuDefaultOptions;
+  /** Defaults applied to every MatPaginator in this subtree (field-by-field fallback, like
+   *  MatCheckboxConfig). */
+  matPaginatorConfig?: MatPaginatorConfig;
+  /** REPLACES the whole `MatPaginatorIntl` string bag for every MatPaginator in this subtree —
+   *  mirrors upstream's `providers: [{provide: MatPaginatorIntl, useClass: ...}]` (a consumer
+   *  supplies every field, not a per-field fallback merge — see paginator/paginator-intl.ts). */
+  matPaginatorIntl?: MatPaginatorIntl;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -270,6 +281,15 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // menu-runtime.ts's `resolveMenuConfig`; providing an empty object here
   // is equivalent to accepting all of them.
   useContextProvider(MAT_MENU_DEFAULT_OPTIONS, props.matMenuDefaults ?? {});
+  // MatPaginatorConfig is a plain object with primitive fields — no noSerialize needed.
+  // Paginators outside a provider get {} (MatPaginator itself falls back per-field:
+  // `props.x ?? config.x ?? <upstream's own hardcoded default>`, same convention as
+  // checkbox/radio/form-field above).
+  useContextProvider(MAT_PAGINATOR_CONFIG, props.matPaginatorConfig ?? {});
+  // Unlike every config above, MatPaginatorIntl is NOT merged field-by-field — see
+  // paginator/paginator-intl.ts's module doc comment. Paginators outside a provider get the
+  // hardcoded English DEFAULT_PAGINATOR_INTL declared there.
+  useContextProvider(MAT_PAGINATOR_INTL, props.matPaginatorIntl ?? DEFAULT_PAGINATOR_INTL);
 
   return <Slot />;
 });

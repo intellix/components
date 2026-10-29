@@ -90,6 +90,20 @@ export interface MatFormFieldProps {
    *  contract any control's own props should satisfy. */
   control?: JSXOutput;
   /**
+   * Extra content rendered inside `.mat-mdc-form-field-infix`, immediately AFTER `control` —
+   * mirrors a second, unnamed `<ng-content>` projection landing as a sibling of the control at
+   * that same nesting level (upstream's single unnamed `<ng-content>` inside the infix projects
+   * EVERY non-prefix/suffix child in source order, not just the one `MatFormFieldControl`;
+   * `mat-paginator`'s page-size `<mat-form-field>` is the first consumer — its
+   * `<div class="mat-mdc-paginator-touch-target" (click)="selectRef.open()">` is a sibling of
+   * `<mat-select>` inside the SAME infix in `paginator.html`, not a prefix/suffix). Unlike
+   * `control`, this is plain host-element content with no `component$()` of its own, so it's
+   * read directly off `props` on every render — it doesn't need `control`'s own "read once, via
+   * a frozen snapshot" treatment (see that prop's doc comment): there is no nested reactive
+   * state here that a fresh element reference on every render could disrupt.
+   */
+  infixContent?: JSXOutput;
+  /**
    * Live counterparts of the SAME fields on `control`'s own props
    * (`MatFormFieldControlProps.touched`/`.dirty`/`.invalid`) — pass these
    * whenever `formBound` is true AND any of them can change after mount
@@ -640,6 +654,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
           <div class="mat-mdc-form-field-infix">
             {!hasOutline && labelContent}
             {controlSnapshot.value}
+            {props.infixContent}
           </div>
 
           {hasTextSuffix && <div class="mat-mdc-form-field-text-suffix">{props.textSuffix}</div>}

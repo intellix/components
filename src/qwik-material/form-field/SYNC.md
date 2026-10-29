@@ -339,6 +339,17 @@ but is a trap for anything that needs to change later.
    OTHER, genuinely-live half of this contract — top-level `touched`/`dirty`/`invalid` — still
    passes).
 
+10. **`infixContent` prop added for `qwik-material/paginator`.** Upstream's single unnamed
+    `<ng-content>` inside `.mat-mdc-form-field-infix` projects every non-prefix/suffix child in
+    source order, not just the one `MatFormFieldControl` — `mat-paginator`'s page-size
+    `<mat-form-field>` has a second infix child (`<div class="mat-mdc-paginator-touch-target">`,
+    a sibling of `<mat-select>`). `MatFormField` now renders an `infixContent?: JSXOutput` prop
+    immediately after `controlSnapshot.value` inside the infix div. Read directly off `props` on
+    every render (NOT through `control`'s "frozen snapshot, read once" treatment above) — this
+    content is a plain host element with no `component$()` of its own, so none of the
+    reconciliation hazard deviation 9 documents applies to it. See
+    `qwik-material/paginator/SYNC.md`.
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/form-field/ 2>/dev/null` → 0

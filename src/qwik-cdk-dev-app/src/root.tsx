@@ -33,6 +33,7 @@ import '@angular-community/qwik-material/menu-prebuilt.css';
 import '@angular-community/qwik-material/select-prebuilt.css';
 import '@angular-community/qwik-material/table-prebuilt.css';
 import '@angular-community/qwik-material/tree-prebuilt.css';
+import '@angular-community/qwik-material/paginator-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>
