@@ -306,12 +306,20 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     touched,
     dirty,
     invalid,
+    floatOverride: false,
   });
   useContextProvider(MAT_FORM_FIELD_CONTROL_STATE, controlState);
 
+  // `_shouldAlwaysFloat()`: the form field's own `floatLabel === 'always'`
+  // OR a control-driven manual override (see `MatFormFieldControlState.
+  // floatOverride`'s own doc comment — `MatAutocomplete` is the first real
+  // consumer). Both halves drive `mat-mdc-form-field-label-always-float`
+  // identically; `alwaysFloat` was ONLY the first half before this control
+  // existed.
+  const alwaysFloatNow = alwaysFloat || controlState.floatOverride;
   // `_shouldLabelFloat()`: only meaningful when there's a floating label at
   // all; otherwise always floating ("always") or the control's own report.
-  const shouldLabelFloat = hasFloatingLabel && (controlState.shouldLabelFloat || alwaysFloat);
+  const shouldLabelFloat = hasFloatingLabel && (controlState.shouldLabelFloat || alwaysFloatNow);
   const hidePlaceholder = hasFloatingLabel && !shouldLabelFloat;
 
   // ── ids ──
@@ -489,7 +497,8 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     // callback that just returns an already-computed outer primitive
     // establishes no subscription at all and would never re-run reactively.
     const controlFloat = track(() => controlState.shouldLabelFloat);
-    const floating = hasFloatingLabel && (controlFloat || alwaysFloat);
+    const floatOverride = track(() => controlState.floatOverride);
+    const floating = hasFloatingLabel && (controlFloat || alwaysFloat || floatOverride);
     const notch = notchRef.value as HTMLElement | undefined;
     if (!notch || !hasOutline) return;
     const label = labelRef.value as HTMLElement | undefined;
@@ -553,7 +562,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const hostClasses = [
     'mat-mdc-form-field',
     `mat-mdc-form-field-type-${controlType}`,
-    alwaysFloat && 'mat-mdc-form-field-label-always-float',
+    alwaysFloatNow && 'mat-mdc-form-field-label-always-float',
     hasIconPrefix && 'mat-mdc-form-field-has-icon-prefix',
     hasIconSuffix && 'mat-mdc-form-field-has-icon-suffix',
     errorState && 'mat-form-field-invalid',

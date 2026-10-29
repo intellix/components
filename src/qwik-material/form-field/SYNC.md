@@ -349,6 +349,18 @@ but is a trap for anything that needs to change later.
     content is a plain host element with no `component$()` of its own, so none of the
     reconciliation hazard deviation 9 documents applies to it. See
     `qwik-material/paginator/SYNC.md`.
+## `floatOverride` (2026-10-29, for `qwik-material/autocomplete`)
+
+`alwaysFloat` (`floatLabel === 'always'`) is now ORed with a new
+`controlState.floatOverride` read (`alwaysFloatNow`, used everywhere the
+old bare `alwaysFloat` drove `shouldLabelFloat`/`mat-mdc-form-field-label-
+always-float`/the outline-notch-width task) — a control-driven manual
+override, mirroring upstream `MatFormField._shouldAlwaysFloat()`'s override
+half. See `core/mat-form-field-control.ts`'s own `floatOverride` doc
+comment and `qwik-material/autocomplete/SYNC.md` for the full write-up
+(first consumer: `MatAutocomplete`, forcing the label floated for as long
+as its panel overlay is attached). Defaults `false`; no existing control
+sets it, so `MatInput`/`MatSelect` are unaffected.
 
 ## Class count
 

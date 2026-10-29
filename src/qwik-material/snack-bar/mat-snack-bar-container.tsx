@@ -74,6 +74,14 @@ export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(
     // (registered synchronously below), and the animationend/cancel QRL —
     // plain closures and signals, not cross-$()-boundary locals.
     const announceTimeoutId = useSignal<number>();
+    // Upstream's 200ms enter/exit fallbacks (`_enterFallback`/`_exitFallback`):
+    // if the CSS animation doesn't finish in time the container is marked
+    // opened/dismissed anyway, and on enter gains `mat-snack-bar-fallback-visible`.
+    const enterFallbackId = useSignal<number>();
+    const exitFallbackId = useSignal<number>();
+    const fallbackVisible = useSignal(false);
+    const opened = useSignal(false);
+    const dismissed = useSignal(false);
 
     // Matches upstream's constructor: `_live`/`_role` computed once from the
     // (immutable, already-merged) config — pure, no need to recompute per
@@ -108,10 +116,18 @@ export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(
     snackBarRef?.[REGISTER_EXIT_HANDLER](() => {
       exiting.value = true;
       clearTimeout(announceTimeoutId.value);
+      const markDismissed = () => {
+        if (dismissed.value) return;
+        dismissed.value = true;
+        snackBarRef[MARK_DISMISSED]();
+      };
       if (animationsDisabled.value) {
-        queueMicrotask(() => snackBarRef[MARK_DISMISSED]());
+        queueMicrotask(markDismissed);
+      } else {
+        clearTimeout(exitFallbackId.value);
+        exitFallbackId.value = setTimeout(markDismissed, 200) as unknown as number;
       }
-      // else: real `animationend`/`animationcancel` (onExitAnimationDone$ below) completes it.
+      // Otherwise a real `animationend`/`animationcancel` (onAnimationDone$) may complete it first.
     });
 
     useVisibleTask$(({cleanup}) => {
@@ -123,9 +139,22 @@ export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(
       }
 
       if (animationsDisabled.value) {
-        queueMicrotask(() => snackBarRef?.[MARK_OPENED]());
+        queueMicrotask(() => {
+          opened.value = true;
+          snackBarRef?.[MARK_OPENED]();
+        });
+      } else {
+        clearTimeout(enterFallbackId.value);
+        enterFallbackId.value = setTimeout(() => {
+          // The snack bar stays invisible if it fails to animate (e.g. an app
+          // with `* {animation: none !important}`); upstream adds this class.
+          fallbackVisible.value = true;
+          if (!opened.value) {
+            opened.value = true;
+            snackBarRef?.[MARK_OPENED]();
+          }
+        }, 200) as unknown as number;
       }
-      // else: real `animationend` (onEnterAnimationDone$ below) completes it.
 
       // _screenReaderAnnounce(): independent of animation state/duration —
       // always starts this plain timer once.
@@ -133,14 +162,31 @@ export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(
         announced.value = true;
       }, ANNOUNCE_DELAY) as unknown as number;
 
-      cleanup(() => clearTimeout(announceTimeoutId.value));
+      cleanup(() => {
+        clearTimeout(announceTimeoutId.value);
+        clearTimeout(enterFallbackId.value);
+        clearTimeout(exitFallbackId.value);
+      });
     });
 
     const onAnimationDone$ = $((event: AnimationEvent) => {
       if (event.animationName === EXIT_ANIMATION) {
-        snackBarRef?.[MARK_DISMISSED]();
+        clearTimeout(exitFallbackId.value);
+        if (!dismissed.value) {
+          dismissed.value = true;
+          snackBarRef?.[MARK_DISMISSED]();
+        }
       } else if (event.animationName === ENTER_ANIMATION) {
-        snackBarRef?.[MARK_OPENED]();
+        // Deliberately NOT clearing the enter fallback timer here (upstream
+        // does): upstream calls enter() before the container's first render,
+        // so its 150ms enter animation always ends after the 200ms fallback
+        // and `mat-snack-bar-fallback-visible` is always present in Angular's
+        // DOM. This port mounts first and animates immediately, so clearing
+        // here would drop a class Angular reliably renders.
+        if (!opened.value) {
+          opened.value = true;
+          snackBarRef?.[MARK_OPENED]();
+        }
       }
     });
 
@@ -156,6 +202,7 @@ export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(
       !exiting.value && 'mat-snack-bar-container-enter',
       exiting.value && 'mat-snack-bar-container-exit',
       !animationsDisabled.value && 'mat-snack-bar-container-animations-enabled',
+      fallbackVisible.value && 'mat-snack-bar-fallback-visible',
       ...panelClasses,
     ]
       .filter(Boolean)

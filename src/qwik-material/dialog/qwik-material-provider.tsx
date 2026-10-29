@@ -66,6 +66,8 @@ import type {MatPaginatorConfig} from '../paginator/paginator-config';
 import {MAT_PAGINATOR_CONFIG} from '../paginator/paginator-config';
 import type {MatPaginatorIntl} from '../paginator/paginator-intl';
 import {MAT_PAGINATOR_INTL, DEFAULT_PAGINATOR_INTL} from '../paginator/paginator-intl';
+import type {MatAutocompleteConfig} from '../autocomplete/autocomplete-config';
+import {MAT_AUTOCOMPLETE_CONFIG} from '../autocomplete/autocomplete-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -137,6 +139,8 @@ export interface QwikMaterialProviderProps {
    *  mirrors upstream's `providers: [{provide: MatPaginatorIntl, useClass: ...}]` (a consumer
    *  supplies every field, not a per-field fallback merge — see paginator/paginator-intl.ts). */
   matPaginatorIntl?: MatPaginatorIntl;
+  /** Defaults applied to every MatAutocomplete in this subtree. */
+  matAutocompleteConfig?: MatAutocompleteConfig;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -290,6 +294,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // paginator/paginator-intl.ts's module doc comment. Paginators outside a provider get the
   // hardcoded English DEFAULT_PAGINATOR_INTL declared there.
   useContextProvider(MAT_PAGINATOR_INTL, props.matPaginatorIntl ?? DEFAULT_PAGINATOR_INTL);
+  // MatAutocompleteConfig is a plain object with primitive fields — no
+  // noSerialize needed. Autocompletes outside a provider get the hardcoded
+  // defaults declared in mat-autocomplete.tsx's own prop resolution;
+  // providing an empty object here is equivalent to accepting all of them.
+  useContextProvider(MAT_AUTOCOMPLETE_CONFIG, props.matAutocompleteConfig ?? {});
 
   return <Slot />;
 });

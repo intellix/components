@@ -498,6 +498,37 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Autocomplete</h2>
+        <ul>
+          <li>
+            <a href="/mat-autocomplete/basic-filter/">basic-filter</a>
+          </li>
+          <li>
+            <a href="/mat-autocomplete/optgroups/">optgroups</a>
+          </li>
+          <li>
+            <a href="/mat-autocomplete/auto-active-first-option/">auto-active-first-option</a>
+          </li>
+          <li>
+            <a href="/mat-autocomplete/require-selection/">require-selection</a>
+          </li>
+          <li>
+            <a href="/mat-autocomplete/display-with/">display-with</a>
+          </li>
+          <li>
+            <a href="/mat-autocomplete/disabled-option/">disabled-option</a>
+          </li>
+          <li>
+            <a href="/mat-autocomplete/panel-width/">panel-width</a>
+          </li>
+          <li>
+            <a href="/mat-autocomplete/hide-single-selection-indicator/">
+              hide-single-selection-indicator
+            </a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });

@@ -238,6 +238,25 @@ export interface MatFormFieldControlState {
   touched: boolean;
   dirty: boolean;
   invalid: boolean;
+  /**
+   * Mirrors upstream `MatFormField._shouldAlwaysFloat()`'s manual override
+   * half — set by a control that forces the label to stay floated for as
+   * long as it's "open" in some sense, independent of the form field's own
+   * `floatLabel` setting (upstream: `MatAutocompleteTrigger._floatLabel()`/
+   * `_resetLabel()`, toggling `MatFormField.floatLabel` between `'always'`
+   * and `'auto'` across an open/close cycle — see `qwik-material/
+   * autocomplete`'s `mat-autocomplete.tsx` for the first real consumer).
+   * `MatFormField` ORs this into its own `alwaysFloat` computation
+   * (`floatLabel === 'always' || controlState.floatOverride`), which is
+   * what actually drives both `mat-mdc-form-field-label-always-float` and
+   * the floated-label visual state. Defaults `false`; every existing
+   * control (`MatInput`/`MatSelect`) never touches this field, so they are
+   * unaffected. NOT the same thing as `shouldLabelFloat` above — that one
+   * reflects "is the label ACTUALLY floated right now" (focused-or-
+   * non-empty); this one is the SEPARATE forcing override, which can be
+   * true even while the control is unfocused/empty.
+   */
+  floatOverride: boolean;
 }
 
 /**

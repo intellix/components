@@ -43,7 +43,12 @@ export interface MatOptionProps<T = unknown> {
    *  property binding (`<mat-option [value]="pageSizeOption">`), which Angular does NOT echo
    *  as a DOM attribute at all. See `qwik-material/paginator/SYNC.md`. */
   value?: T;
-  /** Default `true` — see the `value` doc comment above. */
+  /**
+   * Whether `value` is echoed as a literal DOM attribute. Angular keeps it only
+   * when the consuming template writes it statically (`<mat-option value="x">`);
+   * a bound `[value]` leaves no attribute. Default `true` (select's scenarios);
+   * paginator and some autocomplete scenarios bind it.
+   */
   echoValueAttr?: boolean;
   /** Mirrors `MatOption.id` (`_IdGenerator().getId('mat-option-')`).
    *  Optional here — see the module doc comment's `fallbackIdGen`: a

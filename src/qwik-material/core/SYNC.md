@@ -173,3 +173,20 @@ scenario.
   doesn't need to pass it explicitly (see `form-field/SYNC.md`).
 
 All additive; `MatInput`'s existing behavior is unchanged.
+
+## `MatOption.echoValueAttr` / `MatFormFieldControlState.floatOverride` (2026-10-29, for `qwik-material/autocomplete`)
+
+- `core/mat-option.tsx` gained an `echoValueAttr?: boolean` prop (default
+  `true`, so `qwik-material/select`'s own usage — always static value
+  bindings — is unaffected). See `qwik-material/autocomplete/SYNC.md`'s own
+  write-up for why autocomplete's scenarios are a genuine mix of
+  static/bound `value` attributes, unlike select's.
+- `core/mat-form-field-control.ts`'s `MatFormFieldControlState` gained
+  `floatOverride: boolean` (default `false`) — a manual label-float
+  override a control can set independently of the form field's own
+  `floatLabel` setting, mirroring upstream `MatFormField._shouldAlwaysFloat()`'s
+  override half. `form-field/mat-form-field.tsx` ORs it into its own
+  `alwaysFloat` computation. See `qwik-material/autocomplete/SYNC.md` for
+  the full write-up (first and so far only consumer).
+
+Both additive; `MatInput`'s/`MatSelect`'s existing behavior is unchanged.
