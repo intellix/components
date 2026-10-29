@@ -114,6 +114,10 @@ export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(
     // pattern and its doc comment for why useVisibleTask$ ordering can't be
     // relied on for this instead.
     snackBarRef?.[REGISTER_EXIT_HANDLER](() => {
+      // The ref re-invokes this on every re-registration (i.e. every render)
+      // once exit was requested; run it once, or the timer-id write below
+      // re-renders and loops forever.
+      if (exiting.value) return;
       exiting.value = true;
       clearTimeout(announceTimeoutId.value);
       const markDismissed = () => {
