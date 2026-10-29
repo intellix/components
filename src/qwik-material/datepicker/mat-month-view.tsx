@@ -79,13 +79,23 @@ export const MatMonthView = component$<MatMonthViewProps>(props => {
   const view = useSignal<MonthViewData<unknown>>(() =>
     buildMonthView(adapter, formats, props.activeDate, minDate, maxDate, undefined),
   );
-  useTask$(async ({track}) => {
+  // Synchronous (no `await`) whenever there's no filter to resolve — the overwhelmingly common
+  // case (no scenario outside `min-max-filter` passes one) — rather than unconditionally async,
+  // to minimize the window where this task's own re-run could overlap with another synchronous
+  // re-render triggered by a near-simultaneous event (e.g. a click firing both `focus` and
+  // `click` handlers, each writing a different signal).
+  useTask$(({track}) => {
     track(() => props.activeDate);
     track(() => props.minDate);
     track(() => props.maxDate);
     const filterQrl = props.dateFilter as QRL<(date: unknown) => boolean> | undefined;
-    const filterFn = filterQrl ? await filterQrl.resolve() : undefined;
-    view.value = buildMonthView(adapter, formats, props.activeDate, minDate, maxDate, filterFn);
+    if (!filterQrl) {
+      view.value = buildMonthView(adapter, formats, props.activeDate, minDate, maxDate, undefined);
+      return;
+    }
+    return filterQrl.resolve().then(filterFn => {
+      view.value = buildMonthView(adapter, formats, props.activeDate, minDate, maxDate, filterFn);
+    });
   });
 
   const {startValue, endValue, isRange} = toStartEndCompareValues(adapter, props.selected);

@@ -41,13 +41,19 @@ export const MatMultiYearView = component$<MatMultiYearViewProps>(props => {
   const view = useSignal<MultiYearViewData<unknown>>(() =>
     buildMultiYearView(adapter, props.activeDate, minDate, maxDate, undefined),
   );
-  useTask$(async ({track}) => {
+  // See mat-month-view.tsx's identical doc comment for why this stays synchronous whenever
+  // there's no filter to resolve.
+  useTask$(({track}) => {
     track(() => props.activeDate);
     track(() => props.minDate);
     track(() => props.maxDate);
     const filterQrl = props.dateFilter as QRL<(date: unknown) => boolean> | undefined;
-    const filterFn = filterQrl ? await filterQrl.resolve() : undefined;
-    view.value = buildMultiYearView(adapter, props.activeDate, minDate, maxDate, filterFn);
+    if (filterQrl) {
+      return filterQrl.resolve().then(filterFn => {
+        view.value = buildMultiYearView(adapter, props.activeDate, minDate, maxDate, filterFn);
+      });
+    }
+    view.value = buildMultiYearView(adapter, props.activeDate, minDate, maxDate, undefined);
   });
 
   const {startValue, endValue} = toStartEndCompareValues(adapter, props.selected);
