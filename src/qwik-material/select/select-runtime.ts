@@ -315,13 +315,28 @@ export function openSelectPanel(
   if (!isBrowser) return;
   if (signals.panelOpen.value || cfg.disabled || flat.length === 0) return;
 
-  const originEl = (signals.stickyOrigin.value as Element | undefined) ?? signals.triggerRef.value;
-  if (!originEl) return;
+  // POSITION origin vs. INSERTION origin are deliberately DIFFERENT
+  // elements — see `withPopoverInsertionOrigin`'s own doc comment
+  // (`qwik-cdk/overlay`) for the full "why", confirmed live against the
+  // real Angular app: the panel's actual pixel position is always
+  // computed relative to the form field's wrapper (never the trigger,
+  // even on the very first open — using the trigger produced numbers
+  // 8-16px off on every axis); the panel's DOM INSERTION point is the
+  // separate, genuinely-sticky trigger→wrapper progression this file's
+  // `stickyOrigin` signal tracks (first open: sibling of the trigger,
+  // inside `<mat-select>`; every open after: sibling of the wrapper,
+  // inside `<mat-form-field>` — see select/SYNC.md's "first-open vs.
+  // later-open" write-up, unaffected by this change).
+  const positionOriginEl = signals.formFieldOriginRef?.value ?? signals.triggerRef.value;
+  const insertionOriginEl =
+    (signals.stickyOrigin.value as Element | undefined) ?? signals.triggerRef.value;
+  if (!positionOriginEl || !insertionOriginEl) return;
 
-  const strategy = createFlexibleConnectedPositionStrategy(originEl)
+  const strategy = createFlexibleConnectedPositionStrategy(positionOriginEl)
     .withFlexibleDimensions(true)
     .withPush(true)
-    .withPopoverLocation('inline');
+    .withPopoverLocation('inline')
+    .withPopoverInsertionOrigin(insertionOriginEl);
   strategy.withPositions(SELECT_POSITIONS);
 
   const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
