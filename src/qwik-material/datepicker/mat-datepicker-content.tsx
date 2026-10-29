@@ -1,0 +1,195 @@
+/**
+ * The content `MatDatepickerBase._openOverlay()` attaches to its overlay — the literal
+ * `<mat-datepicker-content>` element (`datepicker-content.html`'s template), rendered by
+ * `qwik-cdk/overlay`'s `OverlayHost` as the sole child of `.cdk-overlay-pane`.
+ *
+ * Created once per `open()` session by `datepicker-runtime.ts`'s `openDatepickerPanel`/
+ * `openDateRangePickerPanel` (same "fresh overlay per open" simplification `qwik-material/select`/
+ * `tooltip`/`timepicker` already establish — a reopened picker gets a brand-new `MatCalendar`
+ * instance, same as upstream's own `_destroyOverlay()`-then-reattach). `selected` is passed as
+ * the ACTUAL `Signal` object the shared picker handle owns (the pending clone while an actions
+ * row is registered, else the real committed value — resolved by the caller) — never `.value` —
+ * which is what keeps this component's own renders live across the whole open session despite
+ * living in a completely separate component tree from `MatDatepickerInput`/`MatDatepickerToggle`;
+ * see `mat-timepicker-panel.tsx`'s own doc comment for the identical, already-proven pattern.
+ * `onSelect`/`onClose` are plain (non-`$()`) callbacks — safe here because the whole overlay
+ * subsystem is created and consumed client-side, within the same execution context, never
+ * crossing an SSR→resume boundary (same reasoning `MatTimepickerPanelProps.onOptionSelect`'s own
+ * doc comment gives).
+ *
+ * Deliberately NOT generic over `D` — same reason `MatTimepickerPanelProps` isn't: `Component<P>`
+ * (`qwik-cdk/overlay`'s `Overlay.create<P>`) doesn't need to preserve the caller's `D`, and a
+ * generic `component$` fights the Qwik optimizer's static analysis. `datepicker-runtime.ts` casts
+ * through `unknown` at the two call sites that construct these props.
+ *
+ * ## Focus trap anchors: created imperatively by `useFocusTrap`, never JSX
+ *
+ * The two `cdk-visually-hidden cdk-focus-trap-anchor` sentinel `<div>`s the contract documents
+ * flanking `.mat-datepicker-content-container` are `useFocusTrap`'s OWN `attachAnchors()` work
+ * (`qwik-cdk/a11y`'s `createFocusTrap`, called with `containerRef` below) — they are NEVER
+ * rendered as JSX children of this component. `autoFocus`/`restoreFocus` are deliberately left at
+ * their "off" defaults: this component does its OWN focus-into-the-active-cell (mirrors
+ * `MatDatepickerContent.ngAfterViewInit`'s explicit `this._calendar.focusActiveCell()`, NOT a
+ * generic "first tabbable element" — the period button would win that race instead) and
+ * `datepicker-runtime.ts`'s `closeDatepickerPanel` does its OWN focus-restore (via `focusVia(...,
+ * 'program')`, matching the contract's confirmed-live `cdk-program-focused` class — see
+ * `use-mat-datepicker.ts`'s `_focusedElementBeforeOpen` doc comment), so `useFocusTrap`'s own
+ * built-in restore (which doesn't know about `focusVia`) would double up/race it.
+ */
+import {
+  $,
+  component$,
+  useSignal,
+  useVisibleTask$,
+  type JSXOutput,
+  type QRL,
+  type Signal,
+} from '@builder.io/qwik';
+import {focusVia, useFocusTrap} from '@angular-community/qwik-cdk/a11y';
+import {MatButton} from '../button/mat-button';
+import type {DateAdapter} from '../core/datetime/date-adapter';
+import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
+import {MatCalendar} from './mat-calendar';
+import {getCellCompareValue, type CalendarView} from './calendar-math';
+import {rangeCreatePreview, type DateRange} from './date-range-selection';
+
+// Only used for the (adapter-agnostic) `getCellCompareValue` helper below, which only ever
+// dereferences `getYear`/`getMonth`/`getDate` — matches `calendar-math.ts`'s own "cast through
+// unknown" convention for a non-generic context.
+const ADAPTER = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
+
+/** See this file's own doc comment for why every date-shaped field is `unknown`. */
+export interface MatDatepickerContentProps {
+  calendarId: string;
+  startAt: unknown;
+  startView: CalendarView;
+  minDate: unknown;
+  maxDate: unknown;
+  dateFilter: QRL<(date: unknown) => boolean> | undefined;
+  isRange: boolean;
+  /** The live, ACTIVE model signal — either the picker's pending clone (an actions row is
+   *  registered) or its real committed value. See this file's own doc comment. */
+  selected: Signal<unknown>;
+  startDateAccessibleName: string | null;
+  endDateAccessibleName: string | null;
+  /** The registered `<mat-datepicker-actions>`/`<mat-date-range-picker-actions>` row, if any —
+   *  mirrors the `[cdkPortalOutlet]="_actionsPortal"` template outlet. */
+  actionsContent: JSXOutput | undefined;
+  touchUi: boolean;
+  dialogLabelledBy: string | undefined;
+  closeButtonLabel: string;
+  entering: Signal<boolean>;
+  exiting: Signal<boolean>;
+  animationsDisabled: boolean;
+  /** Written once this component mounts, so `datepicker-runtime.ts` can check "is there anything
+   *  to animate the exit of" before deciding whether `close()` needs to wait. */
+  contentElRef: Signal<Element | undefined>;
+  onSelect: (date: unknown) => void;
+  onClose: () => void;
+}
+
+export const MatDatepickerContent = component$<MatDatepickerContentProps>(props => {
+  const containerRef = useSignal<HTMLElement>();
+  // Pure tab-wrapping + anchors — see this file's own doc comment for why `autoFocus`/
+  // `restoreFocus` are both left off.
+  useFocusTrap(containerRef);
+
+  // Mirrors `ngAfterViewInit()`'s `this._calendar.focusActiveCell()` — moves real DOM focus onto
+  // the active cell (`.mat-calendar-body-active`, the one cell with `tabIndex=0`) once mounted.
+  // Forced to origin `'mouse'` (via `focusVia`, not a plain `.focus()`) — confirmed live: every
+  // scenario in this port's contract opens via a toggle CLICK, and Angular's real `FocusMonitor`
+  // tracks input modality GLOBALLY (a document-level mousedown listener, not scoped to the
+  // element being focused), so the active cell's `focus` event is still classified 'mouse' by
+  // the time this runs, even though nothing _on the cell itself_ was clicked. This port's own
+  // `useFocusOrigin()` is deliberately per-element (see its doc comment), so it has no such
+  // global state to read — forcing `'mouse'` here reproduces the observed result for every
+  // click-triggered open this contract exercises. A keyboard-triggered open (Enter/Space on the
+  // toggle, Alt+Down on the input) is not exercised by any scenario and would get the WRONG
+  // class with this simplification — documented in SYNC.md.
+  useVisibleTask$(() => {
+    const active = containerRef.value?.querySelector<HTMLElement>('.mat-calendar-body-active');
+    if (active) focusVia(active, 'mouse');
+  });
+
+  // Range hover preview — purely local/visual, never touches the committed/pending model. See
+  // this file's own doc comment: `MatCalendar`'s `previewStart`/`previewEnd` are plain
+  // `compareValue` numbers, derived here from whichever date is currently hovered.
+  const previewDate = useSignal<unknown>(null);
+  const currentRange: DateRange<unknown> = props.isRange
+    ? (props.selected.value as DateRange<unknown>)
+    : {start: null, end: null};
+  let previewStart: number | null = null;
+  let previewEnd: number | null = null;
+  if (props.isRange) {
+    const preview = rangeCreatePreview(previewDate.value, currentRange);
+    previewStart = preview.start != null ? getCellCompareValue(ADAPTER, preview.start) : null;
+    previewEnd = preview.end != null ? getCellCompareValue(ADAPTER, preview.end) : null;
+  }
+
+  const onUserSelect$ = $((date: unknown) => props.onSelect(date));
+  const onPreviewChange$ = $((date: unknown) => {
+    previewDate.value = date;
+  });
+  const onClose$ = $(() => props.onClose());
+
+  const animating = props.entering.value || props.exiting.value;
+  const hasActions = props.actionsContent !== undefined;
+
+  return (
+    <mat-datepicker-content
+      ref={props.contentElRef}
+      class={
+        [
+          'mat-datepicker-content',
+          'mat-primary',
+          props.touchUi && 'mat-datepicker-content-touch',
+          !props.animationsDisabled && 'mat-datepicker-content-animations-enabled',
+          animating && 'mat-datepicker-content-animating',
+          props.exiting.value && 'mat-datepicker-content-exit',
+        ].filter(Boolean) as string[]
+      }
+    >
+      <div
+        ref={containerRef}
+        {...{cdktrapfocus: ''}}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={props.dialogLabelledBy || undefined}
+        class={
+          [
+            'mat-datepicker-content-container',
+            hasActions && 'mat-datepicker-content-container-with-actions',
+          ].filter(Boolean) as string[]
+        }
+      >
+        <MatCalendar
+          id={props.calendarId}
+          startAt={props.startAt}
+          startView={props.startView}
+          selected={props.isRange ? currentRange : (props.selected.value as unknown)}
+          minDate={props.minDate}
+          maxDate={props.maxDate}
+          dateFilter={props.dateFilter as QRL<(date: unknown) => boolean> | undefined}
+          previewStart={previewStart}
+          previewEnd={previewEnd}
+          startDateAccessibleName={props.startDateAccessibleName}
+          endDateAccessibleName={props.endDateAccessibleName}
+          onUserSelect$={onUserSelect$}
+          onPreviewChange$={props.isRange ? onPreviewChange$ : undefined}
+        />
+        {hasActions && <div class="mat-datepicker-actions">{props.actionsContent}</div>}
+        {/* Invisible close button for screen reader users — always hidden in this port (no
+            scenario ever tabs this far/focuses it; upstream only un-hides it on its OWN focus). */}
+        <MatButton
+          type="button"
+          appearance="elevated"
+          color="primary"
+          class={['mat-datepicker-close-button', 'cdk-visually-hidden']}
+          onClick$={onClose$}
+        >
+          {props.closeButtonLabel}
+        </MatButton>
+      </div>
+    </mat-datepicker-content>
+  );
+});
