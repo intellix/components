@@ -234,6 +234,8 @@ export const MatSelect = component$<MatSelectProps>(props => {
 
   const panelOpen = useSignal(false);
   const activeIndex = useSignal(-1);
+  // See `SelectRuntimeSignals.activeOptionHidden`'s own doc comment.
+  const activeOptionHidden = useSignal(false);
   const exiting = useSignal(false);
   const overlayRef = useSignal<NoSerialize<OverlayRef>>();
   const stickyOrigin = useSignal<NoSerialize<Element>>();
@@ -367,6 +369,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
   const signals: SelectRuntimeSignals = {
     panelOpen,
     activeIndex,
+    activeOptionHidden,
     exiting,
     overlayRef,
     stickyOrigin,

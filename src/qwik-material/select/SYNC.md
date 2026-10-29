@@ -312,6 +312,128 @@ given time spent. A future fix should look at WHY `<mat-option>`'s own
 render lags the panel host's so much in this one case, not just add more
 waiting.
 
+## `angular-parity.spec.ts` now passes 10/10 (fixed after initial merge)
+
+The spec above initially shipped passing only 1/10 (`disabled`, which has no
+interactive steps). Three independent root causes, all now fixed:
+
+### 1. Closing the panel never actually removed it from the DOM — `qwik-cdk/overlay`'s inline-popover reparenting broke its own teardown
+
+Every scenario that closes the panel (Enter/Escape/Tab/backdrop/picking an
+option) hung forever in `waitForSelectPanel`'s poll for the panel count to
+reach 0 — not a timing race, a genuine permanent leak confirmed live: the
+`.mat-mdc-select-panel`'s `.cdk-overlay-popover` ancestor stayed in the live
+DOM, inside `<mat-select>`, with `.cdk-overlay-container` simultaneously
+showing 0 children. Root cause: `OverlayHost` (`qwik-cdk/overlay/overlay-host.tsx`)
+always renders its host `<div>` as a declarative child of
+`.cdk-overlay-container` (via `OverlayContainerOutlet`'s `ctx.entries.value.map(...)`),
+then — for a popover with a non-`'global'` insertion point, `mat-select`'s
+`'inline'` location being the first real end-to-end consumer of this path —
+physically relocates that SAME element with a raw `insertionPoint.after(host)`
+DOM call (`position/popover-insertion.ts`). Closing an overlay was previously
+just `registry.remove(entry.id)`, shrinking `ctx.entries.value` and relying on
+Qwik's own list-keyed reconciliation to find and remove the corresponding
+`<OverlayHost>` subtree. That reconciliation only knows how to look where it
+originally rendered the node (`.cdk-overlay-container`) — once physically
+moved elsewhere, it's not there anymore, so Qwik quietly gives up (consistent
+with the observed "container shows 0 children" — it correctly forgets ITS
+OWN bookkeeping) without ever touching the orphaned, still-mounted
+`OverlayHost` component, which keeps rendering (reproduced live:
+`MatSelectPanel` kept re-rendering, following its still-subscribed `exiting`
+signal, well after `detach()` ran) while remaining permanently stuck in the
+live DOM.
+
+Fix (`qwik-cdk/overlay/overlay-ref.ts` + `overlay-host.tsx`): `OverlayHost`
+now also owns a real `detached` signal (same "`entry.state.*` is a plain,
+non-reactive `{value}` carrier — see `_onAttached`'s own doc comment — so a
+`useSignal` + `visuals` callback copy is required for anything mutated after
+mount" pattern already used for `backdropShowing`/`panelClasses`) and
+conditionally returns `null` once it's set — Qwik's own per-component
+re-render (returning a different root than last time) correctly removes a
+directly-referenced previous output regardless of where that node currently
+lives, confirmed by isolated testing. `OverlayRef` gained `_onReparented()`,
+called by `OverlayHost` exactly when `applyPopoverInsertionPoint` actually
+relocated the host (never for the common `'global'` case), which flips
+`detach()` onto a `visuals.setDetached(true)` path instead of the old
+unconditional `registry.remove()`. One more subtlety, also confirmed live:
+calling `setDetached(true)` and `registry.remove()` in the same synchronous
+tick races Qwik's own render scheduling — the array-shrink observably wins,
+leaving nothing subscribed to react to the `detached` write by the time it's
+processed — so the registry removal is deferred one `setTimeout(…, 0)` tick
+past it (a plain `queueMicrotask` was tried first and still lost the race).
+Both changes are gated on `reparented` (`false` for every existing `'global'`
+consumer — tooltip/menu/dialog), so `detach()`'s prior synchronous contract —
+and the unit tests pinning it (`overlay.spec.ts`'s `dispose() removes the
+entry from the registry`) — are completely unaffected.
+
+### 2. Closed-select letter typeahead never selected anything
+
+`handleClosedKeydown` (`select-runtime.ts`) compared `manager.activeItem`
+immediately before and after its own `manager.onKeydown(event)` call to
+decide whether to call `selectOption()`. That works for Home/End/arrows
+(`ListKeyManager.onKeydown`'s switch cases call `setActiveItem` inline,
+synchronously) but a letter key falls through to `Typeahead.handleKey()`,
+which only queues the letter and resolves the match 200ms later via
+`setTimeout` (`key-manager/typeahead.ts`) — so the comparison always ran
+before the debounced match had landed, and the synchronous check was always
+false. Confirmed live: fill-basic's `typeahead('b')` step left the value on
+"Date" (the prior selection) instead of jumping to "Banana". Mirrors
+upstream's own actual split, which this port had collapsed incorrectly:
+upstream's `_handleClosedKeydown` only ever drives the live announcer off
+that synchronous comparison; the ACTUAL selection for every closed-select
+active-item change — synchronous (arrows) or debounced (typeahead) alike —
+happens uniformly in `_initKeyManager`'s own
+`_keyManager.change.subscribe(() => { if (!this._panelOpen && !this.multiple
+&& this._keyManager.activeItem) { this._keyManager.activeItem._selectViaInteraction(); } })`.
+Fixed by moving the select-and-announce call into `buildKeyManager`'s own
+`manager.onChange` handler (this port's `change.subscribe` equivalent, which
+fires for every active-item change regardless of what triggered it) and
+simplifying `handleClosedKeydown` back to just driving navigation.
+
+### 3. Multi-select: active-option class and form-field focus didn't match after a click
+
+Two related diffs confirmed live after clicking an option in `multiple` or
+`custom-trigger` (panel stays open): Angular's `<mat-form-field>` ends up
+`mat-focused` (+ `mdc-text-field--focused` + `mdc-line-ripple--active`) and
+NO option has `mat-mdc-option-active` — even though `aria-activedescendant`
+still names the just-clicked option. Both are real, independent upstream
+behaviors `_onSelect()`'s `multiple` branch triggers that this port's
+`selectOption()` wasn't replicating:
+- `this.focus()` is called unconditionally on a user-driven multi-select
+  toggle (not just as part of closing, which never happens here) — fixed by
+  calling `signals.hostRef.value?.focus()` in the same spot.
+- Separately, `aria-activedescendant` (driven by the key manager's own
+  `activeItemIndex`, set via `_keyManager.setActiveItem(option)`) and the
+  VISUAL `mat-mdc-option-active` class (driven by each `MatOption`'s own
+  `_active` field, toggled by `setActiveStyles()`/`setInactiveStyles()`) are
+  NOT the same state upstream. A `multiple` select's bound
+  `[value]`/`[(value)]` template binding is always re-evaluated by the next
+  change-detection pass, and `_assignValue` unconditionally re-runs
+  `_setSelectionByValue` for "`multiple` + `Array.isArray(newValue)`"
+  regardless of reference equality ("always re-assign an array, because it
+  might have been mutated" — `select.ts`'s own comment) — which calls
+  `this.options.forEach(option => option.setInactiveStyles())`, wiping every
+  option's visual-active class without restoring one (the multi-select
+  branch never calls `_keyManager.updateActiveItem`, unlike the
+  non-`multiple` one). Net effect: no option is ever visually "active" after
+  an interactive multi-select toggle, independent of `aria-activedescendant`.
+  Reproducing this needed decoupling the two: `SelectRuntimeSignals` gained
+  `activeOptionHidden` (a `Signal<boolean>`, read by `MatSelectPanel` as
+  `active={!props.activeOptionHidden.value && props.activeIndex.value ===
+  option.index}`) — cleared to `false` by `buildKeyManager`'s own `onChange`
+  (any legitimate open/nav/typeahead re-highlight un-suppresses it, matching
+  `ActiveDescendantKeyManager.setActiveItem()`'s own unconditional
+  `setActiveStyles()` the next time it runs) and set to `true` by
+  `selectOption`'s `multiple` + `isUserInput` branch, right after its own
+  `setActiveItem` call (whose `onChange` firing had just un-suppressed it).
+  `activeIndex` itself is untouched, so `aria-activedescendant` still
+  correctly names the clicked option.
+
+Verification: `specs/material-select/angular-parity.spec.ts` 10/10, run 3
+times; `specs/material-form-field`, `material-menu`, `material-chips`,
+`material-button-toggle`, `material-tooltip` (83 tests, covering every
+`'global'`-popover overlay consumer) unaffected.
+
 ## Deviations from upstream
 
 - **`compareWith` is always strict `===`.** No scenario needs object-identity
