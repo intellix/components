@@ -1,9 +1,5 @@
 import {$, type Signal, useOn, useSignal} from '@builder.io/qwik';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../../core/ripple/ripple-dom';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 
 /**
@@ -111,25 +107,24 @@ export function useRippleLoader(): Signal<boolean> {
   const animationsDisabled = useAnimationsDisabled();
 
   const handleInteraction$ = $((event: Event, host: Element) => {
-    initialized.value = true;
-    if (event.type !== 'mousedown' && event.type !== 'touchstart') return;
+    if (event.type === 'focusin' || event.type === 'mouseenter') {
+      initialized.value = true;
+      return;
+    }
+    if (event.type === 'mousedown' || event.type === 'touchstart') {
+      initialized.value = true;
+    }
 
     const container = host.querySelector<HTMLElement>('.mat-ripple');
     if (!container) return;
 
-    const target = {
+    handleRippleEvent(event as MouseEvent | TouchEvent, container, {
       rippleDisabled: host.hasAttribute('mat-ripple-loader-disabled'),
       rippleConfig: {
         centered: host.hasAttribute(CENTERED_ATTR),
         animation: rippleAnimationConfig(animationsDisabled.value),
       },
-    };
-
-    if (event.type === 'mousedown') {
-      rippleOnMouseDown(event as MouseEvent, host, container, target);
-    } else {
-      rippleOnTouchStart(event as TouchEvent, host, container, target);
-    }
+    });
   });
 
   // `focusin`, not `focus`: the qualifying focus almost always lands on a DESCENDANT (the
@@ -138,11 +133,18 @@ export function useRippleLoader(): Signal<boolean> {
   // fired through `FocusKeyManager`-driven keyboard navigation, e.g. `listbox-single`'s
   // `ArrowLeft` landing keyboard focus on "Medium", which real Angular DOES initialize the
   // ripple container for). `focusin` is the bubbling counterpart and reaches the host the
-  // same way `qwik-cdk/a11y`'s `useFocusOrigin()` already relies on it to.
+  // same way `qwik-cdk/a11y`'s `useFocusOrigin()` already relies on it to. ALL eight events
+  // (including the pointer-up quartet) share this ONE `$()` reference — see button's
+  // identical hook / core/ripple/ripple-renderer.ts's module doc comment for why that's not
+  // just tidy (cross-chunk QRL ordering).
   useOn('focusin', handleInteraction$);
   useOn('mousedown', handleInteraction$);
   useOn('mouseenter', handleInteraction$);
   useOn('touchstart', handleInteraction$);
+  useOn('mouseup', handleInteraction$);
+  useOn('mouseleave', handleInteraction$);
+  useOn('touchend', handleInteraction$);
+  useOn('touchcancel', handleInteraction$);
 
   return initialized;
 }

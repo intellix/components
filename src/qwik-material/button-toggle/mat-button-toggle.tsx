@@ -2,11 +2,7 @@ import {$, component$, Slot, useContext, useSignal} from '@builder.io/qwik';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatPseudoCheckbox} from '../core/mat-pseudo-checkbox';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {
   MAT_BUTTON_TOGGLE_GROUP_STATE,
   MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS,
@@ -159,21 +155,15 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
   // span (not an ancestor/descendant of it). `[matRippleDisabled]="disableRipple
   // || disabled"` mirrors `MatButtonToggle._isRippleDisabled()`/`.disabled`.
   // Re-reads live group/props state the same way `onClick$` below does, for
-  // the same staleness reason.
-  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
+  // the same staleness reason. ONE shared `$()` reference wired to all six
+  // pointer events — see `core/ripple/ripple-renderer.ts`'s module doc
+  // comment for why that's required, not just tidy (cross-chunk QRL
+  // ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
     const live = stateSignal.value;
     const liveDisableRipple = (props.disableRipple ?? false) || live.disableRipple;
     const liveDisabled = live.disabled || (props.disabled ?? false);
-    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
-      rippleDisabled: liveDisableRipple || liveDisabled,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
-  });
-  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    const live = stateSignal.value;
-    const liveDisableRipple = (props.disableRipple ?? false) || live.disableRipple;
-    const liveDisabled = live.disabled || (props.disabled ?? false);
-    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+    handleRippleEvent(event, rippleContainerRef.value, {
       rippleDisabled: liveDisableRipple || liveDisabled,
       rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
     });
@@ -215,8 +205,12 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
         aria-label={props['aria-label']}
         aria-labelledby={props['aria-labelledby']}
         onClick$={onClick$}
-        onMouseDown$={rippleMouseDown$}
-        onTouchStart$={rippleTouchStart$}
+        onMouseDown$={rippleEvent$}
+        onMouseUp$={rippleEvent$}
+        onMouseLeave$={rippleEvent$}
+        onTouchStart$={rippleEvent$}
+        onTouchEnd$={rippleEvent$}
+        onTouchCancel$={rippleEvent$}
       >
         {!isStandalone && (
           <div class="mat-button-toggle-checkbox-wrapper">

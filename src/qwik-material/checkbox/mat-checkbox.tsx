@@ -2,11 +2,7 @@ import {$, component$, Slot, useContext, useSignal, useTask$, type QRL} from '@b
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {MAT_CHECKBOX_CONFIG, MAT_CHECKBOX_CONFIG_DEFAULTS} from './checkbox-config';
 
 /** Payload passed to `onChange$` — mirrors upstream's `MatCheckboxChange.checked`. */
@@ -42,7 +38,8 @@ export interface MatCheckboxProps {
   value?: string;
   /** Theme color. Supported in M2 themes only — matches upstream's note. Default 'accent'. */
   color?: string;
-  /** Whether the checkbox has a ripple. Has no visible effect in this port (no ripple animation — see SYNC.md). */
+  /** Whether the checkbox has a ripple. Mirrors upstream's `disableRipple` — OR'd with `disabled`
+   *  into the ripple's `matRippleDisabled`. */
   disableRipple?: boolean;
   /** Unique id. Auto-generated (`mat-mdc-checkbox-N`) when omitted. */
   id?: string;
@@ -177,15 +174,12 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
   // — the trigger is the `.mdc-checkbox` div (the ref below), NOT the ripple
   // container div itself. Reads `props.disableRipple`/`props.disabled` live
   // (not the outer-scope `disabled` const) for the same staleness reason
-  // `handleInputClick$` above already documents for this file.
-  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
-    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
-      rippleDisabled: !!(props.disableRipple || props.disabled),
-      rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
-  });
-  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+  // `handleInputClick$` above already documents for this file. ONE shared
+  // `$()` reference wired to all six pointer events below — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
       rippleDisabled: !!(props.disableRipple || props.disabled),
       rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
     });
@@ -338,7 +332,15 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
   return (
     <mat-checkbox id={id} class={hostClasses}>
       <MatInternalFormField labelPosition={labelPosition} onClick$={onFormFieldClick$}>
-        <div class="mdc-checkbox" onMouseDown$={rippleMouseDown$} onTouchStart$={rippleTouchStart$}>
+        <div
+          class="mdc-checkbox"
+          onMouseDown$={rippleEvent$}
+          onMouseUp$={rippleEvent$}
+          onMouseLeave$={rippleEvent$}
+          onTouchStart$={rippleEvent$}
+          onTouchEnd$={rippleEvent$}
+          onTouchCancel$={rippleEvent$}
+        >
           {/* Render this element first so the input is on top (matches upstream's comment). */}
           <div
             class="mat-mdc-checkbox-touch-target"

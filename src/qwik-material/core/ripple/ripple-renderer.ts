@@ -1,4 +1,3 @@
-import {normalizePassiveListenerOptions} from '@angular-community/qwik-cdk/platform';
 import {RippleRef, RippleState, type RippleConfig} from './ripple-ref';
 
 /**
@@ -22,6 +21,34 @@ import {RippleRef, RippleState, type RippleConfig} from './ripple-ref';
  *   exactly one document-level listener per event type via qwikloader (see
  *   `ripple-dom.ts`'s module doc comment), so porting a second delegation
  *   layer on top would just duplicate work Qwik already does.
+ * - No on-demand `trigger.addEventListener('mouseup'/…)` registration
+ *   performed *from inside* `handleMouseDown`/`handleTouchStart` (upstream's
+ *   `handleEvent` does this, "on-demand… to reduce the total number of
+ *   event listeners"). A Qwik-specific race rules this out: `handleMouseDown`
+ *   only runs once its own `$()` chunk has finished loading — a REAL async
+ *   gap on a cold chunk — and a fast native mouseup can fire and vanish
+ *   before that resolves, which would register the pointer-up listener too
+ *   late to ever see it (confirmed live: every FIRST click on a fresh page
+ *   left the ripple stuck in `VISIBLE` forever — `_isPointerDown` never got
+ *   reset — since nothing else would ever call `handlePointerUp()` for that
+ *   element again). Qwik's own event props don't have this problem FOR THE
+ *   EVENT ITSELF (qwikloader's single document-level listener per event type
+ *   is already eagerly installed, independent of any one handler's chunk),
+ *   so `handlePointerUp()` below is instead called directly by every
+ *   ripple-bearing component's own declarative `onMouseUp$`/`onMouseLeave$`/
+ *   `onTouchEnd$`/`onTouchCancel$` props — see `ripple-dom.ts`'s
+ *   `handleRippleEvent()`, which every caller wires to ALL SIX pointer
+ *   events (down/up/leave/start/end/cancel) through the exact SAME `$()`
+ *   reference. That last part matters for a second, more subtle reason
+ *   beyond just "the event is seen at all": using one shared QRL for every
+ *   related event (rather than one QRL per event type) means mousedown's
+ *   and mouseup's own handler BODIES, even on a cold chunk, resolve the
+ *   identical cached import promise and so run their callbacks in the same
+ *   relative order the native events fired in (ordinary same-promise
+ *   `.then()` FIFO semantics) — two SEPARATE QRLs have no such guarantee
+ *   (a known project-wide hazard: Qwik QRL invocations can resume out of
+ *   order while their chunks load, e.g. button-toggle's rapid-click
+ *   findings — see the workflow notes this port follows).
  * - `RippleTarget`'s `rippleConfig`/`rippleDisabled` are passed as a plain
  *   argument to `handleMouseDown`/`handleTouchStart` rather than stored as a
  *   constructor-injected field: upstream's `_target` is the long-lived
@@ -61,15 +88,6 @@ export const defaultRippleAnimationConfig = {
  * events to avoid synthetic mouse events.
  */
 const ignoreMouseEventsTimeout = 800;
-
-/** Options used to bind a passive capturing event. */
-const passiveCapturingEventOptions = normalizePassiveListenerOptions({
-  passive: true,
-  capture: true,
-});
-
-/** Events that signal that the pointer is up. */
-const pointerUpEvents = ['mouseup', 'mouseleave', 'touchend', 'touchcancel'];
 
 /**
  * Qwik-native inline of upstream's `isFakeMousedownFromScreenReader`
@@ -131,19 +149,11 @@ export class RippleRenderer {
   /** Time in milliseconds when the last touchstart event happened. */
   private _lastTouchStartEvent = 0;
 
-  /** Element which triggers the pointer-up events (mouseup/mouseleave/touchend/touchcancel). */
-  private _triggerElement: HTMLElement | null = null;
-
-  /** Whether pointer-up event listeners have been registered. */
-  private _pointerUpEventsRegistered = false;
-
   /**
    * Cached dimensions of the ripple container. Set when the first
    * ripple is shown and cleared once no more ripples are visible.
    */
   private _containerRect: DOMRect | null = null;
-
-  private readonly _onPointerUpListener: EventListener = () => this._onPointerUp();
 
   constructor(private _containerElement: HTMLElement) {}
 
@@ -313,7 +323,7 @@ export class RippleRenderer {
    * module doc comment for why, unlike upstream, it's a parameter rather
    * than a stored field).
    */
-  handleMouseDown(event: MouseEvent, trigger: HTMLElement, target: RippleTarget): void {
+  handleMouseDown(event: MouseEvent, target: RippleTarget): void {
     // Screen readers will fire fake mouse events for space/enter. Skip launching a
     // ripple in this case for consistency with the non-screen-reader experience.
     const isFakeMousedown = isFakeMousedownFromScreenReader(event);
@@ -324,12 +334,11 @@ export class RippleRenderer {
     if (!target.rippleDisabled && !isFakeMousedown && !isSyntheticEvent) {
       this._isPointerDown = true;
       this.fadeInRipple(event.clientX, event.clientY, target.rippleConfig);
-      this._ensurePointerUpListeners(trigger);
     }
   }
 
   /** Handles a `touchstart` on the trigger element — mirrors upstream's `_onTouchStart`. */
-  handleTouchStart(event: TouchEvent, trigger: HTMLElement, target: RippleTarget): void {
+  handleTouchStart(event: TouchEvent, target: RippleTarget): void {
     if (!target.rippleDisabled && !isFakeTouchstartFromScreenReader(event)) {
       // Some browsers fire mouse events after a `touchstart` event. Those synthetic mouse
       // events will launch a second ripple if we don't ignore mouse events for a specific
@@ -346,40 +355,35 @@ export class RippleRenderer {
           this.fadeInRipple(touches[i].clientX, touches[i].clientY, target.rippleConfig);
         }
       }
-      this._ensurePointerUpListeners(trigger);
     }
   }
 
   /**
-   * Registers the pointer-up event listeners directly on the trigger
-   * element, on demand — mirrors upstream's lazy registration inside
-   * `handleEvent` ("we do this on-demand in order to reduce the total
-   * number of event listeners registered by the ripples").
+   * Handles a `mouseup`/`mouseleave`/`touchend`/`touchcancel` on the
+   * trigger element — mirrors upstream's `_onPointerUp`, called directly by
+   * every caller's own declarative pointer-up event props rather than
+   * through an on-demand-registered listener (see this file's module doc
+   * comment for why).
    */
-  private _ensurePointerUpListeners(trigger: HTMLElement): void {
-    if (this._pointerUpEventsRegistered && this._triggerElement === trigger) {
+  handlePointerUp(): void {
+    if (!this._isPointerDown) {
       return;
     }
-    this._removePointerUpListeners();
-    this._triggerElement = trigger;
-    pointerUpEvents.forEach(type =>
-      trigger.addEventListener(type, this._onPointerUpListener, passiveCapturingEventOptions),
-    );
-    this._pointerUpEventsRegistered = true;
-  }
 
-  /** Removes previously registered pointer-up event listeners from the trigger element. */
-  private _removePointerUpListeners(): void {
-    if (this._triggerElement && this._pointerUpEventsRegistered) {
-      pointerUpEvents.forEach(type =>
-        this._triggerElement!.removeEventListener(
-          type,
-          this._onPointerUpListener,
-          passiveCapturingEventOptions,
-        ),
-      );
-    }
-    this._pointerUpEventsRegistered = false;
+    this._isPointerDown = false;
+
+    // Fade-out all ripples that are visible and not persistent.
+    this._getActiveRipples().forEach(ripple => {
+      // By default, only ripples that are completely visible will fade out on pointer release.
+      // If the `terminateOnPointerUp` option is set, ripples that still fade in will also fade out.
+      const isVisible =
+        ripple.state === RippleState.VISIBLE ||
+        (ripple.config.terminateOnPointerUp && ripple.state === RippleState.FADING_IN);
+
+      if (!ripple.config.persistent && isVisible) {
+        ripple.fadeOut();
+      }
+    });
   }
 
   /** Method that will be called if the fade-in or fade-in transition completed. */
@@ -435,28 +439,6 @@ export class RippleRenderer {
       }
     }
     rippleRef.element.remove();
-  }
-
-  /** Function being called whenever the trigger is being released. */
-  private _onPointerUp(): void {
-    if (!this._isPointerDown) {
-      return;
-    }
-
-    this._isPointerDown = false;
-
-    // Fade-out all ripples that are visible and not persistent.
-    this._getActiveRipples().forEach(ripple => {
-      // By default, only ripples that are completely visible will fade out on pointer release.
-      // If the `terminateOnPointerUp` option is set, ripples that still fade in will also fade out.
-      const isVisible =
-        ripple.state === RippleState.VISIBLE ||
-        (ripple.config.terminateOnPointerUp && ripple.state === RippleState.FADING_IN);
-
-      if (!ripple.config.persistent && isVisible) {
-        ripple.fadeOut();
-      }
-    });
   }
 
   private _getActiveRipples(): RippleRef[] {

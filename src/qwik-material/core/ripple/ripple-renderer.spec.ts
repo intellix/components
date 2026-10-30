@@ -5,10 +5,9 @@ import {getRippleRenderer} from './ripple-registry';
 import {
   fadeOutAllNonPersistentRipples,
   fadeOutAllRipples,
+  handleRippleEvent,
   launchRipple,
   rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
 } from './ripple-dom';
 
 /**
@@ -37,6 +36,17 @@ import {
  *    `fadeInRipple`'s own CSS-detection heuristic sees a normal, animated
  *    element instead of always tripping its "animations are canceled"
  *    branch (which happy-dom's unstyled default would otherwise always do).
+ *
+ * `RippleRenderer.handleMouseDown`/`handleTouchStart`/`handlePointerUp` are
+ * exercised here as DIRECT method calls, not via real DOM event dispatch +
+ * listener — `handlePointerUp` in particular is no longer a registered DOM
+ * listener at all (see ripple-renderer.ts's module doc comment for why the
+ * on-demand `addEventListener('mouseup', …)` upstream does was dropped);
+ * every real caller invokes it from its own declarative `onMouseUp$`/
+ * `onMouseLeave$`/`onTouchEnd$`/`onTouchCancel$` handler instead, which
+ * `handleRippleEvent()`'s own tests (bottom of this file) exercise through
+ * `container.dispatchEvent(...)` + a manually-wired listener, closer to how
+ * a real component uses it.
  */
 
 function stubContainerRect(
@@ -78,10 +88,8 @@ function flushTransition(container: Element, index = 0): void {
   ripples[index].dispatchEvent(new Event('transitionend'));
 }
 
-function mousedown(container: HTMLElement, clientX = 0, clientY = 0): MouseEvent {
-  const event = new MouseEvent('mousedown', {clientX, clientY, buttons: 1, detail: 1});
-  container.dispatchEvent(event);
-  return event;
+function mousedownEvent(clientX = 0, clientY = 0): MouseEvent {
+  return new MouseEvent('mousedown', {clientX, clientY, buttons: 1, detail: 1});
 }
 
 const noopTarget = (disabled = false, config: RippleConfig = {}) => ({
@@ -188,22 +196,21 @@ describe('RippleRenderer', () => {
     });
   });
 
-  describe('pointer-driven ripples (handleMouseDown/handleTouchStart)', () => {
-    it('creates a ripple on mousedown and removes it after mouseup settles', () => {
+  describe('pointer-driven ripples (handleMouseDown/handleTouchStart/handlePointerUp)', () => {
+    it('creates a ripple on mousedown and removes it after pointer-up settles', () => {
       const renderer = new RippleRenderer(container);
-      const event = mousedown(container);
-      renderer.handleMouseDown(event, container, noopTarget());
+      renderer.handleMouseDown(mousedownEvent(), noopTarget());
 
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(1);
 
-      // mouseup fires while the ripple is still FADING_IN (hasn't even
-      // settled to VISIBLE yet), so `_onPointerUp` itself does nothing yet
-      // (matches upstream: only a VISIBLE — or `terminateOnPointerUp` —
+      // Pointer-up fires while the ripple is still FADING_IN (hasn't even
+      // settled to VISIBLE yet), so `handlePointerUp` itself does nothing
+      // yet (matches upstream: only a VISIBLE — or `terminateOnPointerUp` —
       // ripple fades out on pointer-up). The first `transitionend` settles
       // the enter transition; since the pointer is no longer down by then,
       // that settling itself immediately starts the exit transition, which
       // the second `transitionend` then completes, removing the element.
-      container.dispatchEvent(new MouseEvent('mouseup'));
+      renderer.handlePointerUp();
       flushTransition(container);
       flushTransition(container);
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(0);
@@ -211,15 +218,15 @@ describe('RippleRenderer', () => {
 
     it('repeated mousedown creates additional ripples', () => {
       const renderer = new RippleRenderer(container);
-      renderer.handleMouseDown(mousedown(container), container, noopTarget());
-      renderer.handleMouseDown(mousedown(container), container, noopTarget());
+      renderer.handleMouseDown(mousedownEvent(), noopTarget());
+      renderer.handleMouseDown(mousedownEvent(), noopTarget());
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(2);
     });
 
     it('only persists the latest transient ripple once the enter transition settles while held', () => {
       const renderer = new RippleRenderer(container);
-      renderer.handleMouseDown(mousedown(container), container, noopTarget());
-      renderer.handleMouseDown(mousedown(container), container, noopTarget());
+      renderer.handleMouseDown(mousedownEvent(), noopTarget());
+      renderer.handleMouseDown(mousedownEvent(), noopTarget());
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(2);
 
       // Flush the fade-in transition of ripple 0 — it's no longer the most
@@ -234,13 +241,13 @@ describe('RippleRenderer', () => {
     it('ignores a fake mousedown dispatched by a screen reader (buttons === 0)', () => {
       const renderer = new RippleRenderer(container);
       const event = new MouseEvent('mousedown', {buttons: 0, detail: 0});
-      renderer.handleMouseDown(event, container, noopTarget());
+      renderer.handleMouseDown(event, noopTarget());
       expect(container.querySelector('.mat-ripple-element')).toBeFalsy();
     });
 
     it('does not create a ripple when the target is disabled', () => {
       const renderer = new RippleRenderer(container);
-      renderer.handleMouseDown(mousedown(container), container, noopTarget(true));
+      renderer.handleMouseDown(mousedownEvent(), noopTarget(true));
       expect(container.querySelector('.mat-ripple-element')).toBeFalsy();
     });
 
@@ -254,7 +261,7 @@ describe('RippleRenderer', () => {
           {clientX: 20, clientY: 20},
         ],
       });
-      renderer.handleTouchStart(touchEvent, container, noopTarget());
+      renderer.handleTouchStart(touchEvent, noopTarget());
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(3);
     });
 
@@ -262,11 +269,11 @@ describe('RippleRenderer', () => {
       const renderer = new RippleRenderer(container);
       const touchEvent = new Event('touchstart') as unknown as TouchEvent;
       Object.defineProperty(touchEvent, 'changedTouches', {value: [{clientX: 0, clientY: 0}]});
-      renderer.handleTouchStart(touchEvent, container, noopTarget());
+      renderer.handleTouchStart(touchEvent, noopTarget());
       flushTransition(container);
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(1);
 
-      container.dispatchEvent(new Event('touchend'));
+      renderer.handlePointerUp();
       flushTransition(container);
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(0);
     });
@@ -275,10 +282,10 @@ describe('RippleRenderer', () => {
       const renderer = new RippleRenderer(container);
       const touchEvent = new Event('touchstart') as unknown as TouchEvent;
       Object.defineProperty(touchEvent, 'changedTouches', {value: [{clientX: 0, clientY: 0}]});
-      renderer.handleTouchStart(touchEvent, container, noopTarget());
+      renderer.handleTouchStart(touchEvent, noopTarget());
       flushTransition(container);
 
-      container.dispatchEvent(new Event('touchcancel'));
+      renderer.handlePointerUp();
       flushTransition(container);
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(0);
     });
@@ -287,13 +294,18 @@ describe('RippleRenderer', () => {
       const renderer = new RippleRenderer(container);
       const touchEvent = new Event('touchstart') as unknown as TouchEvent;
       Object.defineProperty(touchEvent, 'changedTouches', {value: [{clientX: 0, clientY: 0}]});
-      renderer.handleTouchStart(touchEvent, container, noopTarget());
-      renderer.handleMouseDown(mousedown(container), container, noopTarget());
+      renderer.handleTouchStart(touchEvent, noopTarget());
+      renderer.handleMouseDown(mousedownEvent(), noopTarget());
 
       // Still just the one ripple from the touchstart — the synthetic
       // mousedown that immediately follows it on real touch devices was
       // ignored.
       expect(container.querySelectorAll('.mat-ripple-element').length).toBe(1);
+    });
+
+    it('handlePointerUp is a no-op when the pointer was never down', () => {
+      const renderer = new RippleRenderer(container);
+      expect(() => renderer.handlePointerUp()).not.toThrow();
     });
   });
 
@@ -361,40 +373,48 @@ describe('ripple-dom helpers', () => {
     container.remove();
   });
 
-  it('rippleOnMouseDown is a no-op when the container is null/undefined', () => {
-    const trigger = document.createElement('button');
-    expect(() =>
-      rippleOnMouseDown(mousedown(container), trigger, null, noopTarget()),
-    ).not.toThrow();
-    expect(() =>
-      rippleOnMouseDown(mousedown(container), trigger, undefined, noopTarget()),
-    ).not.toThrow();
+  it('handleRippleEvent is a no-op when the container is null/undefined', () => {
+    expect(() => handleRippleEvent(mousedownEvent(), null, noopTarget())).not.toThrow();
+    expect(() => handleRippleEvent(mousedownEvent(), undefined, noopTarget())).not.toThrow();
   });
 
-  it('rippleOnMouseDown launches into the container using the given trigger element', () => {
-    const trigger = document.createElement('button');
-    trigger.appendChild(container);
-    document.body.appendChild(trigger);
-
-    const event = new MouseEvent('mousedown', {clientX: 0, clientY: 0, buttons: 1, detail: 1});
-    rippleOnMouseDown(event, trigger, container, noopTarget());
+  it('handleRippleEvent launches into the container on mousedown/touchstart', () => {
+    handleRippleEvent(mousedownEvent(), container, noopTarget());
     expect(container.querySelectorAll('.mat-ripple-element').length).toBe(1);
-
-    trigger.remove();
-  });
-
-  it('rippleOnTouchStart launches into the container using the given trigger element', () => {
-    const trigger = document.createElement('button');
-    trigger.appendChild(container);
-    document.body.appendChild(trigger);
 
     const touchEvent = new Event('touchstart') as unknown as TouchEvent;
     Object.defineProperty(touchEvent, 'changedTouches', {value: [{clientX: 0, clientY: 0}]});
+    handleRippleEvent(touchEvent, container, noopTarget());
+    expect(container.querySelectorAll('.mat-ripple-element').length).toBe(2);
+  });
 
-    rippleOnTouchStart(touchEvent, trigger, container, noopTarget());
+  it('handleRippleEvent dispatches mouseup/mouseleave/touchend/touchcancel to handlePointerUp', () => {
+    handleRippleEvent(mousedownEvent(), container, noopTarget());
     expect(container.querySelectorAll('.mat-ripple-element').length).toBe(1);
 
-    trigger.remove();
+    // Settle the enter transition first so the ripple is VISIBLE (and thus
+    // eligible to fade out on pointer-up) — mirrors the RippleRenderer-level
+    // "creates a ripple on mousedown and removes it after pointer-up
+    // settles" test above, exercised through the public dispatch surface
+    // this time.
+    flushTransition(container);
+    handleRippleEvent(new MouseEvent('mouseup'), container, noopTarget());
+    flushTransition(container);
+    expect(container.querySelectorAll('.mat-ripple-element').length).toBe(0);
+  });
+
+  it('a single shared handler sees mousedown before mouseup for the SAME container', () => {
+    // The whole point of `handleRippleEvent` being one function every
+    // caller wires to every event type (see this file's/ripple-renderer.ts's
+    // doc comments on the cross-chunk ordering hazard this avoids in real
+    // Qwik usage): calling it directly, synchronously, in native dispatch
+    // order must behave identically to a real mousedown-then-mouseup pair.
+    handleRippleEvent(mousedownEvent(), container, noopTarget());
+    flushTransition(container); // enter settles -> VISIBLE, still held down
+    expect(container.querySelectorAll('.mat-ripple-element').length).toBe(1);
+    handleRippleEvent(new MouseEvent('mouseup'), container, noopTarget());
+    flushTransition(container); // exit settles -> destroyed
+    expect(container.querySelectorAll('.mat-ripple-element').length).toBe(0);
   });
 
   it('launchRipple creates a ripple directly (MatRipple.launch() equivalent)', () => {

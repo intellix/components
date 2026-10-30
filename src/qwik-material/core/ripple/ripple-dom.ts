@@ -4,8 +4,7 @@ import type {RippleTarget} from './ripple-renderer';
 
 /**
  * The Qwik-facing half of this port — called from inside a component's own
- * `onMouseDown$`/`onTouchStart$` (or a shared hook's `useOn('mousedown', …)`/
- * `useOn('touchstart', …)`) handler, i.e. from inside a `$()` QRL.
+ * `$()` event handler.
  *
  * Upstream wires `MatRipple`'s trigger element through
  * `RippleEventManager` — a single, lazily-installed, document-level
@@ -20,45 +19,43 @@ import type {RippleTarget} from './ripple-renderer';
  * second delegation layer on top would only duplicate that, not add
  * anything upstream's own design is trying to achieve.
  *
- * Each helper below takes the CONTAINER element (the one ripples get
- * appended into — upstream's `_containerElement`, i.e. the `.mat-ripple`
- * span/div) and an explicit TRIGGER element (upstream's
- * `matRippleTrigger`/`_triggerElement` — the element the mousedown/
- * touchstart listener conceptually belongs to, whether or not it's the same
- * element as the container). The trigger is a required parameter rather
- * than read off `event.currentTarget`: a native DOM event's `currentTarget`
- * is only valid for the duration of synchronous dispatch and is reset to
- * `null` immediately afterwards, but qwikloader resolves and invokes a
- * `$()` handler's chunk via a (micro)task-deferred `import()` — by the time
- * the handler body runs, synchronous dispatch has already finished. Qwik's
- * own event-handler signature accounts for this by passing the element as
- * a SECOND argument (`EventHandler<EV, EL> = (event: EV, element: EL) =>
- * any`, independent of `currentTarget`) to every `onX$`/`useOn()` handler —
- * see e.g. `qwik-material/tabs/mat-tab-label.tsx`'s `onClick$ = $((_event,
- * element) => …)` for the established convention this follows.
+ * `handleRippleEvent()` below is the SOLE entry point every caller uses,
+ * for `mousedown`/`touchstart` AND `mouseup`/`mouseleave`/`touchend`/
+ * `touchcancel` alike, dispatching internally on `event.type`. Every caller
+ * MUST wire the exact same `$()` reference to all six JSX event props
+ * (`onMouseDown$`/`onMouseUp$`/`onMouseLeave$`/`onTouchStart$`/
+ * `onTouchEnd$`/`onTouchCancel$`) rather than one `$()` per event type —
+ * see `ripple-renderer.ts`'s module doc comment for why that's not just a
+ * style preference: it's what makes `RippleRenderer.handleMouseDown`'s
+ * `_isPointerDown = true` reliably run BEFORE `handlePointerUp()` reads it
+ * for the pointer-down/pointer-up pair of a single click, even on a cold
+ * (never-loaded-before) chunk.
  */
 
 /** `target.rippleDisabled` is checked by the renderer itself, so a null/undefined/disabled
  *  container is simply a no-op call (mirrors every ripple-bearing component's own `[matRippleDisabled]`
  *  check already happening *inside* `RippleRenderer`, not at each call site). */
-export function rippleOnMouseDown(
-  event: MouseEvent,
-  trigger: Element,
+export function handleRippleEvent(
+  event: MouseEvent | TouchEvent,
   container: Element | null | undefined,
   target: RippleTarget,
 ): void {
   if (!container) return;
-  getRippleRenderer(container).handleMouseDown(event, trigger as HTMLElement, target);
-}
-
-export function rippleOnTouchStart(
-  event: TouchEvent,
-  trigger: Element,
-  container: Element | null | undefined,
-  target: RippleTarget,
-): void {
-  if (!container) return;
-  getRippleRenderer(container).handleTouchStart(event, trigger as HTMLElement, target);
+  const renderer = getRippleRenderer(container);
+  switch (event.type) {
+    case 'mousedown':
+      renderer.handleMouseDown(event as MouseEvent, target);
+      break;
+    case 'touchstart':
+      renderer.handleTouchStart(event as TouchEvent, target);
+      break;
+    case 'mouseup':
+    case 'mouseleave':
+    case 'touchend':
+    case 'touchcancel':
+      renderer.handlePointerUp();
+      break;
+  }
 }
 
 /**

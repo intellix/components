@@ -2,11 +2,7 @@ import {$, component$, Slot, useContext, useSignal, type QRL} from '@builder.io/
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {MAT_SLIDE_TOGGLE_CONFIG, type MatSlideToggleConfig} from './slide-toggle-config';
 
 /**
@@ -200,15 +196,12 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
   // is this very `<button class="mdc-switch">` (the `switch` JSX below),
   // not the deeply-nested `.mat-mdc-slide-toggle-ripple` span itself. Reads
   // `props.disableRipple`/`props.disabled` live, matching `onButtonClick$`'s
-  // own "re-read live" convention documented below.
-  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
-    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
-      rippleDisabled: !!(props.disableRipple || props.disabled),
-      rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
-  });
-  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+  // own "re-read live" convention documented below. ONE shared `$()`
+  // reference wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
       rippleDisabled: !!(props.disableRipple || props.disabled),
       rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
     });
@@ -250,8 +243,12 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
           aria-checked={checked ? 'true' : 'false'}
           aria-disabled={disabled && disabledInteractive ? 'true' : undefined}
           onClick$={onButtonClick$}
-          onMouseDown$={rippleMouseDown$}
-          onTouchStart$={rippleTouchStart$}
+          onMouseDown$={rippleEvent$}
+          onMouseUp$={rippleEvent$}
+          onMouseLeave$={rippleEvent$}
+          onTouchStart$={rippleEvent$}
+          onTouchEnd$={rippleEvent$}
+          onTouchCancel$={rippleEvent$}
         >
           <div class="mat-mdc-slide-toggle-touch-target" />
           <span class="mdc-switch__track" />

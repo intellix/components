@@ -1,9 +1,5 @@
 import {$, type Signal, useOn, useSignal} from '@builder.io/qwik';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../../core/ripple/ripple-dom';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 
 /**
@@ -136,21 +132,35 @@ export function rippleLoaderHostAttrs(config: RippleLoaderConfig): Record<string
  * so the bootstrapping interaction never gets a ripple either — only every
  * one after it. Once the span exists (from an earlier `mouseenter`/`focus`,
  * or a later `mousedown`/`touchstart` on an already-initialized host),
- * `rippleOnMouseDown`/`rippleOnTouchStart` (`core/ripple/ripple-dom.ts`)
- * launch a real ripple into it. The ripple config is read directly off the
- * host's own `mat-ripple-loader-*` attributes — EXACTLY mirroring upstream's
+ * `handleRippleEvent()` (`core/ripple/ripple-dom.ts`) launches a real
+ * ripple into it. The ripple config is read directly off the host's own
+ * `mat-ripple-loader-*` attributes — EXACTLY mirroring upstream's
  * `_createRipple`, which builds its `RippleTarget` the same way
  * (`host.hasAttribute(matRippleCentered)`/`host.hasAttribute(matRippleDisabled)`)
  * — so no caller of `useRippleLoader()` needs to change: `rippleLoaderHostAttrs()`
  * already renders every input this needs.
+ *
+ * ALL eight events (`focus`/`mouseenter` for bootstrap-only, plus
+ * `mousedown`/`touchstart`/`mouseup`/`mouseleave`/`touchend`/`touchcancel`
+ * for the actual ripple pointer lifecycle) are wired to this SAME `$()`
+ * reference — required, not just tidy: `core/ripple/ripple-renderer.ts`'s
+ * module doc comment explains why two separate QRLs (one per event type)
+ * can't reliably guarantee `handleMouseDown`'s pointer-down state update
+ * happens before `handlePointerUp` reads it for a single click's
+ * mousedown/mouseup pair.
  */
 export function useRippleLoader(): Signal<boolean> {
   const initialized = useSignal(false);
   const animationsDisabled = useAnimationsDisabled();
 
   const handleInteraction$ = $((event: Event, host: Element) => {
-    initialized.value = true;
-    if (event.type !== 'mousedown' && event.type !== 'touchstart') return;
+    if (event.type === 'focus' || event.type === 'mouseenter') {
+      initialized.value = true;
+      return;
+    }
+    if (event.type === 'mousedown' || event.type === 'touchstart') {
+      initialized.value = true;
+    }
 
     const container = host.querySelector<HTMLElement>('.mat-ripple');
     // Bootstrap event on a never-before-interacted-with host — the span
@@ -158,25 +168,23 @@ export function useRippleLoader(): Signal<boolean> {
     // more to do; the signal write above arms every later interaction.
     if (!container) return;
 
-    const target = {
+    handleRippleEvent(event as MouseEvent | TouchEvent, container, {
       rippleDisabled: host.hasAttribute(DISABLED_ATTR),
       rippleConfig: {
         centered: host.hasAttribute(CENTERED_ATTR),
         animation: rippleAnimationConfig(animationsDisabled.value),
       },
-    };
-
-    if (event.type === 'mousedown') {
-      rippleOnMouseDown(event as MouseEvent, host, container, target);
-    } else {
-      rippleOnTouchStart(event as TouchEvent, host, container, target);
-    }
+    });
   });
 
   useOn('focus', handleInteraction$);
   useOn('mousedown', handleInteraction$);
   useOn('mouseenter', handleInteraction$);
   useOn('touchstart', handleInteraction$);
+  useOn('mouseup', handleInteraction$);
+  useOn('mouseleave', handleInteraction$);
+  useOn('touchend', handleInteraction$);
+  useOn('touchcancel', handleInteraction$);
 
   return initialized;
 }

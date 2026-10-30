@@ -3,11 +3,7 @@ import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import type {StepperOrientation, StepState} from '@angular-community/qwik-cdk/stepper';
 import {MatIcon} from '../icon/mat-icon';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 
 /**
  * Internal per-step header item — `src/material/stepper/step-header.html` +
@@ -85,15 +81,12 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
   const rippleContainerRef = useSignal<HTMLElement>();
 
   // Upstream `step-header.html`: `[matRippleTrigger]="_getHostElement()"` —
-  // the step header's own host `<mat-step-header>` (hostRef below).
-  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
-    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
-      rippleDisabled: !!props.disableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
-  });
-  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+  // the step header's own host `<mat-step-header>` (hostRef below). ONE
+  // shared `$()` reference wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
       rippleDisabled: !!props.disableRipple,
       rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
     });
@@ -146,8 +139,12 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
       aria-labelledby={!props.ariaLabel && props.ariaLabelledby ? props.ariaLabelledby : undefined}
       aria-disabled={props.ariaDisabled}
       onClick$={() => props.onHeaderClick$(props.index)}
-      onMouseDown$={rippleMouseDown$}
-      onTouchStart$={rippleTouchStart$}
+      onMouseDown$={rippleEvent$}
+      onMouseUp$={rippleEvent$}
+      onMouseLeave$={rippleEvent$}
+      onTouchStart$={rippleEvent$}
+      onTouchEnd$={rippleEvent$}
+      onTouchCancel$={rippleEvent$}
     >
       {/* `matripple` mirrors Angular's bare `matRipple` directive-selector
           attribute (static, no value) left on the rendered DOM — see

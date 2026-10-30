@@ -1,11 +1,7 @@
 import {$, component$, Slot, useContext, useSignal, type QRL} from '@builder.io/qwik';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {MAT_TAB_NAV_STATE, MAT_TAB_NAV_STATE_DEFAULTS} from './tab-nav-state';
 
 export interface MatTabLinkProps {
@@ -44,14 +40,11 @@ export const MatTabLink = component$<MatTabLinkProps>(props => {
   // Upstream `tab-link.html`: `[matRippleTrigger]="elementRef.nativeElement"`
   // — this link's own host `<a>` (elRef below). `MatTabLink.rippleDisabled`
   // getter: `this.disabled || this.disableRipple || this._tabNavBar.disableRipple`.
-  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
-    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
-      rippleDisabled: disabled || (props.disableRipple ?? false) || nav.disableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
-  });
-  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+  // ONE shared `$()` reference wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
       rippleDisabled: disabled || (props.disableRipple ?? false) || nav.disableRipple,
       rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
     });
@@ -112,8 +105,12 @@ export const MatTabLink = component$<MatTabLinkProps>(props => {
       {...({'mat-tab-link': ''} as Record<string, string>)}
       onClick$={onClick$}
       onKeyDown$={onKeyDown$}
-      onMouseDown$={rippleMouseDown$}
-      onTouchStart$={rippleTouchStart$}
+      onMouseDown$={rippleEvent$}
+      onMouseUp$={rippleEvent$}
+      onMouseLeave$={rippleEvent$}
+      onTouchStart$={rippleEvent$}
+      onTouchEnd$={rippleEvent$}
+      onTouchCancel$={rippleEvent$}
     >
       <span class="mdc-tab__ripple" />
       <div

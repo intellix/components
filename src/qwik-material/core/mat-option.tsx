@@ -3,7 +3,7 @@ import {ENTER, SPACE, hasModifierKey} from '@angular-community/qwik-cdk/keycodes
 import {createIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatPseudoCheckbox} from './mat-pseudo-checkbox';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import {rippleAnimationConfig, rippleOnMouseDown, rippleOnTouchStart} from './ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from './ripple/ripple-dom';
 
 /**
  * Fallback id generator, mirroring the SAME "simplified singleton" pattern
@@ -103,15 +103,12 @@ export const MatOption = component$<MatOptionProps>(props => {
   const rippleContainerRef = useSignal<HTMLElement>();
 
   // Upstream `option.html`: `[matRippleTrigger]="_getHostElement()"` — the
-  // option's own host `<mat-option>` (hostRef below).
-  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
-    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
-      rippleDisabled: disabled || (props.disableRipple ?? false),
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
-  });
-  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+  // option's own host `<mat-option>` (hostRef below). ONE shared `$()`
+  // reference wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
       rippleDisabled: disabled || (props.disableRipple ?? false),
       rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
     });
@@ -149,8 +146,12 @@ export const MatOption = component$<MatOptionProps>(props => {
       aria-disabled={disabled ? 'true' : 'false'}
       onClick$={onClick$}
       onKeyDown$={onKeyDown$}
-      onMouseDown$={rippleMouseDown$}
-      onTouchStart$={rippleTouchStart$}
+      onMouseDown$={rippleEvent$}
+      onMouseUp$={rippleEvent$}
+      onMouseLeave$={rippleEvent$}
+      onTouchStart$={rippleEvent$}
+      onTouchEnd$={rippleEvent$}
+      onTouchCancel$={rippleEvent$}
     >
       {multiple && (
         <MatPseudoCheckbox

@@ -1,11 +1,7 @@
 import {$, component$, Slot, useContext, useContextProvider, useSignal} from '@builder.io/qwik';
 import {focusVia} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {MAT_TABS_CONFIG, type MatTabsConfig} from './tab-config';
 import {computeNextTabFocusIndex, type TabFocusKey} from './tab-group-keyboard';
 import {usePaginatedHeader} from './use-paginated-header';
@@ -107,27 +103,19 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
   const onScrollAfter$ = $(() => pagination.scroll('after'));
 
   // Upstream `tab-nav-bar.html`'s pagination divs: bare `mat-ripple` (no
-  // `matRippleTrigger` override), so trigger === container.
-  const paginationBeforeRippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
-    rippleOnMouseDown(event, trigger, trigger, {
+  // `matRippleTrigger` override), so trigger === container — the event's
+  // own `element` (2nd) argument IS the container. ONE shared `$()`
+  // reference per button, wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const paginationBeforeRippleEvent$ = $((event: MouseEvent | TouchEvent, element: Element) => {
+    handleRippleEvent(event, element, {
       rippleDisabled: pagination.disableScrollBefore.value || navState.disableRipple,
       rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
     });
   });
-  const paginationBeforeRippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    rippleOnTouchStart(event, trigger, trigger, {
-      rippleDisabled: pagination.disableScrollBefore.value || navState.disableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
-  });
-  const paginationAfterRippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
-    rippleOnMouseDown(event, trigger, trigger, {
-      rippleDisabled: pagination.disableScrollAfter.value || navState.disableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
-  });
-  const paginationAfterRippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    rippleOnTouchStart(event, trigger, trigger, {
+  const paginationAfterRippleEvent$ = $((event: MouseEvent | TouchEvent, element: Element) => {
+    handleRippleEvent(event, element, {
       rippleDisabled: pagination.disableScrollAfter.value || navState.disableRipple,
       rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
     });
@@ -179,8 +167,12 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
           .join(' ')}
         {...({'mat-ripple': ''} as Record<string, string>)}
         onClick$={onScrollBefore$}
-        onMouseDown$={paginationBeforeRippleMouseDown$}
-        onTouchStart$={paginationBeforeRippleTouchStart$}
+        onMouseDown$={paginationBeforeRippleEvent$}
+        onMouseUp$={paginationBeforeRippleEvent$}
+        onMouseLeave$={paginationBeforeRippleEvent$}
+        onTouchStart$={paginationBeforeRippleEvent$}
+        onTouchEnd$={paginationBeforeRippleEvent$}
+        onTouchCancel$={paginationBeforeRippleEvent$}
       >
         <div class="mat-mdc-tab-header-pagination-chevron" />
       </div>
@@ -202,8 +194,12 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
           .join(' ')}
         {...({'mat-ripple': ''} as Record<string, string>)}
         onClick$={onScrollAfter$}
-        onMouseDown$={paginationAfterRippleMouseDown$}
-        onTouchStart$={paginationAfterRippleTouchStart$}
+        onMouseDown$={paginationAfterRippleEvent$}
+        onMouseUp$={paginationAfterRippleEvent$}
+        onMouseLeave$={paginationAfterRippleEvent$}
+        onTouchStart$={paginationAfterRippleEvent$}
+        onTouchEnd$={paginationAfterRippleEvent$}
+        onTouchCancel$={paginationAfterRippleEvent$}
       >
         <div class="mat-mdc-tab-header-pagination-chevron" />
       </div>

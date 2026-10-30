@@ -10,11 +10,7 @@ import {
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
-import {
-  rippleAnimationConfig,
-  rippleOnMouseDown,
-  rippleOnTouchStart,
-} from '../core/ripple/ripple-dom';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import type {MatRadioColor} from './radio-color';
 import {MAT_RADIO_CONFIG, MAT_RADIO_CONFIG_DEFAULTS} from './radio-config';
 import {MAT_RADIO_GROUP_STATE, MAT_RADIO_GROUP_STATE_DEFAULTS} from './radio-group-state';
@@ -171,28 +167,23 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
   ].filter(Boolean) as string[];
 
   const inputRef = useSignal<HTMLInputElement>();
-  const formFieldRef = useSignal<Element>();
   const rippleContainerRef = useSignal<HTMLElement>();
 
   // Upstream `radio.html`: `[matRippleTrigger]="_rippleTrigger.nativeElement"`
   // where `_rippleTrigger` is `@ViewChild('formField', …)` — the SAME
   // `mat-internal-form-field` div the whole control + label render inside,
-  // not just the `.mdc-radio` control (see `MatInternalFormField`'s `ref`
-  // prop doc comment for why that element needed a new ref passthrough).
-  // Reads `props.disableRipple`/`props.disabled`/the live group state
-  // rather than the outer-scope consts, matching this file's established
-  // "re-read live inside a closure" convention (see `onTouchTargetClick$`
-  // above).
-  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
+  // not just the `.mdc-radio` control (see `MatInternalFormField`'s
+  // `onMouseDown$`/etc. prop doc comment for why that element needed this
+  // passthrough). Reads `props.disableRipple`/`props.disabled`/the live
+  // group state rather than the outer-scope consts, matching this file's
+  // established "re-read live inside a closure" convention (see
+  // `onTouchTargetClick$` above). ONE shared `$()` reference wired to all
+  // six pointer events — see `core/ripple/ripple-renderer.ts`'s module doc
+  // comment for why that's required, not just tidy (cross-chunk QRL
+  // ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
     const live = stateSignal.value;
-    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
-      rippleDisabled: !!((props.disabled ?? false) || live.disabled),
-      rippleConfig: {centered: true, animation: rippleAnimationConfig(noopAnimations.value)},
-    });
-  });
-  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
-    const live = stateSignal.value;
-    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+    handleRippleEvent(event, rippleContainerRef.value, {
       rippleDisabled: !!((props.disabled ?? false) || live.disabled),
       rippleConfig: {centered: true, animation: rippleAnimationConfig(noopAnimations.value)},
     });
@@ -295,9 +286,12 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
     <mat-radio-button id={id} class={hostClasses}>
       <MatInternalFormField
         labelPosition={effectiveLabelPosition}
-        ref={formFieldRef}
-        onMouseDown$={rippleMouseDown$}
-        onTouchStart$={rippleTouchStart$}
+        onMouseDown$={rippleEvent$}
+        onMouseUp$={rippleEvent$}
+        onMouseLeave$={rippleEvent$}
+        onTouchStart$={rippleEvent$}
+        onTouchEnd$={rippleEvent$}
+        onTouchCancel$={rippleEvent$}
       >
         <div
           class={
@@ -336,7 +330,7 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
           {/* `mat-ripple` mirrors Angular's bare directive-selector attribute
               (static, no value) left on the rendered DOM. Real
               `.mat-ripple-element` spans are launched into this container on
-              `mousedown`/`touchstart` of `formFieldRef` above
+              pointer events dispatched to the `<MatInternalFormField>` above
               (`core/ripple/ripple-dom.ts`) — see radio/SYNC.md. The nested
               `.mat-ripple-element .mat-radio-persistent-ripple` div below is
               a SEPARATE, literal, always-present template element upstream
