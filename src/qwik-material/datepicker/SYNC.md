@@ -215,35 +215,21 @@ calling the shared closure. Verified: 20 back-to-back `curl` requests with zero 
 `inline-calendar` passing `--repeat-each=3`, and a full datepicker-suite re-run showing no other
 regressions. See "Architecture" above for the generalized lesson.
 
-## Open issues
+## Resolved issues (were open at handoff)
 
-### `typed-date-blur` — `.mdc-line-ripple` stuck in `active deactivating`
-
-The line-ripple under the datepicker's native input gets stuck in `active deactivating` on the
-Qwik side specifically (never reaching `transitionend` for the opacity transition) in the parity
-harness's dual-browser-context + `pinRoot` (`position:fixed`) environment. Confirmed reproducible
-with that EXACT combination via a manual script; NOT reproducible with either factor alone
-(`pinRoot` removed, or a single browser context). Tried and ruled out: longer waits (3s+), explicit
-`requestAnimationFrame`-pumping loops (60 iterations), delaying the harness's `addStyleTag` until
-after `data-scenario-ready`. A `waitForLineRippleSettled(page)` helper (matching the standard
-pattern already used by sibling specs) was added to `angular-parity.spec.ts`'s `typeAndBlur` step
-regardless — harmless, but explicitly documented (in that spec's own comment) as NOT resolving
-this. This is the one scenario that does not meet the "passes 3×" bar; it fails intermittently, not
-deterministically.
-
-### `actions (calendar)` — `mat-ripple-loader-uninitialized` + child-count diff on the Cancel button
-
-Immediately after the FIRST open step, the Cancel button inside `<mat-datepicker-content>` shows a
-`mat-ripple-loader-uninitialized` attribute and 5 children instead of 4 (an extra, not-yet-loaded
-ripple-loader placeholder) versus the Angular side. Reproducible 100% deterministically via
-`npx playwright test` — including running `actions (calendar)` alone, not just after `(field)` —
-but could NOT be reproduced manually via any throwaway script (7+ attempts), including one that
-called the exact `expectMaterialParity` helper with a custom single step, two real browser
-contexts, `pinRoot` CSS injection, and `settle()` calls matching the real harness precisely. Root
-cause not found. `actions (field)` (the other half of the same scenario, exercising the identical
-`MatDatepicker`/`actions` plumbing on the single-date side) passes reliably 3× — the diff is
-specific to the calendar's own Cancel button inside the popup content, not the actions mechanism
-itself.
+- **`typed-date-blur` label not floating for unparseable text.** The input's render-time resync
+  derived `empty` from the model only; upstream's `MatInput.empty` reads the native value, so
+  "not a date" (model `null`) still floats the label. Now empty = no model AND no native text.
+- **`typed-date-blur` stuck `mdc-line-ripple--active --deactivating`.** A harness frame-scheduling
+  race, lost by either app (observed on both): blurring before a frame paints `--active` makes
+  the deactivation an opacity 0 -> 0 no-op, so `transitionend` never fires. The step now blurs
+  only once the ripple's `::after` is fully visible, as it always is for a real user.
+- **`actions (calendar)` ripple state on re-open.** Upstream re-attaches the SAME actions view on
+  every open, so a Cancel/Apply button whose ripple was lazily initialized stays initialized
+  (`mat-ripple-loader-uninitialized` gone, `.mat-mdc-button-ripple` present). This port
+  re-creates the buttons per open; `ActionsOutlet` (`mat-datepicker-content.tsx`) records which
+  buttons (by DOM position) were initialized in `picker._actionsRippleMemory` and replays a
+  `mouseenter` to them on re-open.
 
 ## Public API usage example
 

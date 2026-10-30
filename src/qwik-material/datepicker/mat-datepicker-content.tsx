@@ -38,7 +38,17 @@
  * comment), so `useFocusTrap`'s own built-in restore (which doesn't know about `focusVia`) would
  * double up/race it.
  */
-import {$, component$, useSignal, type JSXOutput, type QRL, type Signal} from '@builder.io/qwik';
+import {
+  $,
+  component$,
+  Slot,
+  useOn,
+  useSignal,
+  useVisibleTask$,
+  type JSXOutput,
+  type QRL,
+  type Signal,
+} from '@builder.io/qwik';
 import {useFocusTrap} from '@angular-community/qwik-cdk/a11y';
 import {MatButton} from '../button/mat-button';
 import type {DateAdapter} from '../core/datetime/date-adapter';
@@ -69,6 +79,8 @@ export interface MatDatepickerContentProps {
   /** The registered `<mat-datepicker-actions>`/`<mat-date-range-picker-actions>` row, if any —
    *  mirrors the `[cdkPortalOutlet]="_actionsPortal"` template outlet. */
   actionsContent: JSXOutput | undefined;
+  /** See `RippleLoaderMemory` — the picker's long-lived actions ripple state. */
+  actionsRippleMemory: Signal<Record<number, boolean>>;
   touchUi: boolean;
   dialogLabelledBy: string | undefined;
   closeButtonLabel: string;
@@ -81,6 +93,48 @@ export interface MatDatepickerContentProps {
   onSelect: (date: unknown) => void;
   onClose: () => void;
 }
+
+/**
+ * The `[cdkPortalOutlet]="_actionsPortal"` row. Upstream re-attaches the SAME actions view on every
+ * open, so a button whose ripple was lazily initialized (hover/focus/press) stays initialized;
+ * this port re-creates the buttons per open. The row records which buttons (by DOM position) got
+ * initialized and, on re-open, replays a `mouseenter` to them so each button's own ripple loader
+ * initializes exactly as it would have.
+ */
+const RIPPLE_TRIGGERS = ['mouseover', 'focusin', 'mousedown', 'touchstart'] as const;
+
+const ActionsOutlet = component$<{memory: Signal<Record<number, boolean>>}>(props => {
+  const hostRef = useSignal<HTMLElement>();
+
+  for (const type of RIPPLE_TRIGGERS) {
+    useOn(
+      type,
+      $((event: Event) => {
+        const host = hostRef.value;
+        const button = (event.target as Element | null)?.closest?.('button');
+        if (!host || !button) return;
+        const index = Array.from(host.querySelectorAll('button')).indexOf(button);
+        if (index >= 0 && !props.memory.value[index]) {
+          props.memory.value = {...props.memory.value, [index]: true};
+        }
+      }),
+    );
+  }
+
+  // Client-only by nature: the datepicker popup is only ever created on the client.
+  useVisibleTask$(() => {
+    const buttons = hostRef.value?.querySelectorAll('button') ?? [];
+    buttons.forEach((button, index) => {
+      if (props.memory.value[index]) button.dispatchEvent(new MouseEvent('mouseenter'));
+    });
+  });
+
+  return (
+    <div ref={hostRef} class="mat-datepicker-actions">
+      <Slot />
+    </div>
+  );
+});
 
 export const MatDatepickerContent = component$<MatDatepickerContentProps>(props => {
   const containerRef = useSignal<HTMLElement>();
@@ -155,7 +209,9 @@ export const MatDatepickerContent = component$<MatDatepickerContentProps>(props 
           onUserSelect$={onUserSelect$}
           onPreviewChange$={props.isRange ? onPreviewChange$ : undefined}
         />
-        {hasActions && <div class="mat-datepicker-actions">{props.actionsContent}</div>}
+        {hasActions && (
+          <ActionsOutlet memory={props.actionsRippleMemory}>{props.actionsContent}</ActionsOutlet>
+        )}
         {/* Invisible close button for screen reader users — always hidden in this port (no
             scenario ever tabs this far/focuses it; upstream only un-hides it on its OWN focus). */}
         <MatButton

@@ -72,6 +72,9 @@ export interface MatDatepickerCore<D> {
    *  riskier). `undefined` means "no actions row" — selecting a date then auto-closes/
    *  auto-commits exactly like upstream with no `_actionsPortal`. */
   _actionsContent: Signal<JSXOutput | undefined>;
+  /** @internal Ripple-initialized state of the actions row's buttons, kept across opens the way
+   *  upstream's re-attached actions view keeps its DOM. */
+  _actionsRippleMemory: Signal<Record<number, boolean>>;
   /** @internal Ref to the connected native element (the `<input>` for a single picker, the
    *  `<mat-date-range-input>` host div for a range one) — used as the FALLBACK connected-overlay
    *  origin when there's no owning `<MatFormField>` (mirrors `getConnectedOverlayOrigin()`). */
@@ -275,6 +278,7 @@ function useDatepickerCoreSignals<D>(options: {
     onOpenedChange$: undefined, // overwritten by each hook below
     _animationsDisabled: animationsDisabled,
     _actionsContent: useSignal<JSXOutput | undefined>(undefined),
+    _actionsRippleMemory: useSignal<Record<number, boolean>>({}),
     _elementRef: elementRef,
     _formFieldOrigin: undefined,
     _formFieldLabelId: undefined,

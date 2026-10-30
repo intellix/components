@@ -200,12 +200,7 @@ const clickButton = (name: string, opts: {closes: boolean}): ParityStep => ({
   },
 });
 
-/** Waits out the fill appearance's line-ripple deactivation transition (~180ms) — see
- *  material-select's/material-form-field's identical helper for the full mechanism writeup
- *  (`typed-date-blur`'s own blur step races this exactly the same way). Does NOT fully resolve
- *  this scenario's own known flake — see SYNC.md's "Open issues" for the evidence trail — but is
- *  kept, matching the sibling specs' own established pattern, since it is still correct and
- *  harmless on its own merits. */
+/** Waits out the fill appearance's line-ripple deactivation transition (~180ms). */
 const waitForLineRippleSettled = (page: Page) =>
   page
     .waitForFunction(
@@ -224,6 +219,19 @@ const typeAndBlur = (text: string): ParityStep => ({
   run: async (page: Page) => {
     const input = page.locator('[data-parity-root] input');
     await input.fill(text);
+    // Blur only once the focused (`--active`) line ripple is fully visible, as it always is for a
+    // real user. Blurring before a frame paints it leaves opacity 0 -> 0, so no transitionend ever
+    // clears `--active --deactivating` — a frame-scheduling race either app can lose here.
+    await page
+      .waitForFunction(
+        () => {
+          const ripple = document.querySelector('[data-parity-root] .mdc-line-ripple--active');
+          return !!ripple && getComputedStyle(ripple, '::after').opacity === '1';
+        },
+        undefined,
+        {timeout: 2000},
+      )
+      .catch(() => {});
     await input.blur();
     await waitForLineRippleSettled(page);
     await page.waitForTimeout(150);

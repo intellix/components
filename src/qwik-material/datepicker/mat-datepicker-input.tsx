@@ -100,7 +100,10 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
   // "guarded write during render" pattern `mat-form-field.tsx` itself uses for its own context
   // store.
   if (formField) {
-    const liveEmpty = picker.value.value == null;
+    // Upstream's `MatInput.empty` reads the NATIVE value: unparseable text ("not a date", model
+    // `null`) still counts as non-empty and floats the label.
+    const nativeText = (picker._elementRef.value as NativeInputElement | undefined)?.value;
+    const liveEmpty = picker.value.value == null && !nativeText;
     if (formField.empty !== liveEmpty) {
       formField.empty = liveEmpty;
       formField.shouldLabelFloat = formField.focused || !liveEmpty;
