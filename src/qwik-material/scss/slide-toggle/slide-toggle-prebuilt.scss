@@ -1,17 +1,18 @@
 // Slide toggle prebuilt CSS. Wraps the port's upstream-synced
-// slide-toggle.scss with :root defaults for every --mat-slide-toggle-* /
-// --mat-sys-* variable it emits, following the same reconciliation approach
-// as button-toggle-prebuilt.scss (recompile, add whatever var() names are
-// still unresolved, repeat). See design spec §4 and SYNC.md.
+// slide-toggle.scss. Every `--mat-slide-toggle-*` token it reads already
+// carries a real M3 fallback baked in via token-utils.slot() against
+// m3-slide-toggle's $fallbacks map (e.g. `var(--mat-slide-toggle-
+// selected-track-color, var(--mat-sys-primary))`), the same mechanism
+// upstream itself uses — so no `:root` override block is needed; the one
+// default theme's `--mat-sys-*` (core/default-theme.scss, shipped in this
+// same core-prebuilt.css) is all that's required.
 //
-// Values are the M3 baseline ("Purple") theme's defaults — the same theme
-// `$fallbacks: m3-slide-toggle.get-tokens();` resolves to when slide-toggle.scss
-// is compiled with no live theme. Selected-state colors reuse the exact
-// --mat-sys-primary/-on-primary/-primary-container/-on-primary-container
-// values button/button-prebuilt.scss and button-toggle-prebuilt.scss already
-// define (consistent across every qwik-material prebuilt file that shares a
-// --mat-sys-* name); --mat-sys-primary-container/-on-primary-container are
-// new here (first consumer) and use the real M3 baseline purple values.
+// Historical note: this file previously shipped a `:root` block hardcoding
+// ~80 `--mat-slide-toggle-*` tokens plus 18 `--mat-sys-*` names they fell
+// back to (an M3 baseline "Purple" theme). Removed 2026-10-30 (see
+// core/SYNC.md "Default theme") — those literals always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared* (`:root`), not where it's read.
 //
 // 5 tokens are deliberately left undefined, matching the M3 token function's
 // own `null` entries (`slide-toggle-handle-width`, `-handle-height`,
@@ -24,155 +25,3 @@
 // unresolved too.
 
 @use './slide-toggle';
-
-:root {
-  // ─── slide-toggle base (sizes, shapes, opacities, transitions) ───
-  --mat-slide-toggle-disabled-selected-handle-opacity: 1;
-  --mat-slide-toggle-disabled-selected-icon-opacity: 0.38;
-  --mat-slide-toggle-disabled-track-opacity: 0.12;
-  --mat-slide-toggle-disabled-unselected-handle-opacity: 0.38;
-  --mat-slide-toggle-disabled-unselected-icon-opacity: 0.38;
-  --mat-slide-toggle-disabled-unselected-track-outline-width: 2px;
-  --mat-slide-toggle-handle-shape: var(--mat-sys-corner-full, 9999px);
-  --mat-slide-toggle-hidden-track-opacity: 0;
-  --mat-slide-toggle-hidden-track-transition: opacity 75ms;
-  --mat-slide-toggle-pressed-handle-size: 28px;
-  --mat-slide-toggle-selected-handle-horizontal-margin: 0 24px;
-  --mat-slide-toggle-selected-handle-size: 24px;
-  --mat-slide-toggle-selected-icon-size: 16px;
-  --mat-slide-toggle-selected-pressed-handle-horizontal-margin: 0 22px;
-  --mat-slide-toggle-selected-track-outline-color: transparent;
-  --mat-slide-toggle-selected-track-outline-width: 2px;
-  --mat-slide-toggle-selected-with-icon-handle-horizontal-margin: 0 24px;
-  --mat-slide-toggle-state-layer-size: 40px;
-  --mat-slide-toggle-track-height: 32px;
-  --mat-slide-toggle-track-outline-width: 2px;
-  --mat-slide-toggle-track-shape: var(--mat-sys-corner-full, 9999px);
-  --mat-slide-toggle-track-width: 52px;
-  --mat-slide-toggle-unselected-handle-horizontal-margin: 0 8px;
-  --mat-slide-toggle-unselected-handle-size: 16px;
-  --mat-slide-toggle-unselected-icon-size: 16px;
-  --mat-slide-toggle-unselected-pressed-handle-horizontal-margin: 0 2px;
-  --mat-slide-toggle-unselected-with-icon-handle-horizontal-margin: 0 4px;
-  --mat-slide-toggle-visible-track-opacity: 1;
-  --mat-slide-toggle-visible-track-transition: opacity 75ms;
-  --mat-slide-toggle-with-icon-handle-size: 24px;
-  --mat-slide-toggle-touch-target-size: 48px;
-  --mat-slide-toggle-touch-target-display: block;
-
-  // ─── slide-toggle color ───
-  --mat-slide-toggle-disabled-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  --mat-slide-toggle-disabled-selected-handle-color: var(--mat-sys-surface, #fef7ff);
-  --mat-slide-toggle-disabled-selected-icon-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  --mat-slide-toggle-disabled-selected-track-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  --mat-slide-toggle-disabled-unselected-handle-color: var(
-    --mat-sys-on-surface,
-    rgba(0, 0, 0, 0.87)
-  );
-  --mat-slide-toggle-disabled-unselected-icon-color: var(--mat-sys-surface-variant, #e7e0ec);
-  --mat-slide-toggle-disabled-unselected-track-color: var(--mat-sys-surface-variant, #e7e0ec);
-  --mat-slide-toggle-disabled-unselected-track-outline-color: var(
-    --mat-sys-on-surface,
-    rgba(0, 0, 0, 0.87)
-  );
-  --mat-slide-toggle-label-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  --mat-slide-toggle-selected-focus-handle-color: var(--mat-sys-primary-container, #eaddff);
-  --mat-slide-toggle-selected-focus-state-layer-color: var(--mat-sys-primary, #6750a4);
-  --mat-slide-toggle-selected-focus-state-layer-opacity: var(
-    --mat-sys-focus-state-layer-opacity,
-    0.12
-  );
-  --mat-slide-toggle-selected-focus-track-color: var(--mat-sys-primary, #6750a4);
-  --mat-slide-toggle-selected-handle-color: var(--mat-sys-on-primary, #ffffff);
-  --mat-slide-toggle-selected-hover-handle-color: var(--mat-sys-primary-container, #eaddff);
-  --mat-slide-toggle-selected-hover-state-layer-color: var(--mat-sys-primary, #6750a4);
-  --mat-slide-toggle-selected-hover-state-layer-opacity: var(
-    --mat-sys-hover-state-layer-opacity,
-    0.08
-  );
-  --mat-slide-toggle-selected-hover-track-color: var(--mat-sys-primary, #6750a4);
-  --mat-slide-toggle-selected-icon-color: var(--mat-sys-on-primary-container, #21005d);
-  --mat-slide-toggle-selected-pressed-handle-color: var(--mat-sys-primary-container, #eaddff);
-  --mat-slide-toggle-selected-pressed-state-layer-color: var(--mat-sys-primary, #6750a4);
-  --mat-slide-toggle-selected-pressed-state-layer-opacity: var(
-    --mat-sys-pressed-state-layer-opacity,
-    0.12
-  );
-  --mat-slide-toggle-selected-pressed-track-color: var(--mat-sys-primary, #6750a4);
-  --mat-slide-toggle-selected-track-color: var(--mat-sys-primary, #6750a4);
-  --mat-slide-toggle-track-outline-color: var(--mat-sys-outline, rgba(0, 0, 0, 0.12));
-  --mat-slide-toggle-unselected-focus-handle-color: var(
-    --mat-sys-on-surface-variant,
-    rgba(0, 0, 0, 0.6)
-  );
-  --mat-slide-toggle-unselected-focus-state-layer-color: var(
-    --mat-sys-on-surface,
-    rgba(0, 0, 0, 0.87)
-  );
-  --mat-slide-toggle-unselected-focus-state-layer-opacity: var(
-    --mat-sys-focus-state-layer-opacity,
-    0.12
-  );
-  --mat-slide-toggle-unselected-focus-track-color: var(--mat-sys-surface-variant, #e7e0ec);
-  --mat-slide-toggle-unselected-handle-color: var(--mat-sys-outline, rgba(0, 0, 0, 0.12));
-  --mat-slide-toggle-unselected-hover-handle-color: var(
-    --mat-sys-on-surface-variant,
-    rgba(0, 0, 0, 0.6)
-  );
-  --mat-slide-toggle-unselected-hover-state-layer-color: var(
-    --mat-sys-on-surface,
-    rgba(0, 0, 0, 0.87)
-  );
-  --mat-slide-toggle-unselected-hover-state-layer-opacity: var(
-    --mat-sys-hover-state-layer-opacity,
-    0.08
-  );
-  --mat-slide-toggle-unselected-hover-track-color: var(--mat-sys-surface-variant, #e7e0ec);
-  --mat-slide-toggle-unselected-icon-color: var(--mat-sys-surface-variant, #e7e0ec);
-  --mat-slide-toggle-unselected-pressed-handle-color: var(
-    --mat-sys-on-surface-variant,
-    rgba(0, 0, 0, 0.6)
-  );
-  --mat-slide-toggle-unselected-pressed-state-layer-color: var(
-    --mat-sys-on-surface,
-    rgba(0, 0, 0, 0.87)
-  );
-  --mat-slide-toggle-unselected-pressed-state-layer-opacity: var(
-    --mat-sys-pressed-state-layer-opacity,
-    0.12
-  );
-  --mat-slide-toggle-unselected-pressed-track-color: var(--mat-sys-surface-variant, #e7e0ec);
-  --mat-slide-toggle-unselected-track-color: var(--mat-sys-surface-variant, #e7e0ec);
-
-  // ─── slide-toggle typography ───
-  --mat-slide-toggle-label-text-font: var(
-    --mat-sys-body-medium-font,
-    Roboto,
-    'Helvetica Neue',
-    sans-serif
-  );
-  --mat-slide-toggle-label-text-line-height: var(--mat-sys-body-medium-line-height, 1.25rem);
-  --mat-slide-toggle-label-text-size: var(--mat-sys-body-medium-size, 0.875rem);
-  --mat-slide-toggle-label-text-tracking: var(--mat-sys-body-medium-tracking, 0.015625em);
-  --mat-slide-toggle-label-text-weight: var(--mat-sys-body-medium-weight, 400);
-
-  // ─── --mat-sys-* system tokens slide-toggle's m3 tokens resolve through ───
-  --mat-sys-body-medium-font: Roboto, 'Helvetica Neue', sans-serif;
-  --mat-sys-body-medium-line-height: 1.25rem;
-  --mat-sys-body-medium-size: 0.875rem;
-  --mat-sys-body-medium-tracking: 0.015625em;
-  --mat-sys-body-medium-weight: 400;
-  --mat-sys-corner-full: 9999px;
-  --mat-sys-focus-state-layer-opacity: 0.12;
-  --mat-sys-hover-state-layer-opacity: 0.08;
-  --mat-sys-on-primary: #ffffff;
-  --mat-sys-on-primary-container: #21005d;
-  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
-  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
-  --mat-sys-outline: rgba(0, 0, 0, 0.12);
-  --mat-sys-pressed-state-layer-opacity: 0.12;
-  --mat-sys-primary: #6750a4;
-  --mat-sys-primary-container: #eaddff;
-  --mat-sys-surface: #fef7ff;
-  --mat-sys-surface-variant: #e7e0ec;
-}
