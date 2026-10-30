@@ -22,7 +22,7 @@
   --mat-slider-disabled-handle-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
   --mat-slider-disabled-inactive-track-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
   --mat-slider-focus-handle-color: var(--mat-sys-primary, #6750a4);
-  --mat-slider-focus-state-layer-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-focus-state-layer-color: color-mix(in srgb, var(--mat-sys-primary, #6750a4) 20%, transparent);
   --mat-slider-handle-color: var(--mat-sys-primary, #6750a4);
   --mat-slider-handle-elevation: var(
     --mat-sys-level1,
@@ -34,7 +34,7 @@
   --mat-slider-handle-shape: var(--mat-sys-corner-full, 9999px);
   --mat-slider-handle-width: 20px;
   --mat-slider-hover-handle-color: var(--mat-sys-primary, #6750a4);
-  --mat-slider-hover-state-layer-color: var(--mat-sys-primary, #6750a4);
+  --mat-slider-hover-state-layer-color: color-mix(in srgb, var(--mat-sys-primary, #6750a4) 5%, transparent);
   --mat-slider-inactive-track-color: var(--mat-sys-surface-variant, #e7e0ec);
   --mat-slider-inactive-track-height: 4px;
   --mat-slider-inactive-track-shape: var(--mat-sys-corner-full, 9999px);

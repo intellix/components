@@ -1,5 +1,7 @@
 // Prebuilt CSS for @angular-community/qwik-material/core: every shared core
-// piece a component may render (pseudo-checkbox, internal form field).
+// piece a component may render (pseudo-checkbox, internal form field, ripple).
 @use './selection/pseudo-checkbox/pseudo-checkbox-prebuilt';
 @use './internal-form-field/internal-form-field';
 @use './option/option-prebuilt';
+// Upstream loads this on demand (`_MatRippleStylesLoader`); every ripple host here needs it.
+@use './ripple/ripple-structure';

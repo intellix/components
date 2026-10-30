@@ -38,6 +38,9 @@ rather than inventing a new one.
 | `scss/core/selection/pseudo-checkbox/_pseudo-checkbox-theme.scss` | `src/material/core/selection/pseudo-checkbox/_pseudo-checkbox-theme.scss` | synced | byte-identical copy; theme mixins inert on our end but kept for `diff -q` parity |
 | `scss/core/style/_checkbox-common.scss` | `src/material/core/style/_checkbox-common.scss` | synced | byte-identical copy; new shared-SCSS dependency pseudo-checkbox.scss needed (`$size`/`$border-width`/`$transition-duration`) that no prior port had pulled in yet |
 | `scss/core/selection/pseudo-checkbox/pseudo-checkbox-prebuilt.scss` | (qwik-material-specific) | new | `@use` pseudo-checkbox.scss + `:root` defaults for every `--mat-pseudo-checkbox-*` variable it emits. Only the fallback for pseudo-checkboxes rendered *outside* a component (like `MatButtonToggle`) that overrides the color variables itself — button-toggle.scss's own `.mat-button-toggle-appearance-standard .mat-pseudo-checkbox { --mat-pseudo-checkbox-minimal-*-selected-checkmark-color: … }` rules win inside that context |
+| `scss/core/ripple/_ripple.scss` | `src/material/core/ripple/_ripple.scss` | synced | byte-identical except `@use '@angular/cdk'` → `@use '../../cdk-stub' as cdk` (same substitution as `_menu-common.scss`) |
+| `scss/core/ripple/_m3-ripple.scss` | `src/material/core/ripple/_m3-ripple.scss` | synced | byte-identical copy |
+| `scss/core/ripple/ripple-structure.scss` | `src/material/core/ripple/ripple-structure.scss` | synced | byte-identical copy. Upstream loads it on demand (`_MatRippleStylesLoader`); here `core-prebuilt.scss` always includes it. Missing until 2026-10-30, which left every `.mat-ripple-element` (e.g. slider hover/focus ripples) `position: static`, square and unclipped |
 
 ## Removed upstream files
 
