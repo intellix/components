@@ -108,6 +108,21 @@ Directive selector attributes that the consumer writes (`matFab`,
 `CONSUMER_SELECTOR_ATTRS`. Attributes Material's own templates emit (`matripple`,
 `mat-ripple-loader-*`) are compared and must be reproduced.
 
+**Ripples are real, interactive animations** (`qwik-material/core/ripple/`) —
+every component with an upstream `[mat-ripple]`/`matRipple`/`MatRippleLoader`
+launches real `.mat-ripple-element` spans on pointer events, not just a
+static container. Since the settled-DOM contract above waits transient
+ripples OUT before comparing, it structurally can't cover a ripple
+mid-animation; `specs/material-button/ripple-mid-flight.spec.ts` covers
+that case separately, with its own narrower harness (opens both pages
+directly, holds `mousedown` via `page.mouse.down()` with no matching
+`mouseup` until after reading, never calls `snapshotParityRoot`) that
+compares a launched ripple's classes + literal inline style
+(`left`/`top`/`height`/`width`/`transition-duration`/`transform`) between
+both apps while the enter animation is still in progress — deterministic
+despite the CSS animation, because those properties are set once,
+synchronously, at ripple-creation time and never rewritten until fade-out.
+
 Checkbox/radio inputs are compared on their live `.checked` state, not the
 `checked` attribute: Qwik's SSR writes `checked` so a selected control paints
 before JS runs, and that attribute is never updated afterwards (Angular's

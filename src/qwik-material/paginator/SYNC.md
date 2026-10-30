@@ -166,6 +166,28 @@ Fixed by reusing the EXISTING `rippleInitialized` signal `useRippleLoader()` alr
 again" branch exactly — and is rendered as its own literal JSX attribute (never through the
 buggy spread), same pattern as `RIPPLE_UNINITIALIZED_ATTR` itself.
 
+#### Known residual (2026-10-30, `core/ripple/` remediation): 2 scenarios regressed
+
+`show-first-last` and `interactions` fail after `useRippleLoader()` started firing real ripples
+(previously it only inserted the static `.mat-ripple` span). Both scenarios click a nav button
+that becomes disabled by that very click, then assert a SIBLING, never-directly-clicked button
+(e.g. `previous`) correctly keeps live-tracking `disabled` into `mat-ripple-loader-disabled` — the
+mechanism described just above, which is itself racing against a REAL upstream race ("whichever
+happens first, ripple instantiation or the disabled-state change, wins" — upstream has the exact
+same race, just with different timing characteristics). Confirmed via a worktree A/B test against
+the pre-ripple-animation baseline (commit e9b742f86): reverting ONLY `button/internal/
+ripple-loader.ts` back to its no-real-ripple-firing version makes both scenarios pass again — the
+real ripple path's extra synchronous work (`getBoundingClientRect`/`getComputedStyle`, which
+forces a style/layout recalc; required for the scale animation to actually play, not optional)
+shifts this pre-existing race's timing enough to flip which value "wins" for the sibling button,
+in this specific rapid double-click sequence. An attempted fix (replacing the sticky task's
+`rippleInitialized`-signal-tracking gate with a direct `hostRef.value?.querySelector('.mat-ripple')`
+DOM check, removing the cross-signal race) made MORE scenarios fail (`hide-page-size`,
+`custom-intl` newly broke) and was reverted. Left as a known, documented gap — see `core/SYNC.md`'s
+ripple section for the same writeup — same treatment this project already gives the pre-existing,
+unrelated `material-timepicker` `min-max` failure. No other paginator behavior, and no OTHER
+component's ripple firing/timing/DOM, is affected.
+
 ## Shared `qwik-material` changes this port needed
 
 - **`qwik-material/select/mat-select.tsx`: echoes a literal `hidesingleselectionindicator` DOM

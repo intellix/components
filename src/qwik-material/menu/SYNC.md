@@ -177,6 +177,19 @@ turned out to satisfy both constraints above just as well.
   `qwik-material/button-toggle` established) — functionally equivalent for this port's purposes,
   zero eager JS per item.
 
+## Ripple animation (2026-10-30, `core/ripple/` remediation)
+
+`MatMenuItem`'s static `<div matripple class="mat-ripple mat-mdc-menu-ripple">` container (always
+rendered) now also receives real `.mat-ripple-element` spans: `core/ripple/ripple-dom.ts`'s
+`handleRippleEvent()` is wired to `onMouseDown$`/`onMouseUp$`/`onMouseLeave$`/`onTouchStart$`/
+`onTouchEnd$`/`onTouchCancel$` on the item's own host `<button>` (upstream's
+`[matRippleTrigger]="_getHostElement()"`); `onMouseDown$` carries the existing submenu
+`handleMouseDown$` alongside the ripple handler via an array (`[handleMouseDown$, rippleEvent$]`
+— harmless, since the fix this depends on is about the ripple handler itself seeing `mousedown`
+before `mouseup`, unaffected by what else also runs on `mousedown`). See `core/SYNC.md`'s ripple
+section for why every ripple-bearing component wires ONE shared `$()` reference to all six
+events (a cross-chunk QRL-ordering race, not a style preference).
+
 ## Shared `qwik-cdk` additions/fixes this port needed
 
 - **`qwik-cdk/a11y/key-manager/` (new).** `ListKeyManager`/`FocusKeyManager`/`Typeahead` ported
