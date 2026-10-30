@@ -1,4 +1,13 @@
-import {$, component$, Slot, useContext, useSignal, useTask$, type QRL} from '@builder.io/qwik';
+import {
+  $,
+  component$,
+  Slot,
+  useContext,
+  useSignal,
+  useTask$,
+  useVisibleTask$,
+  type QRL,
+} from '@builder.io/qwik';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
@@ -187,12 +196,10 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
   // and the task only *loads and reruns* when the tracked signal actually
   // changes (e.g. after a click) — exactly as lazy as the JSX-prop approach
   // was meant to be, with none of its bugs. Cost (same as before): a
-  // checkbox that starts checked/indeterminate and is never interacted with
-  // won't show the native `:indeterminate` CSS pseudo-class styling until
-  // first interaction (`checked` is also rendered as a JSX prop below for
-  // first paint) — a visual-only gap, explicitly out of
-  // scope per the remediation design doc ("computed-style / visual parity
-  // ... out of scope"). The `mdc-checkbox--selected`/`mat-mdc-checkbox-checked`
+  // checkbox that starts indeterminate would never show the native
+  // `:indeterminate` styling until first interaction — handled by the
+  // document-ready task below (`checked` is rendered as a JSX prop for first
+  // paint). The `mdc-checkbox--selected`/`mat-mdc-checkbox-checked`
   // classes and `aria-checked="mixed"` attribute (the parts of this state any
   // real consumer's attribute-reading code, or angular-parity.spec.ts, can
   // observe) are correct from the very first paint regardless.
@@ -206,6 +213,22 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
     const el = inputRef.value as HTMLInputElement | undefined;
     if (el) el.indeterminate = value;
   });
+  // `indeterminate` has no attribute, so SSR can't express it and the task above
+  // only runs on a client-side change: a checkbox that STARTS indeterminate needs
+  // the property set once on load, or upstream's `:indeterminate` styles (mixed
+  // mark, filled background) never apply until the first interaction. Static per
+  // instance, so the conditional hook is order-stable (same exception as
+  // form-field's initially-floating label).
+  if (props.indeterminate) {
+    // eslint-disable-next-line qwik/no-use-visible-task
+    useVisibleTask$(
+      () => {
+        const el = inputRef.value as HTMLInputElement | undefined;
+        if (el) el.indeterminate = indeterminate.value;
+      },
+      {strategy: 'document-ready'},
+    );
+  }
 
   // Mirrors upstream's `_handleInputClick`. Called directly (not as a QRL
   // event prop) from both the native input's click and the touch-target's

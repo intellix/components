@@ -144,3 +144,10 @@ or running when the host is less contended, resolves it.
   "transition class is gone" wait could pass before Qwik's lazily-resolved
   handler had added the class. Steps now wait for the input's className to
   change (bounded at 1.5s) before waiting the class out.
+
+## Initially-indeterminate checkboxes (2026-10-30)
+
+`indeterminate` is a DOM property with no attribute, so SSR can't express it. A checkbox whose
+`indeterminate` prop starts `true` now sets the property once on load (`useVisibleTask$` with
+`document-ready`, called only for those instances), so upstream's `:indeterminate` styles (mixed
+mark, filled background) apply before any interaction. Found by the computed-style parity check.
