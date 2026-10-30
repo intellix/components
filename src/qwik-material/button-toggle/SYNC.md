@@ -58,7 +58,7 @@ See deviations below.
 | `scss/button-toggle/_button-toggle-theme.scss` | `src/material/button-toggle/_button-toggle-theme.scss` | synced | byte-identical copy; theme mixin inert on our end but kept for `diff -q` parity |
 | `scss/button-toggle/_m2-button-toggle.scss` | `src/material/button-toggle/_m2-button-toggle.scss` | synced | byte-identical copy |
 | `scss/button-toggle/_m3-button-toggle.scss` | `src/material/button-toggle/_m3-button-toggle.scss` | synced | byte-identical copy |
-| `scss/button-toggle/button-toggle-prebuilt.scss` | (qwik-material-specific) | new | `@use` button-toggle.scss + `:root` defaults for every `--mat-button-toggle-*` / `--mat-sys-*` variable the now-synced upstream file emits (re-reconciled 2026-10-27 — the full upstream file references ~30 button-toggle tokens across standard + legacy variants, roughly 3x the original rewrite's set) |
+| `scss/button-toggle/button-toggle-prebuilt.scss` | (qwik-material-specific) | new | `@use` button-toggle.scss only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): the standard-appearance tokens already resolve through `token-utils.slot(..., var(--mat-sys-*))` fallback chains baked in at Sass-compile time, and the legacy-appearance tokens have no fallback in upstream's own CSS either (they rely on a component theme mixin this port doesn't run — see the file's own header comment). The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 

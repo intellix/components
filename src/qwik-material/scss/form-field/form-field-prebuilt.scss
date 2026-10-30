@@ -1,64 +1,36 @@
 // Form-field prebuilt CSS entry. Wraps the port's form-field.scss (now a
 // byte-for-byte sync of upstream src/material/form-field/form-field.scss +
 // its structure/subscript/focus-overlay/high-contrast/native-select/
-// user-agent-overrides partials — see form-field/SYNC.md) with :root
-// defaults for every --mat-sys-* system token its token-utils.slot(...)
-// fallback chain resolves through. Also covers `matInput`'s own styling
-// (`.mat-mdc-input-element`/`.mdc-text-field__input` etc. live inside
-// _mdc-text-field-structure.scss — matInput has no separate upstream
-// stylesheet of its own, see input/SYNC.md), so there is no separate
-// input-prebuilt.css.
+// user-agent-overrides partials — see form-field/SYNC.md). Also covers
+// `matInput`'s own styling (`.mat-mdc-input-element`/`.mdc-text-field__input`
+// etc. live inside _mdc-text-field-structure.scss — matInput has no separate
+// upstream stylesheet of its own, see input/SYNC.md), so there is no
+// separate input-prebuilt.css.
 //
-// Variable names verified against this file's own compiled output
-// (`sass.compile('scss/form-field/form-field-prebuilt.scss')`) — every
-// --mat-sys-* name below is a bare `var(--mat-sys-*)` (no fallback)
-// reference that actually appears there. 3 names are DELIBERATELY left
-// without a :root default, matching upstream's own M3 compiled output:
+// form-field.scss reads every one of its `--mat-sys-*` tokens as a BARE
+// `var(--mat-sys-*)` (no fallback) — upstream's own compiled M3 output does
+// the same for form-field (unlike most other components, which route
+// through a `var(--mat-<component>-*, var(--mat-sys-*))` token-utils.slot()
+// chain). Those values come entirely from the one default theme now
+// (`core/default-theme.scss`, shipped via `core-prebuilt.css`) — this file
+// no longer carries its own `:root` override block (removed 2026-10-30, see
+// core/SYNC.md "Default theme" and form-field/SYNC.md): the previous block's
+// literals used an old M3 "Purple" baseline that always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared* (`:root`), not where it's read.
+//
+// 3 names are DELIBERATELY left unresolved, matching upstream's own M3
+// compiled output (not fixed by core/default-theme.scss, and not a
+// regression from removing the :root block — they were never --mat-sys-*
+// names):
 //   - --mat-mdc-form-field-floating-label-scale / --mat-mdc-form-field-
 //     label-transform: self-resolving — the compiled CSS itself assigns
 //     these inside a more specific rule (e.g. `.mdc-floating-label--
-//     float-above &`) before any bare reference reads them; no :root
-//     needed.
+//     float-above &`) before any bare reference reads them.
 //   - --mat-form-field-outlined-label-text-populated-size: the M3 token
 //     map (_m3-form-field.scss) sets this to `null` on purpose —
 //     token-utils.slot() emits a bare var() with no fallback for it (same
-//     category as slide-toggle-prebuilt.scss's 5 deliberately-undefined
+//     category as slide-toggle-prebuilt.scss's deliberately-undefined
 //     handle tokens) — upstream's own M3 CSS leaves it unresolved too
 //     (visual-only, out of scope per the remediation design doc).
-//
-// Color/opacity/shape values reuse the same M3 baseline ("Purple" theme)
-// literals already established by button/checkbox/slide-toggle/expansion's
-// own prebuilt files wherever the --mat-sys-* name is shared across them;
-// --mat-sys-body-large-*/-body-small-*/-error/-on-error-container/-neutral10/
-// -corner-extra-small are new here (first consumer in this port) and use
-// the real M3 baseline values from scss/core/tokens/m3/_md-sys-typescale.scss
-// (line-height/size/tracking/weight — font family swapped from the stub's
-// placeholder `inherit` to the real Roboto fallback, same substitution
-// checkbox/slide-toggle already made for body-medium-font) and
-// _md-sys-color.scss / _md-sys-shape.scss (error/on-error-container/
-// neutral10/corner-extra-small).
 @use './form-field';
-
-:root {
-  // ─── --mat-sys-* system tokens form-field's m3 tokens resolve through ───
-  --mat-sys-body-large-font: Roboto, 'Helvetica Neue', sans-serif;
-  --mat-sys-body-large-line-height: 1.5rem;
-  --mat-sys-body-large-size: 1rem;
-  --mat-sys-body-large-tracking: 0.031rem;
-  --mat-sys-body-large-weight: 400;
-  --mat-sys-body-small-font: Roboto, 'Helvetica Neue', sans-serif;
-  --mat-sys-body-small-line-height: 1rem;
-  --mat-sys-body-small-size: 0.75rem;
-  --mat-sys-body-small-tracking: 0.025rem;
-  --mat-sys-body-small-weight: 400;
-  --mat-sys-corner-extra-small: 4px;
-  --mat-sys-error: #ba1a1a;
-  --mat-sys-hover-state-layer-opacity: 0.08;
-  --mat-sys-neutral10: #1f1b17;
-  --mat-sys-on-error-container: #410002;
-  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
-  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
-  --mat-sys-outline: rgba(0, 0, 0, 0.12);
-  --mat-sys-primary: #6750a4;
-  --mat-sys-surface-variant: #e7e0ec;
-}
