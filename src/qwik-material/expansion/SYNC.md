@@ -24,7 +24,7 @@ start, per
 | `scss/expansion/expansion-panel.scss` | `src/material/expansion/expansion-panel.scss` | synced | Byte-for-byte copy with the one allowed edit: `@use '@angular/cdk';` → `@use '../cdk-stub' as cdk;` |
 | `scss/expansion/expansion-panel-header.scss` | `src/material/expansion/expansion-panel-header.scss` | synced | Same cdk-stub swap |
 | `scss/expansion/_expansion-variables.scss`, `_m2-expansion.scss`, `_m3-expansion.scss`, `_expansion-theme.scss` | same names upstream | synced | Byte-identical copies; no `@angular/cdk` references, no edits needed |
-| `scss/expansion/expansion-prebuilt.scss` | (qwik-material-specific) | new | `@use` the two synced files + `:root` defaults for every `--mat-expansion-*` / `--mat-sys-*` variable they reference, reusing the exact literal values already chosen for shared `--mat-sys-*` tokens in `button/`, `button-toggle/`, `dialog/`, `card/`'s own prebuilt files (so loading more than one prebuilt CSS file on the same page doesn't disagree about a shared default) |
+| `scss/expansion/expansion-prebuilt.scss` | (qwik-material-specific) | new | `@use` the two synced files only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): every `--mat-expansion-*` name already carries a real M3 fallback to `--mat-sys-*` baked in via `token-utils.slot()`. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 

@@ -19,7 +19,7 @@ Every deviation from a verbatim copy is recorded here. Companion to
 | `scss/divider/_divider-offset.scss` | `src/material/divider/_divider-offset.scss` | synced | byte-identical copy |
 | `scss/divider/_m2-divider.scss` | `src/material/divider/_m2-divider.scss` | synced | byte-identical copy |
 | `scss/divider/_m3-divider.scss` | `src/material/divider/_m3-divider.scss` | synced | byte-identical copy |
-| `scss/divider/divider-prebuilt.scss` | (qwik-material-specific) | new | @use divider.scss + M3 :root defaults matching emitted --mat-divider-* references |
+| `scss/divider/divider-prebuilt.scss` | (qwik-material-specific) | new | `@use` divider.scss only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): every `--mat-divider-*` name already carries a real fallback to `--mat-sys-*` baked in via `token-utils.slot()`. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 

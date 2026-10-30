@@ -30,7 +30,7 @@ deviations #7 and new #14 below:
 | `scss/icon/_icon-theme.scss` | `src/material/icon/_icon-theme.scss` | synced | byte-identical copy |
 | `scss/icon/_m2-icon.scss` | `src/material/icon/_m2-icon.scss` | synced | byte-identical copy |
 | `scss/icon/_m3-icon.scss` | `src/material/icon/_m3-icon.scss` | synced | byte-identical copy |
-| `scss/icon/icon-prebuilt.scss` | (qwik-material-specific) | new | @use icon.scss + M3 :root defaults matching emitted --mat-icon-* references |
+| `scss/icon/icon-prebuilt.scss` | (qwik-material-specific) | new | `@use` icon.scss only — no `:root` token defaults (removed 2026-10-30, see `core/SYNC.md` "Default theme"): `--mat-icon-color` already carries its own fallback baked in at Sass-compile time (`var(--mat-icon-color, inherit)`), matching upstream's actual default |
 
 ## Removed upstream files
 
