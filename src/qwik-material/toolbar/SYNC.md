@@ -18,7 +18,7 @@ and `src/qwik-material/card/SYNC.md`.
 | `scss/toolbar/_m2-toolbar.scss`     | `src/material/toolbar/_m2-toolbar.scss`           | synced     | byte-identical copy                                                                      |
 | `scss/toolbar/_m3-toolbar.scss`     | `src/material/toolbar/_m3-toolbar.scss`           | synced     | byte-identical copy                                                                      |
 | `scss/toolbar/_toolbar-variables.scss` | `src/material/toolbar/_toolbar-variables.scss` | synced     | byte-identical copy                                                                      |
-| `scss/toolbar/toolbar-prebuilt.scss` | (qwik-material-specific)                         | new        | @use toolbar.scss + M3 :root defaults matching emitted --mat-toolbar-* references        |
+| `scss/toolbar/toolbar-prebuilt.scss` | (qwik-material-specific)                         | new        | `@use` toolbar.scss only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): every `--mat-toolbar-*` token already resolves through a `token-utils.slot(..., var(--mat-sys-*))` fallback chain baked in at Sass-compile time. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 

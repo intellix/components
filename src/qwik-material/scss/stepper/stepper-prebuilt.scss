@@ -1,88 +1,21 @@
 // Stepper prebuilt CSS. Wraps the port's upstream-synced stepper.scss /
-// step-header.scss with :root defaults for every --mat-stepper-* /
-// --mat-step-header-* / --mat-sys-* variable they emit, following the same
-// reconciliation approach as expansion-prebuilt.scss/tabs-prebuilt.scss
-// (recompile, add whatever var() names are still unresolved, repeat). See
-// design spec §4 and SYNC.md.
+// step-header.scss. Every `--mat-stepper-*` / `--mat-step-header-*` token
+// they read already carries a real M3 fallback baked in via
+// token-utils.slot() against m3-stepper's $fallbacks map (e.g.
+// `var(--mat-stepper-header-selected-state-icon-background-color,
+// var(--mat-sys-primary))`, and the hover/focus state-layer colors fall
+// back to a `color-mix()` against `--mat-sys-on-surface`), the same
+// mechanism upstream itself uses — so no `:root` override block is needed;
+// the one default theme's `--mat-sys-*` (core/default-theme.scss, shipped
+// via `core-prebuilt.css`) is all that's required.
 //
-// --mat-sys-* values are M3-ish literals, not a live theme (this port has no
-// runtime theming system, same as every other qwik-material prebuilt file) —
-// reused verbatim from other prebuilt files wherever they already define the
-// same variable name (surface/on-surface/on-surface-variant/outline/primary/
-// on-primary/*-state-layer-opacity/body-medium-*), so loading more than one
-// of these prebuilt CSS files on the same page doesn't produce conflicting
-// defaults for shared system tokens. `--mat-sys-error`/`--mat-sys-corner-
-// medium`/`--mat-sys-title-small-*` are new here (no prior prebuilt file
-// defined them) — standard M3 baseline values.
+// Historical note: this file previously shipped a `:root` block hardcoding
+// every `--mat-stepper-*`/`--mat-step-header-*` name above AND the
+// `--mat-sys-*` names they fall back to (an M3 baseline theme). Removed
+// 2026-10-30 (see core/SYNC.md "Default theme" and stepper/SYNC.md): those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
 
 @use './stepper';
 @use './step-header';
-
-:root {
-  // ─── stepper (container) ───
-  --mat-stepper-container-color: var(--mat-sys-surface, #fef7ff);
-  --mat-stepper-container-text-font: var(--mat-sys-body-medium-font, inherit);
-  --mat-stepper-line-color: var(--mat-sys-outline, rgba(0, 0, 0, 0.12));
-
-  // ─── stepper (header) ───
-  --mat-stepper-header-height: 72px;
-  --mat-stepper-header-focus-state-layer-shape: var(--mat-sys-corner-medium, 12px);
-  --mat-stepper-header-hover-state-layer-shape: var(--mat-sys-corner-medium, 12px);
-  --mat-stepper-header-error-state-icon-background-color: transparent;
-  --mat-stepper-header-done-state-icon-background-color: var(--mat-sys-primary, #6750a4);
-  --mat-stepper-header-done-state-icon-foreground-color: var(--mat-sys-on-primary, #ffffff);
-  --mat-stepper-header-edit-state-icon-background-color: var(--mat-sys-primary, #6750a4);
-  --mat-stepper-header-edit-state-icon-foreground-color: var(--mat-sys-on-primary, #ffffff);
-  --mat-stepper-header-error-state-icon-foreground-color: var(--mat-sys-error, #ba1a1a);
-  --mat-stepper-header-error-state-label-text-color: var(--mat-sys-error, #ba1a1a);
-  --mat-stepper-header-focus-state-layer-color: color-mix(
-    in srgb,
-    var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87))
-      calc(var(--mat-sys-focus-state-layer-opacity, 0.12) * 100%),
-    transparent
-  );
-  --mat-stepper-header-hover-state-layer-color: color-mix(
-    in srgb,
-    var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87))
-      calc(var(--mat-sys-hover-state-layer-opacity, 0.08) * 100%),
-    transparent
-  );
-  --mat-stepper-header-icon-background-color: var(
-    --mat-sys-on-surface-variant,
-    rgba(0, 0, 0, 0.6)
-  );
-  --mat-stepper-header-icon-foreground-color: var(--mat-sys-surface, #fef7ff);
-  --mat-stepper-header-label-text-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
-  --mat-stepper-header-label-text-font: var(--mat-sys-title-small-font, inherit);
-  --mat-stepper-header-label-text-size: var(--mat-sys-title-small-size, 0.875rem);
-  --mat-stepper-header-label-text-weight: var(--mat-sys-title-small-weight, 500);
-  --mat-stepper-header-optional-label-text-color: var(
-    --mat-sys-on-surface-variant,
-    rgba(0, 0, 0, 0.6)
-  );
-  --mat-stepper-header-selected-state-icon-background-color: var(--mat-sys-primary, #6750a4);
-  --mat-stepper-header-selected-state-icon-foreground-color: var(--mat-sys-on-primary, #ffffff);
-  --mat-stepper-header-selected-state-label-text-color: var(
-    --mat-sys-on-surface-variant,
-    rgba(0, 0, 0, 0.6)
-  );
-  --mat-stepper-header-error-state-label-text-size: var(--mat-sys-title-small-size, 0.875rem);
-  --mat-stepper-header-selected-state-label-text-size: var(--mat-sys-title-small-size, 0.875rem);
-  --mat-stepper-header-selected-state-label-text-weight: var(--mat-sys-title-small-weight, 500);
-
-  // ─── --mat-sys-* system tokens stepper's m3 tokens resolve through ───
-  --mat-sys-surface: #fef7ff;
-  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
-  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
-  --mat-sys-outline: rgba(0, 0, 0, 0.12);
-  --mat-sys-primary: #6750a4;
-  --mat-sys-on-primary: #ffffff;
-  --mat-sys-error: #ba1a1a;
-  --mat-sys-corner-medium: 12px;
-  --mat-sys-hover-state-layer-opacity: 0.08;
-  --mat-sys-focus-state-layer-opacity: 0.12;
-  --mat-sys-body-medium-font: Roboto, 'Helvetica Neue', sans-serif;
-  --mat-sys-title-small-font: Roboto, 'Helvetica Neue', sans-serif;
-  --mat-sys-title-small-size: 0.875rem;
-  --mat-sys-title-small-weight: 500;
-}

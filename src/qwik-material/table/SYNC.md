@@ -73,7 +73,7 @@ into `<MatTable>`'s props) is what this port uses throughout.
 | `scss/table/table.scss` | `src/material/table/table.scss` (184 LOC) | synced | Byte-identical copy. No `@angular/cdk` import exists in this file, so no cdk-stub swap needed (same as `sort/sort-header.scss`). |
 | `scss/table/_table-flex-styles.scss` | `src/material/table/_table-flex-styles.scss` | synced | byte-identical copy; `@use`d by `table.scss` for the flex `<mat-table>` tag-name selectors |
 | `scss/table/_m3-table.scss` | `src/material/table/_m3-table.scss` | synced | byte-identical copy; `table.scss`'s `$fallbacks` resolves through this (`m3-table.get-tokens()`, default args) |
-| `scss/table/table-prebuilt.scss` | (qwik-material-specific) | new | `@use` table.scss + `:root` defaults for all 23 `--mat-table-*` tokens + the `--mat-sys-*` system tokens they fall back to (`surface`/`on-surface`/`outline`/`body-medium-*`/`title-small-*`) — values reused verbatim from other prebuilt files wherever the same variable name already exists elsewhere in this port (`stepper-prebuilt.scss`, `tabs-prebuilt.scss`, `radio-prebuilt.scss`), so loading more than one prebuilt CSS file on the same page doesn't produce conflicting defaults. |
+| `scss/table/table-prebuilt.scss` | (qwik-material-specific) | new | `@use` table.scss only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): all 23 `--mat-table-*` tokens already resolve through a `token-utils.slot(..., var(--mat-sys-*))` fallback chain baked in at Sass-compile time, same as upstream. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css` |
 
 ## Removed upstream files
 

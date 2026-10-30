@@ -1,30 +1,20 @@
-// Prebuilt Material Tooltip CSS entry.
-//
-// Emits: structural styles from tooltip.scss, plus a minimal set of M3
-// default values for the `--mat-sys-*` custom properties the structural
-// rules reference. Consumers import via
-// `@angular-community/qwik-material/tooltip-prebuilt.css`. For full custom
-// theming, consumers should instead @use the tooltip-theme mixin from
+// Prebuilt Material Tooltip CSS entry. Wraps the port's (upstream-synced)
+// tooltip.scss. Every `--mat-tooltip-*` custom property it references
+// already carries a real M3 fallback baked in via token-utils.slot(), e.g.
+// `var(--mat-tooltip-container-color, var(--mat-sys-inverse-surface))` — so
+// the one default theme (`core/default-theme.scss`'s `--mat-sys-*`, shipped
+// via `core-prebuilt.css`) is all that's needed here; no `:root` override
+// block. For full custom theming, consumers should instead @use the
+// tooltip-theme mixin from
 // `@angular-community/qwik-material/scss/tooltip/_tooltip-theme.scss` once
 // the qwik-material/core theming DSL lands.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 8 bare `--mat-sys-*` literals (the tooltip's "inverse" M3 surface roles +
+// body-small typescale) with no `--mat-tooltip-*` names at all. Removed
+// 2026-10-30 (see core/SYNC.md "Default theme" and tooltip/SYNC.md): those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
 
 @use './tooltip';
-
-// Minimal Material Design 3 defaults so a bare consumer sees a themed
-// tooltip. Values sourced from @angular/material's M3 "inverse" surface
-// roles (the tooltip, like the snack bar, deliberately inverts light/dark
-// relative to the rest of the page — see scss/tooltip/_m3-tooltip.scss) and
-// body-small typescale — see
-// scss/core/tokens/m3/_md-sys-color.scss / _md-sys-typescale.scss /
-// _md-sys-shape.scss's light-theme defaults. Every value can be overridden
-// by the consumer at :root or on any ancestor of the tooltip panel.
-:root {
-  --mat-sys-inverse-surface: #33302d;
-  --mat-sys-inverse-on-surface: #f1ece6;
-  --mat-sys-corner-extra-small: 4px;
-  --mat-sys-body-small-font: Roboto, "Helvetica Neue", sans-serif;
-  --mat-sys-body-small-size: 0.75rem;
-  --mat-sys-body-small-line-height: 1rem;
-  --mat-sys-body-small-weight: 400;
-  --mat-sys-body-small-tracking: 0.025rem;
-}
