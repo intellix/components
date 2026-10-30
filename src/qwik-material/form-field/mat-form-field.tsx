@@ -266,20 +266,6 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // reconstructing `control` inline on every render, the natural way to write it, is fine.
   const controlSnapshot = useSignal<JSXOutput | undefined>(() => props.control);
 
-  // `props.infixContent` gets the EXACT SAME freeze, for the EXACT SAME reason — see the big
-  // comment above on `controlSnapshot`. Confirmed live via `qwik-material/datepicker`'s `actions`
-  // scenario (the first real `infixContent` consumer to pass an actual `component$()` —
-  // `<MatDatepicker>`/`<MatDateRangePicker>` — rather than plain host markup like
-  // `qwik-material/paginator`'s touch-target `<div>`): reconstructing `<MatDatepicker
-  // picker={picker} .../>` fresh on every route re-render (the natural way to write it, and the
-  // same shape `control` itself is written in) hit the identical "Rendering promises in JSX
-  // signals is not supported" Qwik-core crash, which manifested here as the marker element
-  // silently vanishing from the DOM after the very next re-render (not merely a console error).
-  // `infixContent`'s own doc comment previously claimed freezing was unnecessary because "this is
-  // plain host-element content with no component$() of its own" — true for every consumer BEFORE
-  // this one, but not a safe assumption for a prop whose type is `JSXOutput` in general.
-  const infixContentSnapshot = useSignal<JSXOutput | undefined>(() => props.infixContent);
-
   // ── Control introspection (static half of the contract) ──
   // Read directly off the `control` prop's JSX descriptor, WITHOUT
   // rendering it — see the module doc comment / core/mat-form-field-control.ts.
