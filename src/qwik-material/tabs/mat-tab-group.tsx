@@ -9,6 +9,11 @@ import {
 } from '@builder.io/qwik';
 import {focusVia, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {
+  rippleAnimationConfig,
+  rippleOnMouseDown,
+  rippleOnTouchStart,
+} from '../core/ripple/ripple-dom';
 import {MAT_TABS_CONFIG, type MatTabsConfig} from './tab-config';
 import {
   computeNextTabFocusIndex,
@@ -135,6 +140,8 @@ export const MatTabGroup = component$<MatTabGroupProps>(props => {
 
   const tabs = props.tabs;
   const disabledFlags = tabs.map(tab => !!tab.disabled);
+  const groupDisableRipple = props.disableRipple ?? false;
+  const labelRippleDisabledFlags = tabs.map(tab => !!tab.disabled || groupDisableRipple);
   const selectedIndex = clampIndex(props.selectedIndex, tabs.length);
 
   // Previous selectedIndex, tracked for the body's left/right/can-animate
@@ -212,6 +219,35 @@ export const MatTabGroup = component$<MatTabGroupProps>(props => {
   const onScrollBefore$ = $(() => pagination.scroll('before'));
   const onScrollAfter$ = $(() => pagination.scroll('after'));
 
+  // Upstream `tab-header.html`'s pagination divs: bare `mat-ripple` (no
+  // `matRippleTrigger` override), so trigger === container, each its own
+  // same element — no separate ref needed beyond `event`'s own `element`
+  // (2nd) argument.
+  const paginationBeforeRippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
+    rippleOnMouseDown(event, trigger, trigger, {
+      rippleDisabled: pagination.disableScrollBefore.value || groupDisableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+  const paginationBeforeRippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
+    rippleOnTouchStart(event, trigger, trigger, {
+      rippleDisabled: pagination.disableScrollBefore.value || groupDisableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+  const paginationAfterRippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
+    rippleOnMouseDown(event, trigger, trigger, {
+      rippleDisabled: pagination.disableScrollAfter.value || groupDisableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+  const paginationAfterRippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
+    rippleOnTouchStart(event, trigger, trigger, {
+      rippleDisabled: pagination.disableScrollAfter.value || groupDisableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+
   const animationDuration = normalizeDuration(
     props.animationDuration ?? config.animationDuration ?? '500ms',
   );
@@ -260,6 +296,8 @@ export const MatTabGroup = component$<MatTabGroupProps>(props => {
             .join(' ')}
           {...({'mat-ripple': ''} as Record<string, string>)}
           onClick$={onScrollBefore$}
+          onMouseDown$={paginationBeforeRippleMouseDown$}
+          onTouchStart$={paginationBeforeRippleTouchStart$}
         >
           <div class="mat-mdc-tab-header-pagination-chevron" />
         </div>
@@ -297,6 +335,7 @@ export const MatTabGroup = component$<MatTabGroupProps>(props => {
                   labelClass={tab.labelClass}
                   label={tab.label}
                   labelTemplate={tab.labelTemplate}
+                  rippleDisabled={labelRippleDisabledFlags[i]}
                   onActivate$={onActivate$}
                 />
               ))}
@@ -314,6 +353,8 @@ export const MatTabGroup = component$<MatTabGroupProps>(props => {
             .join(' ')}
           {...({'mat-ripple': ''} as Record<string, string>)}
           onClick$={onScrollAfter$}
+          onMouseDown$={paginationAfterRippleMouseDown$}
+          onTouchStart$={paginationAfterRippleTouchStart$}
         >
           <div class="mat-mdc-tab-header-pagination-chevron" />
         </div>

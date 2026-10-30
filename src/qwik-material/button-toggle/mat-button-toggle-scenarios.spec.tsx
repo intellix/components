@@ -50,13 +50,14 @@ describe('MatButtonToggle surface — sanity', () => {
     expect(cfg).toBeDefined();
   });
 
-  it('MAT_BUTTON_TOGGLE_GROUP_STATE carries expected id + DEFAULTS has all 8 fields', () => {
+  it('MAT_BUTTON_TOGGLE_GROUP_STATE carries expected id + DEFAULTS has all 9 fields', () => {
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE.id).toBe('qwik-material/button-toggle-group-state');
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS).toEqual({
       mode: 'single',
       value: undefined,
       values: [],
       disabled: false,
+      disableRipple: false,
       name: '',
       onToggle: MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle,
       standalone: true,

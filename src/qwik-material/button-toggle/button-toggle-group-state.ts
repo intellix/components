@@ -27,6 +27,10 @@ export interface MatButtonToggleGroupState {
   values: readonly unknown[];
   /** Group-level disabled — cascades to every child. */
   disabled: boolean;
+  /** Group-level `disableRipple` — cascades to every child, OR'd with the
+   *  child's own (upstream `MatButtonToggle._isRippleDisabled()`:
+   *  `this.disableRipple || this.buttonToggleGroup?.disableRipple`). */
+  disableRipple: boolean;
   /** Form-control name, mirrored onto the inner `<button>` of every
    *  single-select child (upstream `_getButtonName()`). Always a real
    *  string — auto-generated via the id generator when the consumer doesn't
@@ -102,6 +106,7 @@ export const MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS: MatButtonToggleGroupState =
   value: undefined,
   values: [],
   disabled: false,
+  disableRipple: false,
   name: '',
   onToggle: $((_value: unknown, _checked: boolean) => {
     // No-op — standalone toggle owns its own local state via useSignal.

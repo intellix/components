@@ -1,5 +1,11 @@
 import {$, component$, Slot, useContext, useSignal, type QRL} from '@builder.io/qwik';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
+import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {
+  rippleAnimationConfig,
+  rippleOnMouseDown,
+  rippleOnTouchStart,
+} from '../core/ripple/ripple-dom';
 import {MAT_TAB_NAV_STATE, MAT_TAB_NAV_STATE_DEFAULTS} from './tab-nav-state';
 
 export interface MatTabLinkProps {
@@ -28,10 +34,28 @@ export const MatTabLink = component$<MatTabLinkProps>(props => {
   const id = props.id ?? autoId.value;
   const elRef = useSignal<HTMLElement>();
   const focusOrigin = useFocusOrigin();
+  const animationsDisabled = useAnimationsDisabled();
+  const rippleContainerRef = useSignal<HTMLElement>();
 
   const active = props.active ?? false;
   const disabled = props.disabled ?? false;
   const tabIndexWhenFocused = props.tabIndex ?? 0;
+
+  // Upstream `tab-link.html`: `[matRippleTrigger]="elementRef.nativeElement"`
+  // — this link's own host `<a>` (elRef below). `MatTabLink.rippleDisabled`
+  // getter: `this.disabled || this.disableRipple || this._tabNavBar.disableRipple`.
+  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
+    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
+      rippleDisabled: disabled || (props.disableRipple ?? false) || nav.disableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
+    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+      rippleDisabled: disabled || (props.disableRipple ?? false) || nav.disableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
 
   // Roving tabindex by element identity (see tab-nav-state.ts). Both sides
   // are `undefined` throughout SSR (no real DOM element exists yet) and
@@ -88,9 +112,12 @@ export const MatTabLink = component$<MatTabLinkProps>(props => {
       {...({'mat-tab-link': ''} as Record<string, string>)}
       onClick$={onClick$}
       onKeyDown$={onKeyDown$}
+      onMouseDown$={rippleMouseDown$}
+      onTouchStart$={rippleTouchStart$}
     >
       <span class="mdc-tab__ripple" />
       <div
+        ref={rippleContainerRef}
         class="mat-ripple mat-mdc-tab-ripple"
         {...({'mat-ripple': ''} as Record<string, string>)}
       />

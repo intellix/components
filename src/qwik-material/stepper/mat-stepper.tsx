@@ -108,9 +108,8 @@ export interface MatStepperProps {
   labelPosition?: 'bottom' | 'end';
   /** `MatStepper.headerPosition`. Only applies when horizontal. Default 'top'. */
   headerPosition?: 'top' | 'bottom';
-  /** `MatStepper.disableRipple`. Accepted for API completeness; has no DOM
-   *  effect since ripple interactivity itself is out of scope (design doc
-   *  rule 6 — only the static ripple container is ported). */
+  /** `MatStepper.disableRipple`. Threaded to every step header's
+   *  `[matRippleDisabled]` (`mat-step-header.tsx`). */
   disableRipple?: boolean;
   /** M2-only theme color for every step, overridable per-step. Default 'primary'. */
   color?: 'primary' | 'accent' | 'warn';
@@ -544,6 +543,7 @@ export const MatStepper = component$<MatStepperProps>(props => {
         color={s.color || props.color}
         ariaLabel={s.ariaLabel}
         ariaLabelledby={s.ariaLabelledby}
+        disableRipple={props.disableRipple ?? false}
         onHeaderClick$={onHeaderClick$}
       />
     );

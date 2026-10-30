@@ -1,5 +1,11 @@
-import {$, component$, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
+import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {
+  rippleAnimationConfig,
+  rippleOnMouseDown,
+  rippleOnTouchStart,
+} from '../core/ripple/ripple-dom';
 
 /**
  * Internal per-tab header item — `src/material/tabs/tab-header.html`'s
@@ -34,6 +40,10 @@ export interface MatTabLabelItemProps {
   labelClass?: string | ReadonlyArray<string>;
   label?: string;
   labelTemplate?: JSXOutput;
+  /** Mirrors `tab-group.html`'s `[matRippleDisabled]="tab.disabled || disableRipple"`
+   *  — pre-combined by the caller (mirrors the `disabledFlags` precomputation
+   *  `MatTabGroup` already does for this same per-tab `disabled`). */
+  rippleDisabled: boolean;
   /** Mirrors `_handleClick`: always moves focus; selects only if !disabled. */
   onActivate$: QRL<(index: number, element: HTMLElement) => void>;
 }
@@ -42,9 +52,27 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
   // Mirrors `cdkMonitorElementFocus` on the same div (upstream's
   // `FocusMonitor`-driven `cdk-focused`/`cdk-keyboard-focused`/etc classes).
   const focusOrigin = useFocusOrigin();
+  const animationsDisabled = useAnimationsDisabled();
+  const rippleContainerRef = useSignal<HTMLElement>();
 
   const onClick$ = $((_event: PointerEvent, element: HTMLElement) => {
     props.onActivate$(props.index, element);
+  });
+
+  // Upstream `tab-group.html`: `[matRippleTrigger]="tabNode"` — `#tabNode`
+  // is this very element (this component's own host div), not just the
+  // inner `.mat-mdc-tab-ripple` div.
+  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
+    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
+      rippleDisabled: props.rippleDisabled,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
+    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+      rippleDisabled: props.rippleDisabled,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
   });
 
   const classes = [
@@ -79,9 +107,12 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
       aria-labelledby={!props.ariaLabel && props.ariaLabelledby ? props.ariaLabelledby : undefined}
       {...({mattablabelwrapper: '', cdkmonitorelementfocus: ''} as Record<string, string>)}
       onClick$={onClick$}
+      onMouseDown$={rippleMouseDown$}
+      onTouchStart$={rippleTouchStart$}
     >
       <span class="mdc-tab__ripple" />
       <div
+        ref={rippleContainerRef}
         class="mat-ripple mat-mdc-tab-ripple"
         {...({'mat-ripple': ''} as Record<string, string>)}
       />

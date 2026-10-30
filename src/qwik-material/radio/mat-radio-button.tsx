@@ -10,6 +10,11 @@ import {
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
+import {
+  rippleAnimationConfig,
+  rippleOnMouseDown,
+  rippleOnTouchStart,
+} from '../core/ripple/ripple-dom';
 import type {MatRadioColor} from './radio-color';
 import {MAT_RADIO_CONFIG, MAT_RADIO_CONFIG_DEFAULTS} from './radio-config';
 import {MAT_RADIO_GROUP_STATE, MAT_RADIO_GROUP_STATE_DEFAULTS} from './radio-group-state';
@@ -166,6 +171,32 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
   ].filter(Boolean) as string[];
 
   const inputRef = useSignal<HTMLInputElement>();
+  const formFieldRef = useSignal<Element>();
+  const rippleContainerRef = useSignal<HTMLElement>();
+
+  // Upstream `radio.html`: `[matRippleTrigger]="_rippleTrigger.nativeElement"`
+  // where `_rippleTrigger` is `@ViewChild('formField', …)` — the SAME
+  // `mat-internal-form-field` div the whole control + label render inside,
+  // not just the `.mdc-radio` control (see `MatInternalFormField`'s `ref`
+  // prop doc comment for why that element needed a new ref passthrough).
+  // Reads `props.disableRipple`/`props.disabled`/the live group state
+  // rather than the outer-scope consts, matching this file's established
+  // "re-read live inside a closure" convention (see `onTouchTargetClick$`
+  // above).
+  const rippleMouseDown$ = $((event: MouseEvent, trigger: Element) => {
+    const live = stateSignal.value;
+    rippleOnMouseDown(event, trigger, rippleContainerRef.value, {
+      rippleDisabled: !!((props.disabled ?? false) || live.disabled),
+      rippleConfig: {centered: true, animation: rippleAnimationConfig(noopAnimations.value)},
+    });
+  });
+  const rippleTouchStart$ = $((event: TouchEvent, trigger: Element) => {
+    const live = stateSignal.value;
+    rippleOnTouchStart(event, trigger, rippleContainerRef.value, {
+      rippleDisabled: !!((props.disabled ?? false) || live.disabled),
+      rippleConfig: {centered: true, animation: rippleAnimationConfig(noopAnimations.value)},
+    });
+  });
 
   // Companion to the comment on `localChecked` above: when this is a
   // standalone button, listen document-wide for a *different* same-`name`
@@ -262,7 +293,12 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
 
   return (
     <mat-radio-button id={id} class={hostClasses}>
-      <MatInternalFormField labelPosition={effectiveLabelPosition}>
+      <MatInternalFormField
+        labelPosition={effectiveLabelPosition}
+        ref={formFieldRef}
+        onMouseDown$={rippleMouseDown$}
+        onTouchStart$={rippleTouchStart$}
+      >
         <div
           class={
             ['mdc-radio', effectiveDisabled && 'mdc-radio--disabled'].filter(Boolean) as string[]
@@ -298,16 +334,17 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
             <div class="mdc-radio__inner-circle" />
           </div>
           {/* `mat-ripple` mirrors Angular's bare directive-selector attribute
-              (static, no value) left on the rendered DOM; the directive's
-              host class `mat-ripple` is included directly since its own
-              click-driven ripple animation itself is out of scope (static
-              containers only — see button-toggle's SYNC.md deviation #7 for
-              the same rationale). The nested `.mat-ripple-element
-              .mat-radio-persistent-ripple` div is a literal, always-present
-              template element upstream (NOT a transient animated ripple) —
-              its visibility is purely CSS-driven by the ancestor's checked
-              state. */}
+              (static, no value) left on the rendered DOM. Real
+              `.mat-ripple-element` spans are launched into this container on
+              `mousedown`/`touchstart` of `formFieldRef` above
+              (`core/ripple/ripple-dom.ts`) — see radio/SYNC.md. The nested
+              `.mat-ripple-element .mat-radio-persistent-ripple` div below is
+              a SEPARATE, literal, always-present template element upstream
+              (NOT one of the transient animated ripples the renderer
+              creates) — its visibility is purely CSS-driven by the
+              ancestor's checked state. */}
           <div
+            ref={rippleContainerRef}
             {...({'mat-ripple': ''} as Record<string, string>)}
             class="mat-ripple mat-radio-ripple mat-focus-indicator"
             aria-hidden="true"
