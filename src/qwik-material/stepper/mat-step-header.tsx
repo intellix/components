@@ -1,7 +1,9 @@
-import {component$, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import type {StepperOrientation, StepState} from '@angular-community/qwik-cdk/stepper';
 import {MatIcon} from '../icon/mat-icon';
+import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 
 /**
  * Internal per-step header item — `src/material/stepper/step-header.html` +
@@ -54,6 +56,10 @@ export interface MatStepHeaderItemProps {
   color?: 'primary' | 'accent' | 'warn';
   ariaLabel?: string;
   ariaLabelledby?: string;
+  /** Mirrors `MatStepper.disableRipple`, threaded down from `mat-stepper.tsx`
+   *  — upstream `step-header.html`'s `[matRippleDisabled]="disableRipple"`
+   *  reads the OWNING STEPPER's input, not a per-step one. */
+  disableRipple?: boolean;
   /** Mirrors `step.select()` — always attempts a real selection change;
    *  whether it succeeds is the stepper's own linear/editable gating. */
   onHeaderClick$: QRL<(index: number) => void>;
@@ -70,6 +76,21 @@ export function defaultTextForState(state: StepState, index: number): string {
 export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
   // Mirrors `MatStepHeader`'s `FocusMonitor.monitor(this._elementRef, true)`.
   const focusOrigin = useFocusOrigin();
+  const animationsDisabled = useAnimationsDisabled();
+  const hostRef = useSignal<HTMLElement>();
+  const rippleContainerRef = useSignal<HTMLElement>();
+
+  // Upstream `step-header.html`: `[matRippleTrigger]="_getHostElement()"` —
+  // the step header's own host `<mat-step-header>` (hostRef below). ONE
+  // shared `$()` reference wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
+      rippleDisabled: !!props.disableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
 
   const horizontal = props.orientation === 'horizontal';
   const hasOptionalLabel = props.optional && props.state !== 'error';
@@ -103,6 +124,7 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
 
   return (
     <mat-step-header
+      ref={hostRef}
       class={classes}
       role={horizontal ? 'tab' : 'button'}
       tabIndex={props.tabIndex}
@@ -117,14 +139,21 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
       aria-labelledby={!props.ariaLabel && props.ariaLabelledby ? props.ariaLabelledby : undefined}
       aria-disabled={props.ariaDisabled}
       onClick$={() => props.onHeaderClick$(props.index)}
+      onMouseDown$={rippleEvent$}
+      onMouseUp$={rippleEvent$}
+      onMouseLeave$={rippleEvent$}
+      onTouchStart$={rippleEvent$}
+      onTouchEnd$={rippleEvent$}
+      onTouchCancel$={rippleEvent$}
     >
       {/* `matripple` mirrors Angular's bare `matRipple` directive-selector
           attribute (static, no value) left on the rendered DOM — see
           `qwik-material/button-toggle/mat-button-toggle.tsx`'s identical
-          comment. `[matRippleTrigger]`/`[matRippleDisabled]` are bracketed
-          (consumed only, never echoed), and ripple interactivity itself is
-          out of scope (design doc rule 6) — only the static container. */}
+          comment. Real `.mat-ripple-element` spans launch here on
+          `mousedown`/`touchstart` of the host `<mat-step-header>` above
+          (`core/ripple/ripple-dom.ts`) — see stepper/SYNC.md. */}
       <div
+        ref={rippleContainerRef}
         {...({matripple: ''} as Record<string, string>)}
         class="mat-ripple mat-step-header-ripple mat-focus-indicator"
       />

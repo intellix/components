@@ -228,14 +228,13 @@ scenario.
   `MatOption`, mirroring `option.html`'s `@if (group && group._inert)`
   visually-hidden span) but unexercised — no current consumer sets `inert`.
 - **Ripple**: the option's own ripple container (`.mat-mdc-option-ripple
-  .mat-focus-indicator`) is rendered as a static, always-present element
-  with the bare `mat-ripple` directive-selector attribute — same "static
-  containers, not the lazy JS behind them" scope line the remediation design
-  doc draws for every other ripple-bearing component (radio/tab-label/
-  slide-toggle already establish this exact pattern: a plain `mat-ripple`
-  attribute + classes, no `MatRippleLoader`-style lazy-init machinery, which
-  only button/icon-button/fab need). No interactive ripple animation is
-  ported.
+  .mat-focus-indicator`) is a static, always-present element with the bare
+  `mat-ripple` directive-selector attribute — same "static container"
+  pattern radio/tab-label/slide-toggle/etc. all have. As of the 2026-10-30
+  `core/ripple/` remediation pass (see below), real `.mat-ripple-element`
+  spans now launch into it on pointer events dispatched to the host
+  `<mat-option>` (the "trigger" upstream's `[matRippleTrigger]="_getHostElement()"`
+  points at).
 
 ### `MAT_FORM_FIELD_CONNECTED_ORIGIN` / `MatFormFieldControlState` additions
 
@@ -326,3 +325,107 @@ All additive; `MatInput`'s existing behavior is unchanged.
   the full write-up (first and so far only consumer).
 
 Both additive; `MatInput`'s/`MatSelect`'s existing behavior is unchanged.
+
+## `core/ripple/` — MatRipple's interactive animation, 2026-10-30
+
+Ports the actual click/touch-driven ripple *animation* that every other
+ripple-related port in this project had deliberately deferred ("static
+containers, not the lazy JS behind them" — see e.g. the option/radio/
+button-toggle notes above). New, framework-free port of
+`src/material/core/ripple/{ripple-ref,ripple-renderer}.ts`:
+
+| File | Upstream path | Sync state | Notes |
+| --- | --- | --- | --- |
+| `core/ripple/ripple-ref.ts` | `src/material/core/ripple/ripple-ref.ts` | ported | `RippleState`/`RippleConfig`/`RippleAnimationConfig`/`RippleRef` — verbatim, no Angular dependencies to remove |
+| `core/ripple/ripple-renderer.ts` | `src/material/core/ripple/ripple-renderer.ts` | ported | `RippleRenderer` class: `fadeInRipple`/`fadeOutRipple`/`fadeOutAll`/`fadeOutAllNonPersistent`/`handleMouseDown`/`handleTouchStart`/`handlePointerUp`, `defaultRippleAnimationConfig` (225ms enter / 150ms exit), `distanceToFurthestCorner`, inlined `isFakeMousedownFromScreenReader`/`isFakeTouchstartFromScreenReader` (same "inline, no CDK import" convention `qwik-cdk/a11y`'s `input-modality-detector.ts` already uses for these). See file's own module doc comment for the 3 Angular-lifecycle pieces intentionally NOT ported (NgZone, Platform guard, `_MatRippleStylesLoader`) and the 2 Qwik-specific architecture departures (no `RippleEventManager` — superseded by Qwik's own `useOn`/event-prop delegation; no on-demand `addEventListener` for pointer-up — superseded by every caller's own declarative `onMouseUp$`/etc, needed to avoid a cross-chunk QRL-ordering race — see below) |
+| `core/ripple/ripple-registry.ts` | n/a (Qwik-material-specific) | new | `WeakMap<Element, RippleRenderer>` keyed by the ripple CONTAINER element, standing in for upstream's one-`RippleRenderer`-per-directive-instance lifetime (Qwik has no equivalent long-lived instance object across a resume) |
+| `core/ripple/ripple-dom.ts` | n/a (Qwik-material-specific) | new | The Qwik-facing API every component calls from inside its own `$()` handlers: `handleRippleEvent(event, container, target)` (the SOLE entry point, dispatching on `event.type` for all six pointer events), `launchRipple`/`fadeOutAllRipples`/`fadeOutAllNonPersistentRipples` (`MatRipple.launch()`/`fadeOutAll()`/`fadeOutAllNonPersistent()` equivalents — exposed for completeness; no current consumer needs them besides the pointer path, since the slider's own `.launch()` caller keeps its existing purpose-built `slider-ripple.ts`), and `rippleAnimationConfig(animationsDisabled, overrides)` (folds `_animationsDisabled` into a 0/0 duration override, matching `MatRipple.rippleConfig`'s/`MatRippleLoader._createRipple`'s own precedence) |
+| `core/ripple/ripple-renderer.spec.ts` | `src/material/core/ripple/ripple.spec.ts` | ported (partial) | 33 vitest cases porting the meaningful behavioral assertions (sizing/furthest-corner math, centered/radius/color, default+custom animation config, full `RippleState` lifecycle, mousedown/touchstart/multi-touch/screen-reader-fake-event-filtering/synthetic-mouse-after-touch, `fadeOutAll`/`fadeOutAllNonPersistent`, persistent ripples, the registry, `handleRippleEvent`, `rippleAnimationConfig`). Dropped: `MAT_RIPPLE_GLOBAL_OPTIONS` tests (no global-options system here), `fixture.detectChanges()` mechanics, `ngOnDestroy` cleanup (no directive instance — a `WeakMap`-cached entry for a detached container is just GC'd) |
+
+### Why no `RippleEventManager` port
+
+Upstream delegates `mousedown`/`touchstart` through one document-level
+capturing listener per event type, shared app-wide, specifically to avoid
+registering a listener per ripple instance. Qwik's own `useOn()`/JSX event
+props already install exactly one document-level listener per event type
+(qwikloader) and dispatch to whichever element's serialized `on:<event>`
+attribute matches — the identical optimization, already provided by the
+framework every one of these components renders with. Porting
+`RippleEventManager` on top would only duplicate it.
+
+### Why pointer-up has no listener of its own (cross-chunk QRL-ordering race)
+
+Upstream's `RippleRenderer.handleEvent` registers `mouseup`/`mouseleave`/
+`touchend`/`touchcancel` directly on the trigger element, **on demand**,
+from inside the `mousedown`/`touchstart` handler itself ("we do this
+on-demand in order to reduce the total number of event listeners"). Ported
+literally, this raced and lost on Qwik: a `$()` handler's body only runs
+once its chunk has resolved — a real async gap, even on a warm cache, and a
+much bigger one on a cold (never-loaded) one — so a fast real `mouseup`
+(confirmed with any Playwright `.click()`, which dispatches the whole
+mousedown→mouseup→click sequence with no artificial delay) could fire and
+vanish before the on-demand `addEventListener` call inside the
+still-resolving `mousedown` handler ever ran. The ripple's `_isPointerDown`
+flag then never got reset, leaving it stuck in `VISIBLE` forever. Confirmed
+live: the FULL `material-checkbox`/`material-radio`/`material-button-toggle`
+parity suites initially failed 19/50, every one a leftover
+`.mat-ripple-element` after the scenario's click step — these specific
+suites exercise a plain, no-prior-hover click, which is exactly the
+cold-chunk case.
+
+Fixed by dropping the on-demand listener entirely: `RippleRenderer.
+handlePointerUp()` is a plain public method with no DOM listener
+attachment of its own, and every ripple-bearing component instead wires
+**one shared `$()` reference** to all six pointer events
+(`onMouseDown$`/`onMouseUp$`/`onMouseLeave$`/`onTouchStart$`/`onTouchEnd$`/
+`onTouchCancel$`) via `ripple-dom.ts`'s `handleRippleEvent()`. Two things
+make this correct where the on-demand version wasn't: (1) qwikloader's own
+event-prop dispatch is already eager — a real native listener, present
+from first paint, independent of whether any one handler's QRL chunk has
+resolved — so the EVENT itself is never missed, only the handler body's
+execution is deferred; (2) using the IDENTICAL QRL reference for every
+event in the down/up pair means both resolve the same cached import
+promise, and that promise's `.then()` callbacks run in FIFO order matching
+the order the native events fired — a correctness guarantee two *separate*
+QRLs (one per event type) do not have (a known project-wide hazard: QRL
+invocations can resume out of order while chunks load independently).
+
+### Components wired (every direct `matRipple`/lazy-`MatRippleLoader` upstream consumer)
+
+Confirmed against upstream templates (`grep -rlnE '\bmat-ripple\b|\bmatRipple\b' src/material --include=*.html` plus `grep -rln MatRippleLoader src/material --include=*.ts`) — every hit is wired:
+
+- **`MatRippleLoader` consumers** (lazy container creation, `button/internal/ripple-loader.ts`'s `useRippleLoader()`): button/icon-button/fab/mini-fab, chips (chip/chip-option/chip-row, via their own `chips/internal/ripple-loader.ts` copy), and every internal reuser of button's loader — paginator nav buttons, datepicker-toggle, timepicker-toggle, calendar-header's nav buttons.
+- **Direct `[mat-ripple]`/`matRipple` consumers** (static container already existed; this pass added the pointer wiring): checkbox, radio, slide-toggle, button-toggle, core/`MatOption`, menu-item, stepper's `MatStepHeaderItem`, tabs' per-tab label ripple + both pagination buttons (`MatTabGroup`) and tab-link + both pagination buttons (`MatTabNav`).
+- **Deliberately NOT touched**: slider (`slider-ripple.ts` is its own purpose-built three-slot hover/focus/active state machine, pre-existing and already parity-tested; left intact per the task's own instruction). List items, paginator's own non-nav-button surface, expansion, and datepicker's calendar-body have NO `matRipple`/`MatRippleLoader` upstream at all (confirmed by the same grep) — nothing to wire.
+
+### `button-prebuilt.scss`'s CSS-only "click burst" deleted
+
+`.mat-mdc-button-base > .mat-mdc-button-persistent-ripple { overflow: hidden; border-radius: inherit; &::after {...} }` (+ its `:active` companion) was a CSS-only stand-in for the animation this section now ports for real. Removed — it was also the source of the `PARITY_STYLES=1` `::after`/`overflow` diffs on every button-family and icon-button-based (paginator/datepicker/timepicker/calendar-header) component.
+
+### Known residual: `material-paginator`'s sticky `mat-ripple-loader-disabled` attribute (2 scenarios)
+
+`specs/material-paginator/angular-parity.spec.ts`'s `show-first-last` and
+`interactions` scenarios fail after this change — both click a nav button
+that *becomes disabled by that very click* (`first`/`last` under
+`showFirstLastButtons`), then assert a SIBLING button (never directly
+interacted with, e.g. `previous`) correctly keeps live-tracking its own
+`disabled` state into `mat-ripple-loader-disabled`
+(`paginator-nav-button.tsx`'s own `rippleDisabledAttr` sticky-freeze
+mechanism — see that file's doc comment, itself describing an upstream race:
+"whichever happens first, ripple instantiation or the disabled-state
+change, wins"). Confirmed via a worktree A/B test against the pre-ripple
+baseline commit (e9b742f86): reverting ONLY `button/internal/ripple-loader.ts`
+back to its no-real-ripple version makes both scenarios pass again, so the
+real ripple-firing path's extra synchronous work (`getBoundingClientRect`/
+`getComputedStyle`, which forces a style/layout recalc — required for the
+scale animation to play, not optional) is confirmed to shift this
+PRE-EXISTING race's timing enough to flip which value "wins" for a sibling
+button, in this one rapid double-click sequence. Attempted fix: replacing
+the task's `rippleInitialized`-signal-tracking freeze gate with a direct
+`hostRef.value?.querySelector('.mat-ripple')` DOM check (removing the
+cross-signal race entirely) — this made MORE scenarios fail (`hide-page-size`,
+`custom-intl` newly broke), so it was reverted; the mechanism's correct,
+race-free fix needs more investigation than this pass budgeted for. Left as
+a known, documented gap — same treatment as the pre-existing `material-
+timepicker` `min-max` failure (unrelated, not caused by this change).
+No OTHER component's ripple firing, timing, or DOM is affected.

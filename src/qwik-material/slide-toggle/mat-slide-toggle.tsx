@@ -2,6 +2,7 @@ import {$, component$, Slot, useContext, useSignal, type QRL} from '@builder.io/
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {MAT_SLIDE_TOGGLE_CONFIG, type MatSlideToggleConfig} from './slide-toggle-config';
 
 /**
@@ -25,12 +26,8 @@ export interface MatSlideToggleProps {
   disabled?: boolean;
   /** Whether the slide toggle should remain interactive when disabled. */
   disabledInteractive?: boolean;
-  /**
-   * Whether the slide-toggle has a ripple. Accepted for API parity with
-   * upstream's `disableRipple` input; inert in this port — the ripple
-   * element is a static container only (no click-driven ripple animation
-   * engine is ported, same as button-toggle — see design doc rule 6).
-   */
+  /** Whether the slide-toggle has a ripple. Mirrors upstream's `disableRipple`
+   *  input — OR'd with `disabled` into the ripple's `matRippleDisabled`. */
   disableRipple?: boolean;
   /** Whether the slide-toggle is required. Renders `aria-required` on the inner button. */
   required?: boolean;
@@ -193,6 +190,23 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
   // the closure always reflects the current value. Same root cause/fix as
   // MatButtonToggle's click handler (see mat-button-toggle.tsx's "re-read
   // live state inside the closure" comment).
+  const rippleContainerRef = useSignal<HTMLElement>();
+
+  // Upstream `slide-toggle.html`: `[matRippleTrigger]="switch"` — `#switch`
+  // is this very `<button class="mdc-switch">` (the `switch` JSX below),
+  // not the deeply-nested `.mat-mdc-slide-toggle-ripple` span itself. Reads
+  // `props.disableRipple`/`props.disabled` live, matching `onButtonClick$`'s
+  // own "re-read live" convention documented below. ONE shared `$()`
+  // reference wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
+      rippleDisabled: !!(props.disableRipple || props.disabled),
+      rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+
   const onButtonClick$ = $(async () => {
     if (props.disabled ?? false) return;
     await props.onToggleChange$?.resolve();
@@ -229,6 +243,12 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
           aria-checked={checked ? 'true' : 'false'}
           aria-disabled={disabled && disabledInteractive ? 'true' : undefined}
           onClick$={onButtonClick$}
+          onMouseDown$={rippleEvent$}
+          onMouseUp$={rippleEvent$}
+          onMouseLeave$={rippleEvent$}
+          onTouchStart$={rippleEvent$}
+          onTouchEnd$={rippleEvent$}
+          onTouchCancel$={rippleEvent$}
         >
           <div class="mat-mdc-slide-toggle-touch-target" />
           <span class="mdc-switch__track" />
@@ -242,8 +262,12 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
                     attribute (static, no value) left on the rendered DOM — upstream's
                     own template literally writes `mat-ripple` (not `matRipple`) here,
                     unlike button-toggle's `matRipple`/`matripple`. Cast past the
-                    intrinsic <span> type since it's not a recognized HTML attr. */}
+                    intrinsic <span> type since it's not a recognized HTML attr. Real
+                    `.mat-ripple-element` spans launch here on `mousedown`/`touchstart`
+                    of the `<button class="mdc-switch">` trigger below (`core/ripple/
+                    ripple-dom.ts`) — see slide-toggle/SYNC.md. */}
                 <span
+                  ref={rippleContainerRef}
                   {...({'mat-ripple': ''} as Record<string, string>)}
                   class="mat-ripple mat-mdc-slide-toggle-ripple mat-focus-indicator"
                 />

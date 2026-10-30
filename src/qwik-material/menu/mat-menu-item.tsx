@@ -14,6 +14,7 @@ import {QWIK_CDK, ensureCdkDispatchers} from '@angular-community/qwik-cdk';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {useFocusOrigin, focusVia, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {MAT_MENU_DEFAULT_OPTIONS} from './mat-menu-tokens';
 import type {MatMenuRef} from './menu-ref';
 import {openMenu, type MenuRuntimeSignals} from './menu-runtime';
@@ -78,6 +79,24 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
   const pendingReason = useSignal<MenuCloseReason | undefined>();
   const openedBy = useSignal<FocusOrigin>(null);
   const hostRef = useSignal<HTMLElement>();
+  const rippleContainerRef = useSignal<HTMLElement>();
+
+  // Upstream `menu-item.html`: `[matRippleTrigger]="_getHostElement()"` —
+  // the item's own host `<button>` (hostRef below). Reads `props.disabled`/
+  // `props.disableRipple` live, matching `handleClick$`'s own convention.
+  // ONE shared `$()` reference wired to all six pointer events (`onMouseDown$`
+  // also carries the unrelated submenu `handleMouseDown$` alongside it via
+  // an array — harmless, since the ripple-ordering concern is only about
+  // `rippleEvent$` itself seeing mousedown before mouseup, which still holds
+  // regardless of what else shares the `mousedown` event) — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
+      rippleDisabled: !!(props.disableRipple || props.disabled),
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
 
   const signals: MenuRuntimeSignals = {overlayRef, isOpen, panelId, pendingReason};
 
@@ -229,9 +248,14 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
       aria-expanded={hasSubmenu ? (isOpen.value ? 'true' : 'false') : undefined}
       aria-controls={hasSubmenu && isOpen.value ? panelId.value : undefined}
       onClick$={handleClick$}
-      onMouseDown$={handleMouseDown$}
+      onMouseDown$={[handleMouseDown$, rippleEvent$]}
+      onMouseUp$={rippleEvent$}
+      onMouseLeave$={rippleEvent$}
       onMouseEnter$={handleMouseEnter$}
       onKeyDown$={handleKeyDown$}
+      onTouchStart$={rippleEvent$}
+      onTouchEnd$={rippleEvent$}
+      onTouchCancel$={rippleEvent$}
     >
       {props.icon}
       <span class="mat-mdc-menu-item-text">
@@ -239,11 +263,11 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
       </span>
       {/* `matripple` mirrors upstream's bare `matRipple` directive-selector
           attribute, lowercased by the DOM (confirmed live — see
-          angular-parity.spec.ts's header note); the directive's own
-          click-driven ripple animation itself is out of scope per design
-          doc rule 6 (same treatment as radio/button-toggle's ripple spans) —
-          only this static container is reproduced. */}
+          angular-parity.spec.ts's header note). Real `.mat-ripple-element`
+          spans launch here on `mousedown`/`touchstart` of the host `<button>`
+          above (`core/ripple/ripple-dom.ts`) — see menu/SYNC.md. */}
       <div
+        ref={rippleContainerRef}
         {...({matripple: ''} as Record<string, string>)}
         class="mat-ripple mat-mdc-menu-ripple"
       />

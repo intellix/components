@@ -1,5 +1,7 @@
-import {$, component$, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
+import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 
 /**
  * Internal per-tab header item — `src/material/tabs/tab-header.html`'s
@@ -34,6 +36,10 @@ export interface MatTabLabelItemProps {
   labelClass?: string | ReadonlyArray<string>;
   label?: string;
   labelTemplate?: JSXOutput;
+  /** Mirrors `tab-group.html`'s `[matRippleDisabled]="tab.disabled || disableRipple"`
+   *  — pre-combined by the caller (mirrors the `disabledFlags` precomputation
+   *  `MatTabGroup` already does for this same per-tab `disabled`). */
+  rippleDisabled: boolean;
   /** Mirrors `_handleClick`: always moves focus; selects only if !disabled. */
   onActivate$: QRL<(index: number, element: HTMLElement) => void>;
 }
@@ -42,9 +48,24 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
   // Mirrors `cdkMonitorElementFocus` on the same div (upstream's
   // `FocusMonitor`-driven `cdk-focused`/`cdk-keyboard-focused`/etc classes).
   const focusOrigin = useFocusOrigin();
+  const animationsDisabled = useAnimationsDisabled();
+  const rippleContainerRef = useSignal<HTMLElement>();
 
   const onClick$ = $((_event: PointerEvent, element: HTMLElement) => {
     props.onActivate$(props.index, element);
+  });
+
+  // Upstream `tab-group.html`: `[matRippleTrigger]="tabNode"` — `#tabNode`
+  // is this very element (this component's own host div), not just the
+  // inner `.mat-mdc-tab-ripple` div. ONE shared `$()` reference wired to
+  // all six pointer events — see `core/ripple/ripple-renderer.ts`'s module
+  // doc comment for why that's required, not just tidy (cross-chunk QRL
+  // ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
+      rippleDisabled: props.rippleDisabled,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
   });
 
   const classes = [
@@ -79,9 +100,16 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
       aria-labelledby={!props.ariaLabel && props.ariaLabelledby ? props.ariaLabelledby : undefined}
       {...({mattablabelwrapper: '', cdkmonitorelementfocus: ''} as Record<string, string>)}
       onClick$={onClick$}
+      onMouseDown$={rippleEvent$}
+      onMouseUp$={rippleEvent$}
+      onMouseLeave$={rippleEvent$}
+      onTouchStart$={rippleEvent$}
+      onTouchEnd$={rippleEvent$}
+      onTouchCancel$={rippleEvent$}
     >
       <span class="mdc-tab__ripple" />
       <div
+        ref={rippleContainerRef}
         class="mat-ripple mat-mdc-tab-ripple"
         {...({'mat-ripple': ''} as Record<string, string>)}
       />

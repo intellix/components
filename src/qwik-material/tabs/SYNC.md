@@ -70,6 +70,31 @@ dynamic-height, pagination, nav-bar, aria-label — run 3× clean).
 
 7. **Angular-specific removals:** `@Component`/`@Directive` decorators, `@Input`/`@Output`/`booleanAttribute`/`numberAttribute`, `@ContentChildren`/`@ViewChild(ren)`, `HostAttributeToken`, `inject()` DI, `ChangeDetectorRef.markForCheck()`, `NgZone`/`Renderer2`, `AfterContentInit`/`AfterContentChecked`/`AfterViewInit`/`OnDestroy` lifecycle → plain props, Qwik hooks/context/refs, and `useOn`/`useTask$`/`useVisibleTask$` where an actual mount-time or lazy-interaction equivalent was needed. `exportAs` → N/A. `Directionality`/RTL support dropped (LTR only), same scope cut as every other keyboard-handling component in this port (button-toggle, expansion).
 
+## Ripple animation (2026-10-30, `core/ripple/` remediation)
+
+Every static ripple container this package already rendered now also receives real
+`.mat-ripple-element` spans via `core/ripple/ripple-dom.ts`'s `handleRippleEvent()`, wired to all
+six pointer events (`onMouseDown$`/`onMouseUp$`/`onMouseLeave$`/`onTouchStart$`/`onTouchEnd$`/
+`onTouchCancel$` — see `core/SYNC.md`'s ripple section for why ONE shared `$()` reference per
+trigger is required, not a style choice):
+
+- **`MatTabLabelItem`** (per-tab label, in `mat-tab-group.tsx`'s rendering): container
+  `.mat-mdc-tab-ripple`, trigger = the label's own host div (upstream's `[matRippleTrigger]
+  ="tabNode"`, a template reference on that SAME div). Gained a `rippleDisabled` prop —
+  pre-combined by `MatTabGroup` (`tab.disabled || groupDisableRipple`), mirroring the
+  `disabledFlags` precomputation that component already does for the per-tab `disabled` class.
+- **`MatTabGroup`'s own two pagination buttons** (`tab-header.html`'s `mat-ripple` divs, no
+  `matRippleTrigger` override — trigger === container): the handler reads the event's own
+  `element` (second) argument directly as the container, no separate ref needed.
+- **`MatTabLink`**: container `.mat-mdc-tab-ripple`, trigger = the link's own host `<a>`
+  (upstream's `[matRippleTrigger]="elementRef.nativeElement"`). `rippleDisabled` combines
+  `disabled || disableRipple || nav.disableRipple` (`MatTabLink.rippleDisabled`'s getter, global-
+  options term omitted — no global-options system in this port).
+- **`MatTabNav`'s own two pagination buttons** — same trigger===container pattern as
+  `MatTabGroup`'s. `MAT_TAB_NAV_STATE` (`tab-nav-state.ts`) gained a `disableRipple: boolean`
+  field (`MatTabNav.disableRipple`, OR'd into every link's `rippleDisabled`) — previously had no
+  representation at all since nothing read it.
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/tabs/ 2>/dev/null` → 0 (no exported classes on the consumer surface).

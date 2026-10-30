@@ -30,6 +30,9 @@ export interface MatTabNavState {
   hasTabPanel: boolean;
   /** `MatTabNavPanel.id`, when `hasTabPanel` is true. */
   tabPanelId: string | undefined;
+  /** `MatTabNav.disableRipple` — OR'd into every link's own
+   *  `MatTabLink.rippleDisabled` getter. */
+  disableRipple: boolean;
 }
 
 export const MAT_TAB_NAV_STATE = createContextId<Signal<MatTabNavState>>(
@@ -45,4 +48,5 @@ export const MAT_TAB_NAV_STATE_DEFAULTS: MatTabNavState = {
   focusedLink: {value: undefined} as Signal<HTMLElement | undefined>,
   hasTabPanel: false,
   tabPanelId: undefined,
+  disableRipple: false,
 };

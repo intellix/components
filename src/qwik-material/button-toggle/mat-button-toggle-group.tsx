@@ -42,6 +42,8 @@ export interface MatButtonToggleGroupProps {
   // ── Shared ──
   /** Disables the whole group; cascades to every child via context. */
   disabled?: boolean;
+  /** Disables ripples for every child; OR'd with the child's own `disableRipple`. */
+  disableRipple?: boolean;
   /**
    * Form-control name — mirrored onto the inner `<button>` of every
    * single-select child (upstream always has *some* name here; when omitted,
@@ -101,6 +103,7 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
   const propValues = props.values;
   const name = props.name ?? autoName.value;
   const groupDisabled = props.disabled ?? false;
+  const groupDisableRipple = props.disableRipple ?? false;
 
   // Multi-select selection this group last emitted but the consumer has not
   // yet fed back as `values`. Toggles fired before that round-trip re-renders
@@ -157,6 +160,7 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
     value: mode === 'single' ? propValue : undefined,
     values: mode === 'multi' ? (propValues ?? []) : [],
     disabled: groupDisabled,
+    disableRipple: groupDisableRipple,
     name,
     onToggle,
     standalone: false,

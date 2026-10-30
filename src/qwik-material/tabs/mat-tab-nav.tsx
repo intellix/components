@@ -1,6 +1,7 @@
 import {$, component$, Slot, useContext, useContextProvider, useSignal} from '@builder.io/qwik';
 import {focusVia} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {MAT_TABS_CONFIG, type MatTabsConfig} from './tab-config';
 import {computeNextTabFocusIndex, type TabFocusKey} from './tab-group-keyboard';
 import {usePaginatedHeader} from './use-paginated-header';
@@ -63,6 +64,7 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
     focusedLink,
     hasTabPanel: props.tabPanelId != null,
     tabPanelId: props.tabPanelId,
+    disableRipple: props.disableRipple ?? false,
   };
   const navStateSignal = useSignal<MatTabNavState>(navState);
   navStateSignal.value = navState;
@@ -99,6 +101,25 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
 
   const onScrollBefore$ = $(() => pagination.scroll('before'));
   const onScrollAfter$ = $(() => pagination.scroll('after'));
+
+  // Upstream `tab-nav-bar.html`'s pagination divs: bare `mat-ripple` (no
+  // `matRippleTrigger` override), so trigger === container — the event's
+  // own `element` (2nd) argument IS the container. ONE shared `$()`
+  // reference per button, wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const paginationBeforeRippleEvent$ = $((event: MouseEvent | TouchEvent, element: Element) => {
+    handleRippleEvent(event, element, {
+      rippleDisabled: pagination.disableScrollBefore.value || navState.disableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+  const paginationAfterRippleEvent$ = $((event: MouseEvent | TouchEvent, element: Element) => {
+    handleRippleEvent(event, element, {
+      rippleDisabled: pagination.disableScrollAfter.value || navState.disableRipple,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
 
   const navAnimationDuration =
     props.animationDuration != null ? normalizeDuration(props.animationDuration) : undefined;
@@ -146,6 +167,12 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
           .join(' ')}
         {...({'mat-ripple': ''} as Record<string, string>)}
         onClick$={onScrollBefore$}
+        onMouseDown$={paginationBeforeRippleEvent$}
+        onMouseUp$={paginationBeforeRippleEvent$}
+        onMouseLeave$={paginationBeforeRippleEvent$}
+        onTouchStart$={paginationBeforeRippleEvent$}
+        onTouchEnd$={paginationBeforeRippleEvent$}
+        onTouchCancel$={paginationBeforeRippleEvent$}
       >
         <div class="mat-mdc-tab-header-pagination-chevron" />
       </div>
@@ -167,6 +194,12 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
           .join(' ')}
         {...({'mat-ripple': ''} as Record<string, string>)}
         onClick$={onScrollAfter$}
+        onMouseDown$={paginationAfterRippleEvent$}
+        onMouseUp$={paginationAfterRippleEvent$}
+        onMouseLeave$={paginationAfterRippleEvent$}
+        onTouchStart$={paginationAfterRippleEvent$}
+        onTouchEnd$={paginationAfterRippleEvent$}
+        onTouchCancel$={paginationAfterRippleEvent$}
       >
         <div class="mat-mdc-tab-header-pagination-chevron" />
       </div>

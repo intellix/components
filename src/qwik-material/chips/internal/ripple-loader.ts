@@ -1,4 +1,6 @@
 import {$, type Signal, useOn, useSignal} from '@builder.io/qwik';
+import {handleRippleEvent, rippleAnimationConfig} from '../../core/ripple/ripple-dom';
+import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 
 /**
  * Reproduces `MatRippleLoader`'s lazy-ripple contract
@@ -88,12 +90,41 @@ export function rippleLoaderHostAttrs(config: RippleLoaderConfig): Record<string
  * `<span class="mat-ripple …">` itself DECLARATIVELY from this signal's
  * value, as the host's LAST JSX child (mirrors upstream's `_createRipple`
  * appending it as the host's last child, after the trailing cell if any).
+ *
+ * The real ripple ANIMATION (added alongside the ripple-span bootstrap
+ * above, same `core/ripple/`-remediation pass as `qwik-material/button`'s
+ * identical hook — see that file's own doc comment for the full writeup of
+ * why a `mousedown`/`touchstart` that bootstraps the span itself never gets
+ * a ripple, only every interaction after it): on `mousedown`/`touchstart`,
+ * if the `.mat-ripple` span already exists, read `mat-ripple-loader-disabled`
+ * directly off the live host attribute (this file's own doc comment above
+ * explains why chips render that one reactively rather than through
+ * `rippleLoaderHostAttrs()`'s spread — reading it live here means this
+ * works regardless of which path put it there) and launch into it.
  */
 export function useRippleLoader(): Signal<boolean> {
   const initialized = useSignal(false);
+  const animationsDisabled = useAnimationsDisabled();
 
-  const markInitialized$ = $(() => {
-    initialized.value = true;
+  const handleInteraction$ = $((event: Event, host: Element) => {
+    if (event.type === 'focusin' || event.type === 'mouseenter') {
+      initialized.value = true;
+      return;
+    }
+    if (event.type === 'mousedown' || event.type === 'touchstart') {
+      initialized.value = true;
+    }
+
+    const container = host.querySelector<HTMLElement>('.mat-ripple');
+    if (!container) return;
+
+    handleRippleEvent(event as MouseEvent | TouchEvent, container, {
+      rippleDisabled: host.hasAttribute('mat-ripple-loader-disabled'),
+      rippleConfig: {
+        centered: host.hasAttribute(CENTERED_ATTR),
+        animation: rippleAnimationConfig(animationsDisabled.value),
+      },
+    });
   });
 
   // `focusin`, not `focus`: the qualifying focus almost always lands on a DESCENDANT (the
@@ -102,11 +133,18 @@ export function useRippleLoader(): Signal<boolean> {
   // fired through `FocusKeyManager`-driven keyboard navigation, e.g. `listbox-single`'s
   // `ArrowLeft` landing keyboard focus on "Medium", which real Angular DOES initialize the
   // ripple container for). `focusin` is the bubbling counterpart and reaches the host the
-  // same way `qwik-cdk/a11y`'s `useFocusOrigin()` already relies on it to.
-  useOn('focusin', markInitialized$);
-  useOn('mousedown', markInitialized$);
-  useOn('mouseenter', markInitialized$);
-  useOn('touchstart', markInitialized$);
+  // same way `qwik-cdk/a11y`'s `useFocusOrigin()` already relies on it to. ALL eight events
+  // (including the pointer-up quartet) share this ONE `$()` reference — see button's
+  // identical hook / core/ripple/ripple-renderer.ts's module doc comment for why that's not
+  // just tidy (cross-chunk QRL ordering).
+  useOn('focusin', handleInteraction$);
+  useOn('mousedown', handleInteraction$);
+  useOn('mouseenter', handleInteraction$);
+  useOn('touchstart', handleInteraction$);
+  useOn('mouseup', handleInteraction$);
+  useOn('mouseleave', handleInteraction$);
+  useOn('touchend', handleInteraction$);
+  useOn('touchcancel', handleInteraction$);
 
   return initialized;
 }

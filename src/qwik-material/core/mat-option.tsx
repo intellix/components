@@ -1,7 +1,9 @@
-import {$, component$, Slot, type QRL} from '@builder.io/qwik';
+import {$, component$, Slot, useSignal, type QRL} from '@builder.io/qwik';
 import {ENTER, SPACE, hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import {createIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatPseudoCheckbox} from './mat-pseudo-checkbox';
+import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {handleRippleEvent, rippleAnimationConfig} from './ripple/ripple-dom';
 
 /**
  * Fallback id generator, mirroring the SAME "simplified singleton" pattern
@@ -64,6 +66,8 @@ export interface MatOptionProps<T = unknown> {
   /** Own disabled state OR'd with the owning group's, computed by the owner
    *  (mirrors `MatOption.disabled`'s getter: `(group && group.disabled) || this._disabled()`). */
   disabled?: boolean;
+  /** Mirrors `MatOption.disableRipple`. OR'd with `disabled` into the ripple's `matRippleDisabled`. */
+  disableRipple?: boolean;
   /** Mirrors `MatOption.selected`. */
   selected?: boolean;
   /** Mirrors `MatOption.active` (`ActiveDescendantKeyManager`'s current item). */
@@ -94,6 +98,21 @@ export const MatOption = component$<MatOptionProps>(props => {
   const multiple = props.multiple ?? false;
   const hideSingleSelectionIndicator = props.hideSingleSelectionIndicator ?? false;
   const id = props.id ?? fallbackIdGen.getId('mat-option-');
+  const animationsDisabled = useAnimationsDisabled();
+  const hostRef = useSignal<HTMLElement>();
+  const rippleContainerRef = useSignal<HTMLElement>();
+
+  // Upstream `option.html`: `[matRippleTrigger]="_getHostElement()"` — the
+  // option's own host `<mat-option>` (hostRef below). ONE shared `$()`
+  // reference wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(event, rippleContainerRef.value, {
+      rippleDisabled: disabled || (props.disableRipple ?? false),
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
 
   const classes = [
     'mat-mdc-option',
@@ -118,6 +137,7 @@ export const MatOption = component$<MatOptionProps>(props => {
 
   return (
     <mat-option
+      ref={hostRef}
       role="option"
       id={id}
       class={classes}
@@ -126,6 +146,12 @@ export const MatOption = component$<MatOptionProps>(props => {
       aria-disabled={disabled ? 'true' : 'false'}
       onClick$={onClick$}
       onKeyDown$={onKeyDown$}
+      onMouseDown$={rippleEvent$}
+      onMouseUp$={rippleEvent$}
+      onMouseLeave$={rippleEvent$}
+      onTouchStart$={rippleEvent$}
+      onTouchEnd$={rippleEvent$}
+      onTouchCancel$={rippleEvent$}
     >
       {multiple && (
         <MatPseudoCheckbox
@@ -158,8 +184,11 @@ export const MatOption = component$<MatOptionProps>(props => {
           Angular DOM's ripple div classes are `[mat-focus-indicator
           mat-mdc-option-ripple mat-ripple]`, not just the two static
           classes the template literally writes — `MatRipple` the directive
-          adds its own `mat-ripple` class at runtime. */}
+          adds its own `mat-ripple` class at runtime. Real `.mat-ripple-element`
+          spans launch here on `mousedown`/`touchstart` of the host `<mat-option>`
+          above (`core/ripple/ripple-dom.ts`) — see core/SYNC.md. */}
       <div
+        ref={rippleContainerRef}
         class="mat-mdc-option-ripple mat-focus-indicator mat-ripple"
         aria-hidden="true"
         {...({'mat-ripple': ''} as Record<string, string>)}

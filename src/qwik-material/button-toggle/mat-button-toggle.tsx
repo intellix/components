@@ -2,6 +2,7 @@ import {$, component$, Slot, useContext, useSignal} from '@builder.io/qwik';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatPseudoCheckbox} from '../core/mat-pseudo-checkbox';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {
   MAT_BUTTON_TOGGLE_GROUP_STATE,
   MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS,
@@ -19,6 +20,8 @@ export interface MatButtonToggleProps {
   value: unknown;
   /** Individually disables this button (in addition to group-level disabled). */
   disabled?: boolean;
+  /** Individually disables this button's ripple (OR'd with the group-level one). */
+  disableRipple?: boolean;
   /** Optional id. Auto-generated (`mat-button-toggle-N`) when omitted,
    *  matching upstream's `id = id || idGenerator.getId('mat-button-toggle-')`. */
   id?: string;
@@ -145,6 +148,27 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
+  const rippleContainerRef = useSignal<HTMLElement>();
+
+  // Upstream `button-toggle.html`: `[matRippleTrigger]="button"` — `#button`
+  // is the inner `<button>` below, a SIBLING of the `.mat-button-toggle-ripple`
+  // span (not an ancestor/descendant of it). `[matRippleDisabled]="disableRipple
+  // || disabled"` mirrors `MatButtonToggle._isRippleDisabled()`/`.disabled`.
+  // Re-reads live group/props state the same way `onClick$` below does, for
+  // the same staleness reason. ONE shared `$()` reference wired to all six
+  // pointer events — see `core/ripple/ripple-renderer.ts`'s module doc
+  // comment for why that's required, not just tidy (cross-chunk QRL
+  // ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    const live = stateSignal.value;
+    const liveDisableRipple = (props.disableRipple ?? false) || live.disableRipple;
+    const liveDisabled = live.disabled || (props.disabled ?? false);
+    handleRippleEvent(event, rippleContainerRef.value, {
+      rippleDisabled: liveDisableRipple || liveDisabled,
+      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+    });
+  });
+
   const onClick$ = $(async (event: Event) => {
     // Re-read live state inside the closure — a sibling's click can cause
     // this toggle to re-render (context change) without its own primitives
@@ -181,6 +205,12 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
         aria-label={props['aria-label']}
         aria-labelledby={props['aria-labelledby']}
         onClick$={onClick$}
+        onMouseDown$={rippleEvent$}
+        onMouseUp$={rippleEvent$}
+        onMouseLeave$={rippleEvent$}
+        onTouchStart$={rippleEvent$}
+        onTouchEnd$={rippleEvent$}
+        onTouchCancel$={rippleEvent$}
       >
         {!isStandalone && (
           <div class="mat-button-toggle-checkbox-wrapper">
@@ -208,8 +238,12 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
       <span class="mat-button-toggle-focus-overlay" />
       {/* `matripple` mirrors Angular's bare `matRipple` directive-selector
           attribute (static, no value) left on the rendered DOM; cast past
-          the intrinsic <span> type since it's not a recognized HTML attr. */}
+          the intrinsic <span> type since it's not a recognized HTML attr.
+          Real `.mat-ripple-element` spans launch here on `mousedown`/
+          `touchstart` of the inner `<button>` trigger above (`core/ripple/
+          ripple-dom.ts`) — see button-toggle/SYNC.md. */}
       <span
+        ref={rippleContainerRef}
         {...({matripple: ''} as Record<string, string>)}
         class="mat-ripple mat-button-toggle-ripple"
       />
