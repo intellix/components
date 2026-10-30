@@ -19,7 +19,7 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 | `scss/progress-spinner/_progress-spinner-theme.scss` | `src/material/progress-spinner/_progress-spinner-theme.scss` | synced | byte-identical copy |
 | `scss/progress-spinner/_m2-progress-spinner.scss` | `src/material/progress-spinner/_m2-progress-spinner.scss` | synced | byte-identical copy |
 | `scss/progress-spinner/_m3-progress-spinner.scss` | `src/material/progress-spinner/_m3-progress-spinner.scss` | synced | byte-identical copy |
-| `scss/progress-spinner/progress-spinner-prebuilt.scss` | (qwik-material-specific) | new | @use progress-spinner.scss + M3 :root defaults matching emitted --mat-progress-spinner-* references |
+| `scss/progress-spinner/progress-spinner-prebuilt.scss` | (qwik-material-specific) | new | `@use` progress-spinner.scss only — no `:root` token defaults (removed 2026-10-30, see `core/SYNC.md` "Default theme"): every `--mat-progress-spinner-*` token already carries a real fallback to `--mat-sys-*` baked in via `token-utils.slot()`, and the animation-multiplier default is already set structurally on `.mat-mdc-progress-spinner` itself |
 
 ## Removed upstream files
 

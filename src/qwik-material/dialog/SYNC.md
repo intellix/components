@@ -171,6 +171,8 @@ Each stub represents work deferred to a later qwik-material port. When the corre
 
 qwik-material's `dialog-prebuilt.css` currently ships **structural styles only** (from `dialog.scss`), NOT the theme mixin from `_dialog-theme.scss`. The theme mixin depends on the full Angular Material theming DSL which is out of scope until `qwik-material/core` lands. Consumers who need themed output must `@use` `_dialog-theme.scss` from `scss/dialog/` manually until a `qwik-material/core` prebuilt theme entry lands. This deviation will be echoed in Task 20's finalization.
 
+`dialog-prebuilt.scss` briefly also shipped a `:root` block hardcoding 13 `--mat-sys-*` literals plus 2 `--mat-dialog-*` literals (an old M3 baseline) alongside the structural `@use`. Removed 2026-10-30 (see core/SYNC.md "Default theme") — those literals always won over a consumer's real theme, since a custom property's `var()` resolves where it's *declared* (`:root`), not where it's read. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`.
+
 ## Scenario port log (mat-dialog-scenarios.spec.ts)
 
 Source: `src/material/dialog/dialog.spec.ts` — 120 `it()` source lines (11 of those are inside

@@ -177,6 +177,34 @@ function explicitId(node: JSXOutput): string | undefined {
 
 const SETTLE_SELECTED_FILTER = (v: unknown): v is JSXOutput => v !== undefined && v !== null;
 
+/** `_setNotchWidth(label.getWidth())` — `NOTCH_ELEMENT_PADDING` 8 + `NOTCH_ELEMENT_BORDER` 1. */
+function setNotchWidth(notch: HTMLElement, label: HTMLElement): void {
+  const labelWidth = label.scrollWidth;
+  notch.style.width = labelWidth
+    ? `calc(${labelWidth}px * var(--mat-mdc-form-field-floating-label-scale, 0.75) + 9px)`
+    : '';
+}
+
+/**
+ * Mirrors `MatFormFieldFloatingLabel`'s resize monitoring: whenever the floating label resizes
+ * (e.g. its web font finishes loading after the first measurement), re-measure the notch on the
+ * next macrotask — upstream defers it the same way to avoid a ResizeObserver loop. Returns the
+ * cleanup.
+ */
+function observeLabelResize(notch: HTMLElement, label: HTMLElement): () => void {
+  if (typeof ResizeObserver === 'undefined') return () => {};
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const observer = new ResizeObserver(() => {
+    clearTimeout(timer);
+    timer = setTimeout(() => setNotchWidth(notch, label));
+  });
+  observer.observe(label, {box: 'border-box'});
+  return () => {
+    clearTimeout(timer);
+    observer.disconnect();
+  };
+}
+
 export const MatFormField = component$<MatFormFieldProps>(props => {
   const config = useContext(MAT_FORM_FIELD_CONFIG, MAT_FORM_FIELD_CONFIG_DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
@@ -517,7 +545,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // (client-side). ──
   const labelRef = useSignal<Element>();
   const notchRef = useSignal<Element>();
-  useTask$(({track}) => {
+  useTask$(({track, cleanup}) => {
     // Track the STORE FIELD directly (not the derived `shouldLabelFloat`
     // local below) — `track()` only establishes a live subscription for
     // signals/store fields actually dereferenced INSIDE its callback; a
@@ -533,12 +561,8 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
       notch.style.width = '';
       return;
     }
-    const labelWidth = label.scrollWidth;
-    if (!labelWidth) {
-      notch.style.width = '';
-      return;
-    }
-    notch.style.width = `calc(${labelWidth}px * var(--mat-mdc-form-field-floating-label-scale, 0.75) + 9px)`;
+    setNotchWidth(notch, label);
+    cleanup(observeLabelResize(notch, label));
   });
   // A control that starts ALREADY floating (e.g. a chip-grid seeded with existing chips —
   // see chips/SYNC.md) needs the SAME measurement to happen once more, correctly, on the
@@ -557,13 +581,12 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // unconditional since every form-field needs it once).
   if (hasOutline && initialControlShouldFloat && hasFloatingLabel) {
     // eslint-disable-next-line qwik/no-use-visible-task
-    useVisibleTask$(() => {
+    useVisibleTask$(({cleanup}) => {
       const notch = notchRef.value as HTMLElement | undefined;
       const label = labelRef.value as HTMLElement | undefined;
       if (!notch || !label) return;
-      const labelWidth = label.scrollWidth;
-      if (!labelWidth) return;
-      notch.style.width = `calc(${labelWidth}px * var(--mat-mdc-form-field-floating-label-scale, 0.75) + 9px)`;
+      setNotchWidth(notch, label);
+      cleanup(observeLabelResize(notch, label));
     });
   }
 

@@ -20,7 +20,7 @@ current `src/material/menu/`.
 | `scss/menu/_m2-menu.scss` | `src/material/menu/_m2-menu.scss` | synced | byte-identical copy |
 | `scss/menu/_m3-menu.scss` | `src/material/menu/_m3-menu.scss` | synced | byte-identical copy |
 | `scss/menu/_menu-theme.scss` | `src/material/menu/_menu-theme.scss` | synced | byte-identical copy |
-| `scss/menu/menu-prebuilt.scss` | n/a (qwik-material-specific) | new | `@use './menu'` + `:root` M3 token defaults — see its own doc comment for why these are needed (menu's color/typography tokens resolve to FURTHER `var(--mat-sys-*)` references, not literal fallbacks, unlike most of this stylesheet's other tokens) |
+| `scss/menu/menu-prebuilt.scss` | n/a (qwik-material-specific) | new | `@use './menu'` only — no `:root` token defaults (removed 2026-10-30, see `core/SYNC.md` "Default theme"): menu's color/typography tokens resolve to FURTHER `var(--mat-sys-*)` references (not literal fallbacks, unlike most of this stylesheet's other tokens) — those `--mat-sys-*` names are now supplied by the one default theme (`core/default-theme.scss`, shipped via `core-prebuilt.css`) instead of this file's own hardcoded `:root` block, which always won over a consumer's real theme |
 | `scss/core/style/_menu-common.scss` | `src/material/core/style/_menu-common.scss` | synced with one deviation | same `@use '@angular/cdk'` → `cdk-stub` rewrite (used by `item-submenu-icon`'s high-contrast block) |
 | `scss/core/style/_button-common.scss` | `src/material/core/style/_button-common.scss` | synced | byte-identical copy (menu items use `button-common.reset`) |
 

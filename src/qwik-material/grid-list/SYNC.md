@@ -75,7 +75,7 @@ for the full reasoning, summarized:
 | `scss/grid-list/_m2-grid-list.scss` | `src/material/grid-list/_m2-grid-list.scss` | synced | byte-identical copy |
 | `scss/grid-list/_m3-grid-list.scss` | `src/material/grid-list/_m3-grid-list.scss` | synced | byte-identical copy |
 | `scss/core/style/_list-common.scss` | `src/material/core/style/_list-common.scss` | synced | byte-identical copy (self-contained, zero deps — not a reduced stub) |
-| `scss/grid-list/grid-list-prebuilt.scss` | (qwik-material-specific) | new | `@use grid-list.scss` + `:root` defaults for the 4 `--mat-grid-list-tile-{header,footer}-{primary,secondary}-text-size` vars `token-utils.slot()` emits (header/footer typography — nothing to default for tile positioning, which is inline style, not CSS) |
+| `scss/grid-list/grid-list-prebuilt.scss` | (qwik-material-specific) | new | `@use grid-list.scss` only — no `:root` token defaults (removed 2026-10-30, see `core/SYNC.md` "Default theme"): the 4 `--mat-grid-list-tile-{header,footer}-{primary,secondary}-text-size` vars `token-utils.slot()` emits carry no fallback at all in grid-list.scss's own compiled output, matching upstream's own gap (relies on `mat.grid-list-theme()`, not run here) — nothing to default for tile positioning either, which is inline style, not CSS |
 
 ## Removed upstream files
 

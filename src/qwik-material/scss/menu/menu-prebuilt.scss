@@ -8,29 +8,21 @@
 // x)` references (not literal values) — e.g. `menu-item-label-text-color:
 // map.get($system, on-surface)` compiles to `var(--mat-sys-on-surface)`, and
 // `menu-item-label-text-font` likewise to `var(--mat-sys-label-large-font)`.
-// Confirmed live: without these defined, the fallback chain's outer AND
-// inner `var()` both fail to resolve, so `font-family`'s declaration on
-// `.mat-mdc-menu-item-text` is invalid-at-compute-time and the property
-// falls through to inheriting the surrounding `<button>`'s own (UA-default,
-// non-Roboto) font — this measurably shifts rendered text width, which
-// shifted a submenu's computed position in the `nested` parity scenario
-// until these were added. Values are the same M3 light-theme defaults
-// `tooltip-prebuilt.scss`/other prebuilt entries use (see
-// `scss/core/tokens/m3/_md-sys-color.scss` / `_md-sys-typescale.scss` /
-// `_md-sys-shape.scss` / `_md-sys-state.scss`'s light-theme defaults).
+// Those `--mat-sys-*` names are supplied once, app-wide, by the one default
+// theme (`core/default-theme.scss`, shipped via `core-prebuilt.css`) — no
+// per-component override is needed; no `:root` block in this file.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 12 `--mat-sys-*` literals (an old M3 baseline, distinct from
+// core/default-theme.scss's azure-palette-derived values) — added because
+// without them defined anywhere, the fallback chain's outer AND inner
+// `var()` both failed to resolve, so e.g. `font-family` on
+// `.mat-mdc-menu-item-text` fell through to inheriting the surrounding
+// `<button>`'s own (UA-default, non-Roboto) font, which shifted a
+// submenu's computed position in the `nested` parity scenario. Removed
+// 2026-10-30 (see core/SYNC.md "Default theme" and menu/SYNC.md): that
+// `:root` scope always won over a consumer's real theme regardless (a
+// custom property's `var()` resolves where it's *declared*, not where
+// it's read) — the one default theme now supplies every one of these same
+// `--mat-sys-*` names instead.
 @use './menu';
-
-:root {
-  --mat-sys-on-surface: #1f1b17;
-  --mat-sys-on-surface-variant: #52443c;
-  --mat-sys-surface-container: #f0ebe4;
-  --mat-sys-surface-variant: #f5ddd3;
-  --mat-sys-corner-extra-small: 4px;
-  --mat-sys-hover-state-layer-opacity: 0.08;
-  --mat-sys-focus-state-layer-opacity: 0.12;
-  --mat-sys-label-large-font: Roboto, "Helvetica Neue", sans-serif;
-  --mat-sys-label-large-line-height: 1.25rem;
-  --mat-sys-label-large-size: 0.875rem;
-  --mat-sys-label-large-tracking: 0.006rem;
-  --mat-sys-label-large-weight: 500;
-}

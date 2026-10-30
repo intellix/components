@@ -12,7 +12,7 @@ Last synced from angular/components commit: the commit this branch (`port/toolti
 | `scss/tooltip/_m2-tooltip.scss` | `src/material/tooltip/_m2-tooltip.scss` | synced | byte-identical copy |
 | `scss/tooltip/_m3-tooltip.scss` | `src/material/tooltip/_m3-tooltip.scss` | synced | byte-identical copy |
 | `scss/tooltip/_tooltip-theme.scss` | `src/material/tooltip/_tooltip-theme.scss` | synced | byte-identical copy |
-| `scss/tooltip/tooltip-prebuilt.scss` | n/a (qwik-material-specific) | new | `@use './tooltip'` + `:root` M3 token defaults (`inverse-surface`/`inverse-on-surface`/`corner-extra-small`/`body-small-*`), same pattern as every other `*-prebuilt.scss` entry |
+| `scss/tooltip/tooltip-prebuilt.scss` | n/a (qwik-material-specific) | new | `@use './tooltip'` only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): every `--mat-tooltip-*` token already resolves through a `token-utils.slot(..., var(--mat-sys-*))` fallback chain baked in at Sass-compile time. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Mapped TypeScript/TSX files
 

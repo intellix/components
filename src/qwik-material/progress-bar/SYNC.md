@@ -18,7 +18,7 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 | `scss/progress-bar/_progress-bar-theme.scss` | `src/material/progress-bar/_progress-bar-theme.scss` | synced | byte-identical copy |
 | `scss/progress-bar/_m2-progress-bar.scss` | `src/material/progress-bar/_m2-progress-bar.scss` | synced | byte-identical copy |
 | `scss/progress-bar/_m3-progress-bar.scss` | `src/material/progress-bar/_m3-progress-bar.scss` | synced | byte-identical copy |
-| `scss/progress-bar/progress-bar-prebuilt.scss` | (qwik-material-specific) | new | @use progress-bar.scss + M3 :root defaults matching emitted --mat-progress-bar-* references |
+| `scss/progress-bar/progress-bar-prebuilt.scss` | (qwik-material-specific) | new | `@use` progress-bar.scss only — no `:root` token defaults (removed 2026-10-30, see `core/SYNC.md` "Default theme"): every `--mat-progress-bar-*` token already carries a real fallback to `--mat-sys-*` baked in via `token-utils.slot()`, and the animation-multiplier default is already set structurally on `.mat-mdc-progress-bar` itself |
 
 ## Removed upstream files
 

@@ -37,13 +37,92 @@ rather than inventing a new one.
 | `scss/core/selection/pseudo-checkbox/_m3-pseudo-checkbox.scss` | `src/material/core/selection/pseudo-checkbox/_m3-pseudo-checkbox.scss` | synced | byte-identical copy |
 | `scss/core/selection/pseudo-checkbox/_pseudo-checkbox-theme.scss` | `src/material/core/selection/pseudo-checkbox/_pseudo-checkbox-theme.scss` | synced | byte-identical copy; theme mixins inert on our end but kept for `diff -q` parity |
 | `scss/core/style/_checkbox-common.scss` | `src/material/core/style/_checkbox-common.scss` | synced | byte-identical copy; new shared-SCSS dependency pseudo-checkbox.scss needed (`$size`/`$border-width`/`$transition-duration`) that no prior port had pulled in yet |
-| `scss/core/selection/pseudo-checkbox/pseudo-checkbox-prebuilt.scss` | (qwik-material-specific) | new | `@use` pseudo-checkbox.scss + `:root` defaults for every `--mat-pseudo-checkbox-*` variable it emits. Only the fallback for pseudo-checkboxes rendered *outside* a component (like `MatButtonToggle`) that overrides the color variables itself — button-toggle.scss's own `.mat-button-toggle-appearance-standard .mat-pseudo-checkbox { --mat-pseudo-checkbox-minimal-*-selected-checkmark-color: … }` rules win inside that context |
+| `scss/core/selection/pseudo-checkbox/pseudo-checkbox-prebuilt.scss` | (qwik-material-specific) | new | `@use` pseudo-checkbox.scss only — no `:root` token defaults (removed 2026-10-30, see "Default theme" below). Every `--mat-pseudo-checkbox-*` variable already carries a real M3 fallback to `--mat-sys-*` baked in via token-utils.slot(). Pseudo-checkboxes rendered *outside* a component (like `MatButtonToggle`) that overrides the color variables itself use that fallback — button-toggle.scss's own `.mat-button-toggle-appearance-standard .mat-pseudo-checkbox { --mat-pseudo-checkbox-minimal-*-selected-checkmark-color: … }` rules win inside that context |
+| `scss/core/default-theme.scss` | (qwik-material-specific, generated) | new | The one default theme — see "Default theme" below |
 | `scss/core/ripple/_ripple.scss` | `src/material/core/ripple/_ripple.scss` | synced | byte-identical except `@use '@angular/cdk'` → `@use '../../cdk-stub' as cdk` (same substitution as `_menu-common.scss`) |
 | `scss/core/ripple/_m3-ripple.scss` | `src/material/core/ripple/_m3-ripple.scss` | synced | byte-identical copy |
 | `scss/core/ripple/ripple-structure.scss` | `src/material/core/ripple/ripple-structure.scss` | synced | byte-identical copy. Upstream loads it on demand (`_MatRippleStylesLoader`); here `core-prebuilt.scss` always includes it. Missing until 2026-10-30, which left every `.mat-ripple-element` (e.g. slider hover/focus ripples) `position: static`, square and unclipped |
 | `scss/core/focus-indicators/_private.scss` | `src/material/core/focus-indicators/_private.scss` | synced | was a simplified stub; now byte-identical except `@use '@angular/cdk'` → cdk-stub |
 | `scss/core/focus-indicators/structural-styles.scss` | `src/material/core/focus-indicators/structural-styles.scss` | synced | byte-identical. Upstream loads it on demand (`_StructuralStylesLoader`); `core-prebuilt.scss` always includes it. Missing until 2026-10-30: no `.mat-focus-indicator { position: relative }` or `::before` ring anywhere |
 | `scss/core/visually-hidden.scss` | `src/cdk/private/visually-hidden/visually-hidden.scss` | synced | same single include; the `a11y-visually-hidden` mixin is copied verbatim into `scss/_cdk-stub.scss`. Missing until 2026-10-30: `.cdk-visually-hidden` content (focus-trap anchors, screen-reader labels) rendered visibly |
+
+## Default theme (2026-10-30)
+
+**The bug this fixes:** every qwik-material `*-prebuilt.scss` used to declare
+its own `:root { --mat-<component>-*: var(--mat-sys-*, <literal>); ... }`
+block, plus some bare literal defaults (e.g. disabled-state
+`rgba(0, 0, 0, 0.38)`). A CSS custom property's `var()` resolves at the
+element where it's *declared* — so these `:root`-scoped defaults always won
+over a consumer theme that sets `--mat-sys-*` on `body` or a class (as
+Angular's own dev-app does: `src/dev-app/theme-m3.scss` scopes its theme to
+`body:not(.demo-experimental-theme)` inside an `html { ... }` wrapper), and
+the bare literals ignored the theme entirely. Upstream ships NO such
+defaults: its structural CSS reads `var(--mat-<token>, <M3 fallback that
+itself references var(--mat-sys-*)>)` resolved at the element, and the
+*app* supplies `--mat-sys-*` via `mat.theme()`.
+
+**The fix:** every `*-prebuilt.scss` across qwik-material (component dirs +
+`core/selection/pseudo-checkbox/pseudo-checkbox-prebuilt.scss`) had its
+`:root`/`html` component-token default block removed — see each file's own
+header comment and its component's `SYNC.md` for the specifics (most
+`--mat-<component>-*` tokens already carried a real M3 fallback to
+`--mat-sys-*` baked in via `token-utils.slot()`, same as upstream; a few —
+button's `--mdc-*` names, button-toggle's legacy-appearance tokens — had no
+real consumer at all, matching upstream's own gaps). `button-prebuilt.scss`
+kept its CSS-only click-burst rule (`.mat-mdc-button-persistent-ripple`
+`::after`) untouched — unrelated to token defaults, owned by a parallel
+task.
+
+In its place, qwik-material now ships exactly ONE default theme:
+`scss/core/default-theme.scss`, an `html { --mat-sys-*: ...; }` block
+**generated** (never hand-written) from upstream's own Sass theming API —
+`src/material/core/tokens/_system.scss`'s `mat.theme()` mixin — via:
+
+```scss
+@use '@angular/material' as mat;
+
+html {
+  color-scheme: light dark;
+  @include mat.theme((
+    color: mat.$azure-palette,
+    typography: Roboto,
+    density: 0,
+  ));
+}
+```
+
+This is the exact recipe `guides/theming.md`'s "Getting Started" section
+documents (swapping its example `$violet-palette` for `$azure-palette` —
+Angular's own documented default palette, and what the Angular dev-app's
+`demo-experimental-theme` variant uses, see `src/dev-app/theme-m3.scss`).
+`color-scheme: light dark;` is added alongside the mixin call, matching that
+same guide example: passing a bare palette (no explicit `theme-type`)
+defaults `mat.theme()` to `theme-type: color-scheme`, which emits every
+color token as `light-dark(<light>, <dark>)` — a function that only
+switches with the user's OS preference once something sets the CSS
+`color-scheme` property (`mat.theme()` itself never emits that property).
+
+It's scoped to `html` — Angular's own recommended theme scope — specifically
+so a consumer theme on `html`/`body`/a class overrides it: declaring the
+same `--mat-sys-*` custom property closer to (or equal to) the themed
+subtree wins.
+
+**Regenerating:** `node scripts/generate-default-theme.mjs` (from
+`src/qwik-material/`, or `pnpm -C src/qwik-material generate-default-theme`).
+The script (`scripts/generate-default-theme.mjs`) compiles the Sass entry
+above with the real `sass` npm package, using a custom Sass file importer
+that resolves the bare `@angular/material`/`@angular/cdk` specifiers
+straight to this repo's `src/material/_index.scss`/`src/cdk/_index.scss` —
+there is no published/built `@angular/material` package in `node_modules`
+here, so plain `loadPaths` can't resolve those names on its own. Re-run it
+whenever upstream's M3 token values, the chosen palette, or the
+typography/density config should change; it overwrites
+`scss/core/default-theme.scss` wholesale (do not hand-edit that file).
+
+`core-prebuilt.scss` `@use`s `./default-theme` first, so every consumer that
+imports `@angular-community/qwik-material/core-prebuilt.css` (the dev-app's
+`root.tsx` does, before any other component's prebuilt CSS) gets this theme
+automatically.
 
 ## Removed upstream files
 

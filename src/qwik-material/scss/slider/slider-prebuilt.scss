@@ -1,10 +1,22 @@
-// Prebuilt Material Slider CSS entry.
+// Prebuilt Material Slider CSS entry. Wraps the port's upstream-synced
+// slider.scss + slider-thumb.scss. Every `--mat-slider-*` token they read
+// already carries a real M3 fallback baked in via token-utils.slot() against
+// m3-slider's $fallbacks map (e.g. `var(--mat-slider-active-track-color,
+// var(--mat-sys-primary))`, and the hover/focus state-layer colors fall back
+// to a `color-mix()` against `--mat-sys-primary`), the same mechanism
+// upstream itself uses — so no `:root` override block is needed; the one
+// default theme's `--mat-sys-*` (core/default-theme.scss, shipped via
+// `core-prebuilt.css`) is all that's required, including the first
+// elevation level (`--mat-sys-level1`) and label-medium typescale tokens
+// the handle elevation/value-indicator text rely on.
 //
-// Emits: structural styles from slider.scss + slider-thumb.scss, plus a
-// minimal set of M3 default values for the `--mat-slider-*` / `--mat-sys-*`
-// custom properties the structural rules reference (same approach as every
-// other qwik-material prebuilt entry — this port has no runtime theming
-// system, so these are static M3-ish literals, not a live theme).
+// Historical note: this file previously shipped a `:root` block hardcoding
+// every `--mat-slider-*` name above AND the `--mat-sys-*` names they fall
+// back to (an M3 baseline "Purple" theme). Removed 2026-10-30 (see
+// core/SYNC.md "Default theme" and slider/SYNC.md): those literals always
+// won over a consumer's real theme, since a custom property's `var()`
+// resolves where it's *declared* (`:root`), not where it's read.
+//
 // Consumers import via `@angular-community/qwik-material/slider-prebuilt.css`.
 // For full custom theming, consumers should instead @use the slider-theme
 // mixin from `@angular-community/qwik-material/scss/slider/_slider-theme.scss`
@@ -12,83 +24,3 @@
 
 @use './slider';
 @use './slider-thumb';
-
-:root {
-  // ─── slider ───
-  --mat-slider-active-track-color: var(--mat-sys-primary, #6750a4);
-  --mat-slider-active-track-height: 4px;
-  --mat-slider-active-track-shape: var(--mat-sys-corner-full, 9999px);
-  --mat-slider-disabled-active-track-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  --mat-slider-disabled-handle-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  --mat-slider-disabled-inactive-track-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  --mat-slider-focus-handle-color: var(--mat-sys-primary, #6750a4);
-  --mat-slider-focus-state-layer-color: color-mix(in srgb, var(--mat-sys-primary, #6750a4) 20%, transparent);
-  --mat-slider-handle-color: var(--mat-sys-primary, #6750a4);
-  --mat-slider-handle-elevation: var(
-    --mat-sys-level1,
-    0px 2px 1px -1px rgba(0, 0, 0, 0.2),
-    0px 1px 1px 0px rgba(0, 0, 0, 0.14),
-    0px 1px 3px 0px rgba(0, 0, 0, 0.12)
-  );
-  --mat-slider-handle-height: 20px;
-  --mat-slider-handle-shape: var(--mat-sys-corner-full, 9999px);
-  --mat-slider-handle-width: 20px;
-  --mat-slider-hover-handle-color: var(--mat-sys-primary, #6750a4);
-  --mat-slider-hover-state-layer-color: color-mix(in srgb, var(--mat-sys-primary, #6750a4) 5%, transparent);
-  --mat-slider-inactive-track-color: var(--mat-sys-surface-variant, #e7e0ec);
-  --mat-slider-inactive-track-height: 4px;
-  --mat-slider-inactive-track-shape: var(--mat-sys-corner-full, 9999px);
-  --mat-slider-label-container-color: var(--mat-sys-primary, #6750a4);
-  --mat-slider-label-label-text-color: var(--mat-sys-on-primary, #ffffff);
-  --mat-slider-label-label-text-font: var(
-    --mat-sys-label-medium-font,
-    Roboto,
-    'Helvetica Neue',
-    sans-serif
-  );
-  --mat-slider-label-label-text-line-height: var(--mat-sys-label-medium-line-height, 1rem);
-  --mat-slider-label-label-text-size: var(--mat-sys-label-medium-size, 0.75rem);
-  --mat-slider-label-label-text-tracking: var(--mat-sys-label-medium-tracking, 0.031rem);
-  --mat-slider-label-label-text-weight: var(--mat-sys-label-medium-weight, 500);
-  --mat-slider-ripple-color: var(--mat-sys-primary, #6750a4);
-  --mat-slider-value-indicator-border-radius: 50% 50% 50% 0;
-  --mat-slider-value-indicator-caret-display: none;
-  --mat-slider-value-indicator-container-transform: translateX(-50%) rotate(-45deg);
-  --mat-slider-value-indicator-height: 28px;
-  --mat-slider-value-indicator-opacity: 1;
-  --mat-slider-value-indicator-padding: 0;
-  --mat-slider-value-indicator-text-transform: rotate(45deg);
-  --mat-slider-value-indicator-transform-origin: 0 28px;
-  --mat-slider-value-indicator-width: 28px;
-  --mat-slider-with-overlap-handle-outline-color: var(--mat-sys-on-primary, #ffffff);
-  --mat-slider-with-overlap-handle-outline-width: 1px;
-  --mat-slider-with-tick-marks-active-container-color: var(--mat-sys-on-primary, #ffffff);
-  --mat-slider-with-tick-marks-active-container-opacity: 0.38;
-  --mat-slider-with-tick-marks-container-shape: var(--mat-sys-corner-full, 9999px);
-  --mat-slider-with-tick-marks-container-size: 2px;
-  --mat-slider-with-tick-marks-disabled-container-color: var(
-    --mat-sys-on-surface,
-    rgba(0, 0, 0, 0.87)
-  );
-  --mat-slider-with-tick-marks-inactive-container-color: var(
-    --mat-sys-on-surface-variant,
-    rgba(0, 0, 0, 0.6)
-  );
-  --mat-slider-with-tick-marks-inactive-container-opacity: 0.38;
-
-  // ─── --mat-sys-* system tokens slider's m3 tokens resolve through ───
-  --mat-sys-corner-full: 9999px;
-  --mat-sys-level1:
-    0px 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14),
-    0px 1px 3px 0px rgba(0, 0, 0, 0.12);
-  --mat-sys-label-medium-font: Roboto, 'Helvetica Neue', sans-serif;
-  --mat-sys-label-medium-line-height: 1rem;
-  --mat-sys-label-medium-size: 0.75rem;
-  --mat-sys-label-medium-tracking: 0.031rem;
-  --mat-sys-label-medium-weight: 500;
-  --mat-sys-on-primary: #ffffff;
-  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
-  --mat-sys-on-surface-variant: rgba(0, 0, 0, 0.6);
-  --mat-sys-primary: #6750a4;
-  --mat-sys-surface-variant: #e7e0ec;
-}

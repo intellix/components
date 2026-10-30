@@ -27,7 +27,7 @@ and `docs/superpowers/specs/2026-10-27-qwik-material-remaining-components-roadma
 | `scss/checkbox/_checkbox-theme.scss` | `src/material/checkbox/_checkbox-theme.scss` | synced | byte-identical copy; theme mixin inert on our end (not `@use`d by `checkbox-prebuilt.scss`) but kept for `diff -q` parity — matches every other component's `_*-theme.scss` precedent |
 | `scss/checkbox/_m2-checkbox.scss` | `src/material/checkbox/_m2-checkbox.scss` | synced | byte-identical copy |
 | `scss/checkbox/_m3-checkbox.scss` | `src/material/checkbox/_m3-checkbox.scss` | synced | byte-identical copy |
-| `scss/checkbox/checkbox-prebuilt.scss` | (qwik-material-specific) | new | `@use` checkbox.scss + `:root` defaults for every `--mat-sys-*` token the now-synced upstream files' `token-utils.slot(...)` fallback chain resolves through (primary/on-primary/surface/on-surface/on-surface-variant, 3 state-layer opacities, 5 body-medium typography tokens) — verified against this file's own compiled CSS output, not guessed |
+| `scss/checkbox/checkbox-prebuilt.scss` | (qwik-material-specific) | new | `@use` checkbox.scss only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): every `--mat-checkbox-*` token already resolves through a `token-utils.slot(..., var(--mat-sys-*))` fallback chain baked in at Sass-compile time. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 
@@ -144,3 +144,10 @@ or running when the host is less contended, resolves it.
   "transition class is gone" wait could pass before Qwik's lazily-resolved
   handler had added the class. Steps now wait for the input's className to
   change (bounded at 1.5s) before waiting the class out.
+
+## Initially-indeterminate checkboxes (2026-10-30)
+
+`indeterminate` is a DOM property with no attribute, so SSR can't express it. A checkbox whose
+`indeterminate` prop starts `true` now sets the property once on load (`useVisibleTask$` with
+`document-ready`, called only for those instances), so upstream's `:indeterminate` styles (mixed
+mark, filled background) apply before any interaction. Found by the computed-style parity check.

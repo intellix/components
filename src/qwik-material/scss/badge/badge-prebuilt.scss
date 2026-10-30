@@ -1,60 +1,16 @@
-// Prebuilt Material Badge CSS entry — @use './badge' for structural styles,
-// plus a :root block of M3 defaults so a bare consumer sees a themed badge.
+// Badge prebuilt CSS. Wraps the port's badge.scss. Every `--mat-badge-*`
+// custom property badge.scss reads already carries a real M3 fallback baked
+// in at Sass-compile time via token-utils.slot() against _m3-badge.scss's
+// get-tokens() map (e.g. `var(--mat-badge-background-color,
+// var(--mat-sys-error))`) — so no `:root` override block is needed; the one
+// default theme's `--mat-sys-*` (core/default-theme.scss, shipped via
+// core-prebuilt.css) is all that's required.
 //
-// Variable names below were verified against dist/badge-prebuilt.css's
-// structural CSS output (the token-utils.slot(...) fallbacks that badge.scss
-// bakes in from _m3-badge.scss's get-tokens()), not copied blind from any
-// suggested list — established Card + Toolbar Task 2 precedent for avoiding
-// phantom variables. Every one of the 28 names below is a `var(--mat-badge-*`
-// reference that actually appears in the emitted CSS (confirmed via
-// grep -oE "var\(--mat-badge-[a-z-]+" dist/badge-prebuilt.css | sort -u).
-//
-// Convention (matches card-prebuilt.scss / toolbar-prebuilt.scss): color
-// values wrap the corresponding --mat-sys-* system token with a concrete hex
-// fallback (color-mix for the disabled-state background, mirroring
-// _m3-badge.scss's `color-with-opacity(error, 38%)`); shape/size/typography
-// values use the concrete M3 numeric literal directly, sourced from this
-// repo's own core/tokens/m3/_md-sys-shape.scss and _md-sys-typescale.scss.
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 28 `--mat-badge-*` literals (an old M3 baseline, including bare
+// `--mat-sys-error`/`--mat-sys-on-error`/`--mat-sys-corner-full` literals
+// nested inside the `--mat-badge-*` values). Removed 2026-10-30 (see
+// core/SYNC.md "Default theme") — those literals always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared* (`:root`), not where it's read.
 @use './badge';
-
-:root {
-  // Color (background-color / color) — mirrors _m3-badge.scss's `color` token group
-  --mat-badge-background-color: var(--mat-sys-error, #ba1a1a);
-  --mat-badge-disabled-state-background-color: color-mix(
-    in srgb,
-    var(--mat-sys-error, #ba1a1a) 38%,
-    transparent
-  );
-  --mat-badge-disabled-state-text-color: var(--mat-sys-on-error, #ffffff);
-  --mat-badge-text-color: var(--mat-sys-on-error, #ffffff);
-
-  // Typography — mirrors _m3-badge.scss's `typography` token group
-  --mat-badge-text-font: Roboto, "Helvetica Neue", sans-serif;
-  --mat-badge-text-size: 0.688rem;
-  --mat-badge-text-weight: 500;
-  --mat-badge-line-height: 16px;
-  --mat-badge-small-size-line-height: 6px;
-  --mat-badge-small-size-text-size: 0;
-  --mat-badge-large-size-line-height: 16px;
-  --mat-badge-large-size-text-size: 0.688rem;
-
-  // Shape + sizing — mirrors _m3-badge.scss's `base` token group
-  --mat-badge-container-shape: var(--mat-sys-corner-full, 9999px);
-  --mat-badge-container-size: 16px;
-  --mat-badge-container-padding: 0 4px;
-  --mat-badge-container-offset: -12px 0;
-  --mat-badge-container-overlap-offset: -12px;
-  --mat-badge-legacy-container-size: unset;
-
-  --mat-badge-small-size-container-size: 6px;
-  --mat-badge-small-size-container-padding: 0;
-  --mat-badge-small-size-container-offset: -6px 0;
-  --mat-badge-small-size-container-overlap-offset: -6px;
-  --mat-badge-legacy-small-size-container-size: unset;
-
-  --mat-badge-large-size-container-size: 16px;
-  --mat-badge-large-size-container-padding: 0 4px;
-  --mat-badge-large-size-container-offset: -12px 0;
-  --mat-badge-large-size-container-overlap-offset: -12px;
-  --mat-badge-legacy-large-size-container-size: unset;
-}

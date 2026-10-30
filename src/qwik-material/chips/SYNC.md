@@ -43,7 +43,7 @@ not just upstream's source code.
 | `chips/internal/listbox-selection.ts` | (new — Qwik-specific plumbing) | new | `MAT_CHIP_LISTBOX_SELECTION` context-provided signal — see its own extensive doc comment for the Qwik reactivity gap it exists to work around |
 | `chips/internal/ripple-loader.ts` | `src/material/core/private/ripple-loader.ts` (`MatRippleLoader`) | ported | Identical mechanism to `qwik-material/button/internal/ripple-loader.ts` (see that file + `button/SYNC.md`), duplicated per this package's "each entry point owns its own `internal/` helpers" convention. Qualifying events are `focusin` (not `focus` — doesn't bubble from the descendant button/gridcell that actually receives it) + `mousedown`/`mouseenter`/`touchstart` |
 | `scss/chips/chip.scss`, `chip-set.scss`, `_m2-chip.scss`, `_m3-chip.scss`, `_chips-theme.scss` | same names upstream | synced | Byte-for-byte copies; `chip.scss` is the only file needing the cdk-stub swap: `@use '@angular/cdk';` → `@use '../cdk-stub' as cdk;` |
-| `scss/chips/chips-prebuilt.scss` | (qwik-material-specific) | new | `@use`s the structural partials + `:root` defaults for every `--mat-chip-*`/`--mat-sys-*` custom property they reference, following the established prebuilt-reconciliation pattern (e.g. `button-toggle-prebuilt.scss`) |
+| `scss/chips/chips-prebuilt.scss` | (qwik-material-specific) | new | `@use`s the structural partials only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): every `--mat-chip-*` name already carries a real M3 fallback to `--mat-sys-*` baked in via `token-utils.slot()`. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 
