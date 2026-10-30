@@ -1,21 +1,29 @@
-// Progress spinner prebuilt CSS. Wraps the port's progress-spinner.scss with
-// :root defaults for every --mat-progress-spinner-* variable it emits. See
-// design spec §5.
+// Progress spinner prebuilt CSS. Wraps the port's progress-spinner.scss.
+//
+// Every --mat-progress-spinner-* token progress-spinner.scss emits already
+// carries a real fallback baked in at Sass-compile time via
+// token-utils.slot() against _m3-progress-spinner.scss's $fallbacks map
+// (e.g. `var(--mat-progress-spinner-active-indicator-color,
+// var(--mat-sys-primary))`), the same mechanism upstream itself uses — so
+// no `:root` override block is needed. `--mat-sys-primary` comes from the
+// one default theme (core/default-theme.scss, shipped via
+// core-prebuilt.css). The animation-multiplier default is likewise already
+// set structurally on `.mat-mdc-progress-spinner` itself
+// (`--mat-progress-spinner-animation-multiplier: 1;`).
+//
+// Note: --mat-progress-spinner-size is defined in _m3-progress-spinner.scss's
+// token map but is never consumed via var() by progress-spinner.scss's
+// structural rules (the spinner's diameter is applied via inline style
+// bindings, not a CSS custom property lookup) — it was correctly never
+// part of the removed block either.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// `--mat-sys-primary` plus `--mat-progress-spinner-active-indicator-width`/
+// `-active-indicator-color`/`-animation-multiplier`, all duplicating
+// values already baked into the fallback chain / structural defaults
+// above. Removed 2026-10-30 (see core/SYNC.md "Default theme" and
+// progress-spinner/SYNC.md): the `:root` scope always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared*, not where it's read.
 
 @use './progress-spinner';
-
-:root {
-  // M3 sys-color tokens.
-  --mat-sys-primary: #6750a4;
-
-  // Progress-spinner-specific tokens (emitted by _m3-progress-spinner.scss +
-  // progress-spinner.scss inline structural defaults).
-  // Note: --mat-progress-spinner-size is defined in _m3-progress-spinner.scss's
-  // token map but is never consumed via var() by progress-spinner.scss's
-  // structural rules (the spinner's diameter is applied via inline style
-  // bindings, not a CSS custom property lookup) — omitted here to avoid a
-  // phantom declaration.
-  --mat-progress-spinner-active-indicator-width: 4px;
-  --mat-progress-spinner-active-indicator-color: var(--mat-sys-primary, #6750a4);
-  --mat-progress-spinner-animation-multiplier: 1;
-}

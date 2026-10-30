@@ -1,23 +1,22 @@
 // List prebuilt CSS. Wraps the port's list.scss (now a byte-for-byte sync
-// of upstream src/material/list/list.scss — see list/SYNC.md) with :root
-// defaults for variables that fall outside the M3 token chain.
+// of upstream src/material/list/list.scss — see list/SYNC.md).
 //
 // list.scss's token-utils.slot(...) calls now use the SAME key names as
-// _m3-list.scss's get-tokens() map (both are upstream-synced), so most
-// --mat-list-* variables already get a real fallback baked into their
-// var() chain. Computed-style / visual parity with the M2 Angular theme
-// the dev-app happens to run is out of scope (see the remediation design
-// doc's "Out of scope" section) — the handful of overrides below exist
-// only so the compiled CSS doesn't contain dangling var() with no
-// fallback at all.
+// _m3-list.scss's get-tokens() map (both are upstream-synced), so almost
+// every --mat-list-* variable already gets a real fallback baked into its
+// var() chain, ultimately resolving through the one default theme
+// (core/default-theme.scss's --mat-sys-*, shipped via core-prebuilt.css) —
+// so no `:root` override block is needed.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// `--mat-list-subheader-text-size: 0.875rem;`. Removed 2026-10-30 (see
+// core/SYNC.md "Default theme" and list/SYNC.md): that token has no M3
+// token at all (upstream _list-theme.scss notes "MDC does not have tokens
+// for the subheader") and isn't actually read via `var()` anywhere in
+// list.scss's compiled structural CSS (the `.mdc-list-group__subheader`
+// rule only sets `margin`) — so the override resolved nothing in practice,
+// and shared the same :root-always-wins risk as every other removed block
+// (a custom property's `var()` resolves where it's *declared*, never where
+// it's read).
 
 @use './list';
-
-:root {
-  // list-subheader-text-size has no M3 token at all — upstream
-  // _list-theme.scss notes "MDC does not have tokens for the subheader"
-  // and its M2-only branch styles the subheader with `label-large`
-  // (size 0.875rem). Reused as the default here since no M3 equivalent
-  // exists.
-  --mat-list-subheader-text-size: 0.875rem;
-}

@@ -1,27 +1,23 @@
-// Progress bar prebuilt CSS. Wraps the port's progress-bar.scss with :root
-// defaults for every --mat-progress-bar-* variable it emits. See design
-// spec §5.
+// Progress bar prebuilt CSS. Wraps the port's progress-bar.scss.
+//
+// Every --mat-progress-bar-* token progress-bar.scss emits already carries
+// a real fallback baked in at Sass-compile time via token-utils.slot()
+// against _m3-progress-bar.scss's $fallbacks map (e.g.
+// `var(--mat-progress-bar-track-color, var(--mat-sys-surface-variant))`),
+// the same mechanism upstream itself uses — so no `:root` override block
+// is needed. The `--mat-sys-*` names those fallbacks reach for come from
+// the one default theme (core/default-theme.scss, shipped via
+// core-prebuilt.css). The animation-multiplier default is likewise already
+// set structurally on `.mat-mdc-progress-bar` itself
+// (`--mat-progress-bar-animation-multiplier: 1;`), with
+// `.mat-progress-bar-reduced-motion` overriding it to `2`.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 3 `--mat-sys-*` literals plus 6 `--mat-progress-bar-*` literals, all
+// duplicating values already baked into the fallback chain / structural
+// defaults above. Removed 2026-10-30 (see core/SYNC.md "Default theme" and
+// progress-bar/SYNC.md): the `:root` scope always won over a consumer's
+// real theme, since a custom property's `var()` resolves where it's
+// *declared*, not where it's read.
 
 @use './progress-bar';
-
-:root {
-  // M3 sys-color tokens referenced by _m3-progress-bar.scss's color group.
-  --mat-sys-primary: #6750a4;
-  --mat-sys-surface-variant: #e7e0ec;
-  // M3 sys-shape token — the fallback progress-bar.scss's border-radius rule
-  // reaches for when --mat-progress-bar-track-shape is undefined. Sourced
-  // from core/tokens/m3/_md-sys-shape.scss's `corner-none: 0`.
-  --mat-sys-corner-none: 0;
-
-  // Progress-bar-specific tokens (emitted by _m3-progress-bar.scss's base + color).
-  --mat-progress-bar-active-indicator-height: 4px;
-  --mat-progress-bar-track-height: 4px;
-  --mat-progress-bar-track-shape: 0;
-  --mat-progress-bar-active-indicator-color: var(--mat-sys-primary, #6750a4);
-  --mat-progress-bar-track-color: var(--mat-sys-surface-variant, #e7e0ec);
-
-  // Structural default (not an M3 theme token) — progress-bar.scss itself
-  // sets this to 2 only inside the buffer-mode selector; 1 is the base
-  // default used by every other animation mode.
-  --mat-progress-bar-animation-multiplier: 1;
-}

@@ -31,7 +31,7 @@ and `docs/superpowers/specs/2026-10-27-qwik-material-remaining-components-roadma
 | `scss/radio/_radio-theme.scss` | `src/material/radio/_radio-theme.scss` | synced | byte-identical copy; theme mixins inert on our end (no runtime theming system) but kept for `diff -q` parity. Never actually `@use`d by `radio-prebuilt.scss` — same as `_m2-radio.scss` below, present for parity only |
 | `scss/radio/_m2-radio.scss` | `src/material/radio/_m2-radio.scss` | synced | byte-identical copy |
 | `scss/radio/_m3-radio.scss` | `src/material/radio/_m3-radio.scss` | synced | byte-identical copy; actually compiled (transitively `@use`d by `radio.scss` for `$fallbacks: m3-radio.get-tokens();`), unlike `_m2-radio.scss`/`_radio-theme.scss` |
-| `scss/radio/radio-prebuilt.scss` | (qwik-material-specific) | new | `@use` radio.scss + `:root` defaults for every `--mat-radio-*` / `--mat-sys-*` variable it emits (primary-colored M3 defaults, matching upstream's default `get-tokens()` with no color-variant override) |
+| `scss/radio/radio-prebuilt.scss` | (qwik-material-specific) | new | `@use` radio.scss only — no `:root` token defaults (removed 2026-10-30, see `core/SYNC.md` "Default theme"): every `--mat-radio-*` variable already carries a real M3 fallback to `--mat-sys-*` baked in via `token-utils.slot()`, matching upstream's default `get-tokens()` with no color-variant override |
 
 ## Removed upstream files
 
