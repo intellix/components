@@ -202,10 +202,10 @@ export interface ParityScenario {
  * `style` comparison, since they depend on page fonts and layout.
  */
 /**
- * Opt-in until the known style gaps are fixed (see README "Computed-style comparison"):
- * `PARITY_STYLES=1 npx playwright test`.
+ * Computed-style comparison is on by default (see README "Computed-style comparison");
+ * `PARITY_STYLES=0` runs the structural comparison only, e.g. to bisect a failure.
  */
-const COMPARE_STYLES = !!process.env['PARITY_STYLES'];
+const COMPARE_STYLES = process.env['PARITY_STYLES'] !== '0';
 const COMPUTED_STYLE_PROPS = [
   'display',
   'position',
