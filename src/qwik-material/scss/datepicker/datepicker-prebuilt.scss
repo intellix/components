@@ -1,33 +1,27 @@
 // Datepicker prebuilt CSS. Each of these component stylesheets' `token-utils.slot(...)` calls
 // already carries real fallback values baked in from `m3-datepicker.get-tokens()` — a
 // byte-for-byte synced upstream file that resolves the default M3 system theme
-// (core/tokens/m3/_theme.scss's $sys-theme) to concrete values at Sass compile time. Same "no
-// :root overrides needed" situation as select-prebuilt.scss's/timepicker-prebuilt.scss's
-// majority case — every `--mat-datepicker-*`/`--mat-calendar-*` variable already has a real
-// fallback, so there is nothing dangling to patch here.
+// (core/tokens/m3/_theme.scss's $sys-theme) to concrete values at Sass compile time (e.g.
+// `var(--mat-datepicker-calendar-container-background-color,
+// var(--mat-sys-surface-container-high))`) — so no `:root` override block is needed; the one
+// default theme's `--mat-sys-*` (core/default-theme.scss, shipped via core-prebuilt.css) is all
+// that's required.
 //
 // Upstream has no single aggregated `datepicker.scss` — each component
 // (`MatCalendar`/`MatCalendarBody`/`MatDateRangeInput`/`MatDatepickerContent`/
 // `MatDatepickerActions`/`MatDatepickerToggle`) has its own `styleUrl`. This facade `@use`s all
 // six so the port can ship one prebuilt stylesheet, same bundling choice as every other
 // multi-component entry point in this project.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding 4 bare `--mat-sys-*`
+// literals (secondary, tertiary-container, surface-container-high, corner-large — an old M3
+// baseline) that this component's `--mat-datepicker-*`/`--mat-calendar-*` tokens fall back
+// through. Removed 2026-10-30 (see core/SYNC.md "Default theme") — those literals always won
+// over a consumer's real theme, since a custom property's `var()` resolves where it's
+// *declared* (`:root`), not where it's read.
 @use './calendar';
 @use './calendar-body';
 @use './date-range-input';
 @use './datepicker-content';
 @use './datepicker-actions';
 @use './datepicker-toggle';
-
-// A handful of `--mat-sys-*` roles this component uses have no fallback baked in by
-// `token-utils.slot()` (the M3 token maps them straight to the sys-level custom property, not a
-// literal value) AND aren't defined by any OTHER already-shipped `*-prebuilt.css` in this
-// project (confirmed via `grep -l` across `dist/*.css` — every other `--mat-sys-*` this file
-// references already has a definition somewhere else, same "nothing dangling" situation
-// select's/timepicker's own facades describe). Same convention as `button-prebuilt.scss`'s own
-// "Minimal M3 defaults" block — real M3 baseline-palette values, overridable by any consumer.
-:root {
-  --mat-sys-secondary: #625b71;
-  --mat-sys-tertiary-container: #ffd8e4;
-  --mat-sys-surface-container-high: #ece6f0;
-  --mat-sys-corner-large: 16px;
-}

@@ -1,48 +1,23 @@
-// Prebuilt Material Card CSS entry.
+// Card prebuilt CSS. Wraps the port's card.scss. Every `--mat-card-*`
+// custom property card.scss reads already carries a real M3 fallback baked
+// in at Sass-compile time via token-utils.slot() (e.g.
+// `var(--mat-card-elevated-container-color,
+// var(--mat-sys-surface-container-low))`) — so no `:root` override block is
+// needed; the one default theme's `--mat-sys-*` (core/default-theme.scss,
+// shipped via core-prebuilt.css) is all that's required.
 //
-// Emits: structural styles from card.scss + a minimal set of M3 default
-// values for the `--mdc-*` and `--mat-card-*` custom properties the
-// structural rules reference. Consumers import via
-// `@angular-community/qwik-material/card-prebuilt.css`.
-// For full custom theming, consumers should instead @use the *-theme mixins
-// from `@angular-community/qwik-material/scss/card/_card-theme.scss` once
-// the qwik-material/core theming DSL lands.
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 16 `--mat-card-*` literals (an old M3 baseline). Removed 2026-10-30 (see
+// core/SYNC.md "Default theme") — those literals always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared* (`:root`), not where it's read. One of the removed names,
+// `--mat-card-title-text-color`, was never actually dead weight to begin
+// with: card.scss's `.mat-mdc-card-title` rule never reads a `color`
+// property at all (title text just inherits the container's `color`,
+// matching upstream's own compiled M3 output), so that particular default
+// was already unused. For full custom theming, consumers should instead
+// @use the *-theme mixins from
+// `@angular-community/qwik-material/scss/card/_card-theme.scss` once the
+// qwik-material/core theming DSL lands.
 
 @use './card';
-
-// Minimal Material Design 3 defaults so a bare consumer sees a themed card.
-// Values sourced from @angular/material/card M3 tokens. Every value can be
-// overridden by the consumer at :root or on any ancestor of the card.
-:root {
-  // Raised (elevated) — the default appearance
-  --mat-card-elevated-container-color: var(--mat-sys-surface, #fef7ff);
-  --mat-card-elevated-container-shape: 12px;
-  --mat-card-elevated-container-elevation:
-    0 1px 2px rgba(0, 0, 0, 0.3),
-    0 1px 3px 1px rgba(0, 0, 0, 0.15);
-
-  // Outlined
-  --mat-card-outlined-container-color: var(--mat-sys-surface, #fef7ff);
-  --mat-card-outlined-container-shape: 12px;
-  --mat-card-outlined-container-elevation: none;
-  --mat-card-outlined-outline-color: var(--mat-sys-outline, rgba(0, 0, 0, 0.12));
-  --mat-card-outlined-outline-width: 1px;
-
-  // Filled (Mat-specific)
-  --mat-card-filled-container-color: color-mix(
-    in srgb,
-    var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87)) 5%,
-    transparent
-  );
-  --mat-card-filled-container-shape: 12px;
-
-  // Typography for title / subtitle
-  --mat-card-title-text-color: var(--mat-sys-on-surface, rgba(0, 0, 0, 0.87));
-  --mat-card-title-text-font: Roboto, "Helvetica Neue", sans-serif;
-  --mat-card-title-text-size: 1rem;
-  --mat-card-title-text-weight: 500;
-  --mat-card-subtitle-text-color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
-  --mat-card-subtitle-text-font: Roboto, "Helvetica Neue", sans-serif;
-  --mat-card-subtitle-text-size: 0.875rem;
-  --mat-card-subtitle-text-weight: 400;
-}

@@ -26,7 +26,7 @@ in the same package.
 | `scss/card/_card-theme.scss`             | `src/material/card/_card-theme.scss`                 | synced     | byte-identical copy                                                                       |
 | `scss/card/_m2-card.scss`                | `src/material/card/_m2-card.scss`                    | synced     | byte-identical copy                                                                       |
 | `scss/card/_m3-card.scss`                | `src/material/card/_m3-card.scss`                    | synced     | byte-identical copy                                                                       |
-| `scss/card/card-prebuilt.scss`           | (Qwik-material-specific)                             | new        | @use of card.scss + M3 :root defaults                                                     |
+| `scss/card/card-prebuilt.scss`           | (Qwik-material-specific)                             | new        | `@use` of card.scss only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): every `--mat-card-*` name already carries a real M3 fallback to `--mat-sys-*` baked in via `token-utils.slot()`. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 

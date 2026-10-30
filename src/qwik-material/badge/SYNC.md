@@ -22,7 +22,7 @@ commit synced: the `badge.ts` / `badge.scss` tree as of this repo's current
 | `scss/badge/_badge-theme.scss`      | `src/material/badge/_badge-theme.scss`            | synced     | byte-identical copy                                                                      |
 | `scss/badge/_m2-badge.scss`         | `src/material/badge/_m2-badge.scss`               | synced     | byte-identical copy                                                                      |
 | `scss/badge/_m3-badge.scss`         | `src/material/badge/_m3-badge.scss`               | synced     | byte-identical copy                                                                      |
-| `scss/badge/badge-prebuilt.scss`    | (qwik-material-specific)                          | new        | @use badge.scss + M3 :root defaults matching emitted --mat-badge-* references            |
+| `scss/badge/badge-prebuilt.scss`    | (qwik-material-specific)                          | new        | `@use` badge.scss only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): every `--mat-badge-*` name already carries a real M3 fallback to `--mat-sys-*` baked in via `token-utils.slot()`. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 

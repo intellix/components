@@ -1,26 +1,20 @@
-// Prebuilt Material Bottom Sheet CSS entry.
+// Bottom sheet prebuilt CSS. Wraps the port's bottom-sheet-container.scss.
+// Every `--mat-bottom-sheet-*` custom property it reads already carries a
+// real M3 fallback baked in at Sass-compile time via token-utils.slot()
+// (e.g. `var(--mat-bottom-sheet-container-background-color,
+// var(--mat-sys-surface-container-low))`) — so no `:root` override block is
+// needed; the one default theme's `--mat-sys-*` (core/default-theme.scss,
+// shipped via core-prebuilt.css) is all that's required.
 //
-// Emits: structural styles from bottom-sheet-container.scss + a minimal set
-// of M3 default values for the `--mat-sys-*` custom properties the
-// structural rules reference. Consumers import via
-// `@angular-community/qwik-material/bottom-sheet-prebuilt.css`. For full
-// custom theming, consumers should instead @use the bottom-sheet-theme mixin
-// from `@angular-community/qwik-material/scss/bottom-sheet/_bottom-sheet-theme.scss`
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 7 bare `--mat-sys-*` literals (surface-container-low background,
+// on-surface text, body-large typography — an old M3 baseline), never even
+// a `--mat-bottom-sheet-*` name. Removed 2026-10-30 (see core/SYNC.md
+// "Default theme") — those literals always won over a consumer's real
+// theme, since a custom property's `var()` resolves where it's *declared*
+// (`:root`), not where it's read. For full custom theming, consumers should
+// instead @use the bottom-sheet-theme mixin from
+// `@angular-community/qwik-material/scss/bottom-sheet/_bottom-sheet-theme.scss`
 // once the qwik-material/core theming DSL lands.
 
 @use './bottom-sheet-container';
-
-// Minimal Material Design 3 defaults so a bare consumer sees a themed bottom
-// sheet. Values sourced from @angular/material bottom-sheet M3 tokens
-// (surface-container-low background, on-surface text, 28px corner radius,
-// body-large typography). Every value can be overridden by the consumer at
-// :root or on any ancestor of the bottom sheet host.
-:root {
-  --mat-sys-surface-container-low: #f6f1ea;
-  --mat-sys-on-surface: rgba(0, 0, 0, 0.87);
-  --mat-sys-body-large-font: Roboto, "Helvetica Neue", sans-serif;
-  --mat-sys-body-large-size: 1rem;
-  --mat-sys-body-large-line-height: 1.5rem;
-  --mat-sys-body-large-weight: 400;
-  --mat-sys-body-large-tracking: 0.03125em;
-}
