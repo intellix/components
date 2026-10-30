@@ -1,4 +1,4 @@
-import {$, type Signal, useOn, useSignal} from '@builder.io/qwik';
+import {$, type Signal, sync$, useOn, useSignal} from '@builder.io/qwik';
 import {handleRippleEvent, rippleAnimationConfig} from '../../core/ripple/ripple-dom';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 
@@ -177,6 +177,17 @@ export function useRippleLoader(): Signal<boolean> {
     });
   });
 
+  // Synchronous twin of the bootstrap above: qwikloader runs a `sync$` handler during
+  // the real event dispatch, before any lazy QRL resolves. Upstream's loader
+  // initializes in a capture-phase listener, so e.g. a click that disables its own
+  // button always finds the ripple already created; the async `initialized` write
+  // can land after the click handler's state change. See `wasRippleInitialized`.
+  useOn(
+    ['focus', 'mousedown', 'mouseenter', 'touchstart'],
+    sync$((_event: Event, host: Element) => {
+      (host as unknown as Record<string, boolean>)['__matRippleLoaderInitialized'] = true;
+    }),
+  );
   useOn('focus', handleInteraction$);
   useOn('mousedown', handleInteraction$);
   useOn('mouseenter', handleInteraction$);
@@ -187,4 +198,16 @@ export function useRippleLoader(): Signal<boolean> {
   useOn('touchcancel', handleInteraction$);
 
   return initialized;
+}
+
+/**
+ * Whether `host` has received a ripple-initializing event, recorded synchronously at event time
+ * (an expando, never a DOM attribute). Use this, not the async `initialized` signal alone, when
+ * the answer must respect real event order — e.g. upstream `setDisabled()`'s "was the ripple
+ * created before the disabled change" branch.
+ */
+export function wasRippleInitialized(host: Element | undefined): boolean {
+  return !!(host as unknown as Record<string, boolean> | undefined)?.[
+    '__matRippleLoaderInitialized'
+  ];
 }

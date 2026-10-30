@@ -31,9 +31,16 @@ const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
  * names (those are content-hashed and would break on every rebuild).
  */
 
-/** Extracts the bare `s_xxxxxxx` symbol name from a serialized QRL attribute value. */
-function symbolOf(qrl: string | null): string {
-  if (!qrl) throw new Error('expected a QRL-valued on:* attribute, found none');
+/**
+ * Extracts the bare `s_xxxxxxx` symbol name of the lazy (chunk-backed) QRL in a serialized
+ * `on:*` attribute value. An attribute can list several QRLs (newline-separated); inline `sync$`
+ * handlers (e.g. useRippleLoader's synchronous init flag) serialize as a chunk-less `#<n>` entry
+ * and are skipped — they load no code, so they're outside this laziness contract.
+ */
+function symbolOf(attr: string | null): string {
+  if (!attr) throw new Error('expected a QRL-valued on:* attribute, found none');
+  const qrl = attr.split(/\s+/).find(entry => /^[^#]+#/.test(entry));
+  if (!qrl) throw new Error(`no chunk-backed QRL in: ${attr}`);
   const hash = qrl.split('#')[1];
   if (!hash) throw new Error(`QRL has no #symbol segment: ${qrl}`);
   return hash.replace(/^([^?[|]*).*$/, '$1');

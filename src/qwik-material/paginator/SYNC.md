@@ -247,3 +247,13 @@ component's ripple firing/timing/DOM, is affected.
 shared infra this port touched): `specs/material-select` (10/10), `specs/material-form-field`,
 `specs/material-button`, `specs/material-button-toggle`, `specs/material-tooltip` (99/99
 combined), `specs/material-chips`, `specs/material-input` unaffected.
+
+## Ripple-loader-disabled race — resolved (2026-10-30)
+
+The real ripple port made `useRippleLoader`'s lazy handler slower to resolve than the nav
+button's click handler, so a click that disables its own button (`show-first-last`,
+`interactions`) froze `mat-ripple-loader-disabled` as if the ripple were never created. Upstream
+creates it in a capture-phase `mousedown` listener, before the click. `useRippleLoader` now also
+records initialization synchronously (`sync$` expando, read via `wasRippleInitialized`), and the
+freeze honors it, so real event order decides regardless of QRL resolution order. (Supersedes the
+"known gap" note above.)

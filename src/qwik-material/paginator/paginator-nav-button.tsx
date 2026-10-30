@@ -22,7 +22,11 @@ import {
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {FocusIndicator} from '../button/internal/focus-indicator';
 import {TouchTarget} from '../button/internal/touch-target';
-import {rippleLoaderHostAttrs, useRippleLoader} from '../button/internal/ripple-loader';
+import {
+  rippleLoaderHostAttrs,
+  useRippleLoader,
+  wasRippleInitialized,
+} from '../button/internal/ripple-loader';
 
 /**
  * One `first`/`previous`/`next`/`last` nav button. Mirrors `paginator.html`'s
@@ -196,7 +200,9 @@ export const PaginatorNavButton = component$<PaginatorNavButtonProps>(props => {
   useTask$(({track}) => {
     const everInitialized = track(() => rippleInitialized.value);
     const liveDisabled = track(() => props.disabled);
-    if (everInitialized) return; // sticky from here on — see the doc comment above.
+    // `wasRippleInitialized` respects real event order (set synchronously on mouseenter/
+    // mousedown), so a click that disables its own button still finds the ripple created first.
+    if (everInitialized || wasRippleInitialized(hostRef.value)) return; // sticky from here on
     rippleDisabledAttr.value = liveDisabled;
   });
 
