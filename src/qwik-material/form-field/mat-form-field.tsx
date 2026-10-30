@@ -120,11 +120,17 @@ export interface MatFormFieldProps {
    * EVERY non-prefix/suffix child in source order, not just the one `MatFormFieldControl`;
    * `mat-paginator`'s page-size `<mat-form-field>` is the first consumer — its
    * `<div class="mat-mdc-paginator-touch-target" (click)="selectRef.open()">` is a sibling of
-   * `<mat-select>` inside the SAME infix in `paginator.html`, not a prefix/suffix). Unlike
-   * `control`, this is plain host-element content with no `component$()` of its own, so it's
-   * read directly off `props` on every render — it doesn't need `control`'s own "read once, via
-   * a frozen snapshot" treatment (see that prop's doc comment): there is no nested reactive
-   * state here that a fresh element reference on every render could disrupt.
+   * `<mat-select>` inside the SAME infix in `paginator.html`, not a prefix/suffix).
+   *
+   * Gets the EXACT SAME "read once, via a frozen snapshot" treatment `control` does (see that
+   * prop's own big doc comment) — an earlier version of this comment claimed that wasn't needed
+   * here, reasoning that every consumer so far passed plain host markup with no `component$()`
+   * of its own. That reasoning doesn't generalize: `qwik-material/datepicker`'s `<MatDatepicker>`/
+   * `<MatDateRangePicker>` markers ARE real components, and passing one here hit the identical
+   * Qwik-core "Rendering promises in JSX signals is not supported" crash `control` is frozen to
+   * avoid — confirmed live, manifesting as the marker element silently vanishing from the DOM
+   * after the consumer's very next re-render. Freeze on every `JSXOutput` prop here, not just the
+   * ones whose current consumers happen to need it.
    */
   infixContent?: JSXOutput;
   /**
@@ -259,6 +265,20 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // simply never reached. This also means CONSUMERS no longer need to do anything special —
   // reconstructing `control` inline on every render, the natural way to write it, is fine.
   const controlSnapshot = useSignal<JSXOutput | undefined>(() => props.control);
+
+  // `props.infixContent` gets the EXACT SAME freeze, for the EXACT SAME reason — see the big
+  // comment above on `controlSnapshot`. Confirmed live via `qwik-material/datepicker`'s `actions`
+  // scenario (the first real `infixContent` consumer to pass an actual `component$()` —
+  // `<MatDatepicker>`/`<MatDateRangePicker>` — rather than plain host markup like
+  // `qwik-material/paginator`'s touch-target `<div>`): reconstructing `<MatDatepicker
+  // picker={picker} .../>` fresh on every route re-render (the natural way to write it, and the
+  // same shape `control` itself is written in) hit the identical "Rendering promises in JSX
+  // signals is not supported" Qwik-core crash, which manifested here as the marker element
+  // silently vanishing from the DOM after the very next re-render (not merely a console error).
+  // `infixContent`'s own doc comment previously claimed freezing was unnecessary because "this is
+  // plain host-element content with no component$() of its own" — true for every consumer BEFORE
+  // this one, but not a safe assumption for a prop whose type is `JSXOutput` in general.
+  const infixContentSnapshot = useSignal<JSXOutput | undefined>(() => props.infixContent);
 
   // ── Control introspection (static half of the contract) ──
   // Read directly off the `control` prop's JSX descriptor, WITHOUT

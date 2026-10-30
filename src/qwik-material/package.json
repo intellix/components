@@ -209,6 +209,11 @@
       "types": "./dist/autocomplete/index.d.ts",
       "import": "./dist/autocomplete/index.js"
     },
+    "./datepicker": {
+      "qwik": "./datepicker/index.ts",
+      "types": "./dist/datepicker/index.d.ts",
+      "import": "./dist/datepicker/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",
@@ -243,6 +248,7 @@
     "./tree-prebuilt.css": "./dist/tree-prebuilt.css",
     "./paginator-prebuilt.css": "./dist/paginator-prebuilt.css",
     "./autocomplete-prebuilt.css": "./dist/autocomplete-prebuilt.css",
+    "./datepicker-prebuilt.css": "./dist/datepicker-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [

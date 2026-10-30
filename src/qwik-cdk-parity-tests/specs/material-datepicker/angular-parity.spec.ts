@@ -200,13 +200,40 @@ const clickButton = (name: string, opts: {closes: boolean}): ParityStep => ({
   },
 });
 
+/** Waits out the fill appearance's line-ripple deactivation transition (~180ms). */
+const waitForLineRippleSettled = (page: Page) =>
+  page
+    .waitForFunction(
+      () =>
+        !document.querySelector(
+          '[data-parity-root] .mdc-line-ripple--active.mdc-line-ripple--deactivating',
+        ),
+      undefined,
+      {timeout: 2000},
+    )
+    .catch(() => {});
+
 /** Replaces an input's value wholesale and blurs it (datepicker.ts's `typed-date-blur`). */
 const typeAndBlur = (text: string): ParityStep => ({
   name: `type "${text}" + blur`,
   run: async (page: Page) => {
     const input = page.locator('[data-parity-root] input');
     await input.fill(text);
+    // Blur only once the focused (`--active`) line ripple is fully visible, as it always is for a
+    // real user. Blurring before a frame paints it leaves opacity 0 -> 0, so no transitionend ever
+    // clears `--active --deactivating` — a frame-scheduling race either app can lose here.
+    await page
+      .waitForFunction(
+        () => {
+          const ripple = document.querySelector('[data-parity-root] .mdc-line-ripple--active');
+          return !!ripple && getComputedStyle(ripple, '::after').opacity === '1';
+        },
+        undefined,
+        {timeout: 2000},
+      )
+      .catch(() => {});
     await input.blur();
+    await waitForLineRippleSettled(page);
     await page.waitForTimeout(150);
   },
 });

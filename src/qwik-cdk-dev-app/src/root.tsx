@@ -36,6 +36,7 @@ import '@angular-community/qwik-material/table-prebuilt.css';
 import '@angular-community/qwik-material/tree-prebuilt.css';
 import '@angular-community/qwik-material/paginator-prebuilt.css';
 import '@angular-community/qwik-material/autocomplete-prebuilt.css';
+import '@angular-community/qwik-material/datepicker-prebuilt.css';
 
 export default component$(() => (
   <QwikCityProvider>

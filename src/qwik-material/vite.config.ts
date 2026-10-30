@@ -39,6 +39,7 @@ const entries = [
   'tree',
   'paginator',
   'autocomplete',
+  'datepicker',
 ];
 
 export default defineConfig({
@@ -90,6 +91,7 @@ export default defineConfig({
           ['scss/tree/tree-prebuilt.scss', 'dist/tree-prebuilt.css'],
           ['scss/paginator/paginator-prebuilt.scss', 'dist/paginator-prebuilt.css'],
           ['scss/autocomplete/autocomplete-prebuilt.scss', 'dist/autocomplete-prebuilt.css'],
+          ['scss/datepicker/datepicker-prebuilt.scss', 'dist/datepicker-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);
