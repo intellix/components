@@ -466,3 +466,11 @@ lint:no-ssr-leaks && typecheck` for the whole qwik-material package,
 covering dialog + button + card + toolbar + badge + icon + progress-bar +
 progress-spinner + divider + grid-list + list + button-toggle + slide-toggle
 + expansion + radio + checkbox + form-field + input + core.
+
+## Outline notch: label resize monitoring (2026-10-30)
+
+Upstream's `MatFormFieldFloatingLabel` observes its own size (`SharedResizeObserver`) and, on any
+resize, re-measures the notch on the next macrotask (`_handleLabelResized` →
+`_refreshOutlineNotchWidth`). Ported as `observeLabelResize()` in `mat-form-field.tsx`, attached
+while the label floats. Without it, a label measured before its web font loaded (e.g. a chip grid
+that starts floated) kept the fallback font's width.
