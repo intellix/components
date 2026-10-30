@@ -1,4 +1,10 @@
 import {$, type Signal, useOn, useSignal} from '@builder.io/qwik';
+import {
+  rippleAnimationConfig,
+  rippleOnMouseDown,
+  rippleOnTouchStart,
+} from '../../core/ripple/ripple-dom';
+import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 
 /**
  * Reproduces `MatRippleLoader`'s lazy-ripple contract
@@ -115,18 +121,62 @@ export function rippleLoaderHostAttrs(config: RippleLoaderConfig): Record<string
  * manual testing. General lesson for this host: once ANY part of a
  * component's render depends on a signal, nothing else may mutate that
  * component's DOM imperatively — it has to go through a signal too.
+ *
+ * The real ripple ANIMATION (added alongside the ripple-span bootstrap
+ * above, same `core/ripple/`-remediation pass): on `mousedown`/`touchstart`,
+ * this same handler also checks whether the `.mat-ripple` span this hook's
+ * caller conditionally renders already exists in the live DOM. It won't yet
+ * on the very first qualifying event on a given host (the span is a
+ * declarative child of `initialized`, so setting the signal above only
+ * schedules it to appear on the NEXT render) — mirroring upstream's own
+ * `MatRippleLoader`: its document-level capture listener creates the ripple
+ * DOM/registers trigger-event handling synchronously, but a NEWLY-registered
+ * delegated listener added mid-dispatch of the CURRENT event does not itself
+ * receive that same event (confirmed against the DOM event-dispatch spec),
+ * so the bootstrapping interaction never gets a ripple either — only every
+ * one after it. Once the span exists (from an earlier `mouseenter`/`focus`,
+ * or a later `mousedown`/`touchstart` on an already-initialized host),
+ * `rippleOnMouseDown`/`rippleOnTouchStart` (`core/ripple/ripple-dom.ts`)
+ * launch a real ripple into it. The ripple config is read directly off the
+ * host's own `mat-ripple-loader-*` attributes — EXACTLY mirroring upstream's
+ * `_createRipple`, which builds its `RippleTarget` the same way
+ * (`host.hasAttribute(matRippleCentered)`/`host.hasAttribute(matRippleDisabled)`)
+ * — so no caller of `useRippleLoader()` needs to change: `rippleLoaderHostAttrs()`
+ * already renders every input this needs.
  */
 export function useRippleLoader(): Signal<boolean> {
   const initialized = useSignal(false);
+  const animationsDisabled = useAnimationsDisabled();
 
-  const markInitialized$ = $(() => {
+  const handleInteraction$ = $((event: Event, host: Element) => {
     initialized.value = true;
+    if (event.type !== 'mousedown' && event.type !== 'touchstart') return;
+
+    const container = host.querySelector<HTMLElement>('.mat-ripple');
+    // Bootstrap event on a never-before-interacted-with host — the span
+    // doesn't exist in the live DOM yet (see doc comment above). Nothing
+    // more to do; the signal write above arms every later interaction.
+    if (!container) return;
+
+    const target = {
+      rippleDisabled: host.hasAttribute(DISABLED_ATTR),
+      rippleConfig: {
+        centered: host.hasAttribute(CENTERED_ATTR),
+        animation: rippleAnimationConfig(animationsDisabled.value),
+      },
+    };
+
+    if (event.type === 'mousedown') {
+      rippleOnMouseDown(event as MouseEvent, host, container, target);
+    } else {
+      rippleOnTouchStart(event as TouchEvent, host, container, target);
+    }
   });
 
-  useOn('focus', markInitialized$);
-  useOn('mousedown', markInitialized$);
-  useOn('mouseenter', markInitialized$);
-  useOn('touchstart', markInitialized$);
+  useOn('focus', handleInteraction$);
+  useOn('mousedown', handleInteraction$);
+  useOn('mouseenter', handleInteraction$);
+  useOn('touchstart', handleInteraction$);
 
   return initialized;
 }
