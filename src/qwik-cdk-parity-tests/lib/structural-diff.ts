@@ -128,7 +128,8 @@ export function diffNodes(a: DomNode, b: DomNode, path = 'root'): string[] {
   const styleKeys = new Set([...Object.keys(a.styles), ...Object.keys(b.styles)]);
   for (const k of styleKeys) {
     if (a.styles[k] !== b.styles[k]) {
-      diffs.push(`${path}: style '${k}' '${a.styles[k]}' != '${b.styles[k]}'`);
+      const cls = a.classes.length ? `.${a.classes.join('.')}` : '';
+      diffs.push(`${path}${cls}: style '${k}' '${a.styles[k]}' != '${b.styles[k]}'`);
     }
   }
 

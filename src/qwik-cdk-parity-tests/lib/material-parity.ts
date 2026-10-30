@@ -194,6 +194,37 @@ export interface ParityScenario {
   pinRoot?: boolean;
 }
 
+/**
+ * Computed styles compared on every element (and its `::before`/`::after`, when rendered):
+ * structure (position, display, overflow, radius, ...) and colors. Both pages render with
+ * Angular's theme (see `syncTheme`), so a color difference is the component's CSS, not the
+ * theme — e.g. a 5% state layer rendered opaque. Sizes/offsets are left to the attribute
+ * `style` comparison, since they depend on page fonts and layout.
+ */
+/**
+ * Opt-in until the known style gaps are fixed (see README "Computed-style comparison"):
+ * `PARITY_STYLES=1 npx playwright test`.
+ */
+const COMPARE_STYLES = !!process.env['PARITY_STYLES'];
+const COMPUTED_STYLE_PROPS = [
+  'display',
+  'position',
+  'visibility',
+  'overflow-x',
+  'overflow-y',
+  'box-sizing',
+  'pointer-events',
+  'border-top-left-radius',
+  'border-top-right-radius',
+  'border-bottom-right-radius',
+  'border-bottom-left-radius',
+  'opacity',
+  'z-index',
+  'flex-direction',
+  'background-color',
+  'color',
+];
+
 /** Captures the `[data-parity-root]` subtree as a normalized DomNode. */
 export async function snapshotParityRoot(
   page: Page,
@@ -269,6 +300,17 @@ export async function snapshotParityRoot(
               : token.replace(/\d+/g, '#'),
           )
           .join('');
+      const computedStyles = (el: Element): Record<string, string> => {
+        const styles: Record<string, string> = {};
+        for (const pseudo of [null, '::before', '::after'] as const) {
+          const cs = getComputedStyle(el, pseudo);
+          if (pseudo && (cs.content === 'none' || cs.content === 'normal')) continue;
+          const prefix = pseudo ?? '';
+          for (const prop of opts.styleProps)
+            styles[`${prefix}${prop}`] = cs.getPropertyValue(prop);
+        }
+        return styles;
+      };
       const walk = (el: Element): Node => {
         const classes = Array.from(el.classList)
           .filter(c => !opts.ignoreClasses.includes(c))
@@ -364,7 +406,7 @@ export async function snapshotParityRoot(
           tag: el.tagName.toLowerCase(),
           classes,
           attrs,
-          styles: {},
+          styles: opts.compareStyles ? computedStyles(el) : {},
           children: elementChildren.map(walk),
         };
         if (elementChildren.length === 0) {
@@ -390,6 +432,8 @@ export async function snapshotParityRoot(
       ignoreAttrPrefixes: IGNORE_ATTR_PREFIXES,
       ignoreClasses: IGNORE_CLASSES,
       idAttrs: ID_ATTRS,
+      styleProps: COMPUTED_STYLE_PROPS,
+      compareStyles: COMPARE_STYLES,
     },
   );
 }
@@ -454,12 +498,65 @@ async function open(browser: Browser, url: string, pinRoot = false): Promise<Pag
   return page;
 }
 
+/**
+ * Gives the Qwik page Angular's exact theme, so computed colors/typography compare the
+ * components' CSS rather than the two dev-apps' themes: every rule in Angular's stylesheets that
+ * declares only custom properties (the `mat.theme()`/`all-component-themes` output, density and
+ * color-variant classes) is copied verbatim, with Angular's `<html>`/`<body>` classes so those
+ * selectors match, plus `color-scheme` (values use `light-dark()`) and the inherited text styles
+ * the Angular dev-app shell sets (body for overlays, the root for in-page content).
+ */
+async function syncTheme(angular: Page, qwik: Page): Promise<void> {
+  const theme = await angular.evaluate(() => {
+    const rules: string[] = [];
+    const visit = (list: CSSRuleList, wrap: (css: string) => string) => {
+      for (const rule of Array.from(list)) {
+        if (rule instanceof CSSMediaRule) {
+          visit(rule.cssRules, css => wrap(`@media ${rule.conditionText} { ${css} }`));
+        } else if (rule instanceof CSSStyleRule && rule.style.length) {
+          if (Array.from(rule.style).every(p => p.startsWith('--'))) rules.push(wrap(rule.cssText));
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        visit(sheet.cssRules, css => css);
+      } catch {
+        // Cross-origin sheet (e.g. fonts); has no theme rules.
+      }
+    }
+    const textStyles = (el: Element) => {
+      const style = getComputedStyle(el);
+      return ['color', 'font-family', 'font-size', 'font-weight', 'line-height', 'letter-spacing']
+        .map(p => `${p}: ${style.getPropertyValue(p)};`)
+        .join(' ');
+    };
+    const root = document.querySelector('[data-parity-root]') ?? document.body;
+    return {
+      htmlClass: document.documentElement.className,
+      bodyClass: document.body.className,
+      css:
+        rules.join('\n') +
+        `\nhtml { color-scheme: ${getComputedStyle(document.body).colorScheme}; }` +
+        `\nbody { ${textStyles(document.body)} }` +
+        `\n[data-parity-root] { ${textStyles(root)} }`,
+    };
+  });
+  await qwik.evaluate(({htmlClass, bodyClass}) => {
+    for (const c of htmlClass.split(/\s+/).filter(Boolean))
+      document.documentElement.classList.add(c);
+    for (const c of bodyClass.split(/\s+/).filter(Boolean)) document.body.classList.add(c);
+  }, theme);
+  await qwik.addStyleTag({content: theme.css});
+}
+
 /** Asserts the Angular and Qwik renderings of a scenario are DOM-identical, before and after each step. */
 export async function expectMaterialParity(browser: Browser, s: ParityScenario): Promise<void> {
   const angular = await open(browser, `${ANGULAR_URL}/${s.route}/${s.scenario}`, s.pinRoot);
   const qwik = await open(browser, `${QWIK_URL}/${s.route}/${s.scenario}/`, s.pinRoot);
   // Qwik resumes lazily; make sure the scenario's own readiness marker exists.
   await qwik.waitForSelector('[data-scenario-ready]', {state: 'attached'});
+  await syncTheme(angular, qwik);
 
   try {
     const compare = async (label: string) => {

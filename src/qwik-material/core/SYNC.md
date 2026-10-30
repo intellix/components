@@ -41,6 +41,9 @@ rather than inventing a new one.
 | `scss/core/ripple/_ripple.scss` | `src/material/core/ripple/_ripple.scss` | synced | byte-identical except `@use '@angular/cdk'` → `@use '../../cdk-stub' as cdk` (same substitution as `_menu-common.scss`) |
 | `scss/core/ripple/_m3-ripple.scss` | `src/material/core/ripple/_m3-ripple.scss` | synced | byte-identical copy |
 | `scss/core/ripple/ripple-structure.scss` | `src/material/core/ripple/ripple-structure.scss` | synced | byte-identical copy. Upstream loads it on demand (`_MatRippleStylesLoader`); here `core-prebuilt.scss` always includes it. Missing until 2026-10-30, which left every `.mat-ripple-element` (e.g. slider hover/focus ripples) `position: static`, square and unclipped |
+| `scss/core/focus-indicators/_private.scss` | `src/material/core/focus-indicators/_private.scss` | synced | was a simplified stub; now byte-identical except `@use '@angular/cdk'` → cdk-stub |
+| `scss/core/focus-indicators/structural-styles.scss` | `src/material/core/focus-indicators/structural-styles.scss` | synced | byte-identical. Upstream loads it on demand (`_StructuralStylesLoader`); `core-prebuilt.scss` always includes it. Missing until 2026-10-30: no `.mat-focus-indicator { position: relative }` or `::before` ring anywhere |
+| `scss/core/visually-hidden.scss` | `src/cdk/private/visually-hidden/visually-hidden.scss` | synced | same single include; the `a11y-visually-hidden` mixin is copied verbatim into `scss/_cdk-stub.scss`. Missing until 2026-10-30: `.cdk-visually-hidden` content (focus-trap anchors, screen-reader labels) rendered visibly |
 
 ## Removed upstream files
 

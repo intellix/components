@@ -131,3 +131,25 @@ Qwik preview on another port from a git worktree, sharing one Angular server).
 
 Restart `preview` after every Qwik rebuild; rebuild the Angular side with
 `pnpm bazel build //src/dev-app:devserver` (the running server picks it up).
+
+## Computed-style comparison (opt-in: `PARITY_STYLES=1`)
+
+The structural diff only sees markup, so a missing or wrong stylesheet (e.g. ripples rendering
+as opaque squares because `.mat-ripple-element` had no CSS) passes it. With `PARITY_STYLES=1`,
+every compared element — and its `::before`/`::after` when rendered — also compares a set of
+computed styles (`COMPUTED_STYLE_PROPS` in `lib/material-parity.ts`): position, display,
+visibility, overflow, box-sizing, pointer-events, border radii, opacity, z-index,
+flex-direction, background-color and color. Sizes/offsets are not compared here (they depend on
+page fonts and layout; inline `style` attributes are already compared).
+
+Colors are only meaningful under the same theme, so before any comparison `syncTheme()` gives
+the Qwik page Angular's exact theme: every token-only rule from Angular's stylesheets (the
+`mat.theme()`/`all-component-themes` output, density and color-variant classes) copied verbatim
+with Angular's `<html>`/`<body>` classes, plus `color-scheme` and the inherited text styles of
+Angular's `<body>` (overlays) and parity root (in-page content). A remaining color difference is
+therefore the component's CSS, not the theme. Style diffs print the element's classes.
+
+It is opt-in until the known gaps are fixed: qwik-material prebuilt `:root` component-token
+defaults resolve `var(--mat-sys-*, literal)` at `:root`, so a theme scoped to `body`/a class never
+reaches them (most remaining diffs), and `button-prebuilt.scss`'s CSS-only click burst adds a
+`::after` + `overflow: hidden` to `.mat-mdc-button-persistent-ripple` that upstream doesn't have.
