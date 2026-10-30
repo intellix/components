@@ -66,7 +66,7 @@ for the pattern in practice.
 | `tree/mat-tree-node-toggle.ts` | `src/material/tree/toggle.ts` (`MatTreeNodeToggle extends CdkTreeNodeToggle`, empty body) | ported (re-export) | Zero behavior/DOM difference upstream between the CDK and Material toggle — a direct re-export of `qwik-cdk/tree`'s `CdkTreeNodeToggle` is equally faithful. |
 | `scss/tree/tree.scss` | `src/material/tree/tree.scss` (33 LOC) | synced | Byte-identical copy. No `@angular/cdk` import exists in this file, so no cdk-stub swap needed (same as `sort/sort-header.scss`, `table/table.scss`). |
 | `scss/tree/_m3-tree.scss` | `src/material/tree/_m3-tree.scss` | synced | byte-identical copy; `tree.scss`'s `$fallbacks` resolves through this (`m3-tree.get-tokens()`, default args). |
-| `scss/tree/tree-prebuilt.scss` | (qwik-material-specific) | new | `@use` tree.scss + `:root` defaults for all 6 `--mat-tree-*` tokens + the `--mat-sys-*` system tokens they fall back to (`surface`/`on-surface`/`body-large-*`) — values reused verbatim from other prebuilt files wherever the same variable name already exists elsewhere in this port; `body-large-*` is new to this port (no earlier component used it), values from `_m3-tree.scss`'s own upstream M3 type-scale defaults. |
+| `scss/tree/tree-prebuilt.scss` | (qwik-material-specific) | new | `@use` tree.scss only — no `:root` token defaults (removed 2026-10-30, see core/SYNC.md "Default theme"): all 6 `--mat-tree-*` tokens already resolve through a `token-utils.slot(..., var(--mat-sys-*))` fallback chain baked in at Sass-compile time. The one default theme now ships from `core/default-theme.scss` via `core-prebuilt.css`. |
 
 ## Removed upstream files
 
