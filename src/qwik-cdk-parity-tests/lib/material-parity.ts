@@ -439,11 +439,41 @@ export async function snapshotParityRoot(
 }
 
 /** Resolves after two animation frames, letting pending renders flush. */
-function settle(page: Page): Promise<unknown> {
+async function settle(page: Page): Promise<unknown> {
+  await refreshHover(page);
   return page.evaluate(
     () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
   );
 }
+
+/**
+ * Re-sends a mouse move to the pointer's last real position. Chrome only re-evaluates `:hover`
+ * under a STATIONARY pointer at certain moments (some layouts/animation ends), so content that
+ * appears or moves under it (a menu overlapping its trigger, a field the click left the pointer
+ * over) can report a stale `:hover` that depends on each app's timing — what any real pointer
+ * movement would immediately correct. Only matters for computed-style comparison; the last
+ * position is recorded by `TRACK_POINTER_SCRIPT`.
+ */
+async function refreshHover(page: Page): Promise<void> {
+  if (!COMPARE_STYLES) return;
+  const pos = await page.evaluate(
+    () => (window as unknown as {__parityPointer?: {x: number; y: number}}).__parityPointer,
+  );
+  if (pos) await page.mouse.move(pos.x, pos.y);
+}
+
+const TRACK_POINTER_SCRIPT = () => {
+  document.addEventListener(
+    'mousemove',
+    e => {
+      (window as unknown as {__parityPointer: {x: number; y: number}}).__parityPointer = {
+        x: e.clientX,
+        y: e.clientY,
+      };
+    },
+    true,
+  );
+};
 
 /**
  * Waits for `MatFormField`'s own `mat-form-field-animations-enabled` class
@@ -491,6 +521,7 @@ const PIN_ROOT_CSS =
 async function open(browser: Browser, url: string, pinRoot = false): Promise<Page> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
+  if (COMPARE_STYLES) await page.addInitScript(TRACK_POINTER_SCRIPT);
   await page.goto(url);
   await page.waitForSelector('[data-parity-root]', {state: 'attached'});
   if (pinRoot) await page.addStyleTag({content: PIN_ROOT_CSS});
@@ -502,7 +533,7 @@ async function open(browser: Browser, url: string, pinRoot = false): Promise<Pag
  * Gives the Qwik page Angular's exact theme, so computed colors/typography compare the
  * components' CSS rather than the two dev-apps' themes: every rule in Angular's stylesheets that
  * declares only custom properties (the `mat.theme()`/`all-component-themes` output, density and
- * color-variant classes) is copied verbatim, with Angular's `<html>`/`<body>` classes so those
+ * color-variant classes) or is scoped to the dev-app shell's `.demo-*` classes is copied verbatim, with Angular's `<html>`/`<body>` classes so those
  * selectors match, plus `color-scheme` (values use `light-dark()`) and the inherited text styles
  * the Angular dev-app shell sets (body for overlays, the root for in-page content).
  */
@@ -514,7 +545,12 @@ async function syncTheme(angular: Page, qwik: Page): Promise<void> {
         if (rule instanceof CSSMediaRule) {
           visit(rule.cssRules, css => wrap(`@media ${rule.conditionText} { ${css} }`));
         } else if (rule instanceof CSSStyleRule && rule.style.length) {
-          if (Array.from(rule.style).every(p => p.startsWith('--'))) rules.push(wrap(rule.cssText));
+          // Token-only rules (the theme), and rules scoped to the dev-app shell's own `.demo-*`
+          // classes (e.g. experimental column-resize styles under `body.demo-experimental-theme`).
+          const shellScoped = /(^|[\s>+~,])\S*\.demo-/.test(rule.selectorText);
+          if (shellScoped || Array.from(rule.style).every(p => p.startsWith('--'))) {
+            rules.push(wrap(rule.cssText));
+          }
         }
       }
     };

@@ -262,6 +262,12 @@ const keyTo = (key: string, expectedPanelCount: number): ParityStep => ({
   run: async (page: Page) => {
     await page.keyboard.press(key);
     await waitForSelectPanel(page, expectedPanelCount);
+    // Closing removes the transparent backdrop from under the pointer; Chrome then leaves
+    // Angular's `:hover` chain stopping at the trigger (never reaching `mat-form-field`, even
+    // after a real move) while Qwik's reaches it, so the field's hover-only colors (e.g.
+    // `error-hover-label-text-color`) differ by pointer state alone. Park the pointer off the
+    // field on both pages instead.
+    if (expectedPanelCount === 0) await page.mouse.move(0, 0);
   },
 });
 
