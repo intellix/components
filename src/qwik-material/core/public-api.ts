@@ -54,4 +54,23 @@ export {createNativeDateAdapter, DEFAULT_DATE_ADAPTER} from './datetime/native-d
 export {MAT_DATE_FORMATS, type MatDateFormats} from './datetime/date-formats';
 export {MAT_NATIVE_DATE_FORMATS} from './datetime/native-date-formats';
 export {MAT_DATE_ADAPTER, useDateAdapter, useDateFormats} from './datetime/use-date-adapter';
-export {MAT_FORM, MatForm, useMatFormSubmitted, type MatFormProps, type MatFormState} from './mat-form';
+export {
+  MAT_FORM,
+  MatForm,
+  useMatFormSubmitted,
+  type MatFormProps,
+  type MatFormState,
+} from './mat-form';
+
+// Directive-hook composition infrastructure ("Composing directives" in
+// README.md) — shared by every `use*` directive hook (`useMatMenuTrigger`,
+// `useMatTooltip`, `useMatBadge`, `useMatStepperNext`/`useMatStepperPrevious`)
+// and every host component that accepts their `HostProps`.
+export {
+  mergeHostProps,
+  callHostHandler,
+  extraHostAttrs,
+  type HostProps,
+  type HostRef,
+  type HostHandler,
+} from './host-props';
