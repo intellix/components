@@ -39,6 +39,7 @@ import {
   type AutocompleteRuntimeSignals,
   type KeyManagerItem,
 } from './autocomplete-runtime';
+import {useMatFormSubmitted} from '../core/mat-form';
 
 const MAT_AUTOCOMPLETE_CONFIG_DEFAULTS: MatAutocompleteConfig = {};
 
@@ -272,7 +273,9 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   const touched = isInFormField ? formField.touched : (props.touched ?? false);
   const dirty = isInFormField ? formField.dirty : (props.dirty ?? false);
   const invalid = isInFormField ? formField.invalid : (props.invalid ?? false);
-  const errorState = formBound && touched && invalid;
+  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
+  const formSubmitted = useMatFormSubmitted();
+  const errorState = formBound && invalid && (touched || formSubmitted);
   const emptySignal = useSignal(() => !props.value);
 
   // Runtime state — see `autocomplete-runtime.ts`'s own doc comments.

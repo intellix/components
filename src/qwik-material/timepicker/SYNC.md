@@ -115,7 +115,8 @@ override needed, unlike select.
 
 ## `formBound`/`value`/`disabled`: required duplication on `<MatTimepickerInput>`
 
-Every usage **must** pass `formBound` (literal `true`) and `value`
+Every usage whose Angular counterpart binds `[(ngModel)]`/`[formControl]`/
+`formControlName` **must** pass `formBound` (literal `true`) and `value`
 (`formatTimeForDisplay(picker.value.value) || undefined`, the exported
 helper) on `<MatTimepickerInput>`, and `disabled` whenever the picker is
 disabled. All three exist purely so `MatFormField`'s **static**
@@ -123,19 +124,23 @@ disabled. All three exist purely so `MatFormField`'s **static**
 before `MatTimepickerInput` ever runs — see `core/mat-form-field-control.ts`)
 sees the right values at first (SSR) render:
 
-- **`formBound` is always `true`, never optional in practice.** Every
-  `MatTimepickerInput` has an implicit value-model (`picker.value`,
-  `onValueChange$`) the same way upstream's `<input matInput [matTimepicker]
-  ="picker" [(ngModel)]="value">`/`[formControl]` always has an `NgControl` —
-  confirmed live: `MatFormField`'s own `[class.ng-untouched]`/
-  `[class.ng-pristine]`/`[class.ng-valid]` host bindings (reading
-  `this._control.ngControl`) are present on **every** timepicker scenario's
-  `<mat-form-field>`, not just the one (`min-max`) that also shows
-  `<mat-error>`s. There is no "unbound" shape to fall back to, unlike
-  `MatInput`, so this is a fixed requirement rather than a real per-usage
-  choice. (A future version could default it internally if `MatFormField`'s
-  `readControlProps` is ever made to call a static method on the control
-  type — not attempted here, out of scope.)
+- **`formBound` gates `MatTimepickerInput`'s own `ng-untouched`/
+  `ng-pristine`/`ng-valid` classes (default `false`, matching `MatInput`'s
+  own convention) — updated 2026-10-31, porting material.angular.dev's
+  `timepicker-overview` docs example
+  (`src/qwik-cdk-dev-app/src/routes/mat-timepicker/example/`).** Previously
+  this prop was declared but never actually read by the component (every
+  pre-existing call site passed it anyway, so this was invisible). Angular's
+  `NgControlStatus` directive (selector `[formControlName],[ngModel],
+  [formControl]`) only activates when the template actually binds one of
+  those three — confirmed live with BOTH shapes: present (these classes
+  show up) on every `/qwik-parity/mat-timepicker/*` scenario (all bind
+  `[(ngModel)]`/`[formControl]`), genuinely ABSENT on the real upstream
+  docs example's `<input matInput [matTimepicker]="picker">` (no
+  ngModel/formControl at all — the ONE genuinely unbound usage this port
+  renders). Every pre-existing scenario/route already passes `formBound`
+  explicitly, so gating behind it is a no-op for all of them; the new docs
+  example is the only call site that omits it.
 - **`value` is a plain truthiness marker (a string), not the real `Date`** —
   the real value stays on `picker.value`. Needed because `MatFormField`
   computes its own first-render `empty`/`shouldLabelFloat` (hence the

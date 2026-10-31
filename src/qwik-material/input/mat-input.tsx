@@ -5,6 +5,7 @@ import {
   type MatFormFieldControlProps,
 } from '../core/mat-form-field-control';
 import {MAT_INPUT_CONFIG, MAT_INPUT_CONFIG_DEFAULTS} from './input-config';
+import {useMatFormSubmitted} from '../core/mat-form';
 
 type NativeControlElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -86,7 +87,9 @@ export const MatInput = component$<MatInputProps>(props => {
   // Mirrors the DEFAULT `ErrorStateMatcher` exactly (same formula as
   // `MatFormField`'s own independent copy — see that file's comment; each
   // renders its own classes/attributes off this value).
-  const errorState = formBound && touched && invalid;
+  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
+  const formSubmitted = useMatFormSubmitted();
+  const errorState = formBound && invalid && (touched || formSubmitted);
   // Live "is this control empty" — seeded from `props.value` (correct at
   // first paint) but NEVER re-read from it afterward: like `touched`/
   // `dirty`/`invalid` above, `props.value` is nested inside the SAME

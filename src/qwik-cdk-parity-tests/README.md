@@ -131,7 +131,15 @@ should use `:checked`, not `[checked]`.
 
 Angular scenarios bind inputs with `[prop]` syntax. Angular also copies a
 static-attribute input (`value="x"`) onto the host element, which a Qwik component
-cannot tell apart from a prop — that echo is a known, accepted difference.
+cannot tell apart from a prop — that echo is a known, accepted difference. This
+project's own internal scenarios always use the bracket form specifically to avoid
+it, but an unmodified `material.angular.dev` docs example (`specs/examples/`) is
+real upstream source that can't be rewritten, and some genuinely use the bare form
+(e.g. `expansion-overview-example.html`'s `<mat-expansion-panel hideToggle>`). Known
+cases are listed by exact attribute name in `STATIC_INPUT_ECHO_ATTRS`
+(`material-parity.ts`) and ignored unconditionally — a no-op for any scenario that
+binds the same input via `[prop]`, since Angular never adds the static attribute
+there either.
 
 Running (no ibazel needed):
 
@@ -168,3 +176,20 @@ To keep pointer state from leaking into colors, the harness re-sends the pointer
 after each step so `:hover` reflects the settled pointer (Chrome otherwise keeps a stale `:hover`
 under a stationary pointer depending on each app's timing). `PARITY_STYLES=0` disables the
 comparison (structural diff only), e.g. to bisect whether a failure is markup or CSS.
+
+## Clock emulation (`ParityScenario.clockDate`)
+
+A `material.angular.dev` docs example is rendered unmodified (`specs/examples/`) — it never gets a
+pinned `startAt`/value the way this repo's OWN `qwik-parity/<component>.ts` scenarios do. When such
+an example's main interaction (e.g. opening a datepicker/timepicker with no initial value) renders
+"today"-relative content, `expectMaterialParity(browser, {..., clockDate: new Date(...)})` freezes
+`Date.now()`/`new Date()` to that moment on BOTH pages, via Playwright's `page.clock.setFixedTime()`,
+before navigation — real timers/animations are unaffected, only the clock reading is faked. Never
+pin the date by editing the upstream example itself.
+
+## Google Fonts are cached per worker
+
+Both dev-apps load Roboto/Material Icons from fonts.googleapis.com / fonts.gstatic.com, and every
+test opens two fresh browser contexts. `cacheGoogleFonts()` fetches each font URL once per worker
+and replays it from memory; without it, one slow response held up a page's `load` event until the
+test timed out (full runs intermittently took 20+ minutes with scattered `page.goto` timeouts).

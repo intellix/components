@@ -1,4 +1,4 @@
-import {expect, type Browser, type Page} from '@playwright/test';
+import {expect, type Browser, type BrowserContext, type Page} from '@playwright/test';
 import {diffNodes, type DomNode} from './structural-diff.js';
 
 /**
@@ -103,6 +103,14 @@ const CONSUMER_SELECTOR_ATTRS = [
   'matdialogactions',
   'matsort',
   'mat-sort-header',
+  // `[formControlName]` (Angular Forms) — like every other entry here, written as a bare
+  // attribute (`formControlName="firstCtrl"`) whose VALUE is entirely consumer-chosen (the
+  // control's name in whatever `FormGroup` the consumer built) and has no Qwik equivalent (no
+  // real `FormGroup`/`AbstractControl` tree exists in this port — see
+  // `qwik-material/form-field/mat-form-control.ts`'s own doc comment on why). First hit by
+  // material.angular.dev's `stepper-overview` docs example, the first scenario anywhere in this
+  // port to use Angular's real reactive-forms directives rather than a local stand-in.
+  'formcontrolname',
   'mat-tab-link',
   'mattablink',
   'mat-tab-nav-bar',
@@ -229,8 +237,22 @@ export interface ParityScenario {
    * `value` meaningfully elsewhere in this suite).
    */
   ignoreAttrs?: string[];
+  /**
+   * Freezes `Date.now()`/`new Date()` to this moment on BOTH pages (Playwright's
+   * `page.clock.setFixedTime()` — real timers/animations keep running, only the clock reading is
+   * faked) before navigation. For a scenario whose rendered "today"-relative state (e.g. a
+   * datepicker/timepicker docs example with no `startAt`/value override, which opens showing the
+   * CURRENT month) would otherwise be non-deterministic run-to-run — never achieved by editing
+   * the upstream example itself. See `specs/examples/angular-parity.spec.ts`'s datepicker entry.
+   */
+  clockDate?: Date | number | string;
 }
 
+/**
+ * Computed-style comparison is on by default (see README "Computed-style comparison");
+ * `PARITY_STYLES=0` runs the structural comparison only, e.g. to bisect a failure.
+ */
+const COMPARE_STYLES = process.env['PARITY_STYLES'] !== '0';
 /**
  * Computed styles compared on every element (and its `::before`/`::after`, when rendered):
  * structure (position, display, overflow, radius, ...) and colors. Both pages render with
@@ -238,11 +260,6 @@ export interface ParityScenario {
  * theme — e.g. a 5% state layer rendered opaque. Sizes/offsets are left to the attribute
  * `style` comparison, since they depend on page fonts and layout.
  */
-/**
- * Computed-style comparison is on by default (see README "Computed-style comparison");
- * `PARITY_STYLES=0` runs the structural comparison only, e.g. to bisect a failure.
- */
-const COMPARE_STYLES = process.env['PARITY_STYLES'] !== '0';
 const COMPUTED_STYLE_PROPS = [
   'display',
   'position',
@@ -437,9 +454,32 @@ export async function snapshotParityRoot(
         // attribute prefixes and comment nodes already stripped above —
         // just a real element instead of a comment, so `el.children`
         // doesn't exclude it for free the way it excludes comments.
-        const elementChildren = Array.from(el.children).filter(
+        const rawElementChildren = Array.from(el.children).filter(
           c => c.tagName.toLowerCase() !== 'q:template',
         );
+        // A bare `<table><tr>...` (no `<thead>`/`<tbody>` at all — e.g. a plain `matSort` table
+        // with no `mat-table`) gets an IMPLICIT, attribute-less `<tbody>` wrapping its `<tr>`s
+        // when the browser's HTML parser builds it from SSR'd markup (Qwik's side here), but NOT
+        // when a CSR framework builds the identical tree via imperative DOM calls (Angular's
+        // dev-app, confirmed to have no SSR anywhere in this harness) — a standard HTML5
+        // table-parsing rule, not a framework bug; already documented as a known,
+        // library-level-unfixable gap in `qwik-material/sort/SYNC.md` deviation #4 ("The library
+        // does not rewrite consumer markup... Consumers should write `<thead>`/`<tbody>`
+        // explicitly"). Every one of THIS project's own `mat-sort` scenarios follows that advice
+        // (explicit `<thead>`) — but an unmodified material.angular.dev docs example
+        // (`sort-overview-example.html`) is real upstream source with no sections at all, so the
+        // harness normalizes it here instead: a `<table>`'s direct `<tbody>` child with NO
+        // attributes (the implicit-insertion signature — a REAL Material table's own `<tbody>`
+        // always carries `role`/`class`, see `qwik-material/table`, and is never touched by this)
+        // is transparent, splicing its own children in its place.
+        const elementChildren =
+          el.tagName.toLowerCase() === 'table'
+            ? rawElementChildren.flatMap(c =>
+                c.tagName.toLowerCase() === 'tbody' && c.attributes.length === 0
+                  ? Array.from(c.children).filter(cc => cc.tagName.toLowerCase() !== 'q:template')
+                  : [c],
+              )
+            : rawElementChildren;
         const node: Node = {
           tag: el.tagName.toLowerCase(),
           classes,
@@ -538,14 +578,22 @@ const TRACK_POINTER_SCRIPT = () => {
  * the same category of fix `waitForSelectPanel`'s own polling in
  * `specs/material-select/angular-parity.spec.ts` already applies to the
  * select panel's exit animation.
+ *
+ * Checks EVERY `.mat-mdc-form-field` on the page (`querySelectorAll` + `.every(...)`, not a
+ * single `querySelector`) — a scenario with more than one form field (e.g. material.angular.dev's
+ * `stepper-overview` docs example, two fields in two different steps) can have each one's
+ * ~300ms timer land at a slightly different moment; checking only the first left the SECOND one's
+ * class missing on the very first `compare()`, confirmed live. Same "wait for every matching
+ * element, not just one" shape `specs/material-expansion/angular-parity.spec.ts`'s own `settle`
+ * step already uses for `.mat-expansion-panel-animations-enabled`.
  */
 async function waitForFormFieldAnimationsSettled(page: Page): Promise<void> {
   await page
     .waitForFunction(
-      () => {
-        const field = document.querySelector('.mat-mdc-form-field');
-        return !field || field.classList.contains('mat-form-field-animations-enabled');
-      },
+      () =>
+        Array.from(document.querySelectorAll('.mat-mdc-form-field')).every(field =>
+          field.classList.contains('mat-form-field-animations-enabled'),
+        ),
       undefined,
       {timeout: 2000},
     )
@@ -556,9 +604,40 @@ const PIN_ROOT_CSS =
   '[data-parity-root]{position:fixed!important;top:40px!important;left:40px!important;' +
   'width:800px!important;margin:0!important;padding:0!important}';
 
-async function open(browser: Browser, url: string, pinRoot = false): Promise<Page> {
+/**
+ * Google Fonts responses (both dev-apps load Roboto/Material Icons from fonts.googleapis.com /
+ * fonts.gstatic.com), fetched once per worker and replayed from memory. Every test opens two
+ * fresh contexts, so without this each one re-requests them, and a single slow response holds
+ * up the page's `load` event until the test times out.
+ */
+const FONT_CACHE = new Map<
+  string,
+  {status: number; headers: Record<string, string>; body: Buffer}
+>();
+
+async function cacheGoogleFonts(ctx: BrowserContext): Promise<void> {
+  await ctx.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, async route => {
+    const url = route.request().url();
+    let hit = FONT_CACHE.get(url);
+    if (!hit) {
+      const response = await route.fetch();
+      hit = {status: response.status(), headers: response.headers(), body: await response.body()};
+      if (response.ok()) FONT_CACHE.set(url, hit);
+    }
+    await route.fulfill(hit);
+  });
+}
+
+async function open(
+  browser: Browser,
+  url: string,
+  pinRoot = false,
+  clockDate?: Date | number | string,
+): Promise<Page> {
   const ctx = await browser.newContext();
+  await cacheGoogleFonts(ctx);
   const page = await ctx.newPage();
+  if (clockDate !== undefined) await page.clock.setFixedTime(clockDate);
   if (COMPARE_STYLES) await page.addInitScript(TRACK_POINTER_SCRIPT);
   await page.goto(url);
   await page.waitForSelector('[data-parity-root]', {state: 'attached'});
@@ -626,8 +705,13 @@ async function syncTheme(angular: Page, qwik: Page): Promise<void> {
 
 /** Asserts the Angular and Qwik renderings of a scenario are DOM-identical, before and after each step. */
 export async function expectMaterialParity(browser: Browser, s: ParityScenario): Promise<void> {
-  const angular = await open(browser, `${ANGULAR_URL}/${s.route}/${s.scenario}`, s.pinRoot);
-  const qwik = await open(browser, `${QWIK_URL}/${s.route}/${s.scenario}/`, s.pinRoot);
+  const angular = await open(
+    browser,
+    `${ANGULAR_URL}/${s.route}/${s.scenario}`,
+    s.pinRoot,
+    s.clockDate,
+  );
+  const qwik = await open(browser, `${QWIK_URL}/${s.route}/${s.scenario}/`, s.pinRoot, s.clockDate);
   // Qwik resumes lazily; make sure the scenario's own readiness marker exists.
   await qwik.waitForSelector('[data-scenario-ready]', {state: 'attached'});
   await syncTheme(angular, qwik);

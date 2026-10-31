@@ -74,7 +74,12 @@ mirroring the Angular dev-app's effective default (`DevAppLayout.toggleM3` →
 `m3Enabled` defaults to `true`). `mat-stepper/layout.tsx`, `mat-button/layout.tsx`,
 `mat-toolbar/layout.tsx`, and `mat-badge/layout.tsx` apply the identical
 provider for their own `<MatIcon>`-using scenarios (stepper step icons; the
-`button-overview`/`toolbar-overview`/`badge-overview` docs examples).
+`button-overview`/`toolbar-overview`/`badge-overview` docs examples), and
+`mat-tree/example/` (the `tree-flat-child-accessor-overview` docs example) wraps
+just its own `<MatTree>` in the same provider. Any other route tree that renders
+a font-mode `<MatIcon>` needs the same (an explicit `fontSet` prop is NOT
+equivalent — see deviation #7 above: a prop value also renders
+`data-mat-icon-namespace`, which the registry-style config default never does).
 
 `src/qwik-cdk-dev-app/src/routes/mat-icon/svg-literal/index.tsx` now passes
 `svgName="home"` to `<MatIcon svgLiteral={HOME_SVG} />`. This is a scenario

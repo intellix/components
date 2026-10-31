@@ -54,3 +54,4 @@ export {createNativeDateAdapter, DEFAULT_DATE_ADAPTER} from './datetime/native-d
 export {MAT_DATE_FORMATS, type MatDateFormats} from './datetime/date-formats';
 export {MAT_NATIVE_DATE_FORMATS} from './datetime/native-date-formats';
 export {MAT_DATE_ADAPTER, useDateAdapter, useDateFormats} from './datetime/use-date-adapter';
+export {MAT_FORM, MatForm, useMatFormSubmitted, type MatFormProps, type MatFormState} from './mat-form';

@@ -118,7 +118,7 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
       type={props.type}
       id={props.id}
       class={classes}
-      disabled={disabledAttr(nativelyDisabled)}
+      {...disabledAttr(nativelyDisabled)}
       aria-disabled={props.disabled && disabledInteractive ? 'true' : undefined}
       aria-label={props.ariaLabel}
       aria-describedby={props.ariaDescribedBy}

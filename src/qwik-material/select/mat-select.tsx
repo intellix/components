@@ -29,6 +29,7 @@ import {
   type SelectRuntimeConfig,
   type SelectRuntimeSignals,
 } from './select-runtime';
+import {useMatFormSubmitted} from '../core/mat-form';
 
 const MAT_SELECT_CONFIG_DEFAULTS: MatSelectConfig = {};
 
@@ -279,7 +280,9 @@ export const MatSelect = component$<MatSelectProps>(props => {
   const touched = isInFormField ? formField.touched : (props.touched ?? false);
   const dirty = isInFormField ? formField.dirty : (props.dirty ?? false);
   const invalid = isInFormField ? formField.invalid : (props.invalid ?? false);
-  const errorState = formBound && touched && invalid;
+  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
+  const formSubmitted = useMatFormSubmitted();
+  const errorState = formBound && invalid && (touched || formSubmitted);
 
   const empty = multiple
     ? !(Array.isArray(value.value) && (value.value as unknown[]).length)

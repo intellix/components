@@ -170,6 +170,25 @@ upstream's source code.
    `AfterContentInit`/`AfterViewInit`/`OnDestroy`/`OnChanges` lifecycle →
    plain props, Qwik hooks/context/refs, `useOn`/`useVisibleTask$` where an
    actual mount-time or lazy-interaction equivalent was needed.
+9. **2026-10-31: `MatStepperNext`/`MatStepperPrevious` gained a `matButton`
+   prop** (`stepper-buttons.tsx`), added while porting material.angular.dev's
+   `stepper-overview` docs example
+   (`src/qwik-cdk-dev-app/src/routes/mat-stepper/example/`), whose Next/Back
+   buttons are `<button matButton matStepperNext>`/`matStepperPrevious` —
+   TWO upstream directives stacked on one native `<button>`, combining
+   `matButton`'s own ripple/focus-indicator/touch-target/ripple-loader
+   chrome with the stepper directive's class/click behavior. Neither
+   `<MatButton>` nor `<MatStepperNext>`/`<MatStepperPrevious>` can be nested
+   inside the other (both host-render their own `<button>` root — nesting
+   adds a wrapper element, failing DOM parity), so `matButton: boolean |
+   MatButtonAppearance` composes the combined markup directly in the SAME
+   component, reusing `qwik-material/button/internal/*`'s
+   `PersistentRipple`/`FocusIndicator`/`TouchTarget`/`rippleLoaderHostAttrs`/
+   `useRippleLoader` — the identical precedent `qwik-material/paginator`'s
+   `PaginatorNavButton` already set for combining `matIconButton` +
+   `matTooltip` on one element. Omitted (default, every pre-existing parity
+   scenario): unchanged bare-button rendering. Covered by
+   `specs/examples/angular-parity.spec.ts`'s `mat-stepper/example`.
 
 ## Class count
 

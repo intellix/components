@@ -429,3 +429,14 @@ race-free fix needs more investigation than this pass budgeted for. Left as
 a known, documented gap — same treatment as the pre-existing `material-
 timepicker` `min-max` failure (unrelated, not caused by this change).
 No OTHER component's ripple firing, timing, or DOM is affected.
+
+## `MatForm` — form submission for the default ErrorStateMatcher (2026-10-31)
+
+`core/mat-form.tsx` (qwik-material-specific): `<MatForm>` renders the `<form>` and plays the part
+of Angular's `FormGroupDirective`/`NgForm` that Material reads — `submitted` flips on submit (adding
+`ng-submitted`, as `NgControlStatusGroup` does), the native submission is prevented
+(`FormGroupDirective.onSubmit` returns `false`), and the controls inside read it via
+`useMatFormSubmitted()` so their error state follows upstream's default `ErrorStateMatcher`:
+`invalid && (touched || form.submitted)`. Wired into MatFormField, MatInput, MatSelect,
+MatAutocomplete, MatDatepickerInput and MatTimepickerInput. Needed by the stepper-overview docs
+example (`matStepperNext` is `type="submit"`).

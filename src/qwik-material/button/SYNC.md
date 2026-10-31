@@ -74,3 +74,11 @@ The following 6 stubs were added by the button port SCSS copy step (Task 2) beyo
 ## Pipeline
 
 `pnpm test:qwik-material` at the repo root runs `build && vitest && lint:no-ssr-leaks && typecheck` for the whole qwik-material package, covering both dialog and button.
+
+## `disabled="true"` on client-rendered buttons (2026-10-31)
+
+`disabledAttr()` now returns a spread (`{DISABLED: 'true'}`): Qwik's client renderer assigns
+known props as DOM properties, so `disabled="true"` on a button rendered after load became
+`el.disabled = 'true'`, reflected as `disabled=""`, unlike upstream's `disabled="true"`. The
+upper-case key falls through to `setAttribute`, and HTML lower-cases it. Found by the tree docs
+example (leaf toggles appear on expand).

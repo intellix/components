@@ -474,3 +474,11 @@ resize, re-measures the notch on the next macrotask (`_handleLabelResized` →
 `_refreshOutlineNotchWidth`). Ported as `observeLabelResize()` in `mat-form-field.tsx`, attached
 while the label floats. Without it, a label measured before its web font loaded (e.g. a chip grid
 that starts floated) kept the fallback font's width.
+
+## Error state honours form submission; animations timer is document-ready (2026-10-31)
+
+- `errorState` is now upstream's full default formula, `invalid && (touched || form.submitted)`,
+  with the form being the enclosing `<MatForm>` (core/SYNC.md).
+- The `mat-form-field-animations-enabled` mount timer uses `useVisibleTask$`'s `document-ready`
+  strategy: the default intersection-observer strategy never ran it for offscreen fields, while
+  upstream's `ngAfterViewInit` timer runs for every field.
