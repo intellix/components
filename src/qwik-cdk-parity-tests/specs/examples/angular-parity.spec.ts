@@ -134,9 +134,32 @@ const hoverTooltip: ParityStep = {
   },
 };
 
+/**
+ * Clicks the `select-overview` example's (modern) `<mat-select>` trigger and waits for its panel
+ * — like `mat-autocomplete`, `MatSelect`'s popover lands inline inside `[data-parity-root]`, not
+ * `.cdk-overlay-container` (see specs/material-select/angular-parity.spec.ts's own header), so
+ * one default-root test is enough. The native `<select>` card has no comparable DOM-visible
+ * panel (an OS-level control) and isn't exercised here.
+ */
+const openSelect: ParityStep = {
+  name: 'click trigger (open)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] mat-select').click();
+    await page.waitForFunction(
+      () => {
+        const panels = document.querySelectorAll('.mat-mdc-select-panel');
+        return panels.length === 1 && !panels[0].classList.contains('mat-select-panel-exit');
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
 /** Interactions per `<component>/<route>`, added alongside each Qwik port as needed. */
 const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
   'mat-autocomplete/example': [{steps: [openAutocomplete]}],
+  'mat-select/example': [{steps: [openSelect]}],
   'mat-snack-bar/example': [{steps: [openSnackBar], rootSelector: overlayRoot}],
   'mat-bottom-sheet/example': [{steps: [openBottomSheet], rootSelector: overlayRoot}],
   'mat-menu/example': [{steps: [openMenuStep]}, {steps: [openMenuStep], rootSelector: overlayRoot}],

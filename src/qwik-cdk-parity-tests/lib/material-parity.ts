@@ -154,6 +154,12 @@ const CONSUMER_SELECTOR_ATTRS = [
   // `@angular/cdk/a11y`'s `CdkFocusInitial`) — confirmed against both sources.
   'mattooltip',
   'cdkfocusinitial',
+  // `matnativecontrol`: the `select[matNativeControl]` selector `MatInput` also matches (see
+  // `src/material/input/input.ts`) — same consumer-selector category as `matinput` above,
+  // surfaced by the verbatim `select-overview` docs example's `<select matNativeControl
+  // required>` (qwik-cdk-dev-app's `mat-select/example` route implements this card with its own
+  // small local control rather than teaching `qwik-material/input` a new host-element kind).
+  'matnativecontrol',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
