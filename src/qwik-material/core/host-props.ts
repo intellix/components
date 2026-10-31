@@ -133,6 +133,7 @@ export interface HostProps {
   onMouseDown$?: HostHandler<MouseEvent>;
   onMouseEnter$?: HostHandler<MouseEvent>;
   onMouseLeave$?: HostHandler<MouseEvent>;
+  onPointerDown$?: HostHandler<PointerEvent>;
   onFocusIn$?: HostHandler<FocusEvent>;
   onFocusOut$?: HostHandler<FocusEvent>;
   onWheel$?: HostHandler<WheelEvent>;

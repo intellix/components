@@ -21,6 +21,14 @@ export {
 } from './focus-monitor/focus-monitor';
 export type {FocusOrigin, FocusOptions} from './focus-monitor/focus-monitor';
 export {useFocusOrigin, focusVia} from './focus-origin/focus-origin';
+// Plain, non-`useOn()` building blocks for `useFocusOrigin()`'s SAME
+// keyboard-vs-pointer heuristic — exported so a hostProps-returning
+// directive hook (e.g. `qwik-material/tooltip`'s `useMatTooltip()`) that
+// can't rely on `useOn()` attaching to the right element (its caller isn't
+// necessarily the one owning the host — see `qwik-material/core/host-
+// props.ts`) can reproduce the exact same origin resolution via plain JSX
+// handler props instead. See recent-keydown.ts's doc comment.
+export {wasRecentKeydown, consumeRecentKeydown} from './focus-origin/recent-keydown';
 export type {FocusTrap} from './focus-trap/focus-trap';
 export {createFocusTrap} from './focus-trap/focus-trap';
 export {useFocusTrap} from './focus-trap/use-focus-trap';
