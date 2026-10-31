@@ -6,6 +6,8 @@ export {MatMenuItem} from './mat-menu-item';
 export type {MatMenuItemProps} from './mat-menu-item';
 export {MatMenuTrigger} from './mat-menu-trigger';
 export type {MatMenuTriggerProps} from './mat-menu-trigger';
+export {useMatMenuTrigger} from './use-mat-menu-trigger';
+export type {UseMatMenuTriggerProps, MatMenuTriggerHook} from './use-mat-menu-trigger';
 export {MenuPanel} from './menu-panel';
 export type {MenuPanelProps} from './menu-panel';
 export type {MenuPositionX, MenuPositionY} from './menu-positions';

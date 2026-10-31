@@ -71,6 +71,21 @@ describe('mergeHostProps', () => {
     expect(merged['aria-controls']).toBeUndefined();
   });
 
+  it('keeps a mentioned-but-undefined key PRESENT on the merged object, not just undefined-valued', () => {
+    // Regression test: Qwik's client-side reconciler only reliably removes
+    // an attribute whose JSX prop key is a stable, always-present object
+    // key that transitions to `undefined` across renders — a key that's
+    // sometimes fully ABSENT from the spread object and sometimes present
+    // (e.g. a naive merge that does `if (value !== undefined) merged[key]
+    // = value`) can leave a stale attribute in the live DOM (confirmed live:
+    // `aria-controls` surviving a menu close through `useMatMenuTrigger()`
+    // before this was fixed). `'key' in merged` must stay true even when
+    // every contributing part's value for it is `undefined`.
+    const merged = mergeHostProps({'aria-controls': undefined});
+    expect('aria-controls' in merged).toBe(true);
+    expect(merged['aria-controls']).toBeUndefined();
+  });
+
   it('composes refs so every part that needs the live element gets it', () => {
     const sigA = fakeSignal<Element | undefined>(undefined);
     let elForB: Element | undefined;

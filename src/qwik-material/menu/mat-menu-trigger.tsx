@@ -1,21 +1,7 @@
-import {
-  $,
-  component$,
-  Slot,
-  useContext,
-  useSignal,
-  type NoSerialize,
-  type QRL,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
-import {QWIK_CDK} from '@angular-community/qwik-cdk';
-import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
-import type {FocusOrigin} from '@angular-community/qwik-cdk/a11y';
-import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import {MAT_MENU_DEFAULT_OPTIONS} from './mat-menu-tokens';
+import {component$, Slot, type QRL} from '@builder.io/qwik';
+import {mergeHostProps} from '../core/host-props';
 import type {MatMenuRef} from './menu-ref';
-import {openMenu, closeMenu, type MenuRuntimeSignals} from './menu-runtime';
-import type {MenuCloseReason} from './menu-close-reason';
+import {useMatMenuTrigger} from './use-mat-menu-trigger';
 
 /**
  * Props for `<MatMenuTrigger>`. Mirrors upstream's `[matMenuTriggerFor]`
@@ -30,6 +16,13 @@ import type {MenuCloseReason} from './menu-close-reason';
  * trigger, use `<MatMenuItem menu={…}>` instead (see mat-menu-item.tsx) —
  * `MatMenuTrigger` is only for TOP-LEVEL triggers on their own arbitrary
  * host element.
+ *
+ * `<MatMenuTrigger>` is a thin wrapper around `useMatMenuTrigger()` (see
+ * `use-mat-menu-trigger.ts`) for the common case of a trigger that doesn't
+ * need to be combined with ANOTHER directive on the same element. When it
+ * does (e.g. a trigger that's ALSO a tooltip), call `useMatMenuTrigger()`
+ * directly and compose with `mergeHostProps()` — see
+ * `qwik-material/README.md`'s "Composing directives" section.
  */
 export interface MatMenuTriggerProps {
   /** Which host tag to render. Default `'button'`. */
@@ -58,92 +51,27 @@ export interface MatMenuTriggerProps {
 
 export const MatMenuTrigger = component$<MatMenuTriggerProps>(props => {
   const as = props.as ?? 'button';
-  const ctx = useContext(QWIK_CDK);
-  const defaults = useContext(MAT_MENU_DEFAULT_OPTIONS, {});
-  const animationsDisabled = useAnimationsDisabled();
 
-  const overlayRef = useSignal<NoSerialize<OverlayRef>>();
-  const isOpen = useSignal(false);
-  const panelId = useSignal<string>();
-  const pendingReason = useSignal<MenuCloseReason | undefined>();
-  const openedBy = useSignal<FocusOrigin>(null);
-  const hostRef = useSignal<HTMLElement>();
-
-  const signals: MenuRuntimeSignals = {overlayRef, isOpen, panelId, pendingReason};
-
-  const open$ = $(async () => {
-    if (!isBrowser || !hostRef.value || isOpen.value) return;
-    const itemsJsx = await props.menu.content$();
-    if (overlayRef.value || !hostRef.value) return;
-    openMenu(itemsJsx, {
-      ctx,
-      signals,
-      menu: props.menu,
-      defaults,
-      triggerEl: hostRef.value,
-      isSubmenu: false,
-      animationsDisabled: animationsDisabled.value,
-      direction: ctx.direction.value === 'rtl' ? 'rtl' : 'ltr',
-      autoFocus: true,
-      origin: openedBy.value || 'program',
-      restoreFocus: props.restoreFocus ?? true,
-      // The trigger is never `useFocusOrigin()`-monitored — plain `.focus()`,
-      // no visible class (confirmed live, see menu-runtime.ts's doc comment
-      // on `OpenMenuOptions.restoreFocusTo`).
-      restoreFocusTo: () => hostRef.value?.focus(),
-      onClosed: () => {
-        openedBy.value = null;
-        props.onMenuClosed$?.();
-      },
-    });
-    props.onMenuOpened$?.();
+  const trigger = useMatMenuTrigger({
+    menu: props.menu,
+    restoreFocus: props.restoreFocus,
+    onMenuOpened$: props.onMenuOpened$,
+    onMenuClosed$: props.onMenuClosed$,
   });
 
-  const close$ = $(() => closeMenu(signals, undefined));
-
-  const handleClick$ = $((event: MouseEvent) => {
-    if (isOpen.value) {
-      void close$();
-    } else {
-      void open$();
-    }
-    props.onClick$?.(event);
-  });
-
-  const handleMouseDown$ = $((event: MouseEvent) => {
-    openedBy.value = event.button === 0 ? 'mouse' : null;
-  });
-
-  const handleKeyDown$ = $((event: KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      openedBy.value = 'keyboard';
-    }
-  });
-
-  const classes = [
-    'mat-mdc-menu-trigger',
-    ...(Array.isArray(props.class) ? props.class : props.class ? [props.class] : []),
-  ].filter(Boolean) as string[];
-
-  const sharedAttrs = {
-    ref: hostRef,
-    id: props.id,
-    class: classes,
+  const hostProps = mergeHostProps(trigger.hostProps, {
+    class: props.class,
     style: props.style,
-    'aria-haspopup': 'menu' as const,
-    'aria-expanded': isOpen.value ? ('true' as const) : ('false' as const),
-    'aria-controls': isOpen.value ? panelId.value : undefined,
+    id: props.id,
     'aria-label': props['aria-label'],
     'aria-labelledby': props['aria-labelledby'],
     tabIndex: props.tabIndex,
-    onClick$: handleClick$,
-    onMouseDown$: handleMouseDown$,
-    onKeyDown$: handleKeyDown$,
-  };
+    onClick$: props.onClick$,
+  });
 
   if (as === 'a') {
     return (
-      <a {...sharedAttrs} href={props.href}>
+      <a {...hostProps} href={props.href}>
         <Slot />
       </a>
     );
@@ -151,7 +79,7 @@ export const MatMenuTrigger = component$<MatMenuTriggerProps>(props => {
 
   if (as === 'div') {
     return (
-      <div {...sharedAttrs}>
+      <div {...hostProps}>
         <Slot />
       </div>
     );
@@ -159,14 +87,14 @@ export const MatMenuTrigger = component$<MatMenuTriggerProps>(props => {
 
   if (as === 'span') {
     return (
-      <span {...sharedAttrs}>
+      <span {...hostProps}>
         <Slot />
       </span>
     );
   }
 
   return (
-    <button {...sharedAttrs} type={props.type}>
+    <button {...hostProps} type={props.type}>
       <Slot />
     </button>
   );

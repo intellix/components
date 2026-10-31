@@ -119,7 +119,13 @@ export type HostHandler<T extends Event = Event, EL extends Element = Element> =
  */
 export interface HostProps {
   ref?: HostRef;
-  class?: string | ReadonlyArray<string | false | null | undefined>;
+  // Intentionally a MUTABLE array type (matching Qwik's own `ClassList`,
+  // which is itself `string | ... | ClassList[]`, not `ReadonlyArray`) —
+  // spreading `hostProps` directly onto a native element's `class` prop
+  // requires that exact shape; a `ReadonlyArray` here fails to typecheck
+  // against it even though every value this module ever produces is, in
+  // practice, a freshly-built array no one else holds a reference to.
+  class?: string | Array<string | false | null | undefined>;
   style?: string | Record<string, string | number>;
   onClick$?: HostHandler<MouseEvent>;
   onKeyDown$?: HostHandler<KeyboardEvent>;
@@ -147,9 +153,9 @@ function isEventKey(key: string): boolean {
   return EVENT_KEY_RE.test(key);
 }
 
-function toClassArray(value: HostProps['class']): string[] {
+function toClassArray(value: unknown): string[] {
   if (!value) return [];
-  if (Array.isArray(value)) return value.filter(Boolean) as string[];
+  if (Array.isArray(value)) return (value as unknown[]).filter(Boolean) as string[];
   return [value as string];
 }
 
@@ -190,6 +196,19 @@ function mergeStyle(a: HostProps['style'], b: HostProps['style']): HostProps['st
 }
 
 /**
+ * What `mergeHostProps()` accepts for each part: a `HostProps`, or anything
+ * close enough to one — in practice, this project's various components'
+ * OWN `class`/`style` prop types (`string | ReadonlyArray<string>`, from
+ * before `HostProps` existed), which are read-only only because nothing
+ * ever mutated them in place, not because they're a different shape. The
+ * merge always copies into a fresh mutable array/object regardless, so
+ * accepting either costs nothing.
+ */
+export type HostPropsLike = Omit<HostProps, 'class'> & {
+  class?: string | ReadonlyArray<string | false | null | undefined> | HostProps['class'];
+};
+
+/**
  * Combines two or more hooks' `HostProps` into one, ready to spread onto a
  * single element (`<MatButton {...mergeHostProps(trigger, tip)}>` or
  * `<button {...mergeHostProps(trigger, tip)}>`). See this module's doc
@@ -197,7 +216,7 @@ function mergeStyle(a: HostProps['style'], b: HostProps['style']): HostProps['st
  * `HostProps` too, so callers composing a variable number of directives
  * never need to special-case the single-hook case.
  */
-export function mergeHostProps(...parts: Array<HostProps | undefined | null>): HostProps {
+export function mergeHostProps(...parts: Array<HostPropsLike | undefined | null>): HostProps {
   const merged: HostProps = {};
   const classes: string[] = [];
   const refs: Array<HostRef | undefined> = [];
@@ -225,7 +244,20 @@ export function mergeHostProps(...parts: Array<HostProps | undefined | null>): H
         handlerLists.set(key, list);
         continue;
       }
-      if (value !== undefined) merged[key] = value;
+      // A later part's `undefined` never clobbers an earlier part's real
+      // value (the documented precedence rule) — BUT the key must still end
+      // up present on `merged`, even when EVERY part's value for it is
+      // `undefined`. Dropping it outright (`delete merged[key]` / never
+      // assigning it) would mean the final host component sometimes spreads
+      // an object that has this key and sometimes one that simply lacks it,
+      // across renders of the SAME element — confirmed live to leave a
+      // stale attribute on the real DOM after a client re-render flips the
+      // value to `undefined` (`aria-controls` surviving a menu close): this
+      // is the same family of bug `internal/ripple-loader.ts`'s
+      // `rippleLoaderHostAttrs()` doc comment already documents for a plain
+      // (non-merged) spread prop, just triggered here by the key's
+      // PRESENCE changing across renders rather than merely its value.
+      if (value !== undefined || !(key in merged)) merged[key] = value;
     }
   }
 
