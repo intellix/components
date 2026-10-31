@@ -164,6 +164,16 @@
        resolved QRL reading a DIFFERENT handler's flag — a short window
        routinely closed before that resolution finished.
 
+- **`wasRecentKeydown`/`consumeRecentKeydown` promoted to the public API (2026-10-31,
+  directive-hooks remediation).** Previously internal to `focus-origin.ts` (same package, plain
+  relative import). `qwik-material/tooltip`'s `useMatTooltip()` needs the exact same keyboard-vs-
+  pointer heuristic but can't call `useFocusOrigin()` itself — that hook's `useOn()` registrations
+  attach to "the calling component's own host," which isn't necessarily the right element once a
+  directive hook is spread onto a DIFFERENT host component (see `qwik-material/core/host-props.ts`
+  and `qwik-material/tooltip/SYNC.md`). Exporting these two plain, `window`-backed functions lets
+  `useMatTooltip()` reproduce the identical algorithm via ordinary JSX handler props instead,
+  with zero duplication of the actual flag-tracking logic.
+
 ### `LiveAnnouncer`
 
 - Source: `src/cdk/a11y/live-announcer/live-announcer.ts`

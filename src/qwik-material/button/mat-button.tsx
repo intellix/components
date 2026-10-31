@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type JSXOutput} from '@builder.io/qwik';
 import {
   APPEARANCE_CLASSES,
   type MatButtonAppearance,
@@ -11,6 +11,36 @@ import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
+import {callHostHandler, extraHostAttrs, type HostHandler, type HostRef} from '../core/host-props';
+
+/** Props this component already names explicitly — excluded from the generic
+ *  `extraHostAttrs()` passthrough (see that prop's doc comment below). Kept
+ *  as a module-level constant so it isn't rebuilt on every render. */
+const KNOWN_PROPS = new Set<string>([
+  'appearance',
+  'color',
+  'disabled',
+  'disableRipple',
+  'disabledInteractive',
+  'href',
+  'target',
+  'type',
+  'onClick$',
+  'onMouseDown$',
+  'onMouseEnter$',
+  'onMouseLeave$',
+  'onKeyDown$',
+  'onFocusIn$',
+  'onFocusOut$',
+  'ariaLabel',
+  'ariaDescribedBy',
+  'ariaLabelledBy',
+  'aria-describedby',
+  'id',
+  'class',
+  'ref',
+  'hostContent',
+]);
 
 export interface MatButtonProps {
   /** Appearance variant. Default 'text' (or provider's defaultAppearance). */
@@ -36,7 +66,26 @@ export interface MatButtonProps {
    * is only rendered when the caller passes one explicitly.
    */
   type?: 'button' | 'submit' | 'reset';
-  onClick$?: QRL<(e: MouseEvent) => void>;
+  /**
+   * `HostHandler`-shaped (a single QRL, or Qwik's own `QRLEventHandlerMulti`
+   * array form) rather than a plain `QRL` — lets a directive hook's
+   * `hostProps.onClick$` (possibly already composed with ANOTHER directive's
+   * via `mergeHostProps()`) pass straight through here, still wrapped by
+   * this component's own disabled-click guard (`preventDisabledClick$`
+   * below, via `callHostHandler()`).
+   */
+  onClick$?: HostHandler<MouseEvent>;
+  /** Directive-hook passthrough — see `core/host-props.ts`. Forwarded as-is
+   *  onto the rendered host (no internal guard needed, unlike `onClick$`). */
+  onMouseDown$?: HostHandler<MouseEvent>;
+  onMouseEnter$?: HostHandler<MouseEvent>;
+  onMouseLeave$?: HostHandler<MouseEvent>;
+  onKeyDown$?: HostHandler<KeyboardEvent>;
+  onFocusIn$?: HostHandler<FocusEvent>;
+  onFocusOut$?: HostHandler<FocusEvent>;
+  /** Directive-hook passthrough (e.g. `useMatMenuTrigger()`/`useMatTooltip()`
+   *  needing the live element) — forwarded onto the rendered host. */
+  ref?: HostRef;
   ariaLabel?: string;
   ariaDescribedBy?: string;
   ariaLabelledBy?: string;
@@ -57,11 +106,27 @@ export interface MatButtonProps {
    * always the earlier sibling once both exist. A plain Qwik component
    * can't be decorated that way from the outside (there's no "and also
    * render this after everything else already in your template" hook), so
-   * this is the escape hatch. See
-   * `src/qwik-cdk-dev-app/src/routes/mat-badge/example/index.tsx` for the
-   * motivating case (`<button matButton matBadge>`) and button/SYNC.md.
+   * this is the escape hatch — the host-component half of a directive
+   * hook's `content` field (`useMatBadge(...).content`; see
+   * `qwik-material/core/host-props.ts` and `qwik-material/README.md`'s
+   * "Composing directives" section). Named `hostContent`, not
+   * `trailingContent` (the old, badge-specific-workaround name), since any
+   * directive hook's extra content uses this same prop now.
    */
-  trailingContent?: JSXOutput;
+  hostContent?: JSXOutput;
+  /**
+   * Any OTHER attribute a directive hook's `hostProps` sets that this
+   * component has no dedicated named prop for (`aria-haspopup`,
+   * `aria-expanded`, `aria-controls`, …) — spread directly onto the
+   * rendered host via `extraHostAttrs()`. Precedence: this component's OWN
+   * explicitly-named attributes (computed from the props above) always win
+   * for the keys they set; everything else here passes through untouched.
+   * `aria-describedby` is the one exception with its own named prop
+   * (`ariaDescribedBy`) that ALSO merges with an incoming `aria-describedby`
+   * extra (e.g. from `useMatTooltip()`/`useMatBadge()`) — see the
+   * `describedBy` computation below.
+   */
+  [extraAttr: string]: unknown;
 }
 
 const DEFAULTS: MatButtonConfig = {
@@ -113,13 +178,13 @@ export const MatButton = component$<MatButtonProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
-  const preventDisabledClick$ = $((e: MouseEvent) => {
+  const preventDisabledClick$ = $(async (e: MouseEvent, el: Element) => {
     if (props.disabled) {
       e.preventDefault();
       e.stopImmediatePropagation();
       return;
     }
-    if (props.onClick$) props.onClick$(e);
+    await callHostHandler(props.onClick$, e, el);
   });
 
   // Lazy, useOn()-based replacement for the old `useVisibleTask$`-based
@@ -136,9 +201,14 @@ export const MatButton = component$<MatButtonProps>(props => {
     disabled: props.disableRipple || props.disabled,
   });
 
+  // See the `[extraAttr]` prop doc above.
+  const extraAttrs = extraHostAttrs(props as Record<string, unknown>, KNOWN_PROPS);
+  const describedBy = props.ariaDescribedBy ?? (props['aria-describedby'] as string | undefined);
+
   if (isAnchor) {
     return (
       <a
+        ref={props.ref}
         href={props.href}
         target={props.target}
         id={props.id}
@@ -146,9 +216,16 @@ export const MatButton = component$<MatButtonProps>(props => {
         tabIndex={nativelyDisabled ? -1 : undefined}
         aria-disabled={props.disabled ? 'true' : undefined}
         aria-label={props.ariaLabel}
-        aria-describedby={props.ariaDescribedBy}
+        aria-describedby={describedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
+        onMouseDown$={props.onMouseDown$}
+        onMouseEnter$={props.onMouseEnter$}
+        onMouseLeave$={props.onMouseLeave$}
+        onKeyDown$={props.onKeyDown$}
+        onFocusIn$={props.onFocusIn$}
+        onFocusOut$={props.onFocusOut$}
+        {...extraAttrs}
         {...rippleAttrs}
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >
@@ -158,7 +235,7 @@ export const MatButton = component$<MatButtonProps>(props => {
         </span>
         <FocusIndicator />
         <TouchTarget />
-        {props.trailingContent}
+        {props.hostContent}
         {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
       </a>
     );
@@ -166,15 +243,23 @@ export const MatButton = component$<MatButtonProps>(props => {
 
   return (
     <button
+      ref={props.ref}
       type={props.type}
       id={props.id}
       class={classes}
       {...disabledAttr(nativelyDisabled)}
       aria-disabled={props.disabled && disabledInteractive ? 'true' : undefined}
       aria-label={props.ariaLabel}
-      aria-describedby={props.ariaDescribedBy}
+      aria-describedby={describedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
+      onMouseDown$={props.onMouseDown$}
+      onMouseEnter$={props.onMouseEnter$}
+      onMouseLeave$={props.onMouseLeave$}
+      onKeyDown$={props.onKeyDown$}
+      onFocusIn$={props.onFocusIn$}
+      onFocusOut$={props.onFocusOut$}
+      {...extraAttrs}
       {...rippleAttrs}
       mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
     >
@@ -184,7 +269,7 @@ export const MatButton = component$<MatButtonProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
-      {props.trailingContent}
+      {props.hostContent}
       {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
     </button>
   );

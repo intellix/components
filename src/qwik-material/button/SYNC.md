@@ -82,3 +82,44 @@ known props as DOM properties, so `disabled="true"` on a button rendered after l
 `el.disabled = 'true'`, reflected as `disabled=""`, unlike upstream's `disabled="true"`. The
 upper-case key falls through to `setAttribute`, and HTML lower-cases it. Found by the tree docs
 example (leaf toggles appear on expand).
+
+## Directive-hook host support (2026-10-31, directive-hooks remediation)
+
+**Item 15 above (`trailingContent`) is REMOVED, replaced.** `trailingContent` was a one-off escape
+hatch added for exactly one example's exact needs. The real, general mechanism is now
+`qwik-material/core/host-props.ts`'s `HostProps`/`mergeHostProps()` contract ("Composing
+directives" in `qwik-material/README.md`): every directive hook
+(`useMatMenuTrigger`/`useMatTooltip`/`useMatBadge`/the stepper hooks) returns a `HostProps` bag
+meant to be spread directly onto whichever element becomes its host, and `MatButton` (along with
+`MatIconButton`/`MatFabButton`/`MatMiniFabButton`) now accepts that bag generically instead of
+growing one bespoke prop per directive:
+
+- **`ref?: HostRef`** — forwarded onto the rendered `<a>`/`<button>`. Re-added (deviation 12
+  dropped it as unused at the time); `useMatMenuTrigger()`/`useMatTooltip()` both need the live
+  host element.
+- **`onMouseDown$`/`onMouseEnter$`/`onMouseLeave$`/`onKeyDown$`/`onFocusIn$`/`onFocusOut$`**, all
+  `HostHandler`-shaped (a single QRL or Qwik's own `QRLEventHandlerMulti` array form) — forwarded
+  as-is onto the host; Qwik composes an array of handlers for the same event natively, so no
+  internal guard/wrapping is needed for these (`onClick$` is the one exception — see below).
+- **`onClick$` is now `HostHandler<MouseEvent>`, not a plain `QRL`.** `preventDisabledClick$` (the
+  `<a>`-path disabled-click guard) now calls through via `callHostHandler()`
+  (`core/host-props.ts`) instead of invoking `props.onClick$(e)` directly, since that prop may now
+  be an ARRAY of composed handlers (once `mergeHostProps()` has combined two directives' clicks).
+- **`hostContent?: JSXOutput`** — the renamed, generalized `trailingContent`: still rendered as the
+  host's real last child, BEFORE the lazily-inserted ripple span, for the exact reason item 15
+  documented (upstream's directive creates its own appended element eagerly; the ripple span is
+  lazy). Now it's the host-side half of ANY directive hook's `content` field
+  (`useMatBadge(...).content`), not badge-specific.
+- **A generic `[extraAttr: string]: unknown` index signature + `extraHostAttrs()`
+  (`core/host-props.ts`)** — lets a directive add an attribute this component has no dedicated
+  named prop for (`aria-haspopup`/`aria-expanded`/`aria-controls`, from `useMatMenuTrigger()`)
+  without `MatButton` growing a new named prop per directive. Spread FIRST, so this component's
+  own explicitly-computed attributes always win for the keys they already set. The one attribute
+  with its own named prop (`aria-describedby` ← `ariaDescribedBy`) ALSO merges with an incoming
+  `aria-describedby` extra (`props.ariaDescribedBy ?? props['aria-describedby']`) — see
+  `tooltip/SYNC.md`'s and `badge/SYNC.md`'s directive-hook sections for the composing directives
+  that rely on this.
+
+Verified: the full `specs/material-button` suite, `specs/examples`'s `mat-menu`/`mat-tooltip`/
+`mat-badge`/`mat-stepper` examples, and `specs/material-paginator` all stay green across this
+change (nothing in the existing API surface changed shape — only additions).

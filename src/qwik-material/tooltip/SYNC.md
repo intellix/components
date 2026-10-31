@@ -52,14 +52,39 @@ wrapper), so:
 
 renders a single `<button>` — no `<MatTooltip>` element of its own ever appears in the DOM.
 
-**Alternative considered and rejected:** a `useMatTooltip(props)` hook returning spreadable props
-(`{...useMatTooltip({message: '…'})}`) on the consumer's own JSX element. Rejected because Qwik's
-`useOn()` (used for all of hover/focus/touch/wheel, kept lazy per design-doc rule 7) attaches to
-*the calling component's own rendered root* — a hook called from inside the ROUTE's/consumer's
-component would attach its listeners to whatever THAT component renders as a whole, not
-specifically to the one element the hook's caller intends as the trigger, unless that consumer
-component's entire render output IS the trigger element (at which point it's simplest for
-`MatTooltip` to just be that component, i.e. the `as`-prop shape above).
+**UPDATE (2026-10-31, directive-hooks remediation) — superseded.** The note above rejected a
+`useMatTooltip()` hook because `useOn()` attaches to "the calling component's own rendered root,"
+which isn't reliably the right element once a hook is spread onto a DIFFERENT host component
+(`<MatButton {...tip.hostProps}>`). That blocker is gone: `use-mat-tooltip.ts` now implements
+`useMatTooltip(props): {hostProps}` WITHOUT using `useOn()`/`useFocusOrigin()` at all — every
+listener (`mouseenter`/`mouseleave`/`wheel`/`touchstart`/`touchend`/`touchcancel`/`pointerdown`/
+`focusin`/`focusout`) is returned as a plain JSX handler prop in `hostProps`
+(`core/host-props.ts`), which Qwik threads through component layers unambiguously, the same
+contract `class`/`onClick$` already rely on. `<MatTooltip>` is now a thin wrapper around this
+hook (same rendered DOM, same public props — verified by the full `specs/material-tooltip` suite,
+19/19, staying green across the refactor). See `core/host-props.ts` and
+`docs/superpowers/specs/2026-10-31-qwik-material-directive-hooks-design.md` for the full
+rationale, and `use-mat-tooltip.ts`'s own doc comment for exactly which parts of
+`useFocusOrigin()`'s algorithm are reproduced (identically) rather than reused by reference.
+
+```tsx
+const tip = useMatTooltip({message: 'Info about the action', position: 'above'});
+return <MatButton appearance="elevated" {...tip.hostProps}>Action</MatButton>;
+```
+
+**Load-bearing gotcha found porting this:** `<MatTooltip>`'s wrapper passes its OWN `props`
+object straight into `useMatTooltip(props)`, NOT a rebuilt `{message: props.message, ...}`
+literal. `useMatTooltip()`'s internal `useTask$`s `track()` live changes to `message`/`disabled`
+(e.g. the `message-change` scenario's route swapping `message` on a keydown) — `track()` only
+establishes a subscription by reading through Qwik's OWN reactive props proxy; a brand-new plain
+object rebuilt from its fields every render is NOT that proxy, so tracking a field on it is a
+silent no-op (the task runs once on mount and never again). Confirmed live: `message-change`'s
+panel text stayed stuck on the original message forever with the rebuilt-object version, despite
+`<MatTooltip>`'s OWN `props.message` updating correctly every render. `MatTooltipProps` is a
+structural superset of `UseMatTooltipProps`'s fields (identical names/types), so passing `props`
+straight through satisfies the hook's parameter type with no cast — this applies to any FUTURE
+host component wrapping a directive hook that has its own `useTask$`-driven reactivity, not just
+`MatTooltip`.
 
 Props mirror upstream's inputs 1:1 (`message` ← `[matTooltip]`, `position` ←
 `[matTooltipPosition]`, `positionAtOrigin`, `disabled`, `showDelay`, `hideDelay`, `touchGestures`,

@@ -111,6 +111,51 @@ These replace the "Deviations from upstream" previously recorded here:
      digit-squash, because that id's shape embeds the same non-numeric
      `APP_ID` segment (digit-squash alone can't normalize it away).
 
+## Directive hook (2026-10-31, directive-hooks remediation)
+
+`[matBadge]` is one of the directives `docs/superpowers/specs/2026-10-31-qwik-material-directive-hooks-design.md`
+targets — upstream stacks it on the consumer's own element (`<button matButton matBadge>`,
+`<mat-icon matBadge>`), but `<MatBadge as="…">` renders its OWN host (a closed `span`/`div`/
+`button`/`a` enum — item 7 below), so it couldn't be combined with `MatButton`/`MatIcon` without a
+wrapper, or without the `trailingContent` one-off escape hatch those two components grew
+specifically for this (now removed — see `button/SYNC.md`/`icon/SYNC.md`). `use-mat-badge.tsx`
+now holds the directive's actual logic as `useMatBadge(props): {hostProps, content}` —
+`hostProps` (`mat-badge*` classes, `aria-describedby`) spreads onto the host; `content` (the
+`.mat-badge-content` span) is placed as that SAME host's own child via the new `hostContent` prop
+(`MatButton`/`MatIcon`/the icon-button family all accept it now):
+
+```tsx
+const badge = useMatBadge({content: '4'});
+return <MatButton appearance="elevated" {...badge.hostProps} hostContent={badge.content}>Action</MatButton>;
+```
+
+Unlike `useMatMenuTrigger()`/`useMatTooltip()`, this hook needs no `ref`/event listeners at all —
+`[matBadge]` is purely declarative. `isHostInteractive()` (the `description` → `aria-describedby`-
+vs-inline-span decision) moved to the hook's `interactive` prop: upstream derives it from the REAL
+host element's tag/`href`/`tabIndex`, which a hook spread onto an UNKNOWN eventual host can't
+inspect, so the caller (who DOES know what it's rendering) states it explicitly; `<MatBadge>`
+computes it the same way it always did (from its own `as`/`href`/`tabIndex`) and passes it in.
+
+`<MatBadge>` (`mat-badge.tsx`) is now a thin wrapper: calls the hook, `mergeHostProps()`s with its
+own `class`/`id`/`role`/`tabIndex`/`aria-label`/`aria-labelledby`/`onClick$`, renders `badge.content`
+as its last child — same rendered DOM as before, verified by the full `specs/material-badge` suite
+staying green (9/9) across the refactor. `mat-badge/example` (material.angular.dev's `badge-overview`
+docs example) was rewritten to call `useMatBadge()` directly on `<MatButton>`/`<MatIcon>` instead of
+hand-computing the class ladder + content span — see that route's own header comment.
+
+**Confirmed NOT a problem, worth recording:** before writing this, there was real concern (based on
+`mat-badge/example`'s OLD `badgeDecoration()` helper's own doc comment — see that function's removed
+code, or `git log` — about a signal's `.value` read as a plain function argument silently losing
+reactivity once used inside that function, rather than inline in the JSX expression) that
+`useMatBadge({hidden: hidden.value})` might suffer the same fate — i.e. that `hideBadge.hostProps`
+(itself the result of a function call) might not reactively update `.mat-badge-hidden` when
+`hidden.value` toggles. Confirmed LIVE this is NOT the case: the "Hide" button scenario (`mat-badge/
+example`'s own interaction step) correctly adds/removes `.mat-badge-hidden` on click, and the full
+parity spec (`specs/examples`'s `mat-badge/example (interaction 1)`) passes. The earlier bug was
+evidently specific to that OLD helper's own shape, not a general "function-wraps-a-signal-read"
+rule — a hook called fresh every render (the pattern every `use*` directive hook in this port
+follows) reactively updates fine.
+
 ## Remaining deviations from upstream
 
 1. **CDK `AriaDescriber` partially ported** — see item 4 above. No shared

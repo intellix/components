@@ -190,6 +190,28 @@ upstream's source code.
    scenario): unchanged bare-button rendering. Covered by
    `specs/examples/angular-parity.spec.ts`'s `mat-stepper/example`.
 
+   **SUPERSEDED (2026-10-31, directive-hooks remediation).** The `matButton` prop above
+   duplicated `MatButton`'s chrome inline — exactly the kind of workaround
+   `docs/superpowers/specs/2026-10-31-qwik-material-directive-hooks-design.md` replaces.
+   `use-stepper-buttons.ts` now holds the directive's actual logic as
+   `useMatStepperNext()`/`useMatStepperPrevious(): {hostProps}` — spread onto `<MatButton>`
+   directly instead:
+
+   ```tsx
+   const next = useMatStepperNext();
+   return <MatButton {...next.hostProps}>Next</MatButton>;
+   ```
+
+   The `matButton` prop and its inline-chrome-duplicating branch are REMOVED from
+   `MatStepperNext`/`MatStepperPrevious`; both are now thin wrappers around the hooks for the
+   bare (no `matButton`) case. `mat-stepper/example` was rewritten to call the hooks via two small
+   local components (`stepper-nav-buttons.tsx`'s `StepperNextButton`/`StepperPreviousButton`) —
+   NOT inline in the route body, because `useContext(MAT_STEPPER_ACTIONS)` resolves by the actual
+   rendered component tree, and the route itself is an ANCESTOR of `<MatStepper>`, not a
+   descendant (see `use-stepper-buttons.ts`'s own doc comment and `stepper-actions.ts`'s). Full
+   `specs/material-stepper` suite (13 scenarios) and `specs/examples`'s `mat-stepper/example`
+   (including its interaction step) stay green across the refactor.
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/stepper/ 2>/dev/null` → 0 (no

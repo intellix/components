@@ -135,6 +135,56 @@ Qwik's QRL-closure serialization as a plain (non-`children`) prop crossing into 
 (a QRL — unambiguously safe to capture/serialize, used everywhere else in this codebase already)
 turned out to satisfy both constraints above just as well.
 
+## Directive hook (2026-10-31, directive-hooks remediation)
+
+`[matMenuTriggerFor]` is one of the directives `docs/superpowers/specs/2026-10-31-qwik-material-directive-hooks-design.md`
+targets: upstream stacks it on the consumer's own element (`<button matButton
+[matMenuTriggerFor]="menu">`), but `<MatMenuTrigger as="button">` renders its OWN host, so it
+couldn't be combined with `MatButton` without a wrapper element. `use-mat-menu-trigger.ts` now
+holds the directive's actual logic as `useMatMenuTrigger(props): {hostProps, isOpen, open$,
+close$}` — `hostProps` (`core/host-props.ts`'s `HostProps`) is exactly what `[matMenuTriggerFor]`
+contributes to its host (`mat-mdc-menu-trigger` class, `aria-haspopup`/`aria-expanded`/
+`aria-controls`, `ref`, `onClick$`/`onMouseDown$`/`onKeyDown$`) — spread it onto whatever element
+should become the trigger:
+
+```tsx
+const trigger = useMatMenuTrigger({menu});
+return (
+  <>
+    <MatButton {...trigger.hostProps}>Menu</MatButton>
+    <MatMenu />
+  </>
+);
+```
+
+`<MatMenuTrigger>` (`mat-menu-trigger.tsx`) is now a thin wrapper: it calls the hook and
+`mergeHostProps()`s the result with its own `class`/`style`/`id`/`aria-label`/`aria-labelledby`/
+`tabIndex`/`onClick$` props, then spreads onto whichever `as` tag it renders — same rendered DOM
+as before, same public props, verified by the full `specs/material-menu` suite (21/21) staying
+green across the refactor. `mat-menu/example` (the material.angular.dev `menu-overview` docs
+example) was rewritten to use `useMatMenuTrigger()` directly on `<MatButton>` instead of hand-
+copying `MatButton`'s internal markup — see that route's own header comment.
+
+The hook dropped the component's old `onClick$` INPUT prop (upstream's directive has no click
+semantics of its own to forward — that was only ever a passthrough `<MatMenuTrigger>` needed
+because it owned the host itself). A caller wanting an extra click handler on the same element
+composes it via `mergeHostProps({onClick$: myHandler$}, trigger.hostProps)` same as any other
+directive combination; `<MatMenuTrigger onClick$={…}>` still works unchanged (the wrapper does
+this composition itself).
+
+**Found via this refactor, fixed in `core/host-props.ts`, not menu-specific:** the first version
+of `mergeHostProps()` dropped a key from the merged object entirely once every contributing
+part's value for it was `undefined` (`if (value !== undefined) merged[key] = value`). That broke
+`aria-controls` specifically: closing the menu (e.g. the `basic` scenario's `press Enter` step,
+which activates a focused item) flips `isOpen.value` to `false`, so `aria-controls` becomes
+`undefined` on a CLIENT re-render — and a spread prop whose KEY disappears entirely (vs. staying
+present with an `undefined` value, the way a literal object expression like the old inline
+`sharedAttrs` always did) doesn't reliably get removed from the live DOM by Qwik's reconciler;
+confirmed live (`aria-controls="mat-menu-panel-0"` survived every subsequent close). Fixed by
+keeping the key present (`merged[key] = undefined`) whenever ANY part mentions it, even if none
+of them set a defined value — see `host-props.ts`'s `mergeHostProps` doc comment and its
+`host-props.spec.ts` regression test.
+
 ## Intentionally not ported / simplified (see inline doc comments for the "why" on each)
 
 - **No `_directDescendantItems` `QueryList` / live content-query.** `menu-runtime.ts`'s

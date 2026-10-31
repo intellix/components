@@ -1,9 +1,9 @@
-import {component$, Slot, useContext, type QRL} from '@builder.io/qwik';
-import {createIdGenerator} from '@angular-community/qwik-cdk/a11y';
+import {component$, Slot, type QRL} from '@builder.io/qwik';
+import {mergeHostProps} from '../core/host-props';
 import type {MatBadgeColor} from './badge-color';
 import type {MatBadgePosition} from './badge-position';
 import type {MatBadgeSize} from './badge-size';
-import {MAT_BADGE_CONFIG, type MatBadgeConfig} from './badge-config';
+import {useMatBadge} from './use-mat-badge';
 
 /**
  * Props for <MatBadge>. Upstream's [matBadge] directive attaches to the
@@ -13,6 +13,12 @@ import {MAT_BADGE_CONFIG, type MatBadgeConfig} from './badge-config';
  * pattern MatListItem uses) — no extra wrapper elements.
  * See design spec §3.1/§5 rule 4, and badge/SYNC.md for the full deviation
  * list.
+ *
+ * `<MatBadge>` is now a thin wrapper around `useMatBadge()` (see
+ * `use-mat-badge.ts`) for the common case of a badge that doesn't need to
+ * be combined with ANOTHER directive on the same element. When it does
+ * (e.g. a badge on a `MatButton`/`MatIcon`), call `useMatBadge()` directly
+ * — see `qwik-material/README.md`'s "Composing directives" section.
  */
 export interface MatBadgeProps {
   /** Which host tag MatBadge renders. Default 'span'. The parity scenarios
@@ -75,29 +81,12 @@ export interface MatBadgeProps {
   id?: string;
 }
 
-const DEFAULTS: MatBadgeConfig = {
-  position: 'above after',
-  size: 'medium',
-  // `color: 'primary'` is upstream's conceptual default, but per the `color`
-  // prop doc above it never produces a class — so it's intentionally omitted
-  // here; nothing reads `config.color` for rendering.
-  overlap: true,
-};
-
-/**
- * Shared monotonic id generator (qwik-cdk/a11y `_IdGenerator` port), mirroring
- * upstream's root-provided `_IdGenerator` singleton: one counter shared by
- * every `.mat-badge-content` across the app, not request-scoped. See
- * badge/SYNC.md.
- */
-const idGenerator = createIdGenerator();
-
 /**
  * Approximates upstream's `InteractivityChecker.isFocusable(host, {
  * ignoreVisibility: true })` for the concrete host tags MatBadge can render.
- * The real CDK check inspects a live DOM element; MatBadge instead derives
- * the same answer statically from the tag + the props that determine it
- * (there is no live element yet at SSR-render time). See badge/SYNC.md.
+ * See `use-mat-badge.ts`'s `interactive` prop doc — MatBadge (which DOES
+ * know its own `as`/`href`/`tabIndex`) resolves this itself and passes the
+ * result in, rather than the hook guessing.
  */
 function isHostInteractive(
   as: NonNullable<MatBadgeProps['as']>,
@@ -110,124 +99,61 @@ function isHostInteractive(
 }
 
 export const MatBadge = component$<MatBadgeProps>(props => {
-  const config = useContext(MAT_BADGE_CONFIG, DEFAULTS);
   const as = props.as ?? 'span';
-  const position = props.position ?? config.position ?? 'above after';
-  const size = props.size ?? config.size ?? 'medium';
-  const overlap = props.overlap ?? config.overlap ?? true;
-  const disabled = props.disabled ?? false;
-  const hidden = props.hidden ?? false;
 
-  // See the `color` prop doc above: no class unless explicitly provided.
-  const colorClass = props.color ? `mat-badge-${props.color}` : undefined;
+  const badge = useMatBadge({
+    content: props.content,
+    color: props.color,
+    overlap: props.overlap,
+    disabled: props.disabled,
+    position: props.position,
+    description: props.description,
+    size: props.size,
+    hidden: props.hidden,
+    interactive: isHostInteractive(as, props.href, props.tabIndex),
+  });
 
-  const contentStr = props.content == null ? '' : `${props.content}`.trim();
-  const hasBadgeElement = !!contentStr;
-  const isAbove = !position.includes('below');
-  const isAfter = !position.includes('before');
-  const isHidden = hidden || !contentStr;
-
-  const classes = [
-    'mat-badge',
-    colorClass,
-    overlap && 'mat-badge-overlap',
-    isAbove ? 'mat-badge-above' : 'mat-badge-below',
-    isAfter ? 'mat-badge-after' : 'mat-badge-before',
-    `mat-badge-${size}`,
-    isHidden && 'mat-badge-hidden',
-    disabled && 'mat-badge-disabled',
-    props.class,
-  ].filter(Boolean) as string[];
-
-  const interactive = isHostInteractive(as, props.href, props.tabIndex);
-  // aria-describedby is independent of badge content (matches upstream:
-  // `_updateDescription` never checks `_badgeElement`).
-  const describedBy =
-    props.description && interactive ? idGenerator.getId('cdk-describedby-message-') : undefined;
-  // The inline description is appended INTO the badge-content span, so it
-  // only exists when that span exists (matches upstream: the inline node is
-  // created either way, but only ever appended when `_badgeElement` exists —
-  // otherwise it's an orphaned node, invisible either way).
-  const inlineDescription =
-    props.description && !interactive && hasBadgeElement ? props.description : undefined;
-
-  const badgeContentId = hasBadgeElement ? idGenerator.getId('mat-badge-content-') : undefined;
-  const badgeChild = hasBadgeElement && (
-    <span id={badgeContentId} class="mat-badge-content mat-badge-active" aria-hidden="true">
-      {contentStr}
-      {inlineDescription && <span class="cdk-visually-hidden">{inlineDescription}</span>}
-    </span>
-  );
+  const hostProps = mergeHostProps(badge.hostProps, {
+    class: props.class,
+    id: props.id,
+    role: props.role,
+    tabIndex: props.tabIndex,
+    'aria-label': props['aria-label'],
+    'aria-labelledby': props['aria-labelledby'],
+    onClick$: props.onClick$,
+  });
 
   if (as === 'a') {
     return (
-      <a
-        id={props.id}
-        class={classes}
-        href={props.href}
-        role={props.role}
-        tabIndex={props.tabIndex}
-        aria-describedby={describedBy}
-        aria-label={props['aria-label']}
-        aria-labelledby={props['aria-labelledby']}
-        onClick$={props.onClick$}
-      >
+      <a {...hostProps} href={props.href}>
         <Slot />
-        {badgeChild}
+        {badge.content}
       </a>
     );
   }
 
   if (as === 'button') {
     return (
-      <button
-        id={props.id}
-        class={classes}
-        type={props.type}
-        role={props.role}
-        tabIndex={props.tabIndex}
-        aria-describedby={describedBy}
-        aria-label={props['aria-label']}
-        aria-labelledby={props['aria-labelledby']}
-        onClick$={props.onClick$}
-      >
+      <button {...hostProps} type={props.type}>
         <Slot />
-        {badgeChild}
+        {badge.content}
       </button>
     );
   }
 
   if (as === 'div') {
     return (
-      <div
-        id={props.id}
-        class={classes}
-        role={props.role}
-        tabIndex={props.tabIndex}
-        aria-describedby={describedBy}
-        aria-label={props['aria-label']}
-        aria-labelledby={props['aria-labelledby']}
-        onClick$={props.onClick$}
-      >
+      <div {...hostProps}>
         <Slot />
-        {badgeChild}
+        {badge.content}
       </div>
     );
   }
 
   return (
-    <span
-      id={props.id}
-      class={classes}
-      role={props.role}
-      tabIndex={props.tabIndex}
-      aria-describedby={describedBy}
-      aria-label={props['aria-label']}
-      aria-labelledby={props['aria-labelledby']}
-      onClick$={props.onClick$}
-    >
+    <span {...hostProps}>
       <Slot />
-      {badgeChild}
+      {badge.content}
     </span>
   );
 });

@@ -1,5 +1,7 @@
 export {MatTooltip} from './mat-tooltip';
 export type {MatTooltipProps} from './mat-tooltip';
+export {useMatTooltip} from './use-mat-tooltip';
+export type {UseMatTooltipProps, MatTooltipHook} from './use-mat-tooltip';
 export {TooltipPanel} from './tooltip-panel';
 export type {TooltipPanelProps} from './tooltip-panel';
 export type {MatTooltipDefaultOptions} from './mat-tooltip-tokens';

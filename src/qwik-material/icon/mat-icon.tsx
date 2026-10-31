@@ -2,6 +2,24 @@ import {component$, Slot, useContext, type JSXOutput} from '@builder.io/qwik';
 import type {MatIconColor} from './icon-color';
 import {MAT_ICON_CONFIG, MAT_ICON_DEFAULT_FONT_SET_CLASS, type MatIconConfig} from './icon-config';
 import {withIconSvgAttributes} from './icon-svg-attrs';
+import {extraHostAttrs, type HostRef} from '../core/host-props';
+
+/** See `button/mat-button.tsx`'s identical constant doc comment. */
+const KNOWN_PROPS = new Set<string>([
+  'color',
+  'inline',
+  'fontIcon',
+  'fontSet',
+  'svgLiteral',
+  'svgName',
+  'svgNamespace',
+  'aria-hidden',
+  'aria-label',
+  'class',
+  'id',
+  'ref',
+  'hostContent',
+]);
 
 /**
  * Props for <MatIcon>. Renders a <mat-icon> custom element in one of two
@@ -46,18 +64,29 @@ export interface MatIconProps {
   'aria-label'?: string;
   class?: string | ReadonlyArray<string>;
   id?: string;
+  /** Directive-hook passthrough (e.g. a future directive needing the live
+   *  element) — forwarded onto the rendered `<mat-icon>`. See
+   *  `core/host-props.ts`. */
+  ref?: HostRef;
   /**
    * Extra content appended as the host `<mat-icon>`'s LAST child, after
    * the ligature-text `<Slot/>`. Models upstream's directive model, where
    * something like `[matBadge]` attaches to the consumer's own
    * `<mat-icon matBadge>` and appends its own element directly onto that
    * host. A plain Qwik component can't be decorated that way from the
-   * outside, so this is the escape hatch — same rationale as
-   * `MatButtonProps.trailingContent` (qwik-material/button/mat-button.tsx).
-   * Font mode only; SVG mode's `dangerouslySetInnerHTML` branch has no Slot
-   * to append after and no scenario needs it there.
+   * outside, so this is the escape hatch — the host-component half of a
+   * directive hook's `content` field (`useMatBadge(...).content`; see
+   * `qwik-material/core/host-props.ts`). Named `hostContent`, not
+   * `trailingContent` (the old, badge-specific-workaround name), since any
+   * directive hook's extra content uses this same prop now. Font mode
+   * only; SVG mode's `dangerouslySetInnerHTML` branch has no Slot to
+   * append after and no scenario needs it there.
    */
-  trailingContent?: JSXOutput;
+  hostContent?: JSXOutput;
+  /** Any OTHER attribute a directive hook's `hostProps` sets that this
+   *  component has no dedicated named prop for — see
+   *  `button/mat-button.tsx`'s identical `[extraAttr]` doc comment. */
+  [extraAttr: string]: unknown;
 }
 
 const DEFAULTS: MatIconConfig = {};
@@ -110,10 +139,12 @@ export const MatIcon = component$<MatIconProps>(props => {
   ].filter(Boolean) as string[];
 
   const ariaHidden = props['aria-hidden'] ?? 'true';
+  const extraAttrs = extraHostAttrs(props as Record<string, unknown>, KNOWN_PROPS);
 
   if (usingSvg) {
     return (
       <mat-icon
+        ref={props.ref}
         id={props.id}
         class={classes}
         role="img"
@@ -122,6 +153,7 @@ export const MatIcon = component$<MatIconProps>(props => {
         data-mat-icon-type="svg"
         data-mat-icon-name={dataName}
         data-mat-icon-namespace={dataNamespace}
+        {...extraAttrs}
         dangerouslySetInnerHTML={withIconSvgAttributes(props.svgLiteral!)}
       />
     );
@@ -129,6 +161,7 @@ export const MatIcon = component$<MatIconProps>(props => {
 
   return (
     <mat-icon
+      ref={props.ref}
       id={props.id}
       class={classes}
       role="img"
@@ -138,9 +171,10 @@ export const MatIcon = component$<MatIconProps>(props => {
       data-mat-icon-name={dataName}
       data-mat-icon-namespace={dataNamespace}
       fontIcon={fontIcon}
+      {...extraAttrs}
     >
       <Slot />
-      {props.trailingContent}
+      {props.hostContent}
     </mat-icon>
   );
 });

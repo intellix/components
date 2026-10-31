@@ -144,6 +144,30 @@ dev-app (absent on every nav button, every scenario). A hypothetical future cons
 component with a DIFFERENT `aria-label` than the tooltip message would need the full
 `_canBeDescribed` check ported; nothing here exercises that.
 
+### Not refactored onto `useMatTooltip()`/`useMatMenuTrigger()` (2026-10-31, directive-hooks remediation — considered, deliberately deferred)
+
+`docs/superpowers/specs/2026-10-31-qwik-material-directive-hooks-design.md` added
+`useMatTooltip()`, a directive hook returning exactly what `[matTooltip]` contributes as a
+`HostProps` bag — on its face, the general-purpose replacement for `PaginatorNavButton`'s own
+hand-built hover wiring above. Reconsidered and NOT swapped in, for two concrete, no-shortcut-
+available reasons:
+
+1. `useMatTooltip()` ALWAYS computes `aria-describedby` whenever `message` is non-empty — there's
+   no way to suppress it. Every paginator nav button needs the OPPOSITE: NO `aria-describedby`
+   at all, because the message exactly equals the host's own `aria-label` (see "No
+   `aria-describedby` at all" above) — upstream's real `AriaDescriber._canBeDescribed()` check,
+   which this port has never generally ported (nothing else needed it). Using the hook as-is
+   would REGRESS parity by adding an attribute upstream never renders here.
+2. `useMatTooltip()`'s `hostProps` always wires the FULL feature set (wheel-scroll-dismiss, touch
+   gestures, keyboard-focus-show) — `PaginatorNavButton` deliberately wires only real mouse
+   hover/leave (see "Why `PaginatorNavButton` exists" above), a documented, verified-necessary
+   scope cut, not an oversight to "fix" by pulling in more behavior.
+
+Properly reusing the hook here would need `useMatTooltip()` to grow an option suppressing
+`aria-describedby` (the real `_canBeDescribed` check, generalized) — a bigger change than this
+pass's scope, and not needed by anything else yet. `PaginatorNavButton` stays a hand-built
+component; this is a recorded, reasoned deferral, not a missed spot.
+
 ### `mat-ripple-loader-disabled` mirrors upstream's REAL two-branch behavior, not a naive live echo
 
 `MatRippleLoader.setDisabled()` (`src/material/core/private/ripple-loader.ts`) only touches the

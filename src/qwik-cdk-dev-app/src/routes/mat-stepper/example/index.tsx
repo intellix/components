@@ -9,11 +9,8 @@ import {
   useMatFormControl,
 } from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
-import {
-  MatStepper,
-  MatStepperNext,
-  MatStepperPrevious,
-} from '@angular-community/qwik-material/stepper';
+import {MatStepper} from '@angular-community/qwik-material/stepper';
+import {StepperNextButton, StepperPreviousButton} from './stepper-nav-buttons';
 import './stepper-overview-example.css';
 
 // Qwik port of material.angular.dev's `stepper-overview` docs example — see
@@ -21,9 +18,11 @@ import './stepper-overview-example.css';
 // Rendered unmodified by the Angular dev-app at /qwik-parity/mat-stepper/example
 // (src/dev-app/qwik-parity/examples.ts). Host tag mirrors the example's own component selector
 // (`stepper-overview-example`). The Next/Back buttons are `<button matButton matStepperNext>` /
-// `matStepperPrevious>` upstream — two directives stacked on one element — so
-// `<MatStepperNext>`/`<MatStepperPrevious>` are used with the new `matButton` composition prop
-// (see stepper-buttons.tsx's doc comment / SYNC.md).
+// `matStepperPrevious>` upstream — two directives stacked on one element — reproduced here via
+// `useMatStepperNext()`/`useMatStepperPrevious()` spread onto `<MatButton>`
+// (`./stepper-nav-buttons.tsx`), the "directive hooks" pattern
+// (`qwik-material/README.md`'s "Composing directives") that replaced the old `matButton`
+// composition prop `<MatStepperNext>`/`<MatStepperPrevious>` used to carry.
 export default component$(() => {
   const isLinear = useSignal(false);
   const selected = useSignal(0);
@@ -91,7 +90,7 @@ export default component$(() => {
                       }
                     />
                     <div>
-                      <MatStepperNext matButton>Next</MatStepperNext>
+                      <StepperNextButton>Next</StepperNextButton>
                     </div>
                   </MatForm>
                 ),
@@ -121,8 +120,8 @@ export default component$(() => {
                       }
                     />
                     <div>
-                      <MatStepperPrevious matButton>Back</MatStepperPrevious>
-                      <MatStepperNext matButton>Next</MatStepperNext>
+                      <StepperPreviousButton>Back</StepperPreviousButton>
+                      <StepperNextButton>Next</StepperNextButton>
                     </div>
                   </MatForm>
                 ),
@@ -133,7 +132,7 @@ export default component$(() => {
                   <>
                     <p>You are now done.</p>
                     <div>
-                      <MatStepperPrevious matButton>Back</MatStepperPrevious>
+                      <StepperPreviousButton>Back</StepperPreviousButton>
                       <MatButton
                         onClick$={$(() => {
                           selected.value = 0;
