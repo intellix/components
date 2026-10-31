@@ -1,4 +1,4 @@
-import {test} from '@playwright/test';
+import {test, type Page} from '@playwright/test';
 import {expectMaterialParity, type ParityStep} from '../../lib/material-parity.js';
 
 /**
@@ -48,8 +48,57 @@ const EXAMPLES: Record<string, string[]> = {
   'mat-tree': ['example'],
 };
 
+const overlayRoot = '.cdk-overlay-container';
+
+/** Clicks the `autocomplete-simple` example's input, opening its (single-root, inline) panel. */
+const openAutocomplete: ParityStep = {
+  name: 'click input (open)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] input').click();
+    await page.waitForTimeout(150);
+  },
+};
+
+/** Clicks the `snack-bar-overview` example's trigger, opening the snack bar. Mirrors
+ *  specs/material-snack-bar/angular-parity.spec.ts's `open()`/`settleClick()`. */
+const openSnackBar: ParityStep = {
+  name: 'click "Show snack-bar"',
+  run: async (page: Page) => {
+    await page
+      .locator('[data-parity-root]')
+      .getByRole('button', {name: 'Show snack-bar', exact: true})
+      .click();
+    await page.waitForTimeout(50);
+    await page.waitForFunction(
+      () => {
+        const containers = document.querySelectorAll('.mat-mdc-snack-bar-container');
+        return containers.length === 1 && !containers[0].querySelector('[aria-hidden]');
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
+/** Clicks the `bottom-sheet-overview` example's trigger, opening the bottom sheet. Mirrors
+ *  specs/material-bottom-sheet/angular-parity.spec.ts's `clickTrigger()`. */
+const openBottomSheet: ParityStep = {
+  name: 'click "Open file"',
+  run: async (page: Page) => {
+    await page
+      .locator('[data-parity-root]')
+      .getByRole('button', {name: 'Open file', exact: true})
+      .click();
+    await page.waitForSelector('mat-bottom-sheet-container', {state: 'attached', timeout: 10_000});
+  },
+};
+
 /** Interactions per `<component>/<route>`, added alongside each Qwik port as needed. */
-const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {};
+const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
+  'mat-autocomplete/example': [{steps: [openAutocomplete]}],
+  'mat-snack-bar/example': [{steps: [openSnackBar], rootSelector: overlayRoot}],
+  'mat-bottom-sheet/example': [{steps: [openBottomSheet], rootSelector: overlayRoot}],
+};
 
 test.describe('material.angular.dev examples — Angular DOM parity', () => {
   for (const [component, routes] of Object.entries(EXAMPLES)) {

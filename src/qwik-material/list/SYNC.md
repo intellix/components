@@ -85,6 +85,12 @@ override of the inferred count) since there's no naming conflict with it.
 
 ## Deviations from upstream
 
+0. **`MatListItemTitle`/`MatListItemLine` gained an `as?: 'div' | 'span'` prop (2026-10-31,
+   examples port).** Both directives (`[matListItemTitle]`/`[matListItemLine]`) attach to
+   whatever element the consumer writes; `MatListItemAvatar`/`MatListItemIcon` already supported
+   this polymorphic-host pattern but these two were hardcoded to `<div>`. Needed to port
+   material.angular.dev's `bottom-sheet-overview` docs example verbatim (`<span
+   matListItemTitle>`). Purely additive, default unchanged.
 1. **Ripple system removed.** Upstream `MatListItemBase` wires up
    `RippleRenderer` + `MAT_RIPPLE_GLOBAL_OPTIONS` + `RippleTarget` for
    interactive items. No scenario in this component's
