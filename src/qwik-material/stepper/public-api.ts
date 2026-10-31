@@ -5,5 +5,11 @@
 export {MatStepper, type MatStepDef, type MatStepperProps} from './mat-stepper';
 export {MatStepperNext, type MatStepperNextProps} from './stepper-buttons';
 export {MatStepperPrevious, type MatStepperPreviousProps} from './stepper-buttons';
+export {useMatStepperNext, useMatStepperPrevious} from './use-stepper-buttons';
+export type {
+  UseMatStepperNextProps,
+  UseMatStepperPreviousProps,
+  MatStepperButtonHook,
+} from './use-stepper-buttons';
 export {MAT_STEPPER_ACTIONS, type MatStepperActions} from './stepper-actions';
 export {useRequiredControl, type RequiredControlApi} from './step-control';
