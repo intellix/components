@@ -23,6 +23,7 @@ ng_project(
         "//src/cdk/stepper",
         "//src/cdk/table",
         "//src/cdk/tree",
+        "//src/components-examples/private",
         "//src/material/autocomplete",
         "//src/material/badge",
         "//src/material/bottom-sheet",

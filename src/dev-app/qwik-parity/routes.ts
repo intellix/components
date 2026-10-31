@@ -35,6 +35,7 @@ import {TABLE_SCENARIOS} from './table';
 import {TREE_SCENARIOS} from './tree';
 import {TIMEPICKER_SCENARIOS} from './timepicker';
 import {DATEPICKER_SCENARIOS} from './datepicker';
+import {EXAMPLE_ROUTES} from './examples';
 
 /** Keys match the qwik dev-app route segments: /qwik-parity/<key>/<scenario>. */
 const SCENARIOS: Record<string, Record<string, Type<unknown>>> = {
@@ -75,10 +76,13 @@ const SCENARIOS: Record<string, Record<string, Type<unknown>>> = {
   'mat-datepicker': DATEPICKER_SCENARIOS,
 };
 
-export const QWIK_PARITY_ROUTES: Routes = Object.entries(SCENARIOS).flatMap(
-  ([component, scenarios]) =>
+export const QWIK_PARITY_ROUTES: Routes = [
+  ...Object.entries(SCENARIOS).flatMap(([component, scenarios]) =>
     Object.entries(scenarios).map(([scenario, cmp]) => ({
       path: `${component}/${scenario}`,
       component: cmp,
     })),
-);
+  ),
+  // Each component's headline docs example — see examples.ts.
+  ...EXAMPLE_ROUTES,
+];
