@@ -41,12 +41,44 @@ its real upstream source (`src/components-examples/material/<component>/<example
   optional/conditional child. `MatButton` itself has no scenario needing a leading icon, so the
   prop was simply dropped there — `MatFabButton`/`MatMiniFabButton` kept it (see below); neither
   has a `trailingContent` prop, so they never hit this combination.
+- **Reading a signal's `.value` as a plain function PARAMETER, then using the function's return
+  value in a JSX prop, silently drops reactivity** — even though the function visibly returns
+  the fresh value on every re-render. Found while wiring `badge-overview`'s "Hide" button: a
+  module-level `badgeDecoration({…, hidden: hidden.value})` helper's returned `class` array was
+  passed to `<MatButton class={decoration.class}>`. Clicking "Hide" correctly flipped the
+  `hidden` signal and re-ran the render function (confirmed via logging: the helper's return
+  value visibly included `mat-badge-hidden` on the next render) — but the live DOM class never
+  changed. Replacing it with the class array built INLINE in the JSX attribute, reading
+  `hidden.value` directly in that same expression (`class={[...base, hidden.value &&
+  'mat-badge-hidden'].filter(Boolean)}` on `<MatButton>` itself), fixed it immediately, with no
+  other change. Qwik's optimizer appears to decide whether a JSX prop expression gets a reactive
+  getter by statically scanning THAT expression's own syntax for a `.value` read — a `.value`
+  read one level removed (inside a plain function the expression merely calls) doesn't count,
+  even though nothing about calling conventions normally matters for correctness in plain JS.
+  See `mat-badge/example/index.tsx`'s header comment and `badgeDecoration()`'s doc comment for
+  the applied fix. Not root-caused inside Qwik's optimizer itself; flagging here as a trap for
+  any future component that factors signal-derived JSX prop values into a helper function.
 
 ## Resolved by a small qwik-material addition
 
 These were small enough to fix directly in qwik-material (see each component's own SYNC.md
 for the full writeup) rather than leave as a gap:
 
+- **`MatButton`/`MatIcon` couldn't be decorated by another host-attaching directive.**
+  `badge-overview`'s `<button matButton matBadge>` and `<mat-icon matBadge>` attach `[matBadge]`
+  directly onto an existing component's own host element and append `.mat-badge-content` as its
+  last child — something no Qwik component's `as`-prop pattern (`<MatBadge as="…">`, closed to
+  `span|div|button|a`) can do from the outside, since `<MatButton>`/`<MatIcon>` own their entire
+  rendered subtree. Added a `trailingContent?: JSXOutput` prop to both (button/SYNC.md item 15,
+  icon/SYNC.md item 15): extra content appended as the host's real last child, after everything
+  the component itself renders — and specifically BEFORE the lazily-inserted ripple span on
+  `MatButton` (upstream's directive creates its badge span eagerly, well before any interaction,
+  while the ripple span only ever appears lazily on first interaction, so the badge span is
+  always the earlier sibling once both exist in the real DOM). The route
+  (`src/qwik-cdk-dev-app/src/routes/mat-badge/example/index.tsx`) computes `MatBadge`'s class
+  ladder + content span manually for just the features this example uses (content, position,
+  hidden) and passes them through `trailingContent` — not a general badge-on-anything API, just
+  enough to reproduce this one example's exact DOM.
 - **`MatButton`'s `<a>` host forwarded no native anchor attribute beyond `href`.**
   `button-overview` has `<a matButton href target="_blank">` several times. Added
   `target?: string` (button/SYNC.md item 14). Other anchor attributes (`rel`, `download`, …)

@@ -62,6 +62,7 @@ deviations #7 and new #14 below:
 12. **`aria-hidden='true'` default via prop merge** (`props['aria-hidden'] ?? 'true'`) instead of upstream's constructor-time `setAttribute`.
 13. **`aria-label` prop added to `MatIconProps`.** User-adjudicated during Task 9: spec §7.2's `aria-labeled/` route demonstrates `<MatIcon aria-label="Home">` for icons used as labeled controls, but §2.3's original prop list did not declare `aria-label`. Extension forwards `aria-label={props['aria-label']}` on both JSX branches so labeled icons carry the a11y attribute in the emitted DOM.
 14. **`_setSvgAttributes` reproduced via string surgery, not DOM mutation.** Upstream calls `svg.setAttribute('fit', '')` / `'height', '100%'` / `'width', '100%'` / `'preserveAspectRatio', 'xMidYMid meet'` / `'focusable', 'false'` on the live `SVGElement` it parsed from the registered literal, on top of whatever the literal already carries (`viewBox`, `aria-hidden`, …). Since `svgLiteral` is set via `dangerouslySetInnerHTML` (no live element to mutate, and it must behave identically at SSR and in the browser), `icon-svg-attrs.ts`'s `withIconSvgAttributes()` inserts the same 5 attributes into the opening `<svg>` tag's markup instead, overwriting any pre-existing occurrence of one of them and leaving every other attribute untouched. `IconOptions.viewBox` (upstream's optional override, tied to the now-omitted registry) is not reproduced — the literal's own `viewBox` passes through unchanged.
+15. **`trailingContent` prop added (2026-10-31, docs-example port).** `badge-overview` (material.angular.dev's headline badge example, ported to `src/qwik-cdk-dev-app/src/routes/mat-badge/example/`) has `<mat-icon matBadge="15">home</mat-icon>` — upstream's `[matBadge]` directive attaches to the `<mat-icon>` host directly and appends its own `.mat-badge-content` span as that host's last child. A plain `<MatIcon>` can't be decorated like that from the outside (font mode's only content hook is the ligature-text `<Slot/>`), so `trailingContent?: JSXOutput` renders after it, as the host's real last child — mirrors `MatButtonProps.trailingContent` (same motivating case, same rationale, see button/SYNC.md). Font mode only.
 
 ## Qwik dev-app wiring
 
@@ -70,8 +71,10 @@ scenario in `<QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-ou
 mirroring the Angular dev-app's effective default (`DevAppLayout.toggleM3` →
 `MatIconRegistry.setDefaultFontSetClass('material-symbols-outlined')`,
 `src/dev-app/dev-app/dev-app-layout.ts`, in effect by default since
-`m3Enabled` defaults to `true`). No other route tree uses `<MatIcon>` yet, so
-this is scoped to `mat-icon/` rather than the dev-app root.
+`m3Enabled` defaults to `true`). `mat-stepper/layout.tsx`, `mat-button/layout.tsx`,
+`mat-toolbar/layout.tsx`, and `mat-badge/layout.tsx` apply the identical
+provider for their own `<MatIcon>`-using scenarios (stepper step icons; the
+`button-overview`/`toolbar-overview`/`badge-overview` docs examples).
 
 `src/qwik-cdk-dev-app/src/routes/mat-icon/svg-literal/index.tsx` now passes
 `svgName="home"` to `<MatIcon svgLiteral={HOME_SVG} />`. This is a scenario
