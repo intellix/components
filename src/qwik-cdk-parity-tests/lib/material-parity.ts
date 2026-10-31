@@ -144,6 +144,22 @@ const CONSUMER_SELECTOR_ATTRS = [
   'matdatepickerapply',
   'matdaterangepickercancel',
   'matdaterangepickerapply',
+  // `mattooltip`/`cdkfocusinitial`: same category, surfaced by the verbatim material.angular.dev
+  // docs examples (src/dev-app/qwik-parity/examples.ts) — unlike every project-authored Angular
+  // mirror scenario elsewhere, which always binds a value-carrying directive input with
+  // `[prop]="…"` specifically to avoid this echo, the real upstream `tooltip-overview`/
+  // `dialog-overview` examples write `matTooltip="…"`/`cdkFocusInitial` as bare template
+  // attributes, so Angular echoes them onto the host verbatim. Neither has a corresponding
+  // `[attr.*]` host binding in its real upstream directive (`tooltip.ts`'s `MatTooltip`;
+  // `@angular/cdk/a11y`'s `CdkFocusInitial`) — confirmed against both sources.
+  'mattooltip',
+  'cdkfocusinitial',
+  // `matnativecontrol`: the `select[matNativeControl]` selector `MatInput` also matches (see
+  // `src/material/input/input.ts`) — same consumer-selector category as `matinput` above,
+  // surfaced by the verbatim `select-overview` docs example's `<select matNativeControl
+  // required>` (qwik-cdk-dev-app's `mat-select/example` route implements this card with its own
+  // small local control rather than teaching `qwik-material/input` a new host-element kind).
+  'matnativecontrol',
 ];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [

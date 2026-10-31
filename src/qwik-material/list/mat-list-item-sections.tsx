@@ -85,14 +85,33 @@ export const MatListItemIcon = component$<MatListItemIconProps>(props => {
   );
 });
 
+export interface MatListItemTitleProps extends MatListItemSectionProps {
+  /** Which host tag to render. Default `'div'`; `'span'` matches the real `material.angular.dev`
+   *  `bottom-sheet-overview` docs example's `<span matListItemTitle>` — see
+   *  `qwik-cdk-dev-app`'s `mat-bottom-sheet/example` route. */
+  as?: 'div' | 'span';
+}
+
+export interface MatListItemLineProps extends MatListItemSectionProps {
+  /** Which host tag to render. Default `'div'`. See {@link MatListItemTitleProps.as}. */
+  as?: 'div' | 'span';
+}
+
 /**
  * Primary title text. Only one title per list item (upstream constraint —
  * no per-item enforcement in the port; user responsibility).
  */
-export const MatListItemTitle = component$<MatListItemSectionProps>(props => {
+export const MatListItemTitle = component$<MatListItemTitleProps>(props => {
   const classes = ['mat-mdc-list-item-title', 'mdc-list-item__primary-text', props.class].filter(
     Boolean,
   ) as string[];
+  if (props.as === 'span') {
+    return (
+      <span id={props.id} class={classes} style={props.style}>
+        <Slot />
+      </span>
+    );
+  }
   return (
     <div id={props.id} class={classes} style={props.style}>
       <Slot />
@@ -104,10 +123,17 @@ export const MatListItemTitle = component$<MatListItemSectionProps>(props => {
  * Secondary line text. Up to two per item (title + 2 lines = upstream's
  * 3-line maximum).
  */
-export const MatListItemLine = component$<MatListItemSectionProps>(props => {
+export const MatListItemLine = component$<MatListItemLineProps>(props => {
   const classes = ['mat-mdc-list-item-line', 'mdc-list-item__secondary-text', props.class].filter(
     Boolean,
   ) as string[];
+  if (props.as === 'span') {
+    return (
+      <span id={props.id} class={classes} style={props.style}>
+        <Slot />
+      </span>
+    );
+  }
   return (
     <div id={props.id} class={classes} style={props.style}>
       <Slot />

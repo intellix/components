@@ -1,0 +1,13 @@
+/*
+ * Copied verbatim from src/components-examples/material/input/input-overview/
+ * input-overview-example.css.
+ */
+.example-form {
+  min-width: 150px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.example-full-width {
+  width: 100%;
+}

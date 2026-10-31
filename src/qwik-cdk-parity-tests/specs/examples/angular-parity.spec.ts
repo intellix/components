@@ -82,10 +82,157 @@ const clickParentCheckbox: ParityStep = {
   },
 };
 
+const overlayRoot = '.cdk-overlay-container';
+
+/** Clicks the `autocomplete-simple` example's input, opening its (single-root, inline) panel. */
+const openAutocomplete: ParityStep = {
+  name: 'click input (open)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] input').click();
+    await page.waitForTimeout(150);
+  },
+};
+
+/** Clicks the `snack-bar-overview` example's trigger, opening the snack bar. Mirrors
+ *  specs/material-snack-bar/angular-parity.spec.ts's `open()`/`settleClick()`. */
+const openSnackBar: ParityStep = {
+  name: 'click "Show snack-bar"',
+  run: async (page: Page) => {
+    await page
+      .locator('[data-parity-root]')
+      .getByRole('button', {name: 'Show snack-bar', exact: true})
+      .click();
+    await page.waitForTimeout(50);
+    await page.waitForFunction(
+      () => {
+        const containers = document.querySelectorAll('.mat-mdc-snack-bar-container');
+        return containers.length === 1 && !containers[0].querySelector('[aria-hidden]');
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
+/** Clicks the `bottom-sheet-overview` example's trigger, opening the bottom sheet. Mirrors
+ *  specs/material-bottom-sheet/angular-parity.spec.ts's `clickTrigger()`. */
+const openBottomSheet: ParityStep = {
+  name: 'click "Open file"',
+  run: async (page: Page) => {
+    await page
+      .locator('[data-parity-root]')
+      .getByRole('button', {name: 'Open file', exact: true})
+      .click();
+    await page.waitForSelector('mat-bottom-sheet-container', {state: 'attached', timeout: 10_000});
+  },
+};
+
+/**
+ * Clicks the `menu-overview` example's trigger and waits for the panel to attach, with none of
+ * them mid-animation. Mirrors specs/material-menu/angular-parity.spec.ts's `waitForPanelCount`.
+ */
+const openMenuStep: ParityStep = {
+  name: 'click trigger (open)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] button').click();
+    await page.waitForFunction(
+      () => {
+        const panels = document.querySelectorAll('.mat-mdc-menu-panel');
+        return (
+          panels.length === 1 &&
+          Array.from(panels).every(p => !p.classList.contains('mat-menu-panel-animating'))
+        );
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
+/**
+ * Hovers the `tooltip-overview` example's trigger and waits for exactly one shown pane. Mirrors
+ * specs/material-tooltip/angular-parity.spec.ts's `hover()`/`waitForTooltipShown`.
+ */
+const hoverTooltip: ParityStep = {
+  name: 'hover trigger (show)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] button').hover();
+    await page.waitForFunction(
+      () => {
+        const panes = document.querySelectorAll('.cdk-overlay-pane.mat-mdc-tooltip-panel');
+        return panes.length === 1 && !!panes[0].querySelector('.mat-mdc-tooltip-show');
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
+/**
+ * Clicks the `select-overview` example's (modern) `<mat-select>` trigger and waits for its panel
+ * — like `mat-autocomplete`, `MatSelect`'s popover lands inline inside `[data-parity-root]`, not
+ * `.cdk-overlay-container` (see specs/material-select/angular-parity.spec.ts's own header), so
+ * one default-root test is enough. The native `<select>` card has no comparable DOM-visible
+ * panel (an OS-level control) and isn't exercised here.
+ */
+const openSelect: ParityStep = {
+  name: 'click trigger (open)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] mat-select').click();
+    await page.waitForFunction(
+      () => {
+        const panels = document.querySelectorAll('.mat-mdc-select-panel');
+        return panels.length === 1 && !panels[0].classList.contains('mat-select-panel-exit');
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
+/**
+ * Clicks the `dialog-overview` example's "Pick one" trigger and waits for the dialog to settle
+ * open. Mirrors specs/material-dialog/angular-parity.spec.ts's `clickTrigger()`/`settled`.
+ */
+const openDialog: ParityStep = {
+  name: 'click "Pick one" (open)',
+  run: async (page: Page) => {
+    await page
+      .locator('[data-parity-root]')
+      .getByRole('button', {name: 'Pick one', exact: true})
+      .click();
+    await page.waitForSelector('mat-dialog-container', {state: 'attached', timeout: 10_000});
+    await page
+      .waitForFunction(
+        () => {
+          const el = document.querySelector('mat-dialog-container');
+          return (
+            !!el &&
+            el.classList.contains('mdc-dialog--open') &&
+            !el.classList.contains('mdc-dialog--opening')
+          );
+        },
+        undefined,
+        {timeout: 10_000},
+      )
+      .catch(() => {});
+  },
+};
+
 /** Interactions per `<component>/<route>`, added alongside each Qwik port as needed. */
 const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
   'mat-badge/example': [{steps: [clickHideButton]}],
   'mat-checkbox/example': [{steps: [clickParentCheckbox]}],
+  'mat-autocomplete/example': [{steps: [openAutocomplete]}],
+  'mat-select/example': [{steps: [openSelect]}],
+  'mat-dialog/example': [{steps: [openDialog], rootSelector: overlayRoot}],
+  'mat-snack-bar/example': [{steps: [openSnackBar], rootSelector: overlayRoot}],
+  'mat-bottom-sheet/example': [{steps: [openBottomSheet], rootSelector: overlayRoot}],
+  'mat-menu/example': [{steps: [openMenuStep]}, {steps: [openMenuStep], rootSelector: overlayRoot}],
+  'mat-tooltip/example': [
+    {steps: [hoverTooltip]},
+    {steps: [hoverTooltip], rootSelector: overlayRoot},
+  ],
 };
 
 /**

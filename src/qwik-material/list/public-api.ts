@@ -27,7 +27,9 @@ export {
   MatListItemIcon,
   type MatListItemIconProps,
   MatListItemTitle,
+  type MatListItemTitleProps,
   MatListItemLine,
+  type MatListItemLineProps,
   MatListItemMeta,
   type MatListItemSectionProps,
 } from './mat-list-item-sections';
