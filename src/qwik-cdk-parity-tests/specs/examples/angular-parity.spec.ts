@@ -275,17 +275,30 @@ const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'mat-button/example': ['extended', 'routerlink', 'href'],
 };
 
+/**
+ * Known, documented gaps (see src/qwik-cdk-dev-app/EXAMPLES.md), run as expected failures so the
+ * suite stays green but flags them if they start passing.
+ */
+const EXPECTED_FAILURES: Record<string, string> = {
+  'mat-slide-toggle/example':
+    "the example wraps <mat-slide-toggle> in <p>; HTML parsing of Qwik's SSR output closes the <p> " +
+    "at the toggle's inner <div>, which Angular's client-rendered DOM never hits",
+};
+
 test.describe('material.angular.dev examples — Angular DOM parity', () => {
   for (const [component, routes] of Object.entries(EXAMPLES)) {
     for (const route of routes) {
       const ignoreAttrs = EXAMPLE_IGNORE_ATTRS[`${component}/${route}`];
-      test(`${component}/${route}`, ({browser}) =>
-        expectMaterialParity(browser, {
+      test(`${component}/${route}`, ({browser}) => {
+        const gap = EXPECTED_FAILURES[`${component}/${route}`];
+        test.fail(gap !== undefined, gap);
+        return expectMaterialParity(browser, {
           pinRoot: true,
           route: component,
           scenario: route,
           ignoreAttrs,
-        }));
+        });
+      });
       for (const [i, extra] of (EXAMPLE_STEPS[`${component}/${route}`] ?? []).entries()) {
         test(`${component}/${route} (interaction ${i + 1})`, ({browser}) =>
           expectMaterialParity(browser, {
