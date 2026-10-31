@@ -22,3 +22,18 @@ its real upstream source (`src/components-examples/material/<component>/<example
   upstream's own subtask array is a fixed 3 items — fixed it. Not root-caused further
   (plausibly a keyed-list child-prop-update gap); flagging here since it could bite a FUTURE
   port that has an actually-dynamic list of controlled form components.
+
+## Open gaps (ported around, not fixed)
+
+- **`MatCardAvatar` only renders an `<img>`; `card-overview`'s avatar is a plain
+  `<div mat-card-avatar>` (a CSS `background-image` div, no `<img>` at all).** Already a known,
+  documented deviation (card/SYNC.md item 1: "Image and avatar are components that render
+  `<img>`, not directives applied to a consumer-supplied element.") — not something this batch
+  should fix, since the real one-off here isn't "the port's `<img>` is wrong" but "this
+  particular example doesn't use an `<img>` at all." Ported by writing the `<div>` directly in
+  the route with the same `mat-mdc-card-avatar` class the `[mat-card-avatar]` directive's host
+  binding would add (the `mat-card-avatar` selector attribute itself is a
+  `CONSUMER_SELECTOR_ATTRS` entry the parity harness ignores either way, so it's omitted).
+  Fixing this properly — a `<MatCardAvatar>`/`<MatCardImage>` variant that renders a plain host
+  Slot instead of a hardcoded `<img>` — is a real but separate card-port task, not scoped to
+  this batch.
