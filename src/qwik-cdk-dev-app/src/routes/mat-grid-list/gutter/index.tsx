@@ -13,6 +13,8 @@ export default component$(() => (
         <MatGridTile>Gutter 6</MatGridTile>
       </MatGridList>
     </div>
+    {/* See ../basic/index.tsx's header comment. */}
+    <style>{`mat-grid-tile { background: lightblue; }`}</style>
     <main data-scenario-ready>ready</main>
   </>
 ));

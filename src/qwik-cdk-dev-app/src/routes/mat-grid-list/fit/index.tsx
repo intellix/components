@@ -22,7 +22,7 @@ export default component$(() => (
          parses it. A descendant selector sidesteps the escaping entirely
          and is equivalent here (.fit-grid is .fit-host's only descendant
          with that class). */}
-    <style>{`.fit-host .fit-grid { height: 100%; }`}</style>
+    <style>{`.fit-host .fit-grid { height: 100%; } mat-grid-tile { background: lightblue; }`}</style>
     <main data-scenario-ready>ready</main>
   </>
 ));

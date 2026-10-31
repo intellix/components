@@ -539,3 +539,12 @@ established pattern `mat-badge/example` already uses — rather than `<MatBadge 
 since nothing here needs a SECOND directive-free wrapper component. No spec changes needed: the
 Qwik-only specs' `button.mat-badge` selector still matches (`MatButton`'s default host, no
 `href`, is a `<button>`, and `badge.hostProps.class` still contributes `mat-badge`).
+
+### mat-grid-list — all 7 scenarios
+
+`<mat-grid-tile>` has no default background, so every scenario's tiles were just bare text
+floating with no visible tile boundary — matches upstream too: `grid-list-overview-example.css`
+sets `mat-grid-tile { background: lightblue; }` for the docs example's tiles. Added the identical
+rule via a plain, unscoped `<style>` tag to all 7 scenarios (both apps) — the same
+tag-in-template approach the `fit` scenario already used for its own `.fit-host` CSS — so tiles
+now read as actual tiles instead of loose text in a grid of invisible cells.

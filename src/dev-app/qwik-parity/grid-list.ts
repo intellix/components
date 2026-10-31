@@ -16,6 +16,14 @@ import {MatGridListModule} from '@angular/material/grid-list';
 // `style` attribute values are expected to differ. material-parity.ts's own
 // snapshot (not structural-diff.ts's `snapshot`, which does ignore `style`)
 // does not exclude the `style` attribute, so it is compared as a raw string.
+//
+// `<mat-grid-tile>` has no default background, so an unstyled tile is just
+// bare text floating with no visible tile boundary — matches upstream too
+// (grid-list-overview-example.css: `mat-grid-tile { background: lightblue;
+// }`). Every scenario below gets that same rule via a plain `<style>` tag
+// (unscoped, like the `fit` scenario below already does for its own CSS) so
+// tiles read as actual tiles. See EXAMPLES.md "Scenario visual cleanup" /
+// mat-grid-list.
 
 @Component({
   template: `
@@ -31,6 +39,11 @@ import {MatGridListModule} from '@angular/material/grid-list';
         <mat-grid-tile>Tile 8</mat-grid-tile>
       </mat-grid-list>
     </div>
+    <style>
+      mat-grid-tile {
+        background: lightblue;
+      }
+    </style>
   `,
   imports: [MatGridListModule],
 })
@@ -56,6 +69,9 @@ export class GridListBasic {}
       .fit-host > .fit-grid {
         height: 100%;
       }
+      mat-grid-tile {
+        background: lightblue;
+      }
     </style>
   `,
   imports: [MatGridListModule],
@@ -74,6 +90,11 @@ export class GridListFit {}
         <mat-grid-tile>Gutter 6</mat-grid-tile>
       </mat-grid-list>
     </div>
+    <style>
+      mat-grid-tile {
+        background: lightblue;
+      }
+    </style>
   `,
   imports: [MatGridListModule],
 })
@@ -91,6 +112,11 @@ export class GridListGutter {}
         <mat-grid-tile>Ratio 6</mat-grid-tile>
       </mat-grid-list>
     </div>
+    <style>
+      mat-grid-tile {
+        background: lightblue;
+      }
+    </style>
   `,
   imports: [MatGridListModule],
 })
@@ -105,6 +131,11 @@ export class GridListRatio {}
         <mat-grid-tile>Ratio fill 2</mat-grid-tile>
       </mat-grid-list>
     </div>
+    <style>
+      mat-grid-tile {
+        background: lightblue;
+      }
+    </style>
   `,
   imports: [MatGridListModule],
 })
@@ -123,6 +154,11 @@ export class GridListRatioSpanning {}
         <mat-grid-tile>Fill 6</mat-grid-tile>
       </mat-grid-list>
     </div>
+    <style>
+      mat-grid-tile {
+        background: lightblue;
+      }
+    </style>
   `,
   imports: [MatGridListModule],
 })
@@ -137,6 +173,11 @@ export class GridListSpanning {}
         <mat-grid-tile role="listitem" aria-label="Photo 3">Photo 3</mat-grid-tile>
       </mat-grid-list>
     </div>
+    <style>
+      mat-grid-tile {
+        background: lightblue;
+      }
+    </style>
   `,
   imports: [MatGridListModule],
 })

@@ -15,6 +15,11 @@ export default component$(() => (
         <MatGridTile>Tile 8</MatGridTile>
       </MatGridList>
     </div>
+    {/* `<mat-grid-tile>` has no default background — matches upstream
+         (grid-list-overview-example.css). Mirrors the Angular mirror's
+         identical <style> tag. See EXAMPLES.md "Scenario visual cleanup" /
+         mat-grid-list. */}
+    <style>{`mat-grid-tile { background: lightblue; }`}</style>
     <main data-scenario-ready>ready</main>
   </>
 ));
