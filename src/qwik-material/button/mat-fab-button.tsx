@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type JSXOutput, type QRL} from '@builder.io/qwik';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
@@ -28,6 +28,20 @@ export interface MatFabProps {
   ariaLabelledBy?: string;
   id?: string;
   class?: string | ReadonlyArray<string>;
+  /**
+   * Leading icon — pass a `<MatIcon>` (or any icon element). Rendered as a
+   * direct child BEFORE `.mdc-button__label`, not inside it with the rest
+   * of `<Slot/>`. Mirrors upstream's `button.html`: it projects
+   * `mat-icon`/`.material-icons`/`[matButtonIcon]` content (without
+   * `iconPositionEnd`) via a SEPARATE `<ng-content>` ahead of the label's
+   * own — content projection there is by TYPE, not by source position, so
+   * an icon written inside the button's content still lands outside the
+   * label. Qwik can't inspect `<Slot/>` children by type, so (same pattern
+   * as `MatListItem`'s section props) the icon is an explicit prop instead.
+   * `iconPositionEnd` (icon AFTER the label) isn't exposed — no current
+   * scenario needs it.
+   */
+  icon?: JSXOutput;
 }
 
 // FAB defaults differ from standard button: color defaults to 'accent' per
@@ -86,6 +100,7 @@ export const MatFabButton = component$<MatFabProps>(props => {
   const children = (
     <>
       <PersistentRipple isFab={true} />
+      {props.icon}
       <span class="mdc-button__label">
         <Slot />
       </span>

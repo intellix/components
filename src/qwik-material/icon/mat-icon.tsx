@@ -1,4 +1,4 @@
-import {component$, Slot, useContext} from '@builder.io/qwik';
+import {component$, Slot, useContext, type JSXOutput} from '@builder.io/qwik';
 import type {MatIconColor} from './icon-color';
 import {MAT_ICON_CONFIG, MAT_ICON_DEFAULT_FONT_SET_CLASS, type MatIconConfig} from './icon-config';
 import {withIconSvgAttributes} from './icon-svg-attrs';
@@ -46,6 +46,18 @@ export interface MatIconProps {
   'aria-label'?: string;
   class?: string | ReadonlyArray<string>;
   id?: string;
+  /**
+   * Extra content appended as the host `<mat-icon>`'s LAST child, after
+   * the ligature-text `<Slot/>`. Models upstream's directive model, where
+   * something like `[matBadge]` attaches to the consumer's own
+   * `<mat-icon matBadge>` and appends its own element directly onto that
+   * host. A plain Qwik component can't be decorated that way from the
+   * outside, so this is the escape hatch — same rationale as
+   * `MatButtonProps.trailingContent` (qwik-material/button/mat-button.tsx).
+   * Font mode only; SVG mode's `dangerouslySetInnerHTML` branch has no Slot
+   * to append after and no scenario needs it there.
+   */
+  trailingContent?: JSXOutput;
 }
 
 const DEFAULTS: MatIconConfig = {};
@@ -128,6 +140,7 @@ export const MatIcon = component$<MatIconProps>(props => {
       fontIcon={fontIcon}
     >
       <Slot />
+      {props.trailingContent}
     </mat-icon>
   );
 });

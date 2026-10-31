@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type JSXOutput, type QRL} from '@builder.io/qwik';
 import {
   APPEARANCE_CLASSES,
   type MatButtonAppearance,
@@ -25,6 +25,11 @@ export interface MatButtonProps {
   disabledInteractive?: boolean;
   /** When set, renders <a href> instead of <button>. Click is prevented if disabled. */
   href?: string;
+  /** Native `<a>` `target` attribute (e.g. `'_blank'`). Ignored when `href`
+   *  is unset — upstream's matButton directive never restricts this
+   *  attribute, it's just a plain native binding on the consumer's own
+   *  `<a>`; exposed here since the host element isn't the consumer's own. */
+  target?: string;
   /**
    * Native <button> type attribute. Ignored when href is set. Unset by
    * default — matches upstream, which never binds a `type`, so the attribute
@@ -37,6 +42,26 @@ export interface MatButtonProps {
   ariaLabelledBy?: string;
   id?: string;
   class?: string | ReadonlyArray<string>;
+  /**
+   * Extra content appended as the host element's child, after
+   * `TouchTarget` but BEFORE the lazily-inserted ripple span — not inside
+   * `.mdc-button__label` with the rest of `<Slot/>`. Models upstream's
+   * directive model, where something like `[matBadge]` attaches to the
+   * consumer's own `<button matButton>` and appends its own element
+   * directly onto that host, regardless of what's already inside. The
+   * ordering (before, not after, the ripple span) matters and isn't
+   * arbitrary: upstream's directive creates its badge-content element
+   * eagerly (`ngOnInit`/`ngAfterViewInit`), well before any user
+   * interaction, while `RippleRenderer`'s own span is only ever inserted
+   * lazily, on the FIRST interaction — so in the real DOM the badge span is
+   * always the earlier sibling once both exist. A plain Qwik component
+   * can't be decorated that way from the outside (there's no "and also
+   * render this after everything else already in your template" hook), so
+   * this is the escape hatch. See
+   * `src/qwik-cdk-dev-app/src/routes/mat-badge/example/index.tsx` for the
+   * motivating case (`<button matButton matBadge>`) and button/SYNC.md.
+   */
+  trailingContent?: JSXOutput;
 }
 
 const DEFAULTS: MatButtonConfig = {
@@ -115,6 +140,7 @@ export const MatButton = component$<MatButtonProps>(props => {
     return (
       <a
         href={props.href}
+        target={props.target}
         id={props.id}
         class={classes}
         tabIndex={nativelyDisabled ? -1 : undefined}
@@ -132,6 +158,7 @@ export const MatButton = component$<MatButtonProps>(props => {
         </span>
         <FocusIndicator />
         <TouchTarget />
+        {props.trailingContent}
         {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
       </a>
     );
@@ -157,6 +184,7 @@ export const MatButton = component$<MatButtonProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
+      {props.trailingContent}
       {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
     </button>
   );

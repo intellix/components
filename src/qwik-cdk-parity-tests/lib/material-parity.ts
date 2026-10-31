@@ -192,6 +192,27 @@ export interface ParityScenario {
    * different pixel offsets unless the root itself sits at the same place.
    */
   pinRoot?: boolean;
+  /**
+   * Extra attribute names to ignore for this scenario only, on top of the
+   * global `IGNORE_ATTRS`/`CONSUMER_SELECTOR_ATTRS`. For a *real*,
+   * unmodified upstream example (as opposed to a hand-authored
+   * `qwik-parity` mirror scenario, which can always sidestep this by
+   * binding with `[prop]` syntax): Angular's compiler preserves a literal,
+   * non-bracket template attribute on the compiled host element verbatim
+   * — in ADDITION to using it to initialize the matching `@Input` — even
+   * when that attribute is a custom directive input alias, not a native
+   * HTML attribute. E.g. `<mat-progress-bar value="40">` (a plain
+   * attribute, no brackets) leaves a literal `value="40"` on the DOM
+   * alongside driving the `value` Input; `<div matBadgeOverlap="false">`
+   * leaves `matbadgeoverlap="false"`. A Qwik component's JSX prop has no
+   * equivalent "static vs. bound" distinction to replicate this from, so
+   * whichever single behavior it picks is right for templates using
+   * brackets and wrong for ones that don't (or vice versa) — this is
+   * scenario-scoped, not global, specifically so it doesn't mask a real
+   * `value`-attribute difference anywhere else (native `<input>`s compare
+   * `value` meaningfully elsewhere in this suite).
+   */
+  ignoreAttrs?: string[];
 }
 
 /**
@@ -229,6 +250,7 @@ const COMPUTED_STYLE_PROPS = [
 export async function snapshotParityRoot(
   page: Page,
   rootSelector = '[data-parity-root]',
+  extraIgnoreAttrs: readonly string[] = [],
 ): Promise<DomNode> {
   // Transient ripple elements are timing-dependent; wait them out. Ripples
   // that stay for good (radio's `mat-radio-persistent-ripple`, slider's
@@ -428,7 +450,7 @@ export async function snapshotParityRoot(
       return walk(root);
     },
     {
-      ignoreAttrs: [...IGNORE_ATTRS, ...CONSUMER_SELECTOR_ATTRS],
+      ignoreAttrs: [...IGNORE_ATTRS, ...CONSUMER_SELECTOR_ATTRS, ...extraIgnoreAttrs],
       ignoreAttrPrefixes: IGNORE_ATTR_PREFIXES,
       ignoreClasses: IGNORE_CLASSES,
       idAttrs: ID_ATTRS,
@@ -613,8 +635,8 @@ export async function expectMaterialParity(browser: Browser, s: ParityScenario):
         if (aCount === qCount) {
           if (aCount === 0) return;
           diffs = diffNodes(
-            await snapshotParityRoot(angular, s.rootSelector),
-            await snapshotParityRoot(qwik, s.rootSelector),
+            await snapshotParityRoot(angular, s.rootSelector, s.ignoreAttrs),
+            await snapshotParityRoot(qwik, s.rootSelector, s.ignoreAttrs),
           );
           if (diffs.length === 0) return;
         }

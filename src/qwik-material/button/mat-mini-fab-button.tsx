@@ -66,6 +66,7 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
   const children = (
     <>
       <PersistentRipple isFab={true} />
+      {props.icon}
       <span class="mdc-button__label">
         <Slot />
       </span>

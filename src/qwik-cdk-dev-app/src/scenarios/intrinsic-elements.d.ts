@@ -15,6 +15,15 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * - `bottom-sheet-*-body`: the explicit `selector` each Angular bottom sheet
  *   scenario body component declares (see bottom-sheet.ts's header comment —
  *   unlike dialog.ts's bodies, every one of these has a real selector).
+ * - `*-overview-example` / `*-determinate-example`: the `selector` each
+ *   material.angular.dev docs example component declares
+ *   (`src/components-examples/material/<component>/<example-id>/
+ *   <example-id>-example.ts`), rendered unmodified by
+ *   `src/dev-app/qwik-parity/examples.ts` at `/qwik-parity/<component>/example`.
+ *   Each Qwik `<component>/example` route renders the SAME tag as its own
+ *   root so a consumer's CMS selectors targeting the real example's host tag
+ *   (and any `:host` style rewritten onto it — see each route's copied
+ *   example CSS) still match.
  * See docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md.
  */
 declare module '@builder.io/qwik' {
@@ -33,6 +42,20 @@ declare module '@builder.io/qwik' {
       'bottom-sheet-data-body': QwikIntrinsicElements['div'];
       'bottom-sheet-first-body': QwikIntrinsicElements['div'];
       'bottom-sheet-second-body': QwikIntrinsicElements['div'];
+      'badge-overview-example': QwikIntrinsicElements['div'];
+      'button-overview-example': QwikIntrinsicElements['div'];
+      'button-toggle-overview-example': QwikIntrinsicElements['div'];
+      'card-overview-example': QwikIntrinsicElements['div'];
+      'checkbox-overview-example': QwikIntrinsicElements['div'];
+      'divider-overview-example': QwikIntrinsicElements['div'];
+      'grid-list-overview-example': QwikIntrinsicElements['div'];
+      'icon-overview-example': QwikIntrinsicElements['div'];
+      'list-overview-example': QwikIntrinsicElements['div'];
+      'progress-bar-determinate-example': QwikIntrinsicElements['div'];
+      'progress-spinner-overview-example': QwikIntrinsicElements['div'];
+      'radio-overview-example': QwikIntrinsicElements['div'];
+      'slide-toggle-overview-example': QwikIntrinsicElements['div'];
+      'toolbar-overview-example': QwikIntrinsicElements['div'];
     }
   }
 }
