@@ -22,6 +22,48 @@ its real upstream source (`src/components-examples/material/<component>/<example
   upstream's own subtask array is a fixed 3 items — fixed it. Not root-caused further
   (plausibly a keyed-list child-prop-update gap); flagging here since it could bite a FUTURE
   port that has an actually-dynamic list of controlled form components.
+- **Adding a 3rd optional/conditional JSX child around a component's `<Slot/>` can corrupt the
+  Slot's OWN projection bookkeeping across a click-triggered re-render.** Found while giving
+  `MatButton` a leading `icon?: JSXOutput` prop (button/SYNC.md item 16) alongside its existing
+  `trailingContent` prop and the ripple span (`{rippleInitialized.value && <span .../>}`, absent
+  until first interaction): rendering `{props.icon}` (always `undefined` for `badge-overview`'s
+  "Hide" button, which uses no icon) immediately before `<span class="mdc-button__label">
+  <Slot/></span>` was otherwise inert on the FIRST render — but after clicking "Hide" (flips a
+  signal that both toggles a CSS class AND, via the SAME click, lazily initializes the ripple
+  span), the label's projected "Hide" text vanished from the live DOM: `<!--qv --><!--/qv-->`
+  with no `q:s`/`q:sref` slot reference at all, where a correct re-render has `<!--qv q:s
+  q:sref=… q:key=-->Hide<!--/qv-->`. Reverting JUST the `{props.icon}` insertion (keeping
+  `trailingContent` and everything else) fixed it immediately, reproduced 5/5 with the
+  insertion, 0/5 without. Not root-caused (suspects: Qwik's vnode diff miscounting/misassigning
+  comment-marker slots when THREE conditionally-present children straddle one `<Slot/>` across
+  a render that both changes a class AND lazily mounts a previously-absent sibling); flagging
+  as a trap for any future component with a `<Slot/>` flanked by more than one
+  optional/conditional child. `MatButton` itself has no scenario needing a leading icon, so the
+  prop was simply dropped there — `MatFabButton`/`MatMiniFabButton` kept it (see below); neither
+  has a `trailingContent` prop, so they never hit this combination.
+
+## Resolved by a small qwik-material addition
+
+These were small enough to fix directly in qwik-material (see each component's own SYNC.md
+for the full writeup) rather than leave as a gap:
+
+- **`MatButton`'s `<a>` host forwarded no native anchor attribute beyond `href`.**
+  `button-overview` has `<a matButton href target="_blank">` several times. Added
+  `target?: string` (button/SYNC.md item 14). Other anchor attributes (`rel`, `download`, …)
+  remain unsupported — no current scenario needs them.
+- **`MatFabButton`/`MatMiniFabButton` always wrapped `<Slot/>` (icon included) in
+  `.mdc-button__label`.** Upstream's real `button.html` (shared with `MatButton`) projects a
+  leading `mat-icon`/`.material-icons`/`[matButtonIcon]` child via a SEPARATE `<ng-content>`
+  ahead of the label — by TYPE, not by source position — so an icon written inside the button's
+  content lands OUTSIDE `.mdc-button__label` in the real DOM, not inside it. `button-overview`'s
+  plain FAB, Mini FAB, and Extended FAB buttons (icon-only or icon+text) exposed this: previously
+  no `/mat-button/*` scenario put a real `<MatIcon>` inside one of these three components (the
+  existing `fab`/`mini-fab` routes use plain text/emoji). Added an `icon?: JSXOutput` prop to
+  `MatFabButton`/`MatMiniFabButton` (button/SYNC.md item 16) — rendered as a direct child before
+  the label, same "named prop instead of slotted children" pattern `MatListItem`/`MatCardHeader`
+  already use for analogous by-type projection. `MatButton` deliberately did NOT get this prop
+  — see the Qwik pitfall above. `iconPositionEnd` (icon AFTER the label) isn't exposed on either
+  component — no current scenario needs it.
 
 ## Open gaps (ported around, not fixed)
 
