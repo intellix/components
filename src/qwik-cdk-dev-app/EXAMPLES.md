@@ -111,3 +111,19 @@ for the full writeup) rather than leave as a gap:
   Fixing this properly — a `<MatCardAvatar>`/`<MatCardImage>` variant that renders a plain host
   Slot instead of a hardcoded `<img>` — is a real but separate card-port task, not scoped to
   this batch.
+- **`mat-slide-toggle/example`: HTML5 parsing closes a `<p>` wrapping a `<div>`, however deeply
+  nested, which Angular's pure-CSR dev-app never hits but Qwik's SSR+browser-parse pipeline
+  always does.** `slide-toggle-overview-example.html` wraps each `<mat-slide-toggle>` in a
+  `<p>`; `<MatSlideToggle>` renders a required `<div mat-internal-form-field>` inside it.
+  Confirmed with a minimal repro (`page.setContent('<p><mat-slide-toggle><div>x</div>
+  </mat-slide-toggle></p>')` → `<p><mat-slide-toggle></mat-slide-toggle></p><div>x</div><p>
+  </p>` in a real browser) — not a qwik-material bug, a fundamental SSR-vs-CSR difference for
+  this one HTML shape: Angular's dev-app is pure CSR, building this tree via `Renderer2`
+  createElement/appendChild calls that never parse an HTML string, so it never hits the rule;
+  Qwik SSRs real HTML text that the browser then parses, so it always does. No fix available
+  short of never SSRing `<MatSlideToggle>`'s internals, which would risk every other passing
+  `/mat-slide-toggle/*` scenario (46 tests, all currently passing). Left as a known,
+  genuinely-failing test (see `specs/examples/angular-parity.spec.ts`'s header comment), same
+  category as the pre-existing `mat-timepicker` `min-max` failure. The route itself still keeps
+  the literal `<p>` wrapper matching upstream's source structure — the port's intent is correct,
+  only the SSR'd runtime DOM diverges.
