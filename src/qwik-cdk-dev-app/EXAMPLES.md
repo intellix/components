@@ -59,6 +59,13 @@ its real upstream source (`src/components-examples/material/<component>/<example
   the applied fix. Not root-caused inside Qwik's optimizer itself; flagging here as a trap for
   any future component that factors signal-derived JSX prop values into a helper function.
 
+  **UPDATE (2026-10-31, directive-hooks remediation):** this did NOT generalize to a `use*` HOOK
+  called fresh every render. `useMatBadge({hidden: hidden.value})` (`badge/use-mat-badge.tsx`,
+  which replaced `badgeDecoration()` entirely) is confirmed live to react correctly — the exact
+  "Hide" button scenario this bullet describes toggles `.mat-badge-hidden` on click, through the
+  hook, every time. Whatever made `badgeDecoration()` specifically lose reactivity, it isn't a
+  general "a function wraps a `.value` read" rule; see `badge/SYNC.md`'s directive-hook section.
+
 ## Resolved by a small qwik-material addition
 
 These were small enough to fix directly in qwik-material (see each component's own SYNC.md
@@ -184,6 +191,21 @@ neither scenario's own tested interaction (open-by-click, show-by-hover) ever le
 blurring the trigger; hovering never moves focus) — so this is a deliberate, verified scope cut,
 not an oversight. A future batch adding an escape/keyboard-driven interaction to either scenario
 would need to add real focus-origin tracking first.
+
+**SUPERSEDED (2026-10-31, directive-hooks remediation).** `mat-menu/example` and
+`mat-tooltip/example`'s hand-built buttons above are GONE, replaced by the general "directive
+hooks" mechanism this pattern was a workaround for not having yet
+(`docs/superpowers/specs/2026-10-31-qwik-material-directive-hooks-design.md`,
+`qwik-material/README.md`'s "Composing directives"): `useMatMenuTrigger()`/`useMatTooltip()` now
+return a `HostProps` bag spread directly onto `<MatButton>`, instead of each route hand-copying
+`MatButton`'s markup and driving `openMenu`/`showTooltip` manually. Both routes are now a few
+lines each — see `mat-menu/example/index.tsx` and `mat-tooltip/example/index.tsx`. `mat-dialog/
+example`'s `PlainButton` is UNCHANGED and intentionally so: its composition (`matButton` +
+`cdkFocusInitial`/`[mat-dialog-close]`) isn't one of the directives this design covers (no
+`useMatDialogClose()`/`cdkFocusInitial` hook exists), so it's a different, still-open gap, not
+silently dropped — see the design doc's "Out of scope" section. `mat-badge/example`'s
+`trailingContent`-based badges (documented in "Resolved by a small qwik-material addition" below)
+are ALSO superseded — see `badge/SYNC.md`'s directive-hook section.
 
 ### qwik-material additions (small, additive, upstream-aligned)
 
@@ -338,6 +360,14 @@ precedent `qwik-material/paginator`'s `PaginatorNavButton` already set for
 `matIconButton` + `matTooltip`. Omitted (every pre-existing scenario): bare
 button, unchanged. See `stepper-buttons.tsx`'s doc comment and
 `qwik-material/stepper/SYNC.md`.
+
+**SUPERSEDED (2026-10-31, directive-hooks remediation).** The `matButton` prop above is REMOVED.
+`use-stepper-buttons.ts`'s `useMatStepperNext()`/`useMatStepperPrevious()` now return a
+`HostProps` bag spread directly onto `<MatButton>` (the general mechanism this prop was a
+workaround for not having yet — see `docs/superpowers/specs/2026-10-31-qwik-material-directive-
+hooks-design.md`). `mat-stepper/example` was rewritten to call the hooks via two small local
+components (`stepper-nav-buttons.tsx`) instead — see `qwik-material/stepper/SYNC.md`'s directive-
+hook section for why that indirection is needed (`MAT_STEPPER_ACTIONS` context resolution).
 
 ### `MatTimepickerInput`'s `ng-*` classes needed a real `formBound` gate (`mat-timepicker/example`)
 
