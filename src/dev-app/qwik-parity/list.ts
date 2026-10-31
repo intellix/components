@@ -1,5 +1,6 @@
 import {Component, Type} from '@angular/core';
 import {MatListModule} from '@angular/material/list';
+import {MatIconModule} from '@angular/material/icon';
 
 // Each scenario mirrors a route under src/qwik-cdk-dev-app/src/routes/mat-list/.
 // See button-toggle.ts for the general approach. Qwik's list/mat-list-item-sections
@@ -31,22 +32,32 @@ import {MatListModule} from '@angular/material/list';
 })
 export class ListBasic {}
 
+// Avatar swatches previously used inline `width: 100%; height: 100%`, which
+// overrides the `.mdc-list-item--with-leading-avatar .mdc-list-item__start`
+// rule that sizes the real element to a 40px circle (list.scss) — an inline
+// style always wins over an external stylesheet rule on the SAME element
+// regardless of selector specificity, so the avatar stretched to fill its
+// flex-row parent's full width instead of rendering as a circle. Dropping
+// the width/height override (the component CSS already sizes + rounds it)
+// and adding initials text — matching the realistic "named contact" content
+// this scenario already uses — fixes it. See EXAMPLES.md "Scenario visual
+// cleanup" / mat-list.
 @Component({
   template: `
     <div data-parity-root>
       <mat-list role="list">
         <mat-list-item>
-          <div matListItemAvatar style="width: 100%; height: 100%; background: #f44336"></div>
+          <div matListItemAvatar style="background: #f44336; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 500">AS</div>
           <div matListItemTitle>Alice Smith</div>
           <div matListItemLine>alice@example.com</div>
         </mat-list-item>
         <mat-list-item>
-          <div matListItemAvatar style="width: 100%; height: 100%; background: #4caf50"></div>
+          <div matListItemAvatar style="background: #4caf50; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 500">BJ</div>
           <div matListItemTitle>Bob Jones</div>
           <div matListItemLine>bob@example.com</div>
         </mat-list-item>
         <mat-list-item>
-          <div matListItemAvatar style="width: 100%; height: 100%; background: #2196f3"></div>
+          <div matListItemAvatar style="background: #2196f3; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 500">CD</div>
           <div matListItemTitle>Carol Davis</div>
           <div matListItemLine>carol@example.com</div>
         </mat-list-item>
@@ -57,35 +68,34 @@ export class ListBasic {}
 })
 export class ListAvatar {}
 
+// Icon swatches had the same inline width:100%/height:100% bug as the
+// avatar scenario above (overriding the fixed leading-icon size), AND used
+// a plain colored <div> instead of a real icon — real usage is
+// `<mat-icon matListItemIcon>`, as in list-sections-example.html. Icon
+// names ("inbox"/"send"/"drafts") match each item's own label.
 @Component({
   template: `
     <div data-parity-root>
       <mat-list role="list">
         <mat-list-item>
-          <div
-            matListItemIcon
-            style="width: 100%; height: 100%; background: #f44336; border-radius: 4px"></div>
+          <mat-icon matListItemIcon>inbox</mat-icon>
           <div matListItemTitle>Inbox</div>
           <div matListItemMeta>128</div>
         </mat-list-item>
         <mat-list-item>
-          <div
-            matListItemIcon
-            style="width: 100%; height: 100%; background: #4caf50; border-radius: 4px"></div>
+          <mat-icon matListItemIcon>send</mat-icon>
           <div matListItemTitle>Sent</div>
           <div matListItemMeta>42</div>
         </mat-list-item>
         <mat-list-item>
-          <div
-            matListItemIcon
-            style="width: 100%; height: 100%; background: #2196f3; border-radius: 4px"></div>
+          <mat-icon matListItemIcon>drafts</mat-icon>
           <div matListItemTitle>Drafts</div>
           <div matListItemMeta>7</div>
         </mat-list-item>
       </mat-list>
     </div>
   `,
-  imports: [MatListModule],
+  imports: [MatListModule, MatIconModule],
 })
 export class ListIconMeta {}
 

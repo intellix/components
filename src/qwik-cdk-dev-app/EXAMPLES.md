@@ -475,3 +475,47 @@ that section above for why it's one entry, not two). The timepicker's own option
 to be time-of-day-only (`generateOptions`), never "today"-relative, so its interaction needs no
 clock emulation at all — see `specs/examples/angular-parity.spec.ts`'s header comment and the
 parity README's "Clock emulation" section.
+
+## Scenario visual cleanup
+
+Hand-written parity scenarios (`src/dev-app/qwik-parity/<component>.ts` +
+`src/qwik-cdk-dev-app/src/routes/<route>/<scenario>/`, distinct from each component's headline
+`/example` route above) pin specific states/interactions for the DOM/computed-style parity gate.
+Several used lazy placeholder content — solid-color divs stretched to fill their container,
+meaningless filler text — that doesn't look like real usage when a developer opens the page to
+eyeball the port. This section tracks visual-only cleanup passes: same fix applied identically to
+the Angular mirror and the Qwik route, scenario intent unchanged, parity suite still green.
+
+### mat-list — `avatar`, `icon-meta`
+
+Both scenarios' leading swatches used inline `style="width: 100%; height: 100%; ..."` — an inline
+style always wins over an external stylesheet rule on the SAME element regardless of selector
+specificity, so it overrode the `.mdc-list-item--with-leading-avatar`/`--with-leading-icon`
+`.mdc-list-item__start` rule that sizes the real element to a fixed 40px square/circle
+(`src/material/list/list.scss` + `_list-inherited-structure.scss`). The swatch instead stretched
+to fill its flex-row parent's full width — the reported "full-width horizontal bars of solid
+colour" bug.
+
+- `avatar`: dropped the width/height override (the component CSS already sizes + rounds it to a
+  circle) and added initials text ("AS"/"BJ"/"CD", matching the 3 named contacts the scenario
+  already uses) with a small inline flex-center style, so it reads as a real avatar swatch instead
+  of a colored bar.
+- `icon-meta`: replaced the colored `<div>` with a real `<mat-icon matListItemIcon>` (Qwik:
+  `<MatIcon class="mat-mdc-list-item-icon mdc-list-item__start">`, mirroring the directive's host
+  classes the way `MatIconPrefix`/`MatIconSuffix` already do elsewhere), using icon names
+  ("inbox"/"send"/"drafts") matching each item's own label — same pattern as upstream's
+  `list-sections-example.html` (`<mat-icon matListItemIcon>folder</mat-icon>`).
+
+**Port-adjacent finding, not a qwik-material bug:** a bare `<mat-icon>` with no explicit `fontSet`
+resolves to class `material-symbols-outlined` in this Angular **dev-app**, not upstream Material's
+real default (`material-icons mat-ligature-font`, which `MAT_ICON_DEFAULT_FONT_SET_CLASS` in
+`qwik-material/icon/icon-config.ts` correctly mirrors). The dev-app's root component always wraps
+`<router-outlet>` in `<dev-app-layout>` (`src/dev-app/dev-app.ts`), whose constructor calls
+`MatIconRegistry.setDefaultFontSetClass('material-symbols-outlined')` because `DevAppState`'s
+`m3Enabled` field defaults to `true` (`src/dev-app/dev-app/dev-app-state.ts`) — this reaches every
+route, including the bare `/qwik-parity/*` scenario routes. The `icon-meta` Qwik route now wraps
+its content in `<QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>` to
+match — not a `fontSet` PROP directly on `<MatIcon>`, which would additionally emit a
+`data-mat-icon-namespace` attribute that Angular's un-set registry default never adds (see
+`MatIconProps.fontSet`'s doc comment vs. `MatIconConfig.fontSet`'s). Any future scenario that adds
+a bare real `<mat-icon>`/`<MatIcon>` needs the same provider wrapper to stay in parity.
