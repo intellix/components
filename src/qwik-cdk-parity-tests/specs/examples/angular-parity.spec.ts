@@ -115,12 +115,35 @@ const openMenuStep: ParityStep = {
   },
 };
 
+/**
+ * Hovers the `tooltip-overview` example's trigger and waits for exactly one shown pane. Mirrors
+ * specs/material-tooltip/angular-parity.spec.ts's `hover()`/`waitForTooltipShown`.
+ */
+const hoverTooltip: ParityStep = {
+  name: 'hover trigger (show)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] button').hover();
+    await page.waitForFunction(
+      () => {
+        const panes = document.querySelectorAll('.cdk-overlay-pane.mat-mdc-tooltip-panel');
+        return panes.length === 1 && !!panes[0].querySelector('.mat-mdc-tooltip-show');
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
 /** Interactions per `<component>/<route>`, added alongside each Qwik port as needed. */
 const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
   'mat-autocomplete/example': [{steps: [openAutocomplete]}],
   'mat-snack-bar/example': [{steps: [openSnackBar], rootSelector: overlayRoot}],
   'mat-bottom-sheet/example': [{steps: [openBottomSheet], rootSelector: overlayRoot}],
   'mat-menu/example': [{steps: [openMenuStep]}, {steps: [openMenuStep], rootSelector: overlayRoot}],
+  'mat-tooltip/example': [
+    {steps: [hoverTooltip]},
+    {steps: [hoverTooltip], rootSelector: overlayRoot},
+  ],
 };
 
 test.describe('material.angular.dev examples — Angular DOM parity', () => {
