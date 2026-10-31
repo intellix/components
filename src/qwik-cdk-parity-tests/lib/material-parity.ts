@@ -1,4 +1,4 @@
-import {expect, type Browser, type Page} from '@playwright/test';
+import {expect, type Browser, type BrowserContext, type Page} from '@playwright/test';
 import {diffNodes, type DomNode} from './structural-diff.js';
 
 /**
@@ -583,6 +583,30 @@ const PIN_ROOT_CSS =
   '[data-parity-root]{position:fixed!important;top:40px!important;left:40px!important;' +
   'width:800px!important;margin:0!important;padding:0!important}';
 
+/**
+ * Google Fonts responses (both dev-apps load Roboto/Material Icons from fonts.googleapis.com /
+ * fonts.gstatic.com), fetched once per worker and replayed from memory. Every test opens two
+ * fresh contexts, so without this each one re-requests them, and a single slow response holds
+ * up the page's `load` event until the test times out.
+ */
+const FONT_CACHE = new Map<
+  string,
+  {status: number; headers: Record<string, string>; body: Buffer}
+>();
+
+async function cacheGoogleFonts(ctx: BrowserContext): Promise<void> {
+  await ctx.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, async route => {
+    const url = route.request().url();
+    let hit = FONT_CACHE.get(url);
+    if (!hit) {
+      const response = await route.fetch();
+      hit = {status: response.status(), headers: response.headers(), body: await response.body()};
+      if (response.ok()) FONT_CACHE.set(url, hit);
+    }
+    await route.fulfill(hit);
+  });
+}
+
 async function open(
   browser: Browser,
   url: string,
@@ -590,6 +614,7 @@ async function open(
   clockDate?: Date | number | string,
 ): Promise<Page> {
   const ctx = await browser.newContext();
+  await cacheGoogleFonts(ctx);
   const page = await ctx.newPage();
   if (clockDate !== undefined) await page.clock.setFixedTime(clockDate);
   if (COMPARE_STYLES) await page.addInitScript(TRACK_POINTER_SCRIPT);

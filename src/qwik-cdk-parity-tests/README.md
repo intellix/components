@@ -186,3 +186,10 @@ an example's main interaction (e.g. opening a datepicker/timepicker with no init
 `Date.now()`/`new Date()` to that moment on BOTH pages, via Playwright's `page.clock.setFixedTime()`,
 before navigation — real timers/animations are unaffected, only the clock reading is faked. Never
 pin the date by editing the upstream example itself.
+
+## Google Fonts are cached per worker
+
+Both dev-apps load Roboto/Material Icons from fonts.googleapis.com / fonts.gstatic.com, and every
+test opens two fresh browser contexts. `cacheGoogleFonts()` fetches each font URL once per worker
+and replays it from memory; without it, one slow response held up a page's `load` event until the
+test timed out (full runs intermittently took 20+ minutes with scattered `page.goto` timeouts).
