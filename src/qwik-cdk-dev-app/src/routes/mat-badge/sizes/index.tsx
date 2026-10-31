@@ -1,19 +1,36 @@
 import {component$} from '@builder.io/qwik';
-import {MatBadge} from '@angular-community/qwik-material/badge';
+import {useMatBadge} from '@angular-community/qwik-material/badge';
+import {MatButton} from '@angular-community/qwik-material/button';
 
-export default component$(() => (
-  <>
-    <div data-parity-root>
-      <MatBadge as="button" content="1" size="small">
-        Small
-      </MatBadge>
-      <MatBadge as="button" content="5" size="medium">
-        Medium
-      </MatBadge>
-      <MatBadge as="button" content="99" size="large">
-        Large
-      </MatBadge>
-    </div>
-    <main data-scenario-ready>ready</main>
-  </>
-));
+// See ../basic/index.tsx's header comment.
+export default component$(() => {
+  const small = useMatBadge({content: '1', size: 'small'});
+  const medium = useMatBadge({content: '5', size: 'medium'});
+  const large = useMatBadge({content: '99', size: 'large'});
+  return (
+    <>
+      <div data-parity-root>
+        <MatButton
+          appearance="elevated"
+          style="margin-right: 16px"
+          {...small.hostProps}
+          hostContent={small.content}
+        >
+          Small
+        </MatButton>
+        <MatButton
+          appearance="elevated"
+          style="margin-right: 16px"
+          {...medium.hostProps}
+          hostContent={medium.content}
+        >
+          Medium
+        </MatButton>
+        <MatButton appearance="elevated" {...large.hostProps} hostContent={large.content}>
+          Large
+        </MatButton>
+      </div>
+      <main data-scenario-ready>ready</main>
+    </>
+  );
+});

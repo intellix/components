@@ -519,3 +519,23 @@ match — not a `fontSet` PROP directly on `<MatIcon>`, which would additionally
 `data-mat-icon-namespace` attribute that Angular's un-set registry default never adds (see
 `MatIconProps.fontSet`'s doc comment vs. `MatIconConfig.fontSet`'s). Any future scenario that adds
 a bare real `<mat-icon>`/`<MatIcon>` needs the same provider wrapper to stay in parity.
+
+### mat-badge — all 9 scenarios
+
+Every scenario's badge host was a BARE, unstyled native `<button>` (`[matBadge]` with no
+`matButton`; Qwik's `<MatBadge as="button">`) — next to the real `badge-overview` docs example
+(real Material buttons), these looked like placeholders. Multi-button scenarios (`colors`,
+`empty-content`, `positions`, `sizes`) also had NO spacing between buttons: an `above after`
+(the default)-positioned badge overflows ~11px past its own button's right edge, which visibly
+landed on top of the next button with zero gap between them — most noticeable in `positions`,
+where all 4 buttons sit in a row.
+
+Fixed in both apps: the host is now a real Material button (`matButton="elevated"` / Qwik
+`<MatButton appearance="elevated">`, matching `badge-overview-example.html`'s own
+`<button matButton="elevated" matBadge="8">`), and multi-button scenarios get
+`margin-right: 16px` between buttons. The Qwik side composes `MatButton` + the badge via the
+`useMatBadge()` directive hook (`{...badge.hostProps} hostContent={badge.content}`) — the same
+established pattern `mat-badge/example` already uses — rather than `<MatBadge as="button">`,
+since nothing here needs a SECOND directive-free wrapper component. No spec changes needed: the
+Qwik-only specs' `button.mat-badge` selector still matches (`MatButton`'s default host, no
+`href`, is a `<button>`, and `badge.hostProps.class` still contributes `mat-badge`).

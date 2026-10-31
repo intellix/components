@@ -1,13 +1,18 @@
 import {component$} from '@builder.io/qwik';
-import {MatBadge} from '@angular-community/qwik-material/badge';
+import {useMatBadge} from '@angular-community/qwik-material/badge';
+import {MatButton} from '@angular-community/qwik-material/button';
 
-export default component$(() => (
-  <>
-    <div data-parity-root>
-      <MatBadge as="button" content="5" hidden>
-        Inbox
-      </MatBadge>
-    </div>
-    <main data-scenario-ready>ready</main>
-  </>
-));
+// See ../basic/index.tsx's header comment.
+export default component$(() => {
+  const badge = useMatBadge({content: '5', hidden: true});
+  return (
+    <>
+      <div data-parity-root>
+        <MatButton appearance="elevated" {...badge.hostProps} hostContent={badge.content}>
+          Inbox
+        </MatButton>
+      </div>
+      <main data-scenario-ready>ready</main>
+    </>
+  );
+});
