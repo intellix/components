@@ -125,7 +125,7 @@ export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props =>
         // Mirrors `_defaultTabIndex`'s `Number(null)` quirk — see `MatTimepickerToggle`'s
         // identical doc comment: every toggle gets a default `tabindex="0"`.
         tabIndex={disabled ? -1 : (props.tabIndex ?? 0)}
-        disabled={disabledAttr(disabled)}
+        {...disabledAttr(disabled)}
         {...rippleAttrs}
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >

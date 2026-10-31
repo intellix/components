@@ -27,6 +27,7 @@ import {
   type MatFormFieldSubscriptSizing,
 } from './form-field-config';
 import {MatIdScope} from './id-scope';
+import {useMatFormSubmitted} from '../core/mat-form';
 
 /**
  * Props for `<MatFormField>`. See `SYNC.md` for the full architecture
@@ -319,11 +320,12 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const invalid = props.invalid ?? controlProps?.invalid ?? false;
   // `errorState` (upstream's `_errorStateTracker.errorState`, the DEFAULT
   // `ErrorStateMatcher`'s formula: `control.invalid && (control.touched ||
-  // form.submitted)` — no `<form>`/submit concept in this port, so just
-  // `touched`) is a SEPARATE, touched-GATED concept that drives
+  // form.submitted)`, the form being the enclosing `<MatForm>` — see
+  // core/mat-form.tsx) is a SEPARATE concept that drives
   // mat-form-field-invalid/mdc-text-field--invalid/visible `<mat-error>`
   // — never the plain `ng-valid`/`ng-invalid` classes above.
-  const errorState = formBound && touched && invalid;
+  const formSubmitted = useMatFormSubmitted();
+  const errorState = formBound && invalid && (touched || formSubmitted);
   const initialEmpty = !controlProps?.value;
   // Control's OWN shouldLabelFloat (upstream's `MatInput.shouldLabelFloat`
   // getter): `(focused && !disabled) || !empty`. `focused` is always false
@@ -601,13 +603,19 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // mount task for THAT; this timer is form-field's own, self-contained
   // state, matching upstream's own unconditional eagerness exactly. ──
   const animationsEnabled = useSignal(false);
-  useVisibleTask$(() => {
-    if (animationsDisabled.value) return;
-    const timer = setTimeout(() => {
-      animationsEnabled.value = true;
-    }, 300);
-    return () => clearTimeout(timer);
-  });
+  // `document-ready`, not the default intersection-observer strategy: upstream's timer starts
+  // for every field, on screen or not (an offscreen field — e.g. lower in a stepper — would
+  // otherwise never get the class).
+  useVisibleTask$(
+    () => {
+      if (animationsDisabled.value) return;
+      const timer = setTimeout(() => {
+        animationsEnabled.value = true;
+      }, 300);
+      return () => clearTimeout(timer);
+    },
+    {strategy: 'document-ready'},
+  );
 
   const hostClasses = [
     'mat-mdc-form-field',

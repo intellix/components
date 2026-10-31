@@ -14,6 +14,7 @@ import {
   openDatepickerPanel,
 } from './datepicker-runtime';
 import type {MatDatepickerHandle} from './use-mat-datepicker';
+import {useMatFormSubmitted} from '../core/mat-form';
 
 type NativeInputElement = HTMLInputElement;
 
@@ -82,7 +83,9 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
   const touched = isInFormField ? formField.touched : picker.touched.value;
   const dirty = isInFormField ? formField.dirty : picker.dirty.value;
   const invalid = isInFormField ? formField.invalid : picker.parseError.value;
-  const errorState = formBound && touched && invalid;
+  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
+  const formSubmitted = useMatFormSubmitted();
+  const errorState = formBound && invalid && (touched || formSubmitted);
 
   const id = formField ? formField.assignedId : props.id;
   const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];

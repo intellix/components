@@ -127,7 +127,7 @@ export const MatFabButton = component$<MatFabProps>(props => {
       type={props.type}
       id={props.id}
       class={classes}
-      disabled={disabledAttr(nativelyDisabled)}
+      {...disabledAttr(nativelyDisabled)}
       aria-disabled={props.disabled && disabledInteractive ? 'true' : undefined}
       aria-label={props.ariaLabel}
       aria-describedby={props.ariaDescribedBy}

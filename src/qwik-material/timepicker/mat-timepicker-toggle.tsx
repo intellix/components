@@ -111,7 +111,7 @@ export const MatTimepickerToggle = component$<MatTimepickerToggleProps>(props =>
         // `NaN` — so EVERY toggle gets a default tabIndex of `0`, confirmed live, even though
         // nothing in this port's templates ever writes one explicitly.
         tabIndex={disabled ? -1 : props.tabIndex ?? 0}
-        disabled={disabledAttr(disabled)}
+        {...disabledAttr(disabled)}
         {...rippleAttrs}
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >

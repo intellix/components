@@ -1,5 +1,6 @@
 import {$, component$, useSignal} from '@builder.io/qwik';
 import {MatButton} from '@angular-community/qwik-material/button';
+import {MatForm} from '@angular-community/qwik-material/core';
 import {
   MatFormField,
   MatLabel,
@@ -69,7 +70,7 @@ export default component$(() => {
                 labelTemplate: 'Fill out your name',
                 stepControl: {valid: !firstInvalid, invalid: firstInvalid},
                 content: (
-                  <form noValidate class={firstFormClasses}>
+                  <MatForm noValidate class={firstFormClasses}>
                     <MatFormField
                       touched={firstCtrl.touched}
                       dirty={firstCtrl.dirty}
@@ -92,14 +93,14 @@ export default component$(() => {
                     <div>
                       <MatStepperNext matButton>Next</MatStepperNext>
                     </div>
-                  </form>
+                  </MatForm>
                 ),
               },
               {
                 label: 'Fill out your address',
                 stepControl: {valid: !secondInvalid, invalid: secondInvalid},
                 content: (
-                  <form noValidate class={secondFormClasses}>
+                  <MatForm noValidate class={secondFormClasses}>
                     <MatFormField
                       touched={secondCtrl.touched}
                       dirty={secondCtrl.dirty}
@@ -123,7 +124,7 @@ export default component$(() => {
                       <MatStepperPrevious matButton>Back</MatStepperPrevious>
                       <MatStepperNext matButton>Next</MatStepperNext>
                     </div>
-                  </form>
+                  </MatForm>
                 ),
               },
               {

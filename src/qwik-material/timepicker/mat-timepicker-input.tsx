@@ -14,6 +14,7 @@ import {
   openTimepickerPanel,
 } from './timepicker-runtime';
 import type {MatTimepickerHandle} from './use-mat-timepicker';
+import {useMatFormSubmitted} from '../core/mat-form';
 
 type NativeInputElement = HTMLInputElement;
 
@@ -159,7 +160,9 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
   const showValidityClass = !picker.disabled.value;
   // Mirrors the DEFAULT `ErrorStateMatcher` (`control.invalid && control.touched`) — gates
   // `aria-invalid`, same formula `mat-input.tsx`'s own `errorState` uses.
-  const errorState = touched && invalid;
+  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
+  const formSubmitted = useMatFormSubmitted();
+  const errorState = invalid && (touched || formSubmitted);
 
   const id = formField ? formField.assignedId : props.id;
   const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];
