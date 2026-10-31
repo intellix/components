@@ -1,0 +1,13 @@
+/* Copied from src/components-examples/material/table/table-basic/table-basic-example.css. Angular
+   scopes a component's CSS to its own subtree via ViewEncapsulation (every selector gets an
+   `[_ngcontent-*]` attribute appended at compile time — invisible to the parity harness, which
+   strips that attribute, but still real scoping in the browser). A plain Qwik CSS import has NO
+   such scoping — it is a genuinely global stylesheet rule — so every selector here is prefixed
+   with this route's own host tag to reproduce the same effective scope without adding any class/
+   attribute Qwik's `useStylesScoped$` would (which WOULD show up as an extra DOM class,
+   mismatching Angular). Confirmed by a real cross-page leak during this port: an earlier,
+   unprefixed `.mat-mdc-form-field { margin-top: 16px; }` rule in a sibling example's CSS file
+   affected EVERY mat-form-field in the whole dev-app once that route was added to the build. */
+table-basic-example table {
+  width: 100%;
+}

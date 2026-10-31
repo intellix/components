@@ -1,0 +1,14 @@
+/* Copied from src/components-examples/material/stepper/stepper-overview/stepper-overview-example.css.
+   Selector prefixed with this route's own host tag — see table-basic-example.css's comment for
+   why a plain Qwik CSS import needs this. CONFIRMED LIVE this is not just theoretical: the
+   unprefixed `.mat-mdc-form-field` rule below leaked into EVERY mat-form-field in the whole
+   dev-app once this route was added to the build (an extra 16px margin-top on top of every
+   OTHER scenario's/example's form field), which in turn desynced the pixel position of several
+   completely unrelated datepicker/timepicker overlay-positioning parity assertions. */
+stepper-overview-example .mat-stepper-horizontal {
+  margin-top: 8px;
+}
+
+stepper-overview-example .mat-mdc-form-field {
+  margin-top: 16px;
+}

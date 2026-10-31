@@ -1,0 +1,7 @@
+/* Copied from src/components-examples/material/sort/sort-overview/sort-overview-example.css.
+   Selector prefixed with this route's own host tag — see table-basic-example.css's comment for
+   why a plain Qwik CSS import needs this (this rule would otherwise affect EVERY
+   `.mat-sort-header-container` in the whole dev-app, not just this example's). */
+sort-overview-example .mat-sort-header-container {
+  align-items: center;
+}

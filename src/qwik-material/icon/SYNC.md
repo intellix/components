@@ -70,8 +70,22 @@ scenario in `<QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-ou
 mirroring the Angular dev-app's effective default (`DevAppLayout.toggleM3` →
 `MatIconRegistry.setDefaultFontSetClass('material-symbols-outlined')`,
 `src/dev-app/dev-app/dev-app-layout.ts`, in effect by default since
-`m3Enabled` defaults to `true`). No other route tree uses `<MatIcon>` yet, so
-this is scoped to `mat-icon/` rather than the dev-app root.
+`m3Enabled` defaults to `true`). This was scoped to `mat-icon/` rather than
+the dev-app root because no other route tree used `<MatIcon>` at the time.
+
+**2026-10-31 update:** `src/qwik-cdk-dev-app/src/routes/mat-tree/example/`
+(material.angular.dev's `tree-flat-child-accessor-overview` docs example) is
+the first OTHER route tree to render a font-mode `<MatIcon>` (the toggle
+button's `expand_more`/`chevron_right` ligature). Rather than hoisting the
+provider to the dev-app root (which would touch every other scenario's
+baseline), that one route wraps just its own `<MatTree>` inline in the SAME
+`<QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>`
+— safe to nest arbitrarily since the provider renders a bare `<Slot/>`, no
+wrapper DOM. Any FUTURE route tree outside `mat-icon/` that renders a
+font-mode `<MatIcon>` needs the same local wrapping (or its own explicit
+`fontSet` prop, which is NOT equivalent — see deviation #7 above, a prop
+value also renders `data-mat-icon-namespace`, which the registry-style
+config default never does).
 
 `src/qwik-cdk-dev-app/src/routes/mat-icon/svg-literal/index.tsx` now passes
 `svgName="home"` to `<MatIcon svgLiteral={HOME_SVG} />`. This is a scenario

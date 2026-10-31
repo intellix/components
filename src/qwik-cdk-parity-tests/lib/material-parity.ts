@@ -103,6 +103,14 @@ const CONSUMER_SELECTOR_ATTRS = [
   'matdialogactions',
   'matsort',
   'mat-sort-header',
+  // `[formControlName]` (Angular Forms) — like every other entry here, written as a bare
+  // attribute (`formControlName="firstCtrl"`) whose VALUE is entirely consumer-chosen (the
+  // control's name in whatever `FormGroup` the consumer built) and has no Qwik equivalent (no
+  // real `FormGroup`/`AbstractControl` tree exists in this port — see
+  // `qwik-material/form-field/mat-form-control.ts`'s own doc comment on why). First hit by
+  // material.angular.dev's `stepper-overview` docs example, the first scenario anywhere in this
+  // port to use Angular's real reactive-forms directives rather than a local stand-in.
+  'formcontrolname',
   'mat-tab-link',
   'mattablink',
   'mat-tab-nav-bar',
@@ -145,6 +153,23 @@ const CONSUMER_SELECTOR_ATTRS = [
   'matdaterangepickercancel',
   'matdaterangepickerapply',
 ];
+/**
+ * `@Input()` names Angular leaves as a literal STATIC host attribute when the consumer's
+ * template writes the bare, no-brackets form (`<comp someInput>` / `<comp someInput="x">`)
+ * instead of a property binding (`[someInput]="expr"`) — see the README's "Angular scenarios
+ * bind inputs with `[prop]` syntax..." note. A Qwik JSX prop (`<Comp someInput>` /
+ * `someInput={x}`) can't tell the two apart (both just become the value `true`/`"x"`), so this
+ * port's own internal scenarios always use bracket-equivalent (dynamic) prop values specifically
+ * to avoid ever triggering this — but an UNMODIFIED material.angular.dev docs example
+ * (`specs/examples/`) is real upstream source this project doesn't get to rewrite, and some
+ * examples genuinely use the bare form (e.g. `expansion-overview-example.html`'s `<mat-
+ * expansion-panel hideToggle>`). Listed here, by exact lowercased attribute name, as they're
+ * found — safe to ignore unconditionally: every scenario that exercises the SAME `@Input` via
+ * `[prop]="true"` binding (e.g. `qwik-parity/expansion.ts`'s `[hideToggle]="true"`) never gets
+ * the static attribute from Angular either, so ignoring it is a no-op there, not a weakened
+ * check.
+ */
+const STATIC_INPUT_ECHO_ATTRS = ['hidetoggle'];
 /** Attributes whose values are (or reference) auto-generated ids. */
 const ID_ATTRS = [
   'id',
@@ -192,6 +217,15 @@ export interface ParityScenario {
    * different pixel offsets unless the root itself sits at the same place.
    */
   pinRoot?: boolean;
+  /**
+   * Freezes `Date.now()`/`new Date()` to this moment on BOTH pages (Playwright's
+   * `page.clock.setFixedTime()` — real timers/animations keep running, only the clock reading is
+   * faked) before navigation. For a scenario whose rendered "today"-relative state (e.g. a
+   * datepicker/timepicker docs example with no `startAt`/value override, which opens showing the
+   * CURRENT month) would otherwise be non-deterministic run-to-run — never achieved by editing
+   * the upstream example itself. See `specs/examples/angular-parity.spec.ts`'s datepicker entry.
+   */
+  clockDate?: Date | number | string;
 }
 
 /**
@@ -399,9 +433,32 @@ export async function snapshotParityRoot(
         // attribute prefixes and comment nodes already stripped above —
         // just a real element instead of a comment, so `el.children`
         // doesn't exclude it for free the way it excludes comments.
-        const elementChildren = Array.from(el.children).filter(
+        const rawElementChildren = Array.from(el.children).filter(
           c => c.tagName.toLowerCase() !== 'q:template',
         );
+        // A bare `<table><tr>...` (no `<thead>`/`<tbody>` at all — e.g. a plain `matSort` table
+        // with no `mat-table`) gets an IMPLICIT, attribute-less `<tbody>` wrapping its `<tr>`s
+        // when the browser's HTML parser builds it from SSR'd markup (Qwik's side here), but NOT
+        // when a CSR framework builds the identical tree via imperative DOM calls (Angular's
+        // dev-app, confirmed to have no SSR anywhere in this harness) — a standard HTML5
+        // table-parsing rule, not a framework bug; already documented as a known,
+        // library-level-unfixable gap in `qwik-material/sort/SYNC.md` deviation #4 ("The library
+        // does not rewrite consumer markup... Consumers should write `<thead>`/`<tbody>`
+        // explicitly"). Every one of THIS project's own `mat-sort` scenarios follows that advice
+        // (explicit `<thead>`) — but an unmodified material.angular.dev docs example
+        // (`sort-overview-example.html`) is real upstream source with no sections at all, so the
+        // harness normalizes it here instead: a `<table>`'s direct `<tbody>` child with NO
+        // attributes (the implicit-insertion signature — a REAL Material table's own `<tbody>`
+        // always carries `role`/`class`, see `qwik-material/table`, and is never touched by this)
+        // is transparent, splicing its own children in its place.
+        const elementChildren =
+          el.tagName.toLowerCase() === 'table'
+            ? rawElementChildren.flatMap(c =>
+                c.tagName.toLowerCase() === 'tbody' && c.attributes.length === 0
+                  ? Array.from(c.children).filter(cc => cc.tagName.toLowerCase() !== 'q:template')
+                  : [c],
+              )
+            : rawElementChildren;
         const node: Node = {
           tag: el.tagName.toLowerCase(),
           classes,
@@ -428,7 +485,7 @@ export async function snapshotParityRoot(
       return walk(root);
     },
     {
-      ignoreAttrs: [...IGNORE_ATTRS, ...CONSUMER_SELECTOR_ATTRS],
+      ignoreAttrs: [...IGNORE_ATTRS, ...CONSUMER_SELECTOR_ATTRS, ...STATIC_INPUT_ECHO_ATTRS],
       ignoreAttrPrefixes: IGNORE_ATTR_PREFIXES,
       ignoreClasses: IGNORE_CLASSES,
       idAttrs: ID_ATTRS,
@@ -500,14 +557,22 @@ const TRACK_POINTER_SCRIPT = () => {
  * the same category of fix `waitForSelectPanel`'s own polling in
  * `specs/material-select/angular-parity.spec.ts` already applies to the
  * select panel's exit animation.
+ *
+ * Checks EVERY `.mat-mdc-form-field` on the page (`querySelectorAll` + `.every(...)`, not a
+ * single `querySelector`) — a scenario with more than one form field (e.g. material.angular.dev's
+ * `stepper-overview` docs example, two fields in two different steps) can have each one's
+ * ~300ms timer land at a slightly different moment; checking only the first left the SECOND one's
+ * class missing on the very first `compare()`, confirmed live. Same "wait for every matching
+ * element, not just one" shape `specs/material-expansion/angular-parity.spec.ts`'s own `settle`
+ * step already uses for `.mat-expansion-panel-animations-enabled`.
  */
 async function waitForFormFieldAnimationsSettled(page: Page): Promise<void> {
   await page
     .waitForFunction(
-      () => {
-        const field = document.querySelector('.mat-mdc-form-field');
-        return !field || field.classList.contains('mat-form-field-animations-enabled');
-      },
+      () =>
+        Array.from(document.querySelectorAll('.mat-mdc-form-field')).every(field =>
+          field.classList.contains('mat-form-field-animations-enabled'),
+        ),
       undefined,
       {timeout: 2000},
     )
@@ -518,9 +583,15 @@ const PIN_ROOT_CSS =
   '[data-parity-root]{position:fixed!important;top:40px!important;left:40px!important;' +
   'width:800px!important;margin:0!important;padding:0!important}';
 
-async function open(browser: Browser, url: string, pinRoot = false): Promise<Page> {
+async function open(
+  browser: Browser,
+  url: string,
+  pinRoot = false,
+  clockDate?: Date | number | string,
+): Promise<Page> {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
+  if (clockDate !== undefined) await page.clock.setFixedTime(clockDate);
   if (COMPARE_STYLES) await page.addInitScript(TRACK_POINTER_SCRIPT);
   await page.goto(url);
   await page.waitForSelector('[data-parity-root]', {state: 'attached'});
@@ -588,8 +659,13 @@ async function syncTheme(angular: Page, qwik: Page): Promise<void> {
 
 /** Asserts the Angular and Qwik renderings of a scenario are DOM-identical, before and after each step. */
 export async function expectMaterialParity(browser: Browser, s: ParityScenario): Promise<void> {
-  const angular = await open(browser, `${ANGULAR_URL}/${s.route}/${s.scenario}`, s.pinRoot);
-  const qwik = await open(browser, `${QWIK_URL}/${s.route}/${s.scenario}/`, s.pinRoot);
+  const angular = await open(
+    browser,
+    `${ANGULAR_URL}/${s.route}/${s.scenario}`,
+    s.pinRoot,
+    s.clockDate,
+  );
+  const qwik = await open(browser, `${QWIK_URL}/${s.route}/${s.scenario}/`, s.pinRoot, s.clockDate);
   // Qwik resumes lazily; make sure the scenario's own readiness marker exists.
   await qwik.waitForSelector('[data-scenario-ready]', {state: 'attached'});
   await syncTheme(angular, qwik);

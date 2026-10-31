@@ -46,15 +46,18 @@ type NativeInputElement = HTMLInputElement;
  * `<input>` still comes from `picker.disabled.value` (the live source of truth, matching
  * `MatTimepickerToggle`'s own read) — this prop exists ONLY for `MatFormField`'s static read.
  *
- * `formBound` MUST ALWAYS be passed as literal `true` on every usage. Every `MatTimepickerInput`
- * has an implicit value-model (`picker.value`, `onValueChange$`) exactly the way upstream's
- * `<input matInput [matTimepicker]="picker" [(ngModel)]="value">`/`[formControl]` always has an
- * `NgControl` — confirmed live: `MatFormField`'s own `[class.ng-untouched]`/`[class.ng-pristine]`/
- * `[class.ng-valid]` host bindings (`form-field.ts`, reading `this._control.ngControl`) are
- * present on EVERY timepicker scenario's `<mat-form-field>`, not just the one
- * (`min-max`/reactive-`FormControl`) scenario that also shows `<mat-error>`s. There is no
- * "unbound" timepicker shape to fall back to, unlike `MatInput`, so this is simply always `true`
- * rather than a real per-usage choice.
+ * `formBound` should be passed as literal `true` on every usage whose Angular counterpart
+ * actually binds `[(ngModel)]`/`[formControl]`/`formControlName` — which, in this port, is every
+ * PRE-EXISTING `MatTimepickerInput` call site (every `/qwik-parity/mat-timepicker/*` scenario
+ * binds one of these). Angular's `NgControlStatus` directive (`[class.ng-untouched]`/
+ * `[class.ng-pristine]`/`[class.ng-valid]`, read off `this._control.ngControl` by
+ * `MatFormField`/matched here) activates ONLY when one of those three attribute selectors is
+ * actually written in the template — confirmed live with BOTH shapes: present (giving these
+ * classes) on every scenario that binds one, and genuinely ABSENT on `material.angular.dev`'s
+ * own `timepicker-overview` docs example (`<input matInput [matTimepicker]="picker">`, no
+ * ngModel/formControl at all). `formBound` (default `false`, matching `MatInput`'s own
+ * convention) gates these three classes accordingly — omit it for a genuinely unbound usage like
+ * that one.
  *
  * `value` is ALSO still a prop (a plain truthiness marker, not the real `Date` — which stays on
  * `picker.value`) — PASS `formatTimeForDisplay(picker.value.value) || undefined` (the exported
@@ -97,8 +100,10 @@ type NativeInputElement = HTMLInputElement;
  * />
  * ```
  */
-export interface MatTimepickerInputProps<D = unknown>
-  extends Omit<MatFormFieldControlProps, 'touched' | 'dirty' | 'invalid'> {
+export interface MatTimepickerInputProps<D = unknown> extends Omit<
+  MatFormFieldControlProps,
+  'touched' | 'dirty' | 'invalid'
+> {
   /** The shared handle from `useMatTimepicker()`. Declared generic for documentation purposes —
    *  like `MatSelectProps<T>`, the `component$` itself is instantiated at the default `D =
    *  unknown` (a `component$` can't be generic per call site); passing a concrete
@@ -119,6 +124,20 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
   const animationsDisabled = useAnimationsDisabled();
   const openOnClick = props.openOnClick ?? true;
   const required = props.required ?? false;
+  // Default `false` — see this file's own doc comment's "formBound MUST ALWAYS be passed as
+  // literal `true`" note for every scenario THIS PORT established before 2026-10-31. That note
+  // was written against this port's own `/qwik-parity/mat-timepicker/*` scenarios, which (like
+  // every pre-existing `MatTimepickerInput` call site in this dev-app) always bind
+  // `[(ngModel)]`/`[formControl]` upstream — hence always carrying Angular's `NgControlStatus`
+  // classes. `material.angular.dev`'s own `timepicker-overview` docs example
+  // (`<input matInput [matTimepicker]="picker">`, no ngModel/formControl at all) is the first
+  // GENUINELY unbound usage this port renders — confirmed live, Angular's real `<input>` there
+  // carries NONE of `ng-untouched`/`ng-pristine`/`ng-valid` (`NgControlStatus`'s selector is
+  // `[formControlName],[ngModel],[formControl]`; none present, so it never activates). Gating
+  // these three classes behind this flag (default `false`, matching `MatInput`'s own convention)
+  // fixes that gap with zero effect on any existing scenario, which all pass `formBound`
+  // explicitly already.
+  const formBound = props.formBound ?? false;
 
   const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined);
   const isInFormField = formField !== undefined;
@@ -200,9 +219,9 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
     isInFormField && 'mat-mdc-form-field-input-control',
     isInFormField && 'mdc-text-field__input',
     'cdk-text-field-autofill-monitored',
-    touched ? 'ng-touched' : 'ng-untouched',
-    dirty ? 'ng-dirty' : 'ng-pristine',
-    showValidityClass && (invalid ? 'ng-invalid' : 'ng-valid'),
+    formBound && (touched ? 'ng-touched' : 'ng-untouched'),
+    formBound && (dirty ? 'ng-dirty' : 'ng-pristine'),
+    formBound && showValidityClass && (invalid ? 'ng-invalid' : 'ng-valid'),
     props.class,
   ].filter(Boolean) as string[];
 
