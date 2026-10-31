@@ -274,6 +274,15 @@ make. See that function's own doc comment for the full write-up.
 
 ## Deviations from upstream
 
+- **`inputAriaLabel` prop added (2026-10-31, examples port).** The real `<input>` rendered by
+  `MatAutocomplete` had no way to carry a plain, native `aria-label` attribute — the existing
+  `'aria-label'` prop is reserved for the SEPARATE `<mat-autocomplete>` panel's own
+  `@Input aria-label` (upstream `autocomplete.ts`), and `MatAutocompleteTrigger` (the directive
+  that actually attaches to the input) has no `aria-label` input of its own at all; a consumer's
+  `<input matInput [matAutocomplete]="auto" aria-label="…">` is just a plain, untouched native
+  attribute. Needed to port material.angular.dev's `autocomplete-simple` docs example verbatim
+  (`aria-label="Number"` on the input). Purely additive; forwarded onto the `<input>` next to
+  `placeholder`/`name`/`type`.
 - **No `autoSelectActiveOption`.** Accepted on `MatAutocompleteConfig` for
   API parity but not wired — no scenario sets it, and it would need the
   `_pendingAutoselectedOption`/`_valueBeforeAutoSelection` machinery this

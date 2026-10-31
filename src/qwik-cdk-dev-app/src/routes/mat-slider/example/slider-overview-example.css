@@ -1,0 +1,18 @@
+/*
+ * Adapted from src/components-examples/material/slider/slider-overview/
+ * slider-overview-example.css (`mat-slider { width: 300px; }`, unchanged declaration).
+ *
+ * Selector widened from a bare `mat-slider` type selector to `mat-slider.mat-mdc-slider`: Angular
+ * ships `.mat-mdc-slider { width: auto; }` as one of MatSlider's own (globally-applied,
+ * ViewEncapsulation.None) component styles, specificity (0,1,0) — a plain example-scoped
+ * `mat-slider { width: 300px; }` would lose to it. Angular's own version of this rule wins only
+ * because the example component's emulated encapsulation adds a `[_ngcontent-*]` attribute
+ * selector to it, bumping its specificity to (0,1,1) — one class-level selector above `.mat-mdc-
+ * slider`'s. Unscoped here, there is no such attribute to rely on, so the class itself is added
+ * to reach the same (0,1,1) specificity directly. Confirmed live: without this, the slider
+ * measures its native CSS-default (content-driven) width instead of 300px, which changes the
+ * minimum-visible-fill `scaleX(...)` on the active track — a real, observable parity diff.
+ */
+mat-slider.mat-mdc-slider {
+  width: 300px;
+}

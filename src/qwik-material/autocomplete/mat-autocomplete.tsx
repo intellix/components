@@ -223,6 +223,15 @@ export interface MatAutocompleteProps extends Omit<MatFormFieldControlProps, 'va
   'aria-label'?: string;
   /** Mirrors `<mat-autocomplete aria-labelledby>`. */
   'aria-labelledby'?: string;
+  /**
+   * Plain `aria-label` on the rendered `<input>` ITSELF — unrelated to `aria-label` above
+   * (which targets the separate `<mat-autocomplete>` panel's own `@Input aria-label`, per
+   * upstream's `autocomplete.ts`). `MatAutocompleteTrigger` is a directive with no `aria-label`
+   * input of its own, so a consumer's `<input matInput [matAutocomplete]="auto" aria-label="…">`
+   * is just a plain native attribute Angular passes through untouched — same category as
+   * `placeholder`/`name`/`type` below. See `autocomplete-simple`'s docs example.
+   */
+  inputAriaLabel?: string;
   type?: string;
   name?: string;
   maxLength?: number;
@@ -468,6 +477,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
         name={props.name || undefined}
         maxLength={props.maxLength}
         placeholder={props.placeholder}
+        aria-label={props.inputAriaLabel}
         disabled={disabled || undefined}
         required={required || undefined}
         tabIndex={props.tabIndex}
