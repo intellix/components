@@ -93,11 +93,34 @@ const openBottomSheet: ParityStep = {
   },
 };
 
+/**
+ * Clicks the `menu-overview` example's trigger and waits for the panel to attach, with none of
+ * them mid-animation. Mirrors specs/material-menu/angular-parity.spec.ts's `waitForPanelCount`.
+ */
+const openMenuStep: ParityStep = {
+  name: 'click trigger (open)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] button').click();
+    await page.waitForFunction(
+      () => {
+        const panels = document.querySelectorAll('.mat-mdc-menu-panel');
+        return (
+          panels.length === 1 &&
+          Array.from(panels).every(p => !p.classList.contains('mat-menu-panel-animating'))
+        );
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
 /** Interactions per `<component>/<route>`, added alongside each Qwik port as needed. */
 const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
   'mat-autocomplete/example': [{steps: [openAutocomplete]}],
   'mat-snack-bar/example': [{steps: [openSnackBar], rootSelector: overlayRoot}],
   'mat-bottom-sheet/example': [{steps: [openBottomSheet], rootSelector: overlayRoot}],
+  'mat-menu/example': [{steps: [openMenuStep]}, {steps: [openMenuStep], rootSelector: overlayRoot}],
 };
 
 test.describe('material.angular.dev examples — Angular DOM parity', () => {
