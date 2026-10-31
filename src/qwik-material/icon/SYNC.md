@@ -101,3 +101,17 @@ No new stubs — the icon SCSS chain does NOT reference `@angular/cdk` (unlike b
 ## Pipeline
 
 `pnpm test:qwik-material` at the repo root runs `build && vitest && lint:no-ssr-leaks && typecheck` for the whole qwik-material package, covering dialog + button + card + toolbar + badge + icon.
+
+## Directive-hook host support (2026-10-31, directive-hooks remediation)
+
+**Item 15 above (`trailingContent`) is REMOVED, replaced by `hostContent?: JSXOutput`** — the
+same rename/generalization `button/SYNC.md` documents: no longer a badge-specific escape hatch,
+it's the host-side half of ANY directive hook's `content` field (`useMatBadge(...).content`; see
+`qwik-material/core/host-props.ts` and `qwik-material/README.md`'s "Composing directives"
+section). Also added: `ref?: HostRef` (forwarded onto `<mat-icon>`, for a future directive hook
+needing the live element) and a generic `[extraAttr: string]: unknown` index signature +
+`extraHostAttrs()` passthrough, same rationale as `button/SYNC.md`'s identical additions. `mat-
+badge/example` was rewritten to call `useMatBadge()` directly and pass `hostContent={badge.
+content}` instead of hand-computing the badge markup — see that route's own header comment and
+`badge/SYNC.md`'s directive-hook section. Verified: the full `specs/material-icon` suite and
+`specs/examples`'s `mat-badge/example` interaction both stay green.

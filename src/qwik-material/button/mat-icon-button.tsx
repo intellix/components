@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, $} from '@builder.io/qwik';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {FocusIndicator} from './internal/focus-indicator';
@@ -6,6 +6,31 @@ import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
+import {callHostHandler, extraHostAttrs, type HostHandler, type HostRef} from '../core/host-props';
+
+/** See `mat-button.tsx`'s identical constant doc comment. */
+const KNOWN_PROPS = new Set<string>([
+  'color',
+  'disabled',
+  'disableRipple',
+  'disabledInteractive',
+  'href',
+  'type',
+  'onClick$',
+  'onMouseDown$',
+  'onMouseEnter$',
+  'onMouseLeave$',
+  'onKeyDown$',
+  'onFocusIn$',
+  'onFocusOut$',
+  'ariaLabel',
+  'ariaDescribedBy',
+  'ariaLabelledBy',
+  'aria-describedby',
+  'id',
+  'class',
+  'ref',
+]);
 
 export interface MatIconButtonProps {
   color?: MatButtonColor;
@@ -19,12 +44,23 @@ export interface MatIconButtonProps {
    * is only rendered when the caller passes one explicitly.
    */
   type?: 'button' | 'submit' | 'reset';
-  onClick$?: QRL<(e: MouseEvent) => void>;
+  /** See `mat-button.tsx`'s identical prop doc for why `HostHandler`-shaped. */
+  onClick$?: HostHandler<MouseEvent>;
+  /** Directive-hook passthrough — see `core/host-props.ts`. */
+  onMouseDown$?: HostHandler<MouseEvent>;
+  onMouseEnter$?: HostHandler<MouseEvent>;
+  onMouseLeave$?: HostHandler<MouseEvent>;
+  onKeyDown$?: HostHandler<KeyboardEvent>;
+  onFocusIn$?: HostHandler<FocusEvent>;
+  onFocusOut$?: HostHandler<FocusEvent>;
+  ref?: HostRef;
   ariaLabel?: string;
   ariaDescribedBy?: string;
   ariaLabelledBy?: string;
   id?: string;
   class?: string | ReadonlyArray<string>;
+  /** See `mat-button.tsx`'s identical `[extraAttr]` doc comment. */
+  [extraAttr: string]: unknown;
 }
 
 const DEFAULTS: MatButtonConfig = {
@@ -60,13 +96,13 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
-  const preventDisabledClick$ = $((e: MouseEvent) => {
+  const preventDisabledClick$ = $(async (e: MouseEvent, el: Element) => {
     if (props.disabled) {
       e.preventDefault();
       e.stopImmediatePropagation();
       return;
     }
-    if (props.onClick$) props.onClick$(e);
+    await callHostHandler(props.onClick$, e, el);
   });
 
   // Returns a signal (not a side effect) — see ripple-loader.ts's
@@ -93,18 +129,29 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
     disabled: props.disableRipple || props.disabled,
   });
 
+  const extraAttrs = extraHostAttrs(props as Record<string, unknown>, KNOWN_PROPS);
+  const describedBy = props.ariaDescribedBy ?? (props['aria-describedby'] as string | undefined);
+
   if (isAnchor) {
     return (
       <a
+        ref={props.ref}
         href={props.href}
         id={props.id}
         class={classes}
         tabIndex={nativelyDisabled ? -1 : undefined}
         aria-disabled={props.disabled ? 'true' : undefined}
         aria-label={props.ariaLabel}
-        aria-describedby={props.ariaDescribedBy}
+        aria-describedby={describedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
+        onMouseDown$={props.onMouseDown$}
+        onMouseEnter$={props.onMouseEnter$}
+        onMouseLeave$={props.onMouseLeave$}
+        onKeyDown$={props.onKeyDown$}
+        onFocusIn$={props.onFocusIn$}
+        onFocusOut$={props.onFocusOut$}
+        {...extraAttrs}
         {...rippleAttrs}
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >
@@ -115,15 +162,23 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
 
   return (
     <button
+      ref={props.ref}
       type={props.type}
       id={props.id}
       class={classes}
       {...disabledAttr(nativelyDisabled)}
       aria-disabled={props.disabled && disabledInteractive ? 'true' : undefined}
       aria-label={props.ariaLabel}
-      aria-describedby={props.ariaDescribedBy}
+      aria-describedby={describedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
+      onMouseDown$={props.onMouseDown$}
+      onMouseEnter$={props.onMouseEnter$}
+      onMouseLeave$={props.onMouseLeave$}
+      onKeyDown$={props.onKeyDown$}
+      onFocusIn$={props.onFocusIn$}
+      onFocusOut$={props.onFocusOut$}
+      {...extraAttrs}
       {...rippleAttrs}
       mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
     >

@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type JSXOutput} from '@builder.io/qwik';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
@@ -7,8 +7,45 @@ import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
+import {callHostHandler, extraHostAttrs, type HostHandler, type HostRef} from '../core/host-props';
 
-export interface MatFabProps {
+/** See `mat-button.tsx`'s identical constant doc comment. */
+const KNOWN_PROPS = new Set<string>([
+  'extended',
+  'color',
+  'disabled',
+  'disableRipple',
+  'disabledInteractive',
+  'href',
+  'type',
+  'onClick$',
+  'onMouseDown$',
+  'onMouseEnter$',
+  'onMouseLeave$',
+  'onKeyDown$',
+  'onFocusIn$',
+  'onFocusOut$',
+  'ariaLabel',
+  'ariaDescribedBy',
+  'ariaLabelledBy',
+  'aria-describedby',
+  'id',
+  'class',
+  'ref',
+  'icon',
+]);
+
+/**
+ * Named fields only, deliberately kept SEPARATE from the `[extraAttr]` index
+ * signature below (`MatFabProps`) — `MatMiniFabProps` needs `Omit<_,
+ * 'extended'>` over just the named fields. `Omit`/`Pick` collapse every
+ * named property to the index signature's type (`unknown`) when applied to
+ * an interface that ALREADY has one (`keyof` a type with a string index
+ * signature is `string`, not the literal union of its named keys) — a
+ * well-known TS gotcha. Exported so `mat-mini-fab-button.tsx` can `Omit`
+ * over THIS (index-signature-free) type instead.
+ */
+export interface MatFabOwnProps {
   /** When true, renders the extended FAB variant (wider, label visible). */
   extended?: boolean;
   color?: MatButtonColor;
@@ -22,7 +59,16 @@ export interface MatFabProps {
    * is only rendered when the caller passes one explicitly.
    */
   type?: 'button' | 'submit' | 'reset';
-  onClick$?: QRL<(e: MouseEvent) => void>;
+  /** See `mat-button.tsx`'s identical prop doc for why `HostHandler`-shaped. */
+  onClick$?: HostHandler<MouseEvent>;
+  /** Directive-hook passthrough — see `core/host-props.ts`. */
+  onMouseDown$?: HostHandler<MouseEvent>;
+  onMouseEnter$?: HostHandler<MouseEvent>;
+  onMouseLeave$?: HostHandler<MouseEvent>;
+  onKeyDown$?: HostHandler<KeyboardEvent>;
+  onFocusIn$?: HostHandler<FocusEvent>;
+  onFocusOut$?: HostHandler<FocusEvent>;
+  ref?: HostRef;
   ariaLabel?: string;
   ariaDescribedBy?: string;
   ariaLabelledBy?: string;
@@ -42,6 +88,11 @@ export interface MatFabProps {
    * scenario needs it.
    */
   icon?: JSXOutput;
+}
+
+/** See `mat-button.tsx`'s identical `[extraAttr]` doc comment. */
+export interface MatFabProps extends MatFabOwnProps {
+  [extraAttr: string]: unknown;
 }
 
 // FAB defaults differ from standard button: color defaults to 'accent' per
@@ -82,13 +133,13 @@ export const MatFabButton = component$<MatFabProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
-  const preventDisabledClick$ = $((e: MouseEvent) => {
+  const preventDisabledClick$ = $(async (e: MouseEvent, el: Element) => {
     if (props.disabled) {
       e.preventDefault();
       e.stopImmediatePropagation();
       return;
     }
-    if (props.onClick$) props.onClick$(e);
+    await callHostHandler(props.onClick$, e, el);
   });
 
   // Returns a signal (not a side effect) — see ripple-loader.ts's
@@ -117,18 +168,29 @@ export const MatFabButton = component$<MatFabProps>(props => {
     disabled: props.disableRipple || props.disabled,
   });
 
+  const extraAttrs = extraHostAttrs(props as Record<string, unknown>, KNOWN_PROPS);
+  const describedBy = props.ariaDescribedBy ?? (props['aria-describedby'] as string | undefined);
+
   if (isAnchor) {
     return (
       <a
+        ref={props.ref}
         href={props.href}
         id={props.id}
         class={classes}
         tabIndex={nativelyDisabled ? -1 : undefined}
         aria-disabled={props.disabled ? 'true' : undefined}
         aria-label={props.ariaLabel}
-        aria-describedby={props.ariaDescribedBy}
+        aria-describedby={describedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
+        onMouseDown$={props.onMouseDown$}
+        onMouseEnter$={props.onMouseEnter$}
+        onMouseLeave$={props.onMouseLeave$}
+        onKeyDown$={props.onKeyDown$}
+        onFocusIn$={props.onFocusIn$}
+        onFocusOut$={props.onFocusOut$}
+        {...extraAttrs}
         {...rippleAttrs}
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >
@@ -139,15 +201,23 @@ export const MatFabButton = component$<MatFabProps>(props => {
 
   return (
     <button
+      ref={props.ref}
       type={props.type}
       id={props.id}
       class={classes}
       {...disabledAttr(nativelyDisabled)}
       aria-disabled={props.disabled && disabledInteractive ? 'true' : undefined}
       aria-label={props.ariaLabel}
-      aria-describedby={props.ariaDescribedBy}
+      aria-describedby={describedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
+      onMouseDown$={props.onMouseDown$}
+      onMouseEnter$={props.onMouseEnter$}
+      onMouseLeave$={props.onMouseLeave$}
+      onKeyDown$={props.onKeyDown$}
+      onFocusIn$={props.onFocusIn$}
+      onFocusOut$={props.onFocusOut$}
+      {...extraAttrs}
       {...rippleAttrs}
       mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
     >
