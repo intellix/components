@@ -156,10 +156,40 @@ const openSelect: ParityStep = {
   },
 };
 
+/**
+ * Clicks the `dialog-overview` example's "Pick one" trigger and waits for the dialog to settle
+ * open. Mirrors specs/material-dialog/angular-parity.spec.ts's `clickTrigger()`/`settled`.
+ */
+const openDialog: ParityStep = {
+  name: 'click "Pick one" (open)',
+  run: async (page: Page) => {
+    await page
+      .locator('[data-parity-root]')
+      .getByRole('button', {name: 'Pick one', exact: true})
+      .click();
+    await page.waitForSelector('mat-dialog-container', {state: 'attached', timeout: 10_000});
+    await page
+      .waitForFunction(
+        () => {
+          const el = document.querySelector('mat-dialog-container');
+          return (
+            !!el &&
+            el.classList.contains('mdc-dialog--open') &&
+            !el.classList.contains('mdc-dialog--opening')
+          );
+        },
+        undefined,
+        {timeout: 10_000},
+      )
+      .catch(() => {});
+  },
+};
+
 /** Interactions per `<component>/<route>`, added alongside each Qwik port as needed. */
 const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
   'mat-autocomplete/example': [{steps: [openAutocomplete]}],
   'mat-select/example': [{steps: [openSelect]}],
+  'mat-dialog/example': [{steps: [openDialog], rootSelector: overlayRoot}],
   'mat-snack-bar/example': [{steps: [openSnackBar], rootSelector: overlayRoot}],
   'mat-bottom-sheet/example': [{steps: [openBottomSheet], rootSelector: overlayRoot}],
   'mat-menu/example': [{steps: [openMenuStep]}, {steps: [openMenuStep], rootSelector: overlayRoot}],
