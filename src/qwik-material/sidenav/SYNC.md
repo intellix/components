@@ -218,7 +218,7 @@ accepted wart; no runtime validation enforces it.
 6. **No validation that at most one drawer per position is registered.** See "Removed upstream files" above.
 7. **Focus-management timing is simplified relative to upstream's split between an immediate (synchronous, un-delayed) close-time restore-focus and a delayed (animation-settled) open-time auto-focus.** This port settles BOTH auto-focus-on-open and restore-focus-on-close from the same animation-settled point. Deliberate: no parity scenario's structural DOM diff is sensitive to which node currently holds focus (the parity spec's own header comment confirms this explicitly), and the ~400ms difference is imperceptible to a real user.
 8. **Restoring focus to the "previously focused" element uses plain `.focus()`, not `focusVia()`.** `focusVia()`'s pending-origin handoff attribute (`data-cdk-pending-focus-origin`) is only ever consumed by a `useFocusOrigin()` listener on the SAME element; a plain consumer-provided `<button>` (every scenario here) has none, so the attribute would leak into the compared DOM forever. Behaviorally identical for every scenario here either way (a plain, unmonitored button gets no `cdk-*-focused` classes from upstream's real `FocusMonitor` either).
-9. **Angular-specific removals:** `@Input()` decorators + `coerceBooleanProperty`/`coerceNumberProperty` → TypeScript prop types + plain prop passthrough; `AfterViewInit`/`AfterContentInit`/`DoCheck`/`OnDestroy` lifecycle → no lifecycle, reactive `useTask$`/`useVisibleTask$` instead; `FocusTrapFactory`/`FocusMonitor`/`InteractivityChecker` DI tokens → the local `focus-helpers.ts` + `qwik-cdk/a11y`'s already-ported `createInteractivityChecker()`; `Renderer2`-based `keydown`/`transitionend`/`transitioncancel` listeners outside `NgZone` → plain `onKeyDown$` JSX handler (lazy, resumable per design doc rule 7) + the fixed-timer workaround for the transition events (Qwik limitation #2 above); `providers: [{provide: MAT_DRAWER_CONTAINER, useExisting: ...}]`/`{provide: MatDrawer, useExisting: MatSidenav}` → the shared `MAT_DRAWER_CONTAINER_STATE` context; `exportAs` → N/A; `ViewEncapsulation.None` + host bindings → plain JSX attribute/class passthrough.
+9. **Angular-specific removals:** `@Input()` decorators + `coerceBooleanProperty`/`coerceNumberProperty` → TypeScript prop types + plain prop passthrough; `AfterViewInit`/`AfterContentInit`/`DoCheck`/`OnDestroy` lifecycle → no lifecycle, reactive `useTask$`/`useVisibleTask$` instead; `FocusTrapFactory`/`FocusMonitor`/`InteractivityChecker` DI tokens → the local `focus-helpers.ts` + `qwik-cdk/a11y`'s already-ported `createInteractivityChecker()`; `Renderer2`-based `keydown`/`transitionend`/`transitioncancel` listeners outside `NgZone` → a lazy, resumable `useOn('keydown', ...)` (see "Qwik v2 regressions" below for why it's `useOn`, not a JSX `onKeyDown$` prop, as of 2026-11-01) + the fixed-timer workaround for the transition events (Qwik limitation #2 above); `providers: [{provide: MAT_DRAWER_CONTAINER, useExisting: ...}]`/`{provide: MatDrawer, useExisting: MatSidenav}` → the shared `MAT_DRAWER_CONTAINER_STATE` context; `exportAs` → N/A; `ViewEncapsulation.None` + host bindings → plain JSX attribute/class passthrough.
 
 ## Class count
 
@@ -232,6 +232,64 @@ lint:no-ssr-leaks && typecheck` for the whole qwik-material package,
 covering dialog + button + card + toolbar + badge + icon + progress-bar +
 progress-spinner + divider + grid-list + list + button-toggle +
 slide-toggle + expansion + sidenav + core.
+
+## Qwik v2 regressions (2026-11-01)
+
+Upgrading to `@qwik.dev/core@2.0.0-rc.4` broke 10/10 `material-sidenav` parity
+scenarios, for THREE unrelated reasons:
+
+1. **`onKeyDown$={...}` on `<MatDrawer>`'s dynamic host tag stopped being
+   wired as an event listener at all** — it got serialized as a literal
+   `onKeyDown$="<function source>"` DOM attribute instead of a `q-e:keydown`
+   listener (so Escape stopped closing anything). `mat-drawer.tsx` and
+   `mat-progress-spinner.tsx` both render their host via a
+   `hostTag as unknown as FunctionComponent<...>` alias (so the SAME
+   component can emit `<mat-drawer>` or `<mat-sidenav>`, `<mat-spinner>` or
+   `<mat-progress-spinner>`) — under v2, the compiler's "is this prop an
+   event handler" recognition apparently doesn't apply the same way to a
+   JSX element whose tag is a variable rather than a literal lowercase
+   name. (Only `mat-drawer.tsx` had an event prop on this host — the other
+   three dynamic-host-tag components in this package attach none, so they
+   weren't affected.) Fixed by attaching it with `useOn('keydown', ...)`
+   instead (same category of hook `useFocusOrigin()` already relies on for
+   this exact reason — it attaches directly to the component's own host
+   element via Qwik's imperative API, bypassing JSX prop analysis
+   entirely).
+2. **The backdrop `<div>` — the FIRST JSX child of `<MatDrawerContainer>` —
+   landed as the LAST DOM child instead**, on every scenario where it (and
+   the focus-trap anchors around it) only start existing once a
+   registering `<MatDrawer>`'s own task has populated the shared
+   `registry` signal (which happens strictly after this container's first
+   SSR render — the raw SSR HTML has no backdrop/anchor at all). That
+   makes the backdrop's first real appearance a brand-new PREPEND into a
+   parent that already has other children (`<mat-drawer>`/
+   `<mat-drawer-content>`, present via `<Slot>` since SSR) — and under v2
+   that shape (a new leading child with no prior sibling, while other new
+   siblings insert in the very same pass) lands at the wrong spot.
+   `key`-ing every conditional sibling did not change this. Fixed with a
+   `useVisibleTask$` on `<MatDrawerContainer>` that, whenever the tracked
+   `registry`/`backdropOverride` say the backdrop should show, explicitly
+   `insertBefore`s it back to `parent.firstChild` if it isn't already
+   there — the same imperative-escape-hatch category this file already
+   uses for `mat-drawer-transition`'s class toggle.
+3. **`<MatDrawerContent>`'s `inert` attribute lost its deliberately-literal
+   `"true"` string value.** Qwik v2 added `inert` to its own hard-coded
+   boolean-attribute list (`isBooleanAttr` in core — the same category
+   `checked`/`disabled`/`required` are already in), so a declarative JSX
+   `inert={someTruthyValue}` prop now unconditionally reflects through
+   `element.inert = true`'s own IDL behavior, producing the bare `inert=""`
+   form instead. This component specifically needs the literal string
+   (matching upstream's own imperative `setAttribute('inert', 'true')`
+   call — see the remaining doc comment at its removal site). Already had
+   TWO imperative paths covering mount and every subsequent update (this
+   component's own mount `useVisibleTask$`, `<MatDrawer>`'s registration
+   task) — the declarative JSX prop was redundant with those AND now wrong
+   under v2, so it was removed rather than patched.
+
+None of these three are a shared-`qwik-cdk` fix (not focus-trap/overlay
+code — `FocusTrapAnchor` here is a small LOCAL component, not
+`qwik-cdk/a11y`'s real focus trap) — all three are local to
+`qwik-material/sidenav`.
 
 ## Dev-app shell change (not sidenav-specific, but found while porting it)
 

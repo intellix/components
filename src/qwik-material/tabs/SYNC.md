@@ -95,6 +95,42 @@ trigger is required, not a style choice):
   field (`MatTabNav.disableRipple`, OR'd into every link's `rippleDisabled`) — previously had no
   representation at all since nothing read it.
 
+## Qwik v2 regression: roving-tabindex attribute going missing (2026-11-01)
+
+Upgrading to `@qwik.dev/core@2.0.0-rc.4` broke 9/12 `material-tabs` parity scenarios: after
+ArrowRight/clicking a tab, the newly-active (or newly-inactive) tab's `tabindex` attribute was
+sometimes entirely MISSING from the DOM, rather than `"0"`/`"-1"`. Two separate, stacked v2 bugs
+in `MatTabLabelItem` (`mat-tab-label.tsx`):
+
+1. A plain `tabIndex={props.tabIndex}` JSX prop is only re-applied to the DOM when THIS component
+   re-renders — and `useFocusOrigin()`'s `focusin` listener causes exactly such an unrelated
+   re-render on every roving-tabindex move (`MatTabGroup.onKeyDown$`/`onActivate$` write the new
+   `focusIndex` signal and synchronously call `.focus()` on the target tab in the same handler, so
+   native `focusin` can resolve before the parent's re-render passes the new prop down). Same
+   category as `qwik-material/radio/mat-radio-button.tsx`'s `checkedSig` fix.
+2. Fixing that by tracking `props.tabIndex` from a `useTask$` and reading it back via a dedicated
+   `Signal` (`tabIndex={tabIndexSig.value}`, mirroring `checkedSig` exactly — needed so SSR still
+   gets a value, since the task's own imperative write has no effect on a server mock element)
+   surfaced a SECOND, different bug: a bare `sig.value` JSX attribute expression gets hoisted into
+   its own dedicated subscription, bypassing the regular per-render attribute diff for that one
+   prop — but that diff's OWN "remove attributes no longer in this render's props" cleanup pass
+   doesn't know about the hoisted prop, and v2 never gets the chance to normalize its
+   case-mismatched bookkeeping for it either (SSR serializes the literal JSX casing `tabIndex="0"`;
+   the browser parses/stores HTML attribute names lowercased as `tabindex`; that normalization
+   only happens inside the very attribute-diff loop the hoisted prop now bypasses). Confirmed
+   live: ANY unrelated re-render of this component removed the `tabindex` attribute outright.
+
+Fixed by reading the tracked signal into a plain local (`const tabIndexValue = tabIndexSig.value;`)
+and using THAT identifier in JSX — syntactically no longer a bare signal access, so it is not
+hoisted, and goes through the regular per-render diff on every render like any other plain prop
+(always included, always correctly cased) — while staying correct because the underlying SIGNAL
+(not a per-render recompute) is what the `useTask$` keeps in sync, decoupled from unrelated
+re-renders. See `mat-tab-label.tsx`'s own doc comment for the blow-by-blow.
+
+A separate, THIRD v2 regression (`mat-tabs/basic`'s last remaining failure after the above) was in
+shared `qwik-cdk/a11y` code, not this component — see `qwik-cdk/a11y/SYNC.md`'s 2026-11-01 entry on
+`useFocusOrigin()`'s pointer-modality tracking.
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/tabs/ 2>/dev/null` → 0 (no exported classes on the consumer surface).

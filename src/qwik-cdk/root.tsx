@@ -108,8 +108,42 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
         its `<style>` tag. No expiry timer (unlike an earlier version of
         this script): see recent-keydown.ts for why the flag instead
         persists until a `focusin`/`pointerdown` explicitly clears it.
+
+        The matching `onpointerdown` clear is ALSO installed here eagerly,
+        as of the Qwik v2 upgrade — not just the `onkeydown` set above.
+        `useFocusOrigin()`'s own `useOn('pointerdown', ...)` handler already
+        calls `consumeRecentKeydown()` too, but under v2 every Qwik event
+        handler resolves through a microtask-deferred `import()` even when
+        already cached, and that handler is a DIFFERENT lazy QRL than
+        `useFocusOrigin()`'s own `focusin` handler — so their relative
+        resolution order is no longer guaranteed to match the browser's
+        real `pointerdown`-then-`focusin` dispatch order (confirmed live: a
+        real click immediately following a keyboard selection — e.g.
+        pressing Space then clicking a different tab — got attributed
+        `cdk-keyboard-focused` instead of `cdk-mouse-focused`, because the
+        `focusin` handler's stale-flag check won the race against the
+        SAME click's own `pointerdown` handler clearing it). Clearing the
+        flag synchronously here, at the same eager, zero-QRL-resolution
+        layer `onkeydown` already uses, makes it unconditionally win that
+        race: a real `pointerdown` ALWAYS physically precedes its own
+        `focusin`, so clearing it here can never run too late for its own
+        click, only ever too early relative to the (separately handled)
+        `lastPointerModality` bookkeeping `useFocusOrigin()`'s own
+        `pointerdown` listener still owns.
       */}
-      <script>{`document.onkeydown=function(){window.__qwikCdkRecentKeydown__=true}`}</script>
+      {/*
+        No quote characters ANYWHERE in this script (see the big comment
+        above): `e.pointerType` (the browser's own "mouse"/"touch"/"pen"
+        string) is stored AS-IS, with no comparison against a quoted
+        literal — `recent-keydown.ts`'s `getRecentPointerModality()` does
+        the "touch" vs "anything else" mapping on the READING side
+        instead, in ordinary TypeScript where quotes are safe.
+      */}
+      <script>
+        {`document.onkeydown=function(){window.__qwikCdkRecentKeydown__=true};` +
+          `document.onpointerdown=function(e){window.__qwikCdkRecentKeydown__=false;` +
+          `window.__qwikCdkRecentPointerModality__=e.pointerType}`}
+      </script>
       <Slot />
       <OverlayContainerOutlet />
     </>

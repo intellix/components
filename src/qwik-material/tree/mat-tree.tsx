@@ -1,4 +1,12 @@
-import {$, component$, useContextProvider, useSignal, useStore, type QRL} from '@qwik.dev/core';
+import {
+  $,
+  component$,
+  useContextProvider,
+  useSignal,
+  useStore,
+  useVisibleTask$,
+  type QRL,
+} from '@qwik.dev/core';
 import {
   CDK_TREE_TOGGLE_STATE,
   collectInitialExpanded,
@@ -118,6 +126,77 @@ export const MatTree = component$((props: MatTreeProps<unknown>) => {
       if (firstChild) return firstChild.key;
     }
     return base;
+  });
+
+  // Qwik v2 regression, flat variant only: expanding/collapsing a node
+  // inserts/removes SIBLING `<mat-tree-node>` elements (the flat variant's
+  // whole DOM shape — collapsed descendants aren't present at all, unlike
+  // the nested variant's always-present, `display:none`-toggled wrapper,
+  // which is why ONLY this variant needs this fix). Confirmed live:
+  // inserting Apple/Banana when Fruit expands wiped the `tabindex`
+  // attribute from BOTH Fruit (not newly inserted — it already existed,
+  // roving tabindex didn't even move) AND Vegetables (also pre-existing,
+  // never focused) — not just a stale value, the attribute vanished
+  // outright. A declarative `tabIndex={activeKey.value === key ? 0 : -1}`
+  // JSX prop on a row that is a SIBLING of newly inserted/removed nodes
+  // gets corrupted by that insertion/removal, the same broad "attribute
+  // diffing breaks around a sibling-count change" category as
+  // `qwik-material/sidenav`'s backdrop-insertion-position bug (see that
+  // SYNC.md). Fixed the same way the rest of this port handles a v2
+  // attribute-diffing hazard: an imperative, decoupled fix-up — this task
+  // re-walks every currently-rendered `[role="treeitem"]` under the
+  // tree's own host (in DOM/render order, which matches `visible`'s order
+  // positionally) and sets `.tabIndex` directly, whenever `activeKey` OR
+  // the visible set's size changes (an insertion/removal, even one that
+  // doesn't move the active key, is exactly when the corruption hits).
+  const hostRef = useSignal<HTMLElement>();
+  // A plain array (like `visible` itself) read inside `track()` establishes
+  // no subscription at all — `track()` only subscribes to an actual
+  // SIGNAL/store read. Mirrors `mat-tab-group.tsx`'s own established
+  // `stateSignal.value = nextState` convention (a plain signal written
+  // directly in the render body, every render) to turn "the visible set
+  // changed" into something trackable.
+  const visibleKeysSig = useSignal('');
+  if (variant === 'flat') visibleKeysSig.value = visible.map(e => e.key).join('\u0000');
+  // `useVisibleTask$`, NOT `useTask$`: the latter runs as part of
+  // resolving a render, before the resulting DOM patch (the
+  // insertion/removal this whole fix-up exists to react to) actually
+  // lands — confirmed live, a `useTask$` version here still saw the
+  // pre-insertion DOM via `querySelectorAll`. A `useVisibleTask$` runs
+  // after the browser has actually painted the update.
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(({track}) => {
+    if (variant !== 'flat') return;
+    const active = track(() => activeKey.value);
+    const keys = track(() => visibleKeysSig.value).split('\u0000');
+    const host = hostRef.value;
+    if (!host) return;
+    const rows = host.querySelectorAll<HTMLElement>('[role="treeitem"]');
+    let activeRow: HTMLElement | null = null;
+    rows.forEach((row, i) => {
+      const isActive = keys[i] === active;
+      row.tabIndex = isActive ? 0 : -1;
+      if (isActive) activeRow = row;
+    });
+    // Same root cause as the `tabindex` corruption above: inserting the
+    // new siblings doesn't just clobber attributes, it also DETACHES and
+    // RE-ATTACHES already-existing rows (confirmed live: the SAME DOM
+    // node reference, `===`-identical before and after), which — being a
+    // genuine removal from the document, even if brief and even back to
+    // the exact same parent — makes the browser drop focus to `<body>`
+    // unconditionally; nothing restores it automatically, because nothing
+    // actually asked for a focus change. Any keydown-driven expand/
+    // collapse this component triggers always implies the keypress came
+    // from a currently-focused row in THIS tree, so if focus is sitting
+    // on `<body>` right after one of this task's own runs, it's this
+    // task's own fix-up to make, not a deliberate focus-away the user did
+    // — restore it to whichever row is the current roving-tabindex target.
+    // `activeRow` is assigned inside the forEach callback, which TS's
+    // narrowing can't see — re-widen before use.
+    const target = activeRow as HTMLElement | null;
+    if (target && document.activeElement === document.body) {
+      target.focus();
+    }
   });
 
   // IMPORTANT — all of the following feed INTO the `$(...)` handlers
@@ -282,7 +361,7 @@ export const MatTree = component$((props: MatTreeProps<unknown>) => {
   }
 
   return (
-    <mat-tree id={props.id} role="tree" class={treeClasses}>
+    <mat-tree ref={hostRef} id={props.id} role="tree" class={treeClasses}>
       {visible.map(entry => {
         const key = entry.key;
         return (

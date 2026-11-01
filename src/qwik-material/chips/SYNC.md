@@ -259,3 +259,23 @@ not just upstream's source code.
 `grid-disabled` — each mirroring `src/dev-app/qwik-parity/chips.ts`'s corresponding scenario
 exactly, with `<div data-parity-root>` wrapping the parity-compared markup and `<main
 data-scenario-ready>ready</main>` outside it.
+
+## Known flake, NOT fixed (found 2026-11-01 during the Qwik v2 upgrade, pre-existing under v1)
+
+`removable`'s `click remove(0)` step intermittently (~2/3 of runs in a repeated-run check)
+leaves a SURVIVING chip's `mat-ripple-loader-disabled` attribute present when it should have
+been removed. This is the "genuine, narrow gap" `mat-chip.tsx`'s own `rippleDisabledInitial`
+doc comment already documents: the correction relies on EITHER the chip itself receiving a
+qualifying event, or `<MatChipSet>`'s `fixupRippleDisabled$` (`mat-chip-set.tsx`) catching it
+via a bubbled `pointerdown`/`keydown`/`focusin` — `fixupRippleDisabled$` matches
+`querySelectorAll('mat-chip')` results to `props.chips` BY ARRAY INDEX, which is only correct
+if the DOM and the live array agree on ordering/count at the moment this (async, v2-slower-
+to-resolve) handler actually runs — not guaranteed when the handler races a removal that's
+simultaneously changing both. Confirmed NOT caused by anything in this branch's own v2 fixes
+(neither `mat-chip.tsx` nor `mat-chip-set.tsx` were touched) — a pre-existing fragility that
+v2's generally slower/more variable QRL resolution timing seems to have made more frequent.
+Not in this agent's originally-assigned failing-spec list; left undone given scope/time —
+flagged here with evidence for whoever picks it up next. A real fix likely needs to stop
+relying on index-based matching (match by the chip's own stable key/id instead) or to recompute
+the correction unconditionally on every relevant render rather than only reactively via an
+event.

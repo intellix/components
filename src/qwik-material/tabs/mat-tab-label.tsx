@@ -1,4 +1,4 @@
-import {$, component$, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
+import {$, component$, useSignal, useTask$, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
@@ -50,6 +50,61 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
   const focusOrigin = useFocusOrigin();
   const animationsDisabled = useAnimationsDisabled();
   const rippleContainerRef = useSignal<HTMLElement>();
+  const hostRef = useSignal<HTMLElement>();
+
+  // Qwik v2 regression, TWO layers deep:
+  //
+  // (1) A plain `tabIndex={props.tabIndex}` JSX prop only gets re-applied
+  //     to the DOM when THIS component happens to re-render, and
+  //     `useFocusOrigin()`'s `focusin` listener (above) causes exactly
+  //     such an unrelated re-render — on EVERY roving-tabindex move, not
+  //     just a real click: `MatTabGroup.onKeyDown$`/`onActivate$` write
+  //     the new `focusIndex` signal and SYNCHRONOUSLY call `.focus()` on
+  //     the target tab in the very same handler, so the native `focusin`
+  //     (and this component's own deferred reaction to it) can resolve
+  //     before the PARENT's re-render has had a chance to pass the new
+  //     `tabIndex` prop down. Same category as `qwik-material/radio/
+  //     mat-radio-button.tsx`'s `checkedSig` fix (see its big doc comment)
+  //     — tracking `props.tabIndex` from a `useTask$` and writing it
+  //     imperatively, decoupled from this component's general re-render
+  //     cycle, fixes this layer.
+  // (2) Mirroring `checkedSig` EXACTLY — i.e. also reading the tracked
+  //     signal back with a BARE `tabIndexSig.value` JSX expression, so
+  //     SSR still gets it (the task's own property write has no effect on
+  //     the serialized HTML — a mock server element, same gap
+  //     `mat-checkbox.tsx`'s `checked`/`indeterminate` comment documents)
+  //     — surfaces a SECOND, different v2 bug specific to `tabIndex`
+  //     (`checked` is immune: it's one of a handful of names core
+  //     special-cases as a boolean DOM property, see `isBooleanAttr`,
+  //     which never reaches the code path below). A bare `sig.value` JSX
+  //     attribute expression gets hoisted into its own dedicated
+  //     subscription, bypassing the component's regular per-render
+  //     attribute diff for that one prop — but the diff's OWN "remove
+  //     attributes no longer in this render's props" cleanup pass doesn't
+  //     know about that hoisted prop, and v2 never normalizes its
+  //     case-mismatched bookkeeping for it either (SSR serializes the
+  //     literal JSX casing `tabIndex="0"`; the browser parses/stores HTML
+  //     attribute names as lowercase `tabindex`; that normalization only
+  //     happens inside the very attribute-diff loop the hoisted prop now
+  //     bypasses). Confirmed live: ANY unrelated re-render of this
+  //     component (e.g. `focusOrigin` again, or `aria-selected` changing)
+  //     removes the `tabindex` attribute outright. Fixed by reading the
+  //     signal into a plain local first and using THAT identifier in JSX
+  //     — syntactically no longer a bare `sig.value` access, so the
+  //     optimizer does not hoist it, and it goes through the regular
+  //     per-render diff on every render (always included, always
+  //     correctly cased) like any other plain prop — while still being
+  //     correct on every one of those renders because the underlying
+  //     SIGNAL itself (not a per-render recompute) is what the `useTask$`
+  //     keeps correctly in sync, decoupled from unrelated re-renders.
+  const tabIndexSig = useSignal(() => props.tabIndex);
+  useTask$(({track}) => {
+    const value = track(() => props.tabIndex);
+    tabIndexSig.value = value;
+    const el = hostRef.value;
+    if (el) el.tabIndex = value;
+  });
+  const tabIndexValue = tabIndexSig.value;
 
   const onClick$ = $((_event: PointerEvent, element: HTMLElement) => {
     props.onActivate$(props.index, element);
@@ -87,10 +142,11 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
 
   return (
     <div
+      ref={hostRef}
       class={classes}
       role="tab"
       id={props.id}
-      tabIndex={props.tabIndex}
+      tabIndex={tabIndexValue}
       aria-posinset={props.posinset}
       aria-setsize={props.setsize}
       aria-controls={props.contentId}

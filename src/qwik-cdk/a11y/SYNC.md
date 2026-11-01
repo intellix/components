@@ -174,6 +174,34 @@
   `useMatTooltip()` reproduce the identical algorithm via ordinary JSX handler props instead,
   with zero duplication of the actual flag-tracking logic.
 
+- **Pointer-modality tracking ALSO moved to the eager, synchronous `<QwikCdkRoot>` script
+  (2026-11-01, Qwik v2 upgrade).** `useFocusOrigin()` used to record "mouse or touch" itself, via
+  its own lazy `useOn('pointerdown', ...)` listener (`lastPointerModality`, a per-instance
+  `useSignal`) — fine under v1. Under v2, every Qwik event handler resolves through a
+  microtask-deferred `import()` even when already cached, and that `pointerdown` handler is a
+  DIFFERENT QRL than the SAME hook's own `focusin` handler, so their relative resolution order is
+  no longer guaranteed to match the browser's real `pointerdown`-then-`focusin` dispatch order for
+  one gesture. Confirmed live (`qwik-material/tabs`'s `basic` scenario, a real click right after a
+  keyboard selection): first the keydown race above resurfaced (fixed the same way, see below),
+  then — once that was fixed — the SAME click still got attributed `'program'` instead of
+  `'mouse'`, because `focusin`'s handler won the race against its OWN click's `pointerdown`
+  handler, reading `lastPointerModality.value` before it had been set. Fixed by moving BOTH
+  flags (not just the keydown one) to `<QwikCdkRoot>`'s inline `<script>`:
+  `document.onpointerdown` now eagerly, synchronously clears the keydown flag AND records
+  `event.pointerType` into a new `__qwikCdkRecentPointerModality__` window flag
+  (`getRecentPointerModality()`/`consumeRecentPointerModality()`, `focus-origin/
+  recent-keydown.ts`) — a real `pointerdown` physically always precedes its own `focusin`, so
+  this can never lose that race. `useFocusOrigin()`'s own `useOn('pointerdown', ...)` listener
+  was removed entirely (both its jobs are now covered by the eager script).
+  **Gotcha hit twice while writing the new inline script:** per the ORIGINAL `onkeydown` script's
+  own comment, it must contain ZERO quote characters (a JSX text child's `"`/`'` get
+  HTML-entity-escaped to `&quot;`/`&#39;`, which a `<script>` tag's raw-text content never decodes
+  back, silently breaking BOTH statements in the same inline script with a syntax error — not just
+  the new one). The pointer-modality branch originally compared `e.pointerType==='touch'` inline,
+  which needed quotes; fixed by storing `e.pointerType` verbatim (no comparison, no quotes) and
+  doing the "touch vs. anything else counts as mouse" mapping in `getRecentPointerModality()`
+  instead, in ordinary TypeScript where quotes are safe.
+
 ### `LiveAnnouncer`
 
 - Source: `src/cdk/a11y/live-announcer/live-announcer.ts`

@@ -510,3 +510,26 @@ Verified: `specs/material-form-field/angular-parity.spec.ts` full suite + `specs
 datepicker` + `specs/cdk-dialog` + `specs/material-dialog` + `specs/material-bottom-sheet` +
 `specs/material-snack-bar` together, 108/108 passing. `qwik-material` unit tests unaffected
 (785 passed, 484 pre-existing skips), typecheck clean.
+
+## `onWrapperClick$` missing `MatChipGrid.onContainerClick`'s chip exclusion (Qwik v2, 2026-11-01)
+
+`onWrapperClick$` (the wrapper `(click)` binding's handler — mirrors `_control.onContainerClick`,
+called generically here since this port has one `MatFormField`, not a per-control override) only
+excluded clicks already on the control itself (`input`/`textarea`). Upstream's `MatChipGrid` has
+its OWN `onContainerClick` override (`src/material/chips/chip-grid.ts`) that ALSO skips the
+redirect when `_originatesFromChip(event)` — a click anywhere inside a `.mat-mdc-chip` (confirmed
+against `chip-set.ts`) — which this port's generic version never folded in.
+
+Confirmed live via `material-chips/grid-input`: clicking a chip's remove button raced this
+handler's focus-the-input redirect against `MatChipGrid`'s own "which row should hold focus now"
+logic (`mat-chip-grid.tsx`'s `wrappedRemoved$`) — TWO independent click reactions to the SAME
+click, and under Qwik v2 their relative execution order depends on which QRL happens to resolve
+first (this one was "warm" from an earlier interaction in the scenario, the other wasn't), not DOM
+bubble order. When this one won, it left focus on the input instead of the chip that should have
+inherited it, and — since `wrappedRemoved$` decides whether to redirect AT ALL based on reading
+`document.activeElement` at the time IT runs — having already lost that race meant it saw the
+WRONG active element and skipped its own redirect entirely rather than fixing the input's mistake.
+
+Fixed by porting the missing exclusion verbatim (`target?.closest('.mat-mdc-chip')`) rather than
+trying to out-schedule the race: `onWrapperClick$` now never attempts to redirect focus for a
+chip-originated click in the first place, so which QRL resolves first stops mattering.
