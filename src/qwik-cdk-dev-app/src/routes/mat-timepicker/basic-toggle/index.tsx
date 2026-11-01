@@ -5,6 +5,7 @@ import {
   MatTimepickerInput,
   MatTimepickerToggle,
   useMatTimepicker,
+  type MatTimepickerHandle,
 } from '@angular-community/qwik-material/timepicker';
 
 // Mirrors src/dev-app/qwik-parity/timepicker.ts's TimepickerBasicToggle — empty start, default
@@ -13,8 +14,10 @@ export default component$(() => {
   const value = useSignal<Date | null>(null);
   const picker = useMatTimepicker<Date>({
     value: value.value,
-    onValueChange$: $((v: Date | null) => (value.value = v)),
-  });
+    onValueChange$: $((v: Date | null) => {
+      value.value = v;
+    }),
+  }) as unknown as MatTimepickerHandle<unknown>;
   const invalid = picker.parseError.value || picker.minError.value || picker.maxError.value;
 
   return (

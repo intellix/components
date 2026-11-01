@@ -21,8 +21,13 @@ export default component$(() => {
         <MatCalendar
           startAt={JAN_1_2024}
           selected={selected.value}
-          onUserSelect$={$((value: Date | null) => {
-            selected.value = value;
+          // v2: like the Handle<D> casts elsewhere in this directory, `<MatCalendar>`
+          // (exported via the erased-generic component$<MatCalendarProps>) only ever
+          // types `onUserSelect$` as `(date: unknown) => void`. Leaving `value`
+          // unannotated lets it infer `unknown` from that contextual type instead of
+          // mismatching against `Date | null`.
+          onUserSelect$={$(value => {
+            selected.value = value as Date | null;
           })}
         />
         <p>Selected: {formatSelected(selected.value)}</p>

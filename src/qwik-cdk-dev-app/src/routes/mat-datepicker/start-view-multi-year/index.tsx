@@ -6,6 +6,7 @@ import {
   MatDatepickerInput,
   MatDatepickerToggle,
   useMatDatepicker,
+  type MatDatepickerHandle,
 } from '@angular-community/qwik-material/datepicker';
 
 // A multi-year grid spans 24 years around the active year (see the contract's own DETERMINISM
@@ -19,8 +20,10 @@ export default component$(() => {
   const picker = useMatDatepicker<Date>({
     startAt: JAN_1_1990,
     startView: 'multi-year',
-    onValueChange$: $((v: Date | null) => (value.value = v)),
-  });
+    onValueChange$: $((v: Date | null) => {
+      value.value = v;
+    }),
+  }) as unknown as MatDatepickerHandle<unknown>;
 
   return (
     <>

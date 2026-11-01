@@ -111,7 +111,12 @@ export const CdkTreeNodeToggle = component$<CdkTreeNodeToggleProps>(props => {
     return (
       <span
         tabIndex={-1}
-        class={props.class}
+        // v2 tightened the JSX `class` prop's array branch to a mutable
+        // `ClassList[]` (ours is intentionally `ReadonlyArray<string>` for
+        // callers, matching every other `class?:` prop in this port) — cast
+        // rather than widen the public prop type, same as other components'
+        // `[...].filter(Boolean) as string[]` class-merging casts do.
+        class={props.class as string | string[] | undefined}
         aria-label={props['aria-label']}
         onClick$={toggle$}
         onKeyDown$={onKeyDown$}
@@ -125,7 +130,7 @@ export const CdkTreeNodeToggle = component$<CdkTreeNodeToggleProps>(props => {
     <button
       type="button"
       tabIndex={-1}
-      class={props.class}
+      class={props.class as string | string[] | undefined}
       aria-label={props['aria-label']}
       onClick$={toggle$}
       onKeyDown$={onKeyDown$}

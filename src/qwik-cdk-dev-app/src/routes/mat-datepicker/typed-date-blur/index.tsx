@@ -6,6 +6,7 @@ import {
   MatDatepickerInput,
   MatDatepickerToggle,
   useMatDatepicker,
+  type MatDatepickerHandle,
 } from '@angular-community/qwik-material/datepicker';
 
 // Mirrors src/dev-app/qwik-parity/datepicker.ts's DatepickerTypedDateBlur — [formControl]
@@ -16,8 +17,10 @@ import {
 export default component$(() => {
   const value = useSignal<Date | null>(null);
   const picker = useMatDatepicker<Date>({
-    onValueChange$: $((v: Date | null) => (value.value = v)),
-  });
+    onValueChange$: $((v: Date | null) => {
+      value.value = v;
+    }),
+  }) as unknown as MatDatepickerHandle<unknown>;
 
   // ── Frozen `errors` element — see qwik-material/timepicker's min-max route for why this
   // pattern (never hand MatFormField's `errors` prop a NEW element reference after mount) is

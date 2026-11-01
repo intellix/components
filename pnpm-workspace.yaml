@@ -55,6 +55,18 @@ overrides:
   typescript: 6.0.2
   protobufjs: 8.6.4
 packageExtensions:
+  # @qwik.dev/optimizer@2.1.0-rc.10 (a transitive dep of @qwik.dev/core
+  # 2.0.0-rc.4) does `await import('vite')` at runtime but — unlike
+  # @qwik.dev/core itself — never declares `vite` as a (peer)dependency in
+  # its own package.json. Under this workspace's `hoist: false`, that
+  # leaves it unable to resolve the bare `vite` specifier ("Cannot find
+  # package 'vite' imported from .../@qwik.dev/optimizer/dist/index.mjs"),
+  # even though vite is installed and resolvable everywhere else. Patching
+  # its manifest here (rather than hoisting) is scoped to just this
+  # package and matches the other third-party manifest fixes below.
+  '@qwik.dev/optimizer':
+    peerDependencies:
+      vite: '>=8 <9'
   dgeni-packages:
     dependencies:
       clonedeep: '*'

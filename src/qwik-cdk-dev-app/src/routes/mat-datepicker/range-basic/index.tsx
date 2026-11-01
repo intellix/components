@@ -6,6 +6,7 @@ import {
   MatDatepickerToggle,
   useMatDateRangePicker,
   type DateRange,
+  type MatDateRangePickerHandle,
 } from '@angular-community/qwik-material/datepicker';
 
 const JAN_1_2024 = new Date(2024, 0, 1);
@@ -16,8 +17,10 @@ export default component$(() => {
   const range = useSignal<DateRange<Date>>({start: null, end: null});
   const picker = useMatDateRangePicker<Date>({
     startAt: JAN_1_2024,
-    onValueChange$: $((v: DateRange<Date>) => (range.value = v)),
-  });
+    onValueChange$: $((v: DateRange<Date>) => {
+      range.value = v;
+    }),
+  }) as unknown as MatDateRangePickerHandle<unknown>;
 
   return (
     <>
