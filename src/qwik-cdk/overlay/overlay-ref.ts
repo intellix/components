@@ -22,27 +22,19 @@ export interface OverlayVisualCallbacks {
    */
   setPanelClasses(classes: readonly string[]): void;
   /**
-   * ONLY called for a reparented host (see `_onReparented()` below) — never
-   * for the common 'global' case, to avoid any behavior change there (see
-   * that method's own doc comment for why this must stay opt-in).
-   *
-   * `OverlayContainerOutlet`'s own `ctx.entries.value` array-removal (the
-   * normal way a detached overlay's `<OverlayHost>` gets torn down) only
-   * knows how to find/remove a host element at the DOM position it
-   * ORIGINALLY rendered it into. A popover using a non-`'global'` insertion
-   * point (e.g. `mat-select`'s inline overlay — see
-   * `position/popover-insertion.ts`) gets its host physically relocated by
-   * `OverlayHost`'s own `useVisibleTask$` right after mount, so by the time
-   * the array shrinks, the host is no longer where that list-keyed removal
-   * looks for it: confirmed live, the relocated host (and everything inside
-   * it) is orphaned in the DOM forever — invisible to `ctx.entries` but
-   * still fully attached to `document` — see `qwik-material/select/SYNC.md`.
-   * `detach()` calls this (instead of just removing the registry entry) so
-   * `OverlayHost` can unmount ITS OWN previously-rendered output via a
-   * normal conditional-render (`detached.value` flips its return value from
-   * the host `<div>` to `null`), which Qwik's per-component diff handles via
-   * a direct node reference, unaffected by where that node currently lives —
-   * unlike the parent's list-keyed removal.
+   * ONLY wired for a reparented host (see `_onReparented()` below) — never
+   * for the common 'global' case. Still provided and still called by
+   * `OverlayHost` (`detached.value`'s conditional-null-return below is
+   * untouched), but `detach()` (overlay-ref.ts, this file) no longer
+   * INVOKES this specific callback for the reparented case — see that
+   * method's own comment for why and for the full history of this
+   * mechanism (originally built, then found to need replacing under
+   * Qwik v2 — `qwik-material/select/SYNC.md` and `overlay/SYNC.md` have
+   * the full writeup). Kept in the interface/wiring rather than deleted:
+   * a future overlay consumer might still have a legitimate use for
+   * "unmount via conditional-null-return, independent of the registry
+   * array shrink," and the wiring itself is inert (never called) unless
+   * something explicitly invokes it again.
    */
   setDetached(value: boolean): void;
 }
@@ -79,18 +71,23 @@ export interface OverlayRef {
    * physically relocates the host element out of the declarative
    * `.cdk-overlay-container` tree it was originally rendered into — i.e.
    * exactly when `getPopoverInsertionPoint()` returns a real, non-null
-   * insertion point (currently only `mat-select`'s inline overlay; see
-   * `setDetached`'s doc comment for the full "why"). Flips how `detach()`
-   * tears this overlay down: a reparented host can't rely on the registry's
-   * array-shrink to find/remove it, so `detach()` goes through
-   * `visuals.setDetached()` instead (confirmed live: calling BOTH in the
-   * same synchronous tick races Qwik's own render scheduling — the array
-   * removal observably wins, leaving the `detached` signal write with
-   * nothing left subscribed to react to it, which is why the registry
-   * removal is deferred one tick past it instead of run eagerly). Never
-   * called for a 'global' overlay — `detach()`'s existing synchronous
-   * registry-removal path (and the unit tests pinning its synchronous
-   * contract) is completely unaffected.
+   * insertion point (`mat-select`'s and `mat-autocomplete`'s inline
+   * overlays). Flips how `detach()` tears this overlay down — see that
+   * method's own comment, and `overlay/SYNC.md` / `qwik-material/select/
+   * SYNC.md` for the full history: under Qwik v1 this went through
+   * `visuals.setDetached()` (a conditional-null-return unmount), deferring
+   * the registry-array removal one tick so the two didn't race; under v2
+   * that specific transition (re-rendering a component whose DOM node has
+   * been externally relocated, to make it return `null`) throws a `Node
+   * is not a child of this node` `insertBefore` error from inside Qwik's
+   * own renderer — confirmed via a fine-grained Playwright repro, isolated
+   * down to exactly this call. `detach()` now removes the (reparented)
+   * host element itself, imperatively, before the same deferred registry
+   * removal — `OverlayHost` unmounts normally, one tick later, via the
+   * ordinary list-shrink path once there's no DOM node left for Qwik's own
+   * diff to worry about. Never called for a 'global' overlay — `detach()`'s
+   * existing synchronous registry-removal path (and the unit tests pinning
+   * its synchronous contract) is completely unaffected.
    */
   _onReparented(): void;
   /** Removes the overlay from the registry without disposing strategies. */
@@ -186,12 +183,14 @@ export function createOverlayRef(deps: {
       ref.detachBackdrop();
       deps.entry.state.detached.value = true;
       if (reparented) {
-        // See `_onReparented()`'s doc comment: the array-shrink below can't
-        // find this host to remove it once it's been physically relocated,
-        // so tell `OverlayHost` to unmount itself directly instead — and
-        // defer the registry removal one tick so it doesn't race (and win
-        // against) that re-render.
-        visuals?.setDetached(true);
+        // See `_onReparented()`'s doc comment for the full history. Remove
+        // the physically-relocated host ourselves (plain DOM API — the
+        // array-shrink below can't find it at its original position to do
+        // this for us), THEN defer the registry removal one tick, same
+        // timing as before: once there's nothing left for Qwik's own diff
+        // to reconcile, `OverlayHost` unmounts cleanly via the ordinary
+        // list-shrink path.
+        hostEl?.remove();
         setTimeout(() => deps.registry.remove(deps.entry.id), 0);
       } else {
         deps.registry.remove(deps.entry.id);
