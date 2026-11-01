@@ -403,3 +403,17 @@ writeup) — `MatAutocompletePanel` self-re-renders on every `props.tree.value` 
 refiltering), so `renderOption` now wraps its option body: `{cloneJsxForReuse(option.content)}`
 instead of `{option.content}`. No current autocomplete scenario passes non-plain-text `content`,
 so this is a no-op today.
+
+## Qwik v2 regression: stale-blur race clobbering `mat-focused` (2026-11-01)
+
+`optgroups`, `require-selection`, `hide-single-selection-indicator` all failed after clicking an
+option: `mat-focused`/`mdc-text-field--focused`/`mdc-line-ripple--active` went missing from the
+form field, despite `document.activeElement` never actually leaving the input the whole time.
+Same root cause and fix as `qwik-material/select/mat-select.tsx`'s `onHostBlur$` — see that
+file's SYNC.md "Qwik v2 regressions" section for the full write-up. `mat-autocomplete.tsx`'s
+`handleBlur$` now checks `document.activeElement` before clobbering `formField.focused`, but
+NOT before `onTouched$`/`empty`/`shouldLabelFloat` — an earlier, broader version of this guard
+(skipping the WHOLE handler) was tried and reverted: it suppressed `onTouched$` too, which
+should fire on a genuine blur regardless of how fast focus bounces back (confirmed live:
+Angular shows `ng-touched` through this exact click-then-immediately-refocus sequence), breaking
+`ng-touched` parity on exactly these 3 scenarios.

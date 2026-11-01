@@ -452,3 +452,43 @@ are gated on `reparented` (`false` for every `'global'` consumer — tooltip/men
 `dispose() removes the entry from the registry`), are unaffected. See
 `qwik-material/select/SYNC.md`'s own write-up for the full root-cause narrative and the two other
 (select-local) bugs fixed in the same pass.
+
+## Qwik v2 regression: the above fix's own teardown transition crashes (2026-11-01)
+
+The "Reparented hosts never actually got torn down" fix above (`detach()`'s
+`visuals.setDetached(true)` → `OverlayHost` conditional-null-return path) worked correctly under
+Qwik v1 (confirmed: 484/484 then 567/568 full-suite runs). Under `@qwik.dev/core` 2.0.0-rc.4 it
+throws instead of silently failing: `NotFoundError: Failed to execute 'insertBefore' on 'Node':
+the node before which the new node is to be inserted is not a child of this node`, from inside
+Qwik's own renderer — confirmed live via a fine-grained Playwright poll (20ms steps) down to the
+exact ~100ms mark `mat-select`'s panel exit animation (`_mat-select-exit`, 100ms linear)
+completes and `finish()` (select-runtime.ts's `closeSelectPanel`) calls `detachOverlay` →
+`ref.detach()`.
+
+Root cause: re-rendering a component specifically to make it return `null` — the whole mechanism
+this fix relies on — no longer tolerates the component's DOM node having been externally
+relocated (`applyPopoverInsertionPoint`'s raw `Element.after()` call) under v2's vnode-based
+renderer. The v1-era guarantee this fix's own comment claimed ("Qwik's per-component diff
+handles [this] via a direct node reference, unaffected by where that node currently lives") no
+longer holds.
+
+Fixed (minimally — kept the `_onReparented`/`setDetached` wiring in place rather than ripping it
+out, in case a future consumer needs it, but no longer calls `visuals.setDetached(true)` for the
+reparented case): `detach()` now removes the reparented host element itself, imperatively
+(`hostEl?.remove()`), BEFORE the same already-existing deferred (`setTimeout(…, 0)`) registry-
+array removal. `OverlayHost` still unmounts correctly, one tick later, via the ordinary list-
+shrink path — except now there's no DOM node left at that point for Qwik's own diff to need to
+reconcile against a relocated position, so the list-shrink's own node-removal (which, per the
+ORIGINAL 2026-10-29 bug this section's parent documents, can't find a relocated node anyway) is
+simply a no-op on an already-gone node instead of the entry point for a renderer crash.
+Confirmed live: repeated open → close → reopen → close cycles on the same `mat-select` instance
+all succeed cleanly with zero console errors, panel count correctly reaching 0 and recovering to
+1 on every cycle.
+
+See `qwik-material/select/SYNC.md`'s own "Qwik v2 regressions" section for the full consumer-side
+narrative (this was one of two stacked root causes found there) and
+`qwik-material/menu/SYNC.md`'s "Qwik v2 regression" section for the SEPARATE "same JSXNode
+object rendered a second time, even within the same mount" bug category this is NOT an instance
+of (confirmed: `MatSelectPanel`'s `option.content` here is a plain string in every current
+select scenario, ruled out directly by removing its only reactive dependency and reproducing the
+SAME crash unchanged).
