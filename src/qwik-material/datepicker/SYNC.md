@@ -274,7 +274,7 @@ Single date, with an actions row (mirrors upstream's own two-field
 `datepicker-actions-example` almost verbatim):
 
 ```tsx
-import {$, component$, useSignal} from '@builder.io/qwik';
+import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatButton} from '@angular-community/qwik-material/button';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
 import {

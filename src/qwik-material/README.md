@@ -4,6 +4,17 @@ Qwik port of Angular Material. First component: Dialog.
 
 Consumes [@angular-community/qwik-cdk](../qwik-cdk/README.md) for overlay, dialog primitives, and a11y foundations. Ships MDC-parity SCSS and JS class-based animation state machine matching Angular Material's timing (150 ms enter, 75 ms exit).
 
+## Qwik version
+
+Requires **Qwik v2** (`@qwik.dev/core` `>=2.0.0-rc.4`, a peer dependency; developed and tested
+against `2.0.0-rc.4`). Upgraded from Qwik 1.x on 2026-11-01. For apps coming from Qwik 1:
+
+- Import from `@qwik.dev/core` (and `@qwik.dev/router` instead of `@builder.io/qwik-city`); run
+  `qwik migrate-v2` for your own code — see https://next.qwik.dev/docs/upgrade/.
+- The public API of this package didn't change in the upgrade. Behavioural fixes made for v2
+  (focus traps, overlay teardown, handler forwarding on host components, ...) are recorded in each
+  entry point's `SYNC.md` under "Qwik v2".
+
 ## Layout
 
 - `dialog/` — Material Dialog service, container, ref, config, content components, provider
@@ -38,7 +49,7 @@ hook's result onto it:
 
 ```tsx
 // Qwik
-import {$, component$} from '@builder.io/qwik';
+import {$, component$} from '@qwik.dev/core';
 import {MatButton} from '@angular-community/qwik-material/button';
 import {MatMenu, MatMenuItem, createMatMenu, useMatMenuTrigger} from '@angular-community/qwik-material/menu';
 import {useMatTooltip} from '@angular-community/qwik-material/tooltip';
