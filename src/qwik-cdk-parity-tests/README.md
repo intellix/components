@@ -187,9 +187,12 @@ an example's main interaction (e.g. opening a datepicker/timepicker with no init
 before navigation — real timers/animations are unaffected, only the clock reading is faked. Never
 pin the date by editing the upstream example itself.
 
-## Google Fonts are cached per worker
+## Google Fonts are cached (memory + disk)
 
 Both dev-apps load Roboto/Material Icons from fonts.googleapis.com / fonts.gstatic.com, and every
-test opens two fresh browser contexts. `cacheGoogleFonts()` fetches each font URL once per worker
-and replays it from memory; without it, one slow response held up a page's `load` event until the
-test timed out (full runs intermittently took 20+ minutes with scattered `page.goto` timeouts).
+test opens two fresh browser contexts. `cacheGoogleFonts()` serves those URLs from memory, backed by
+a gitignored `.font-cache/` directory, so after one successful download runs need no network. A URL
+that can't be downloaded (8s timeout) is aborted immediately for the rest of the run, so both apps
+fall back to the same local fonts instead of each page's `load` event hanging into a test timeout.
+On a slow network, prime the cache once with a single worker and a long timeout:
+`PARITY_FONT_TIMEOUT_MS=60000 npx playwright test specs/examples --workers=1 -g "mat-(icon|button)/"`.

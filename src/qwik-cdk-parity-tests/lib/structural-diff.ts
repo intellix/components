@@ -9,7 +9,7 @@ export interface DomNode {
   text?: string;
 }
 
-const IGNORE_ATTRS = new Set(['ng-version', 'data-overlay-id', 'id', 'style']);
+const IGNORE_ATTRS = new Set(['ng-version', 'data-overlay-id', 'id', 'style', ':']);
 const IGNORE_ATTR_PREFIXES = [
   '_ngcontent-',
   '_nghost-',

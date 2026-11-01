@@ -1,4 +1,7 @@
 import {expect, type Browser, type BrowserContext, type Page} from '@playwright/test';
+import {createHash} from 'node:crypto';
+import {existsSync, mkdirSync, readFileSync, renameSync, writeFileSync} from 'node:fs';
+import path from 'node:path';
 import {diffNodes, type DomNode} from './structural-diff.js';
 
 /**
@@ -33,6 +36,9 @@ const IGNORE_ATTRS = [
   // category as `_nghost-*`/`ng-reflect-*` above. Applies to any component that
   // uses AriaDescriber, not just badge.
   'cdk-describedby-host',
+  // Qwik v2's per-element vnode reference (an attribute literally named `:`, values like
+  // `OJ_11`) — resumability bookkeeping, same category as v1's `q:id`.
+  ':',
 ];
 const IGNORE_ATTR_PREFIXES = [
   '_ngcontent-',
@@ -633,21 +639,70 @@ const PIN_ROOT_CSS =
  * fresh contexts, so without this each one re-requests them, and a single slow response holds
  * up the page's `load` event until the test times out.
  */
-const FONT_CACHE = new Map<
-  string,
-  {status: number; headers: Record<string, string>; body: Buffer}
->();
+type CachedResponse = {status: number; headers: Record<string, string>; body: Buffer};
 
+/** In-memory layer (per worker) over the on-disk cache in `FONT_CACHE_DIR`. */
+const FONT_CACHE = new Map<string, CachedResponse>();
+/** URLs that failed to download this run: aborted immediately from then on. */
+const FONT_FAILURES = new Set<string>();
+/** Survives across runs (gitignored), so after one successful download no run needs the network. */
+const FONT_CACHE_DIR = path.resolve('.font-cache');
+/** Per-download timeout; raise it (`PARITY_FONT_TIMEOUT_MS=60000`) to prime the cache on a slow network. */
+const FONT_FETCH_TIMEOUT_MS = Number(process.env['PARITY_FONT_TIMEOUT_MS'] ?? 8000);
+
+function fontCacheFile(url: string): string {
+  return path.join(FONT_CACHE_DIR, createHash('sha1').update(url).digest('hex'));
+}
+
+function readCachedFont(url: string): CachedResponse | undefined {
+  const memo = FONT_CACHE.get(url);
+  if (memo) return memo;
+  const file = fontCacheFile(url);
+  if (!existsSync(file)) return undefined;
+  const {status, headers} = JSON.parse(readFileSync(`${file}.json`, 'utf8'));
+  const hit = {status, headers, body: readFileSync(file)};
+  FONT_CACHE.set(url, hit);
+  return hit;
+}
+
+function writeCachedFont(url: string, hit: CachedResponse): void {
+  FONT_CACHE.set(url, hit);
+  mkdirSync(FONT_CACHE_DIR, {recursive: true});
+  const file = fontCacheFile(url);
+  // Metadata first, body last via rename: readers key off the body file, which appears atomically
+  // (several workers may write the same entry concurrently).
+  writeFileSync(`${file}.json`, JSON.stringify({status: hit.status, headers: hit.headers}));
+  const tmp = `${file}.${process.pid}.tmp`;
+  writeFileSync(tmp, hit.body);
+  renameSync(tmp, file);
+}
+
+/**
+ * Serves Google Fonts (both dev-apps load Roboto/Material Icons from fonts.googleapis.com /
+ * fonts.gstatic.com) from a memory + on-disk cache. Every test opens two fresh contexts; fetching
+ * per page let one slow or failed response hold up the page's `load` event until the test timed
+ * out. A URL that can't be downloaded is aborted immediately for the rest of the run, so both
+ * apps fall back to the same local fonts instead of hanging.
+ */
 async function cacheGoogleFonts(ctx: BrowserContext): Promise<void> {
   await ctx.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, async route => {
     const url = route.request().url();
-    let hit = FONT_CACHE.get(url);
-    if (!hit) {
-      const response = await route.fetch();
-      hit = {status: response.status(), headers: response.headers(), body: await response.body()};
-      if (response.ok()) FONT_CACHE.set(url, hit);
+    const cached = readCachedFont(url);
+    if (cached) return route.fulfill(cached);
+    if (FONT_FAILURES.has(url)) return route.abort('failed');
+    try {
+      const response = await route.fetch({timeout: FONT_FETCH_TIMEOUT_MS});
+      const hit = {
+        status: response.status(),
+        headers: response.headers(),
+        body: await response.body(),
+      };
+      if (response.ok()) writeCachedFont(url, hit);
+      return route.fulfill(hit);
+    } catch {
+      FONT_FAILURES.add(url);
+      return route.abort('failed').catch(() => {});
     }
-    await route.fulfill(hit);
   });
 }
 
