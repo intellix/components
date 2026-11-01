@@ -669,14 +669,30 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     subscriptSizing === 'dynamic' && 'mat-mdc-form-field-subscript-dynamic-size',
   ].filter(Boolean) as string[];
 
-  // Mirrors `_MatInternalFormField`'s/`_control.onContainerClick` behavior:
-  // a click anywhere in the text-field wrapper that ISN'T already on the
-  // control itself focuses it. No parity scenario exercises this (every
-  // interaction step uses a direct `.focus()`/`.fill()` on the control —
-  // see angular-parity.spec.ts), kept for fidelity/real-world use.
+  // Mirrors `_control.onContainerClick(event)` (`form-field.html`'s wrapper
+  // `(click)` binding) — a click anywhere in the text-field wrapper that
+  // ISN'T already on the control itself focuses it. This port implements
+  // the handler generically here (one `MatFormField`, not a per-control
+  // `onContainerClick` override), so it also has to fold in
+  // `MatChipGrid.onContainerClick`'s OWN override
+  // (`src/material/chips/chip-grid.ts`): `!this._originatesFromChip(event)`
+  // — a click that originated from inside a `.mat-mdc-chip` (confirmed
+  // against `chip-set.ts`'s `_originatesFromChip`: walks up from
+  // `event.target`, true if any ancestor up to the chip-grid's own host
+  // carries that class) must NOT redirect focus to the grid's hidden
+  // input, e.g. clicking a chip's own remove button. Qwik v2 exposed this
+  // as a real bug (not just a latent gap): confirmed live
+  // (`material-chips/grid-input`), clicking a chip's remove button raced
+  // this handler against the chip-removal logic's OWN "which row should
+  // now hold focus" redirect — depending on which QRL happened to resolve
+  // first, this one could win and leave focus on the input instead.
+  // Excluding chip-originated clicks here, matching upstream exactly,
+  // removes the race outright rather than trying to out-schedule it: this
+  // handler now never competes for focus on a chip click at all.
   const onWrapperClick$: QRL<(event: Event) => void> = $(event => {
     const target = event.target as Element | null;
     if (target?.closest('input, textarea')) return;
+    if (target?.closest('.mat-mdc-chip')) return;
     const wrapper = (event.currentTarget as Element) ?? null;
     const control = wrapper?.querySelector<HTMLElement>('input, textarea');
     control?.focus();
