@@ -501,10 +501,29 @@ export async function snapshotParityRoot(
         // attributes (the implicit-insertion signature — a REAL Material table's own `<tbody>`
         // always carries `role`/`class`, see `qwik-material/table`, and is never touched by this)
         // is transparent, splicing its own children in its place.
+        //
+        // "NO attributes" means none BESIDES the ones already ignored everywhere else in this
+        // walk (Qwik v2 regression, 2026-11-01): v2's per-element vnode-reference attribute
+        // (literally named `:`) gets written onto EVERY element its resume/inflate step walks,
+        // including this browser-auto-inserted `<tbody>` that Qwik's own JSX never created at
+        // all — confirmed live, it is the ONLY attribute the implicit `<tbody>` ever carries
+        // under v2, so a literal `attributes.length === 0` check (correct under v1, where the
+        // browser-inserted node had truly zero attributes) stopped matching it, and this
+        // table's rows showed up wrapped in one extra `<tbody>` level Angular's CSR-built DOM
+        // doesn't have.
+        const isImplicitTbody = (c: Element): boolean => {
+          if (c.tagName.toLowerCase() !== 'tbody') return false;
+          for (const attr of Array.from(c.attributes)) {
+            if (opts.ignoreAttrs.includes(attr.name)) continue;
+            if (opts.ignoreAttrPrefixes.some(p => attr.name.startsWith(p))) continue;
+            return false;
+          }
+          return true;
+        };
         const elementChildren =
           el.tagName.toLowerCase() === 'table'
             ? rawElementChildren.flatMap(c =>
-                c.tagName.toLowerCase() === 'tbody' && c.attributes.length === 0
+                isImplicitTbody(c)
                   ? Array.from(c.children).filter(cc => cc.tagName.toLowerCase() !== 'q:template')
                   : [c],
               )
