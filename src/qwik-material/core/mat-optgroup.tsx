@@ -1,4 +1,4 @@
-import {component$, Slot} from '@builder.io/qwik';
+import {component$, Slot} from '@qwik.dev/core';
 import {createIdGenerator} from '@angular-community/qwik-cdk/a11y';
 
 /** Fallback id generator — see `mat-option.tsx`'s matching `fallbackIdGen`

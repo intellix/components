@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {MatIconColor} from './icon-color';
 
 /**
@@ -38,4 +38,4 @@ export const MAT_ICON_DEFAULT_FONT_SET_CLASS = 'material-icons mat-ligature-font
  * publicly and MUST remain stable across releases — consumers may inject it
  * directly in advanced scenarios.
  */
-export const MAT_ICON_CONFIG = createContextId<MatIconConfig>('qwik-material/icon-config');
+export const MAT_ICON_CONFIG = createContextId<MatIconConfig>('qwikMaterial/iconConfig');

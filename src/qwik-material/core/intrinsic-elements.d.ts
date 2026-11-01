@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material core's `mat-pseudo-checkbox`
@@ -6,7 +6,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * with an empty template; external CMS styles may target the tag directly
  * (not just the .mat-pseudo-checkbox class).
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-pseudo-checkbox': QwikIntrinsicElements['div'] & {

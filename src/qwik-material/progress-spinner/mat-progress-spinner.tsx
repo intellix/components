@@ -1,4 +1,4 @@
-import {component$, useContext, type Component, type FunctionComponent} from '@builder.io/qwik';
+import {component$, useContext, type Component, type FunctionComponent} from '@qwik.dev/core';
 import type {MatProgressSpinnerColor} from './progress-spinner-color';
 import type {MatProgressSpinnerMode} from './progress-spinner-mode';
 import {

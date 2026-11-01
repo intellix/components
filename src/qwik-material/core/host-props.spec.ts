@@ -1,5 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
-import type {QRL, Signal} from '@builder.io/qwik';
+import type {QRL, Signal} from '@qwik.dev/core';
 import {callHostHandler, extraHostAttrs, mergeHostProps, type HostHandler} from './host-props';
 
 /** A plain function, cast to the `QRL<...>` shape these helpers expect —

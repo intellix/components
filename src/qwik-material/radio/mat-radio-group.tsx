@@ -1,4 +1,4 @@
-import {$, component$, Slot, useContextProvider, useSignal, type QRL} from '@builder.io/qwik';
+import {$, component$, Slot, useContextProvider, useSignal, type QRL} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {MatRadioColor} from './radio-color';
 import {MAT_RADIO_GROUP_STATE, type MatRadioGroupState} from './radio-group-state';

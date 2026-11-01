@@ -1,4 +1,4 @@
-import {component$, Slot} from '@builder.io/qwik';
+import {component$, Slot} from '@qwik.dev/core';
 
 /**
  * Port of upstream `MatGridAvatarCssMatStyler` (`src/material/grid-list/grid-tile.ts`)

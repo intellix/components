@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, type JSXOutput} from '@builder.io/qwik';
+import {component$, Slot, useContext, type JSXOutput} from '@qwik.dev/core';
 import type {MatIconColor} from './icon-color';
 import {MAT_ICON_CONFIG, MAT_ICON_DEFAULT_FONT_SET_CLASS, type MatIconConfig} from './icon-config';
 import {withIconSvgAttributes} from './icon-svg-attrs';

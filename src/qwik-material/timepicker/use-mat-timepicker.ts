@@ -42,7 +42,7 @@
  * render" pattern `mat-form-field.tsx` already uses for its own context
  * store.
  */
-import {useContext, useSignal, type NoSerialize, type QRL, type Signal} from '@builder.io/qwik';
+import {useContext, useSignal, type NoSerialize, type QRL, type Signal} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {ListKeyManager, ListKeyManagerOption} from '@angular-community/qwik-cdk/a11y';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
@@ -128,7 +128,7 @@ export interface MatTimepickerHandle<D> {
   max: Signal<D | null>;
   /** Parsed interval in seconds, or `null` when `options` should be used instead. */
   interval: Signal<number | null>;
-  customOptions: Signal<readonly MatTimepickerOption<D> [] | null>;
+  customOptions: Signal<readonly MatTimepickerOption<D>[] | null>;
   disableRipple: Signal<boolean>;
   panelClassList: Signal<readonly string[]>;
   ariaLabel: Signal<string | undefined>;
@@ -210,7 +210,9 @@ export function useMatTimepicker<D>(
   const interval = useSignal<number | null>(() =>
     parseInterval(options.interval ?? config.interval ?? null),
   );
-  const customOptions = useSignal<readonly MatTimepickerOption<D>[] | null>(options.options ?? null);
+  const customOptions = useSignal<readonly MatTimepickerOption<D>[] | null>(
+    options.options ?? null,
+  );
   const disableRipple = useSignal(options.disableRipple ?? config.disableRipple ?? false);
   const panelClassList = useSignal<readonly string[]>(() => toClassList(options.panelClass));
   const ariaLabel = useSignal<string | undefined>(options.ariaLabel);
@@ -246,7 +248,8 @@ export function useMatTimepicker<D>(
   const nextDisableRipple = options.disableRipple ?? config.disableRipple ?? false;
   if (disableRipple.value !== nextDisableRipple) disableRipple.value = nextDisableRipple;
   if (ariaLabel.value !== options.ariaLabel) ariaLabel.value = options.ariaLabel;
-  if (ariaLabelledby.value !== options.ariaLabelledby) ariaLabelledby.value = options.ariaLabelledby;
+  if (ariaLabelledby.value !== options.ariaLabelledby)
+    ariaLabelledby.value = options.ariaLabelledby;
 
   return {
     panelId,

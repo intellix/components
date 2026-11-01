@@ -1,4 +1,4 @@
-import {$, useSignal, type QRL, type Signal} from '@builder.io/qwik';
+import {$, useSignal, type QRL, type Signal} from '@qwik.dev/core';
 import type {StepControl} from '@angular-community/qwik-cdk/stepper';
 
 /**

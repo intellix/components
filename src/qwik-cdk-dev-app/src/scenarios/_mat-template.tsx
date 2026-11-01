@@ -1,6 +1,6 @@
-import {component$, Slot, useVisibleTask$} from '@builder.io/qwik';
-import type {Component} from '@builder.io/qwik';
-import {useContext} from '@builder.io/qwik';
+import {component$, Slot, useVisibleTask$} from '@qwik.dev/core';
+import type {Component} from '@qwik.dev/core';
+import {useContext} from '@qwik.dev/core';
 import {useMatDialog, MAT_DIALOG_DATA} from '@angular-community/qwik-material/dialog';
 import type {MatDialogConfig} from '@angular-community/qwik-material/dialog';
 

@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every <MatGridList> in a subtree. Consumers provide
@@ -17,5 +17,5 @@ export interface MatGridListConfig {}
  * string is still exposed publicly and MUST remain stable across releases.
  */
 export const MAT_GRID_LIST_CONFIG = createContextId<MatGridListConfig>(
-  'qwik-material/grid-list-config',
+  'qwikMaterial/gridListConfig',
 );

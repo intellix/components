@@ -1,4 +1,10 @@
-import {component$, createContextId, Slot, useContext, useContextProvider} from '@builder.io/qwik';
+import {
+  component$,
+  createContextId,
+  useContext,
+  useContextProvider,
+  type JSXOutput,
+} from '@qwik.dev/core';
 
 /**
  * Context a `<MatHint>`/`<MatError>` reads as its id FALLBACK (an explicit
@@ -6,13 +12,12 @@ import {component$, createContextId, Slot, useContext, useContextProvider} from 
  * plain `string | undefined` — never a function, same reasoning as every
  * other piece of state this port passes across a component boundary.
  */
-export const MAT_ASSIGNED_ID = createContextId<string | undefined>('qwik-material/assigned-id');
+export const MAT_ASSIGNED_ID = createContextId<string | undefined>('qwikMaterial/assignedId');
 
 /**
  * Wraps a single hint/error WITHOUT cloning it, providing the id
  * `MatFormField` generated for this slot via context instead. Renders no
- * DOM of its own (`<Slot/>` with no wrapping host tag) — purely a context
- * boundary.
+ * DOM of its own — purely a context boundary.
  *
  * Replaces an earlier approach that CLONED the hint/error's JSX descriptor
  * to inject `id` as a prop directly (`withProps()`/`withGeneratedId()` in
@@ -25,10 +30,25 @@ export const MAT_ASSIGNED_ID = createContextId<string | undefined>('qwik-materia
  * the same issue. See `core/mat-form-field-control.ts`'s
  * `MatFormFieldControlState.assignedId` doc comment for the analogous fix
  * applied to the control itself (a context STORE FIELD, not a clone).
+ *
+ * Takes `content` as an explicit PROP, not `<Slot/>`-projected JSX children — a Qwik v2
+ * regression fix (2026-11-01). `mat-form-field.tsx`'s 3 call sites all forward a `JSXOutput`
+ * that arrived through `MatFormField`'s OWN `errors`/`hintStart`/`hintEnd` props (i.e. authored
+ * by a caller several component-boundaries away, not as literal JSX children written inline at
+ * THIS call site) into `<MatIdScope>{node}</MatIdScope>`. Confirmed live: under Qwik v2, a
+ * `<Slot/>` projecting a value that arrived this way — through a prop, then re-inserted as JSX
+ * children — loses its OWN nested text/Slot content (an error's `<MatError>Please enter a valid
+ * date</MatError>` rendered with a completely empty label), even on a plain, FRESH-every-render
+ * value (ruling out element-reuse as the cause here; that's a SEPARATE Qwik v2 regression,
+ * worked around by `core/jsx-reuse.ts`'s `cloneJsxForReuse` where it applies). Interpolating the
+ * value directly as `{props.content}` instead of through `<Slot/>` sidesteps it, matching the
+ * same fix applied to `qwik-material/datepicker`'s `ActionsOutlet` (see that file's doc comment)
+ * — both are instances of "a `<Slot/>` whose projected content didn't originate as this
+ * component's own JSX children" breaking under v2.
  */
-export const MatIdScope = component$<{id: string}>(props => {
+export const MatIdScope = component$<{id: string; content: JSXOutput}>(props => {
   useContextProvider(MAT_ASSIGNED_ID, props.id);
-  return <Slot />;
+  return props.content;
 });
 
 /** Sentinel passed as `useContext`'s default — see `useAssignedId()`'s own doc comment for why

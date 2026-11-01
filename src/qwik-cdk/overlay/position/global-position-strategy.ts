@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {isBrowser} from '@builder.io/qwik/build';
+import {isBrowser} from '@qwik.dev/core/build';
 import type {PositionStrategy, PositionStrategyOverlayHandle} from './position-strategy';
 
 /** Class to be added to the overlay pane wrapper. */

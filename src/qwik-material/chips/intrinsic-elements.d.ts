@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Chips' custom-element tag
@@ -8,7 +8,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * their classes). Typed as `QwikIntrinsicElements['div']` — none need any
  * custom camelCase attrs widened.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-chip': QwikIntrinsicElements['div'];

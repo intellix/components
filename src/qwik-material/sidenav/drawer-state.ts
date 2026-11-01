@@ -1,4 +1,4 @@
-import {createContextId, type QRL, type Signal} from '@builder.io/qwik';
+import {createContextId, type QRL, type Signal} from '@qwik.dev/core';
 
 /** Drawer and SideNav display modes. Mirrors upstream `MatDrawerMode` (`src/material/sidenav/drawer.ts`). */
 export type MatDrawerMode = 'over' | 'push' | 'side';
@@ -108,7 +108,7 @@ export interface MatDrawerContainerState {
 }
 
 export const MAT_DRAWER_CONTAINER_STATE = createContextId<MatDrawerContainerState>(
-  'qwik-material/drawer-container-state',
+  'qwikMaterial/drawerContainerState',
 );
 
 function findByPosition(

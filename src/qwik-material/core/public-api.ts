@@ -74,3 +74,7 @@ export {
   type HostRef,
   type HostHandler,
 } from './host-props';
+
+// See jsx-reuse.ts's own doc comment: rebuilds a captured `JSXOutput` into fresh node objects
+// before re-rendering it a second (or Nth) time in a new tree — a Qwik v2 regression workaround.
+export {cloneJsxForReuse} from './jsx-reuse';

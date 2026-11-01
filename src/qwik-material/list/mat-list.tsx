@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, useContextProvider} from '@builder.io/qwik';
+import {component$, Slot, useContext, useContextProvider} from '@qwik.dev/core';
 import {MAT_LIST_CONFIG, type MatListConfig} from './list-config';
 import {MAT_LIST_BASE_STATE, type MatListBaseState} from './list-context';
 

@@ -6,8 +6,8 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {createContextId, useContext} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {createContextId, useContext} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {type BaseOverlayDispatcher, canReceiveOverlayEvent} from './base-overlay-dispatcher';
 import type {OverlayRef} from '../overlay-ref';
 
@@ -88,7 +88,7 @@ export function createOverlayKeyboardDispatcher(): OverlayKeyboardDispatcher {
 }
 
 export const OVERLAY_KEYBOARD_DISPATCHER = createContextId<OverlayKeyboardDispatcher>(
-  'qwik-cdk/overlay-keyboard-dispatcher',
+  'qwikCdk/overlayKeyboardDispatcher',
 );
 
 export function useOverlayKeyboardDispatcher(): OverlayKeyboardDispatcher {

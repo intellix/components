@@ -172,3 +172,49 @@ previously-latent bugs in shared infrastructure, not tooltip-specific workaround
   insertion-point support was defined but never wired into `OverlayHost` — added (with unit tests)
   as shared infrastructure for the upcoming select/autocomplete/datepicker ports, even though no
   tooltip scenario needs a non-`'global'` location. Full writeup in `qwik-cdk/overlay/SYNC.md`.
+
+## Remaining known issue: `mat-tooltip/example`'s `onMouseEnter$` never fires when composed via `useMatTooltip()` onto `<MatButton>` (2026-11-01, Qwik v2)
+
+**Not fixed. Documented here with evidence, same treatment as `qwik-material/timepicker`'s own
+`min-max` open issue** — this is the ONE remaining failure among this component's own specs
+(`specs/material-tooltip` itself is 100% green; only `specs/examples`' `mat-tooltip/example`
+interactions 1 and 2 are affected).
+
+`mat-tooltip/example` (`src/qwik-cdk-dev-app/src/routes/mat-tooltip/example/index.tsx`) spreads
+`useMatTooltip()`'s `hostProps` onto `<MatButton appearance="elevated">` — the directive-hooks
+composition pattern (`README.md`), proven elsewhere and unrelated to the bug. Hovering the
+resulting button never shows the tooltip (`page.waitForFunction` for `.mat-mdc-tooltip-show`
+times out at 5s, confirmed up to several seconds with a standalone script); the Angular
+reference, same scenario, shows it within ~100ms.
+
+Root cause, confirmed live via a temporary `console.log` inside `handleMouseEnter$`
+(`use-mat-tooltip.ts`) plus native capture-phase `mouseover`/`mouseenter` listeners added via
+`page.evaluate`: the real browser DOES dispatch a `mouseenter` to the `<button>` element itself
+(confirmed: a document-level capture listener saw `target=BUTTON...mat-mdc-tooltip-trigger`),
+and the button DOES carry the right `q-e:mouseenter="..."` attribute — but Qwik's own event
+delegation never invokes `handleMouseEnter$` for it. The same hook, spread onto a BARE
+`<button>` (`specs/material-tooltip/basic`, no `MatButton` wrapper), fires correctly every time.
+The one structural difference: `MatButton` always renders an invisible
+`<span class="mat-mdc-button-touch-target">` INSIDE the button, overlapping its visible content
+area (the MDC "touch target" pattern, needed for its own DOM parity) — a native
+`mouseover`/`mouseenter` trace confirmed the pointer transitions through BODY → the containing
+`<div>`/custom element → the `<button>` → that `<span>`, each getting its own non-bubbling
+`mouseenter`. `mouseenter`/`mouseleave` don't bubble, so Qwik's event delegation (which,
+unlike bubbling events, can't just listen once at a high ancestor and walk up from
+`event.target`) must synthesize them some other way — and that synthesis appears to break
+specifically when a DIFFERENT, listener-less descendant element (the touch-target span)
+overlaps the one that DOES have a `q-e:mouseenter` handler. `mat-menu/example`'s own remaining
+failure (interaction 2: `cdk-mouse-focused` vs `cdk-program-focused` on the auto-focused first
+item — see `qwik-material/menu/SYNC.md`) is the same `<MatButton>`-touch-target composition
+and may well be the same underlying class of bug, affecting pointer-origin attribution instead
+of tooltip visibility, though this wasn't separately confirmed down to the same level of detail.
+
+Not pursued further in the time available: this is squarely inside Qwik's own qwikloader event
+delegation, not this port's application code, and safely reproducing/patching it would need
+either a Qwik core fix or a workaround that changes `MatButton`'s rendered DOM (removing/
+restructuring the touch-target span), which would itself break the hard DOM-parity requirement
+this port exists to satisfy. A workaround confined to `use-mat-tooltip.ts` (e.g. switching to
+`onPointerOver$`/`onMouseOver$`, which DO bubble, with manual enter/leave bookkeeping) was
+considered but not attempted — real behavior risk (every sub-element transition inside the
+button re-fires `mouseover`) for a fix whose root cause lives one layer further down than this
+port's own code, within the time remaining.

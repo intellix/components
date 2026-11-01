@@ -39,7 +39,7 @@
  * repair every instance needs regardless of interaction, the same category as the overlay
  * system's own `OverlayHost` lifecycle task.
  */
-import {$, component$, useSignal, useVisibleTask$, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, useVisibleTask$, type QRL} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
   cellPaddingPercent,

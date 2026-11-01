@@ -1,4 +1,4 @@
-import {$, createContextId, type QRL, type Signal} from '@builder.io/qwik';
+import {$, createContextId, type QRL, type Signal} from '@qwik.dev/core';
 import type {MatAccordionTogglePosition} from './accordion-state';
 
 /**
@@ -41,7 +41,7 @@ export interface MatExpansionPanelState {
  * `qwik-material/button-toggle`'s `MAT_BUTTON_TOGGLE_GROUP_STATE` does.
  */
 export const MAT_EXPANSION_PANEL_STATE = createContextId<Signal<MatExpansionPanelState>>(
-  'qwik-material/expansion-panel-state',
+  'qwikMaterial/expansionPanelState',
 );
 
 /**

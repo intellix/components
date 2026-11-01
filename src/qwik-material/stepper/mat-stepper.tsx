@@ -8,8 +8,8 @@ import {
   useVisibleTask$,
   type JSXOutput,
   type QRL,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {focusVia, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
   CDK_STEPPER_GLOBAL_OPTIONS,
@@ -133,6 +133,36 @@ function normalizeDuration(value: string | number): string {
   const str = `${value}`;
   return /^\d+$/.test(str) ? `${value}ms` : str;
 }
+
+/**
+ * Qwik v2 regression workaround: renders a step's `content` (a `JSXOutput`
+ * VALUE, created once by the CONSUMER's render and stored in `props.steps`
+ * — see `MatStepDef.content`'s own doc comment for why this "data-array
+ * API" shape exists at all) through a DEDICATED leaf component instead of
+ * inlining `{s.content}` directly in `MatStepper`'s own JSX.
+ *
+ * `MatStepper` re-renders for reasons that have nothing to do with any
+ * step's content — e.g. `animationsEnabledClass`/`isAnimating` flipping
+ * (see the `useVisibleTask$`/`onTransitionEnd` below) — and under v2,
+ * inlining `{s.content}` directly meant EVERY such unrelated re-render
+ * re-diffed that content subtree too. When `content` contains a component
+ * that itself projects children via `<Slot/>` (`MatStepperNext`/
+ * `MatStepperPrevious` — see `stepper-buttons.tsx` — or, confirmed with a
+ * plain `<MatButton>`, ANY `<Slot/>`-using component), that re-diff
+ * silently emptied the slotted text — the button's label disappeared from
+ * the live DOM (not the SSR output, which is correct) a few hundred ms
+ * after mount, exactly matching `animationsEnabledClass`'s own 200ms
+ * timer. Isolating `content` behind its own `component$` sidesteps this:
+ * Qwik skips re-rendering a child whose props haven't changed by
+ * reference, and `s.content` (produced once by the consumer, untouched by
+ * `MatStepper`'s own re-renders since the consumer's OWN render never
+ * re-ran) is the exact same `JSXOutput` object every time — so this
+ * component, and therefore the content's nested `<Slot/>` projections,
+ * never re-renders at all just because `MatStepper` did.
+ */
+const StepContent = component$<{content: JSXOutput}>(props => {
+  return props.content;
+});
 
 /**
  * Qwik port of `MatStepper` + `MatStep` + `MatStepHeader` + `CdkStepper` +
@@ -589,7 +619,9 @@ export const MatStepper = component$<MatStepperProps>(props => {
                   id={`${groupId.value}-content-${i}`}
                   aria-labelledby={`${groupId.value}-label-${i}`}
                 >
-                  <div class="mat-vertical-content">{s.content}</div>
+                  <div class="mat-vertical-content">
+                    <StepContent content={s.content} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -629,7 +661,7 @@ export const MatStepper = component$<MatStepperProps>(props => {
               ].join(' ')}
               inert={selectedIndex !== i || undefined}
             >
-              {s.content}
+              <StepContent content={s.content} />
             </div>
           ))}
         </div>

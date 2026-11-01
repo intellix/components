@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every `MatSelect` in a subtree that doesn't set its
@@ -35,4 +35,4 @@ export interface MatSelectConfig {
  * Context id used by `MatSelect` to read config. The id string is exposed
  * publicly and MUST remain stable across releases.
  */
-export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwik-material/select-config');
+export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwikMaterial/selectConfig');

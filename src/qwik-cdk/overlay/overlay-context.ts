@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import type {ContextId} from '@builder.io/qwik';
+import type {ContextId} from '@qwik.dev/core';
 
 /**
  * Describes a Qwik context value that should be provided inside an overlay's

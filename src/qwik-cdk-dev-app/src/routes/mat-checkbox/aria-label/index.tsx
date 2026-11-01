@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatCheckbox} from '@angular-community/qwik-material/checkbox';
 
 // Uncontrolled: no `checked` prop at all, matching the Angular scenario's

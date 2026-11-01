@@ -8,14 +8,14 @@ import {
   useStore,
   type ClassList,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 
 /** Submission state of the nearest enclosing {@link MatForm}. */
 export interface MatFormState {
   submitted: boolean;
 }
 
-export const MAT_FORM = createContextId<MatFormState>('qwik-material/form');
+export const MAT_FORM = createContextId<MatFormState>('qwikMaterial/form');
 
 const NO_FORM: MatFormState = {submitted: false};
 

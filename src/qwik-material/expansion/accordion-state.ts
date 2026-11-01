@@ -1,4 +1,4 @@
-import {createContextId, type Signal} from '@builder.io/qwik';
+import {createContextId, type Signal} from '@qwik.dev/core';
 
 /** `MatAccordion`'s display modes (`src/material/accordion-base.ts`). */
 export type MatAccordionDisplayMode = 'default' | 'flat';
@@ -36,5 +36,5 @@ export interface MatAccordionState {
  * `useContext()` fallback and treat `undefined` as "standalone".
  */
 export const MAT_ACCORDION_STATE = createContextId<Signal<MatAccordionState | undefined>>(
-  'qwik-material/accordion-state',
+  'qwikMaterial/accordionState',
 );

@@ -56,7 +56,7 @@
  * load each scenario starts its own numbering") and only the `prefix-N`
  * SHAPE needs to match, never the actual number.
  */
-import type {JSXOutput} from '@builder.io/qwik';
+import type {JSXOutput} from '@qwik.dev/core';
 
 /** An id-minting counter — see the module doc comment for why this is a
  *  plain, non-reactive object, never the shared context-provided one. */

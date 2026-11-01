@@ -1,4 +1,4 @@
-import {component$, useSignal, useVisibleTask$} from '@builder.io/qwik';
+import {component$, useSignal, useVisibleTask$} from '@qwik.dev/core';
 import {MatChipSet} from '@angular-community/qwik-material/chips';
 
 /**

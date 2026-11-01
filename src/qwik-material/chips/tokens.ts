@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /** A separator key with required modifiers — mirrors upstream's `SeparatorKey`. */
 export interface SeparatorKey {
@@ -36,4 +36,4 @@ export const MAT_CHIPS_CONFIG_DEFAULTS: MatChipsConfig = {
  * Context id used by MatChipListbox / MatChipInput (via MatChipGrid) to read config.
  * Provided by `<QwikMaterialProvider matChipsConfig={...}>`.
  */
-export const MAT_CHIPS_CONFIG = createContextId<MatChipsConfig>('qwik-material/chips-config');
+export const MAT_CHIPS_CONFIG = createContextId<MatChipsConfig>('qwikMaterial/chipsConfig');

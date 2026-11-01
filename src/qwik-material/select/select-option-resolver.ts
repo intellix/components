@@ -44,7 +44,7 @@
  * usage — never introspected the way the old `options: JSXOutput[]` shape
  * was.
  */
-import type {JSXOutput} from '@builder.io/qwik';
+import type {JSXOutput} from '@qwik.dev/core';
 
 /** One `<mat-option>`. Mirrors `MatOption`'s inputs (`value`/`disabled`/`id`) +
  *  its rendered text content (`label`), or richer content via `content`. */

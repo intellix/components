@@ -24,7 +24,7 @@
  * and as the forward-compatible extension point a later `QwikMaterialProvider`
  * prop can wire up without changing any call site.
  */
-import {createContextId, useContext} from '@builder.io/qwik';
+import {createContextId, useContext} from '@qwik.dev/core';
 import type {DateAdapter} from './date-adapter';
 import {DEFAULT_DATE_ADAPTER} from './native-date-adapter';
 import {MAT_DATE_FORMATS, type MatDateFormats} from './date-formats';
@@ -32,7 +32,7 @@ import {MAT_NATIVE_DATE_FORMATS} from './native-date-formats';
 
 /** Context id a provider can use to override the `DateAdapter` every date-aware component reads
  *  via `useDateAdapter()`. See this module's doc comment. */
-export const MAT_DATE_ADAPTER = createContextId<DateAdapter<unknown>>('qwik-material/date-adapter');
+export const MAT_DATE_ADAPTER = createContextId<DateAdapter<unknown>>('qwikMaterial/dateAdapter');
 
 /** Reads the `MAT_DATE_ADAPTER` context, falling back to the `en-US` native adapter. */
 export function useDateAdapter(): DateAdapter<unknown> {

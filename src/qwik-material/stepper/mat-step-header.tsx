@@ -1,4 +1,4 @@
-import {$, component$, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import type {StepperOrientation, StepState} from '@angular-community/qwik-cdk/stepper';
 import {MatIcon} from '../icon/mat-icon';
@@ -138,7 +138,16 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
       aria-label={props.ariaLabel || undefined}
       aria-labelledby={!props.ariaLabel && props.ariaLabelledby ? props.ariaLabelledby : undefined}
       aria-disabled={props.ariaDisabled}
-      onClick$={() => props.onHeaderClick$(props.index)}
+      // v2: explicit $() (rather than relying on the optimizer's implicit
+      // inline-arrow transform) — on a custom intrinsic aliased to
+      // `QwikIntrinsicElements['div']` (see intrinsic-elements.d.ts), an
+      // un-$()-wrapped zero-arg arrow infers as `() => Promise<void>`
+      // with no contextual target and fails strict assignability against
+      // `QRLEventHandlerMulti<PointerEvent, HTMLDivElement>`'s QRL brand;
+      // wrapping it lets `$()` pick up the prop's expected signature as
+      // its contextual type instead. Real `<div>` elements don't need this
+      // (their JSX typing resolves the inline-arrow form directly).
+      onClick$={$(() => props.onHeaderClick$(props.index))}
       onMouseDown$={rippleEvent$}
       onMouseUp$={rippleEvent$}
       onMouseLeave$={rippleEvent$}

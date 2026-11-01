@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 // `<mat-tree>`/`<mat-tree-node>`/`<mat-nested-tree-node>` are Material's
 // own REAL tag names upstream (not directive-on-a-generic-element
@@ -9,7 +9,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
 // declaration, e.g. table's `mat-table`) since only generic attributes
 // (`class`, `role`, `style`, the `data-cdk-tree-node-key` lookup hook,
 // aria-*) are ever set on them.
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-tree': QwikIntrinsicElements['div'];

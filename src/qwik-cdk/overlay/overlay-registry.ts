@@ -1,4 +1,4 @@
-import {createContextId, type Component, type NoSerialize, type Signal} from '@builder.io/qwik';
+import {createContextId, type Component, type NoSerialize, type Signal} from '@qwik.dev/core';
 import type {OverlayConfig} from './overlay-config';
 import type {OverlayRef} from './overlay-ref';
 
@@ -52,4 +52,4 @@ export interface OverlayRegistry {
   get(id: string): OverlayEntry | undefined;
 }
 
-export const OVERLAY_REGISTRY = createContextId<OverlayRegistry>('qwik-cdk/overlay-registry');
+export const OVERLAY_REGISTRY = createContextId<OverlayRegistry>('qwikCdk/overlayRegistry');

@@ -1,4 +1,4 @@
-import {$, component$, useSignal} from '@builder.io/qwik';
+import {$, component$, useSignal} from '@qwik.dev/core';
 import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {useMatBottomSheet} from '@angular-community/qwik-material/bottom-sheet';
 import {BottomSheetDataBody} from '../../../scenarios/_mat-bottom-sheet-template';

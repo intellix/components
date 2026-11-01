@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {MatCardAppearance} from './card-appearance';
 
 /**
@@ -17,4 +17,4 @@ export interface MatCardConfig {
  * Provided by <QwikMaterialProvider matCardConfig={…}>. Consumed by
  * MatCard via `useContext(MAT_CARD_CONFIG, DEFAULTS)`.
  */
-export const MAT_CARD_CONFIG = createContextId<MatCardConfig>('qwik-material/card-config');
+export const MAT_CARD_CONFIG = createContextId<MatCardConfig>('qwikMaterial/cardConfig');

@@ -12,7 +12,7 @@
 // `component$`. Walking the tree once, synchronously, during that plain
 // function's own execution gives the same "spans known up front, in
 // document order" result as upstream's QueryList, entirely SSR-safe.
-import type {JSXChildren, JSXNode} from '@builder.io/qwik';
+import type {JSXChildren, JSXNode} from '@qwik.dev/core';
 
 function isJsxNode(value: unknown): value is JSXNode {
   return typeof value === 'object' && value !== null && 'type' in (value as object);

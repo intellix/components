@@ -1,4 +1,4 @@
-import {type Signal} from '@builder.io/qwik';
+import {type Signal} from '@qwik.dev/core';
 import type {OverlayRef} from '../overlay/overlay-ref';
 import type {DialogConfig} from './dialog-config';
 import type {FocusOrigin} from '../a11y/focus-monitor/focus-monitor';

@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Checkbox click action when the user clicks the native input. Mirrors
@@ -39,5 +39,5 @@ export const MAT_CHECKBOX_CONFIG_DEFAULTS: MatCheckboxConfig = {
  * directly in advanced scenarios.
  */
 export const MAT_CHECKBOX_CONFIG = createContextId<MatCheckboxConfig>(
-  'qwik-material/checkbox-config',
+  'qwikMaterial/checkboxConfig',
 );

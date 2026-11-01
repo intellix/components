@@ -6,7 +6,7 @@ import {
   useTask$,
   type JSXOutput,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {focusVia, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';

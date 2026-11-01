@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import {createPlatform, type Platform} from '../../platform';
 import {
   createInputModalityDetector,
@@ -369,4 +369,4 @@ export function createFocusMonitor(
  * `focusVia()` (programmatic focus with an explicit origin) or one shared
  * instance across a subtree, neither of which `useFocusOrigin()` covers.
  */
-export const FOCUS_MONITOR = createContextId<FocusMonitor>('qwik-cdk/focus-monitor');
+export const FOCUS_MONITOR = createContextId<FocusMonitor>('qwikCdk/focusMonitor');

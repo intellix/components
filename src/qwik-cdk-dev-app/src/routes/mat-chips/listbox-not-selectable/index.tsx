@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatChipListbox} from '@angular-community/qwik-material/chips';
 
 export default component$(() => (

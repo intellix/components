@@ -1,4 +1,4 @@
-import {createContextId, type NoSerialize} from '@builder.io/qwik';
+import {createContextId, type NoSerialize} from '@qwik.dev/core';
 import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import type {MatBottomSheetConfig} from './mat-bottom-sheet-config';
 import type {MatBottomSheetRef} from './mat-bottom-sheet-ref';
@@ -8,14 +8,14 @@ import type {MatBottomSheetRef} from './mat-bottom-sheet-ref';
  * config.data at open() time; the wrapper provides it. Consumers read via
  * `const data = useContext(MAT_BOTTOM_SHEET_DATA) as MyShape;`.
  */
-export const MAT_BOTTOM_SHEET_DATA = createContextId<unknown>('qwik-material/bottom-sheet-data');
+export const MAT_BOTTOM_SHEET_DATA = createContextId<unknown>('qwikMaterial/bottomSheetData');
 
 /**
  * Default options merged into every open() config. Provided by
  * <QwikMaterialProvider matBottomSheetDefaults={…}>. Optional; defaults to {}.
  */
 export const MAT_BOTTOM_SHEET_DEFAULT_OPTIONS = createContextId<Partial<MatBottomSheetConfig>>(
-  'qwik-material/bottom-sheet-default-options',
+  'qwikMaterial/bottomSheetDefaultOptions',
 );
 
 /**
@@ -26,7 +26,7 @@ export const MAT_BOTTOM_SHEET_DEFAULT_OPTIONS = createContextId<Partial<MatBotto
  * `MatBottomSheet.open()`'s own default).
  */
 export const MAT_BOTTOM_SHEET_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
-  'qwik-material/bottom-sheet-scroll-strategy',
+  'qwikMaterial/bottomSheetScrollStrategy',
 );
 
 /**
@@ -36,5 +36,5 @@ export const MAT_BOTTOM_SHEET_SCROLL_STRATEGY = createContextId<NoSerialize<() =
  * `inject(MatBottomSheetRef)`).
  */
 export const MAT_BOTTOM_SHEET_REF = createContextId<NoSerialize<MatBottomSheetRef>>(
-  'qwik-material/bottom-sheet-ref',
+  'qwikMaterial/bottomSheetRef',
 );

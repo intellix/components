@@ -1,4 +1,4 @@
-import {$, createContextId, type QRL, type Signal} from '@builder.io/qwik';
+import {$, createContextId, type QRL, type Signal} from '@qwik.dev/core';
 
 /**
  * Selection mode for MatButtonToggleGroup. Drives the child's role
@@ -84,7 +84,7 @@ export interface MatButtonToggleGroupState {
  * which survives serialization by value, not by reference.
  */
 export const MAT_BUTTON_TOGGLE_GROUP_STATE = createContextId<Signal<MatButtonToggleGroupState>>(
-  'qwik-material/button-toggle-group-state',
+  'qwikMaterial/buttonToggleGroupState',
 );
 
 /**

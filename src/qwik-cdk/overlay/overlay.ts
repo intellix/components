@@ -1,4 +1,4 @@
-import {createContextId, noSerialize, useContext, type Component} from '@builder.io/qwik';
+import {createContextId, noSerialize, useContext, type Component} from '@qwik.dev/core';
 import type {OverlayConfig} from './overlay-config';
 import {createOverlayRef, type OverlayRef} from './overlay-ref';
 import type {OverlayRegistry, OverlayEntry, OverlayEntryState} from './overlay-registry';
@@ -13,7 +13,7 @@ export interface Overlay {
   position(): OverlayPositionBuilder;
 }
 
-export const OVERLAY = createContextId<Overlay>('qwik-cdk/overlay');
+export const OVERLAY = createContextId<Overlay>('qwikCdk/overlay');
 
 export function useOverlay(): Overlay {
   return useContext(OVERLAY);

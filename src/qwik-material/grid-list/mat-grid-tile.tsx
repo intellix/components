@@ -1,4 +1,4 @@
-import {component$, Slot, type JSXChildren, type JSXOutput} from '@builder.io/qwik';
+import {component$, Slot, type JSXChildren, type JSXOutput} from '@qwik.dev/core';
 
 /**
  * Props for <MatGridTile>. Rendered as <mat-grid-tile> with an inner

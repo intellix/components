@@ -1,4 +1,4 @@
-import {$, component$, useSignal} from '@builder.io/qwik';
+import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatButton} from '@angular-community/qwik-material/button';
 import {MatForm} from '@angular-community/qwik-material/core';
 import {

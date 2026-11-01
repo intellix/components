@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every <MatDivider> in a subtree. Consumers provide this
@@ -14,4 +14,4 @@ export interface MatDividerConfig {}
  * publicly and MUST remain stable across releases — consumers may inject it
  * directly in advanced scenarios.
  */
-export const MAT_DIVIDER_CONFIG = createContextId<MatDividerConfig>('qwik-material/divider-config');
+export const MAT_DIVIDER_CONFIG = createContextId<MatDividerConfig>('qwikMaterial/dividerConfig');

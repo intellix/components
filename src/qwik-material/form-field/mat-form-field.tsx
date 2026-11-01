@@ -9,7 +9,7 @@ import {
   useVisibleTask$,
   type JSXOutput,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {
@@ -259,7 +259,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // read again after this line.
   //
   // This is deliberate, not an oversight: a genuine Qwik 1.20 CORE bug (confirmed live by
-  // instrumenting node_modules/@builder.io/qwik's own dist, not inferred) means rendering
+  // instrumenting node_modules/@qwik.dev/core's own dist, not inferred) means rendering
   // `{props.control}` directly is unsafe whenever a CONSUMER reconstructs that JSX element
   // fresh on every one of ITS OWN re-renders (the common, idiomatic way to write it — e.g.
   // `control={<MatChipGrid rows={rowsSignal} .../>}` written inline in a route's return JSX).
@@ -572,8 +572,8 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // `labelRef` are never populated (no real DOM to measure `scrollWidth` against on the
   // server) — and since `controlState.shouldLabelFloat` is ALREADY `true` on that very first
   // run, it never "flips" again to give that task a reason to re-run once a real DOM exists.
-  // `initialControlShouldFloat` is known statically (from the control's own props) BEFORE any
-  // hook runs, and is stable for the lifetime of this component instance, so calling
+  // `initialControlShouldFloat` is known (from the control's own props) BEFORE any hook runs;
+  // frozen at mount below, so it's stable for the lifetime of this component instance and calling
   // `useVisibleTask$` conditionally on it is safe (this instance either always or never calls
   // it, never a different count across ITS OWN re-renders — the only thing Qwik's hook-order
   // rule actually requires). This keeps the eager cost scoped to exactly the controls that
@@ -581,7 +581,16 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // design doc rule 6/expansion's own "mount-driven-timing exception" precedent (the
   // `mat-form-field-animations-enabled` timer just below is the SAME kind of exception, just
   // unconditional since every form-field needs it once).
-  if (hasOutline && initialControlShouldFloat && hasFloatingLabel) {
+  // Evaluated ONCE, at mount (a signal initializer), so this conditional hook's presence can never
+  // change between renders. Under Qwik v2 a JSX node's props are live, so `controlProps` (read off
+  // the frozen `control` snapshot) still reflects the control's CURRENT value: once an outlined
+  // select got a value, `initialControlShouldFloat` flipped to true, this `useVisibleTask$` appeared
+  // mid-lifetime, and every later hook read the wrong slot (e.g. `animationsEnabled` came back
+  // `false`, dropping `mat-form-field-animations-enabled` for good).
+  const measureNotchAtMount = useSignal(
+    () => hasOutline && initialControlShouldFloat && hasFloatingLabel,
+  ).value;
+  if (measureNotchAtMount) {
     // eslint-disable-next-line qwik/no-use-visible-task
     useVisibleTask$(({cleanup}) => {
       const notch = notchRef.value as HTMLElement | undefined;
@@ -669,14 +678,30 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
     subscriptSizing === 'dynamic' && 'mat-mdc-form-field-subscript-dynamic-size',
   ].filter(Boolean) as string[];
 
-  // Mirrors `_MatInternalFormField`'s/`_control.onContainerClick` behavior:
-  // a click anywhere in the text-field wrapper that ISN'T already on the
-  // control itself focuses it. No parity scenario exercises this (every
-  // interaction step uses a direct `.focus()`/`.fill()` on the control —
-  // see angular-parity.spec.ts), kept for fidelity/real-world use.
+  // Mirrors `_control.onContainerClick(event)` (`form-field.html`'s wrapper
+  // `(click)` binding) — a click anywhere in the text-field wrapper that
+  // ISN'T already on the control itself focuses it. This port implements
+  // the handler generically here (one `MatFormField`, not a per-control
+  // `onContainerClick` override), so it also has to fold in
+  // `MatChipGrid.onContainerClick`'s OWN override
+  // (`src/material/chips/chip-grid.ts`): `!this._originatesFromChip(event)`
+  // — a click that originated from inside a `.mat-mdc-chip` (confirmed
+  // against `chip-set.ts`'s `_originatesFromChip`: walks up from
+  // `event.target`, true if any ancestor up to the chip-grid's own host
+  // carries that class) must NOT redirect focus to the grid's hidden
+  // input, e.g. clicking a chip's own remove button. Qwik v2 exposed this
+  // as a real bug (not just a latent gap): confirmed live
+  // (`material-chips/grid-input`), clicking a chip's remove button raced
+  // this handler against the chip-removal logic's OWN "which row should
+  // now hold focus" redirect — depending on which QRL happened to resolve
+  // first, this one could win and leave focus on the input instead.
+  // Excluding chip-originated clicks here, matching upstream exactly,
+  // removes the race outright rather than trying to out-schedule it: this
+  // handler now never competes for focus on a chip click at all.
   const onWrapperClick$: QRL<(event: Event) => void> = $(event => {
     const target = event.target as Element | null;
     if (target?.closest('input, textarea')) return;
+    if (target?.closest('.mat-mdc-chip')) return;
     const wrapper = (event.currentTarget as Element) ?? null;
     const control = wrapper?.querySelector<HTMLElement>('input, textarea');
     control?.focus();
@@ -786,9 +811,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
         {showErrors ? (
           <div class="mat-mdc-form-field-error-wrapper">
             {errorsArray.map((node, i) => (
-              <MatIdScope key={errorIds[i]} id={errorIds[i]}>
-                {node}
-              </MatIdScope>
+              <MatIdScope key={errorIds[i]} id={errorIds[i]} content={node} />
             ))}
           </div>
         ) : (
@@ -809,11 +832,11 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
               </mat-hint>
             )}
             {hintStartSnapshot.value && (
-              <MatIdScope id={hintStartId as string}>{hintStartSnapshot.value}</MatIdScope>
+              <MatIdScope id={hintStartId as string} content={hintStartSnapshot.value} />
             )}
             <div class="mat-mdc-form-field-hint-spacer" />
             {hintEndSnapshot.value && (
-              <MatIdScope id={hintEndId as string}>{hintEndSnapshot.value}</MatIdScope>
+              <MatIdScope id={hintEndId as string} content={hintEndSnapshot.value} />
             )}
           </div>
         )}

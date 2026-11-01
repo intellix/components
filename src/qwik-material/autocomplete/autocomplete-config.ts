@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every `MatAutocomplete` in a subtree that doesn't set
@@ -37,5 +37,5 @@ export interface MatAutocompleteConfig {
  * exposed publicly and MUST remain stable across releases.
  */
 export const MAT_AUTOCOMPLETE_CONFIG = createContextId<MatAutocompleteConfig>(
-  'qwik-material/autocomplete-config',
+  'qwikMaterial/autocompleteConfig',
 );

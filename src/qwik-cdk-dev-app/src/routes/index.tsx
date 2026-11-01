@@ -1,4 +1,4 @@
-import {component$, $, useContext} from '@builder.io/qwik';
+import {component$, $, useContext} from '@qwik.dev/core';
 import {useDialog, DIALOG_DATA} from '@angular-community/qwik-cdk/dialog';
 
 const Body = component$(() => {

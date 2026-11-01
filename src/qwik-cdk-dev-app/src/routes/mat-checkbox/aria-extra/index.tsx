@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatCheckbox} from '@angular-community/qwik-material/checkbox';
 
 export default component$(() => {

@@ -8,8 +8,8 @@ import {
   type NoSerialize,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {
@@ -398,7 +398,20 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
     const liveEmpty = !el?.value;
     emptySignal.value = liveEmpty;
     if (formField) {
-      formField.focused = false;
+      // Qwik v2 regression guard, `focused` only — see `mat-select.tsx`'s matching
+      // `onHostBlur$` comment for the full root-cause writeup (same race, same fix):
+      // `selectAutocompleteOption`'s own doc comment already documents the REAL browser blur a
+      // mousedown-on-a-non-focusable-option causes, followed by an explicit synchronous
+      // re-focus; under Qwik v2 the two `$()` QRLs involved (this handler and that `.focus()`
+      // call's own resulting focus handler) can resolve out of order on their first-ever
+      // invocation, so by the time this handler's code actually runs, the input may already be
+      // focused again — checking the live DOM state directly avoids clobbering it with a stale
+      // event's effects. Deliberately NOT applied to `onTouched$`/`empty`/`shouldLabelFloat`
+      // below: a blur that bounces right back is still a REAL blur for "touched" purposes
+      // (matches upstream — confirmed live, Angular shows `ng-touched` even when this exact
+      // click-then-immediately-refocus happens), and `empty`/`shouldLabelFloat` just reflect
+      // the input's current value, which is correct either way.
+      if (document.activeElement !== el) formField.focused = false;
       formField.empty = liveEmpty;
       formField.shouldLabelFloat = !liveEmpty;
     }

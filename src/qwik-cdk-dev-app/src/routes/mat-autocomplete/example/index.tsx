@@ -1,4 +1,4 @@
-import {component$, useSignal, useStyles$} from '@builder.io/qwik';
+import {component$, useSignal, useStyles$} from '@qwik.dev/core';
 import {
   MatFormField,
   MatLabel,

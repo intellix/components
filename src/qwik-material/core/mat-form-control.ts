@@ -1,4 +1,4 @@
-import {$, useStore, type QRL} from '@builder.io/qwik';
+import {$, useStore, type QRL} from '@qwik.dev/core';
 
 /**
  * A small, framework-appropriate replacement for Angular's reactive forms

@@ -1,4 +1,4 @@
-import {component$, useSignal} from '@builder.io/qwik';
+import {component$, useSignal} from '@qwik.dev/core';
 import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {MatStepper, useRequiredControl} from '@angular-community/qwik-material/stepper';
 

@@ -1,4 +1,4 @@
-import {createContextId, useContext, type Signal} from '@builder.io/qwik';
+import {createContextId, useContext, type Signal} from '@qwik.dev/core';
 
 export type Direction = 'ltr' | 'rtl';
 
@@ -29,7 +29,7 @@ export function createDirectionality(initial: Direction = 'ltr'): Directionality
   };
 }
 
-export const DIRECTIONALITY = createContextId<Directionality>('qwik-cdk/directionality');
+export const DIRECTIONALITY = createContextId<Directionality>('qwikCdk/directionality');
 
 export function useDirectionality(): Directionality {
   return useContext(DIRECTIONALITY);

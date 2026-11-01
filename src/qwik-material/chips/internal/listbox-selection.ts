@@ -1,4 +1,4 @@
-import {createContextId, type Signal} from '@builder.io/qwik';
+import {createContextId, type Signal} from '@qwik.dev/core';
 
 /**
  * Context `<MatChipListbox>` provides so each descendant `<MatChipOption>` can read the
@@ -40,5 +40,5 @@ export interface MatChipListboxSelectionState {
 }
 
 export const MAT_CHIP_LISTBOX_SELECTION = createContextId<Signal<MatChipListboxSelectionState>>(
-  'qwik-material/chip-listbox-selection',
+  'qwikMaterial/chipListboxSelection',
 );

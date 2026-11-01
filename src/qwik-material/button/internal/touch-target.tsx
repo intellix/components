@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 
 /**
  * The `<span class="mat-mdc-button-touch-target">` element that MDC uses to

@@ -1,5 +1,5 @@
-import {createContextId, useContext} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {createContextId, useContext} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 
 export interface OverlayContainer {
   getContainerElement(): HTMLElement | null;
@@ -22,7 +22,7 @@ export function createDefaultOverlayContainer(): OverlayContainer {
   };
 }
 
-export const OVERLAY_CONTAINER = createContextId<OverlayContainer>('qwik-cdk/overlay-container');
+export const OVERLAY_CONTAINER = createContextId<OverlayContainer>('qwikCdk/overlayContainer');
 export function useOverlayContainer(): OverlayContainer {
   return useContext(OVERLAY_CONTAINER);
 }

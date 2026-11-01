@@ -1,4 +1,4 @@
-import type {Signal} from '@builder.io/qwik';
+import type {Signal} from '@qwik.dev/core';
 import type {FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import type {GlobalPositionStrategy} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig, DialogPosition} from './mat-dialog-config';

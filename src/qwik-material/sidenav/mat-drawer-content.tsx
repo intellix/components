@@ -6,7 +6,7 @@ import {
   useVisibleTask$,
   type Component,
   type FunctionComponent,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {
   computeContentMargins,
   isShowingBackdropForInert,
@@ -84,10 +84,6 @@ function createContent(
     // why: a task declared directly in this component to do the same imperative work was
     // empirically found, while porting this component, to never run at all on the client.
     const margins = computeContentMargins(containerState.registry.value);
-    const inert = isShowingBackdropForInert(
-      containerState.registry.value,
-      containerState.backdropOverride.value,
-    );
 
     const classes = ['mat-drawer-content', extraHostClass, props.class].filter(Boolean) as string[];
 
@@ -97,15 +93,24 @@ function createContent(
 
     // `inert="true"` (a literal string value, matching upstream's `element.setAttribute('inert',
     // 'true')` — NOT the bare boolean-reflected `inert=""` a plain `true` would otherwise
-    // produce) only while a backdrop is genuinely showing. This port applies it immediately
-    // (derived straight from `registry`) rather than upstream's extra ~50ms
-    // `_drawerToggled()` delay — see drawer-state.ts's doc comment on why that's safe here.
-    const inertAttr = inert ? 'true' : undefined;
+    // produce) only while a backdrop is genuinely showing. Applied ONLY imperatively — the mount
+    // task above, plus `MatDrawer`'s own registration task for subsequent updates (see
+    // drawer-state.ts's `contentHostRef` doc comment) — never as a declarative JSX prop:
+    // Qwik v2 added `inert` to its own hard-coded boolean-attribute list (`isBooleanAttr` in its
+    // core — same category it already treats `checked`/`disabled`/`required` as), so a
+    // declarative `inert={someTruthyValue}` prop now unconditionally coerces through
+    // `element.inert = true`'s own IDL reflection, which writes the bare `inert=""` form —
+    // permanently losing the literal `"true"` string this component specifically needs to match
+    // upstream's own imperative `setAttribute('inert', 'true')` call (confirmed live: a
+    // declarative `inert` prop here rendered `inert=""`, not `inert="true"`). This port used to
+    // ALSO derive an `inert` boolean here for exactly such a JSX prop (now removed along with it)
+    // — the reactive, SSR-correct re-derivation this comment used to describe is now entirely
+    // the two imperative tasks' job.
 
     const HostTag = hostTag as unknown as FunctionComponent<Record<string, unknown>>;
 
     return (
-      <HostTag ref={hostRef} id={props.id} class={classes} style={style} inert={inertAttr}>
+      <HostTag ref={hostRef} id={props.id} class={classes} style={style}>
         <Slot />
       </HostTag>
     );

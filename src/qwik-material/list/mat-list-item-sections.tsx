@@ -1,4 +1,4 @@
-import {component$, Slot, type CSSProperties} from '@builder.io/qwik';
+import {component$, Slot, type CSSProperties} from '@qwik.dev/core';
 
 /**
  * Shared props for the 5 slot components (Avatar, Icon, Title, Line, Meta).

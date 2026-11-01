@@ -1,4 +1,4 @@
-import {createContextId, type Signal} from '@builder.io/qwik';
+import {createContextId, type Signal} from '@qwik.dev/core';
 
 /**
  * Broadcast written by `useCdkAccordionItem()`'s `setExpanded$` whenever an
@@ -43,9 +43,8 @@ export interface CdkAccordionState {
  * see `qwik-material/button-toggle`'s `MAT_BUTTON_TOGGLE_GROUP_STATE` for
  * the fuller rationale this mirrors.
  */
-export const CDK_ACCORDION_STATE = createContextId<Signal<CdkAccordionState>>(
-  'qwik-cdk/accordion-state',
-);
+export const CDK_ACCORDION_STATE =
+  createContextId<Signal<CdkAccordionState>>('qwikCdk/accordionState');
 
 /**
  * Fallback for `useCdkAccordionItem()` used without a `useCdkAccordion()`

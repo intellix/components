@@ -523,3 +523,80 @@ times; `specs/material-form-field`, `material-menu`, `material-chips`,
   which Angular leaves in the live DOM verbatim (same category as a directive-selector
   attribute Material's own template emits). No existing select scenario sets this prop true, so
   this is purely additive. See `qwik-material/paginator/SYNC.md`.
+
+## Qwik v2 preemptive fix: `mat-select-panel.tsx`'s `option.content` (2026-11-01)
+
+`MatSelectPanel` re-renders itself (reads its own `props.exiting.value` in its `classes`
+computation) more than once per open, independent of `option.content` ever changing — the exact
+pattern `qwik-material/menu`'s `MenuPanel` was confirmed to corrupt under Qwik v2 when
+`option.content` is a real `JSXOutput` (not the plain string most options use) — see
+`qwik-material/menu/SYNC.md`'s "Qwik v2 regression" section for the full root-cause writeup.
+`renderOption` now wraps it: `{cloneJsxForReuse(option.content)}` instead of `{option.content}`.
+No current select scenario passes non-plain-text `content`, so this is a no-op today
+(`cloneJsxForReuse` returns a string unchanged) — applied preemptively since the bug is
+understood and the fix is free for the common case.
+
+## Qwik v2 regressions (2026-11-01) — reparented-overlay teardown crash + stale-blur focus race
+
+Upgrading to `@qwik.dev/core` 2.0.0-rc.4 broke every `mat-select` scenario that closes its
+panel via ANY path (Escape, outside click, selecting an option, Tab). Two stacked, independent
+root causes, both confirmed live via fine-grained Playwright polls:
+
+1. **Teardown crash.** `mat-select`'s overlay uses `withPopoverLocation('inline')`, so
+   `OverlayRef.detach()`'s "reparented" branch ran — this threw a `NotFoundError:
+   Failed to execute 'insertBefore' on 'Node'` from inside Qwik's own renderer, right at the
+   ~100ms mark the panel's exit animation CSS completes. Fixed in shared `qwik-cdk/overlay`
+   code (`overlay-ref.ts`) — see that package's own SYNC.md (or `_onReparented()`'s doc
+   comment in `overlay-ref.ts` directly) for the full root-cause writeup; also fixes
+   `qwik-material/autocomplete` (the only other `'inline'`-popover consumer).
+2. **Stale-blur focus race.** Once (1) was fixed, 4 scenarios (`multiple`, `custom-trigger`,
+   `placeholder`, `optgroups` via the autocomplete-side variant) still failed: clicking an
+   option left `mat-focused`/`mdc-text-field--focused`/`mdc-line-ripple--active` all missing,
+   despite `document.activeElement` never actually leaving the trigger. Root cause: the real
+   browser blur a mousedown-on-a-non-focusable-option causes, and the explicit synchronous
+   re-focus `selectOption()` issues right after, are handled by two separate `$()` QRLs
+   (`onHostBlur$` and whatever handles the resulting focus event) that can resolve out of
+   order on their FIRST-ever invocation under Qwik v2 (confirmed: the second click on the same
+   select, chunks warm, never shows the glitch). Fixed in `mat-select.tsx`'s `onHostBlur$` —
+   guards only the `focused` write (NOT `onTouched$`/`cancelTypeahead`, which should still fire
+   on every real blur regardless of how quickly it bounces back — see that function's own
+   comment). Same fix applied to `qwik-material/autocomplete/mat-autocomplete.tsx`'s
+   `handleBlur$`.
+
+### Resolved (2026-11-01): `outline-basic` — `mat-form-field-animations-enabled` never settles once the select opens
+
+**Root cause found:** a conditional hook in `MatFormField` whose condition flipped mid-lifetime under Qwik v2's live JSX props, shifting later hooks — see form-field/SYNC.md "Conditional notch-measure hook frozen at mount". The investigation notes below are kept for history; the "Qwik v2 scheduler bug" hypothesis in them was wrong.
+
+**Not fixed. Documented here with evidence after extensive investigation, same treatment as
+`qwik-material/timepicker`'s own `min-max` open issue.**
+
+`outline-basic` is the one `mat-select` scenario using `appearance="outline"` (every other
+select scenario uses `fill`). Its `[press Enter]` step fails on exactly one class:
+`mat-form-field-animations-enabled` missing from `<mat-form-field>`, even though:
+
+- The SAME scenario with NO interaction at all (just page load + wait) gets the class at the
+  expected ~300ms, every time.
+- `fill-basic`, run through the IDENTICAL interaction sequence (open, ArrowDown, Enter), gets
+  the class at ~300ms correctly, every time.
+- Instrumenting `mat-form-field.tsx`'s `useVisibleTask$({strategy: 'document-ready'})` task
+  directly (temporary `console.log`s, since removed) showed it RUNNING TWICE for
+  `outline-basic` specifically — once at mount, once again right as the select opens (exactly
+  when `appearance="outline"`'s OWN reactive notch-width `useTask$`, a few lines above it in
+  the same component, also fires in reaction to `controlState.shouldLabelFloat` flipping true
+  on open — `fill` has no notched outline, so that task is a no-op for it, the one real
+  structural difference between the two scenarios). The 300ms `setTimeout` DID fire both times
+  (also confirmed via the same logging), writing `animationsEnabled.value = true` — yet the
+  class never appeared in the rendered output at any point, even 4+ seconds later.
+- A `document.addEventListener('qinit', ...)` attached via `page.addInitScript` (before any
+  page script runs) never logged a single event, despite `{strategy: 'document-ready'}`
+  wiring a `useOnDocument('qinit', ...)` listener per Qwik core's own source
+  (`node_modules/@qwik.dev/core/dist/core.mjs`) — inconclusive (either `qinit` isn't a plain
+  bubbling event the way assumed, or something else about its dispatch wasn't captured this
+  way), not pursued further given the time already spent.
+
+This looks like a genuine Qwik v2 scheduler/hook-identity bug (an unrelated reactive update on
+the same component causing an untracked `useVisibleTask$` to be treated as freshly registered,
+landing its write on a disconnected signal instance) rather than anything specific to this
+port's code, but the root cause was not conclusively isolated inside Qwik itself in the time
+available. Only `outline-basic` is affected among all `mat-select`/`mat-autocomplete`
+scenarios.

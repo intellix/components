@@ -212,6 +212,38 @@ upstream's source code.
    `specs/material-stepper` suite (13 scenarios) and `specs/examples`'s `mat-stepper/example`
    (including its interaction step) stay green across the refactor.
 
+## Qwik v2 regression: step content's button labels going missing (2026-11-01)
+
+Upgrading to `@qwik.dev/core@2.0.0-rc.4` broke 10/11 `material-stepper` parity scenarios (plus
+`specs/examples`'s `mat-stepper/example`): `<MatStepperNext>`/`<MatStepperPrevious>`'s (and even a
+plain `<MatButton>`'s, confirmed with a throwaway repro) `<Slot/>`-projected label text rendered
+correctly in the SSR output, then went empty in the live DOM a few hundred ms after mount — timed
+exactly to `animationsEnabledClass`'s own 200ms `useVisibleTask$` timer (see "Qwik limitations"
+above). Root cause: `MatStepper` used to inline `{s.content}` (a `JSXOutput` VALUE the CONSUMER
+builds once and stores in `props.steps` — see `MatStepDef.content`'s doc comment for why steps are
+a data array, not nested children) directly in its own JSX. Every re-render of `MatStepper` for a
+reason that has NOTHING to do with any step's content (the animations-enabled class flipping,
+`isAnimating` toggling, …) re-diffed that content subtree too — and when the content contains a
+component that itself projects children via `<Slot/>`, that re-diff silently emptied the slotted
+text, even though `s.content` itself never changed (same `JSXOutput` object, since the CONSUMER's
+own render — which built it — never re-ran).
+
+Fixed by isolating `s.content` behind its own small `component$` (`StepContent`, in
+`mat-stepper.tsx`) instead of inlining it: Qwik skips re-rendering a child component whose props
+haven't changed by reference, so `<StepContent content={s.content} />` — same `content` object
+every time — never re-renders (and therefore never re-diffs its nested `<Slot/>` projections) just
+because `MatStepper` itself did. No API change for consumers; purely internal to how `MatStepper`
+renders what it's given.
+
+**This is a GENERAL Qwik v2 hazard, not stepper-specific** — ANY component that stores a
+consumer-built `JSXOutput` in a data-array prop (`qwik-material/tabs`'s `MatTabDef.content` has
+the exact same shape) and inlines it directly in its own re-rendering JSX is at risk, PROVIDED that
+JSXOutput contains a nested `<Slot/>`-using component. `material-tabs`' own scenarios happen not to
+exercise this today (every `tabs[].content`/`labelTemplate` in this port's scenarios is either a
+plain string or plain HTML elements, never a component with its own `<Slot/>`) — flagging here in
+case a future stepper/tabs scenario (or new "steps/tabs-as-data" component) adds one and needs the
+same `StepContent`-style isolation wrapper.
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/stepper/ 2>/dev/null` → 0 (no

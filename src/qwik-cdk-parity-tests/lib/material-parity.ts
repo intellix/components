@@ -1,4 +1,7 @@
 import {expect, type Browser, type BrowserContext, type Page} from '@playwright/test';
+import {createHash} from 'node:crypto';
+import {existsSync, mkdirSync, readFileSync, renameSync, writeFileSync} from 'node:fs';
+import path from 'node:path';
 import {diffNodes, type DomNode} from './structural-diff.js';
 
 /**
@@ -13,8 +16,10 @@ import {diffNodes, type DomNode} from './structural-diff.js';
  *
  * The comparison is structural: tags, nesting, classes, attributes and text.
  * Framework bookkeeping is stripped (Angular `_ngcontent-*`, `ng-reflect-*`;
- * Qwik `q:*`, `on:*`, comments). Auto-generated ids keep their shape but
- * have digits replaced with `#`, because Angular's counters are app-global.
+ * Qwik `q:*`, `q-e:*`/`q-ep:*`/`q-d:*`/`q-dp:*`/`q-w:*`/`q-wp:*` (v2's
+ * renamed-from-`on:*`/`on-document:*`/`on-window:*` event-listener
+ * attributes), comments). Auto-generated ids keep their shape but have
+ * digits replaced with `#`, because Angular's counters are app-global.
  */
 
 const ANGULAR_URL = `${process.env['ANGULAR_URL'] ?? 'http://localhost:4200'}/qwik-parity`;
@@ -31,15 +36,39 @@ const IGNORE_ATTRS = [
   // category as `_nghost-*`/`ng-reflect-*` above. Applies to any component that
   // uses AriaDescriber, not just badge.
   'cdk-describedby-host',
+  // Qwik v2's per-element vnode reference (an attribute literally named `:`, values like
+  // `OJ_11`) — resumability bookkeeping, same category as v1's `q:id`.
+  ':',
 ];
 const IGNORE_ATTR_PREFIXES = [
   '_ngcontent-',
   '_nghost-',
   'ng-reflect-',
-  'q:',
+  // Qwik v1 event-listener attributes (`on:click`, `on-document:click`,
+  // `on-window:click`). Superseded by the `q-e:`/`q-d:`/`q-w:` scheme
+  // below on v2, but harmless to keep listed (nothing emits these
+  // anymore post-migration; kept for the historical record and in case
+  // any cached v1 SSR output is ever compared).
   'on:',
   'on-document:',
   'on-window:',
+  // `q:` SSR/resumability bookkeeping (`q:key`, `q:id`, `q:render`, ...).
+  // NOTE: this is a literal "q" + colon prefix — it does NOT match v2's
+  // event-listener attributes below, which use a hyphen before the colon
+  // (`q-e:`, not `q:e:`), so those need their own entries.
+  'q:',
+  // Qwik v2 event-listener attributes — renamed from v1's `on:`/
+  // `on-document:`/`on-window:` scheme (https://next.qwik.dev/docs/upgrade/):
+  // `q-e:` element-scoped, `q-d:` document-scoped, `q-w:` window-scoped,
+  // each with a `q-ep:`/`q-dp:`/`q-wp:` passive-listener variant (new in
+  // v2, no v1 equivalent). Same category as `q:`/v1's `on:` above: Qwik
+  // event-dispatch bookkeeping with no Angular equivalent attribute.
+  'q-e:',
+  'q-ep:',
+  'q-d:',
+  'q-dp:',
+  'q-w:',
+  'q-wp:',
   // Qwik-specific declarative event-handling bookkeeping (e.g.
   // `preventdefault:click`, `stoppropagation:click`) — these tell
   // qwikloader's dispatcher to call `event.preventDefault()`/
@@ -423,7 +452,7 @@ export async function snapshotParityRoot(
         // live (qwik-material/form-field's disabled/readonly scenarios):
         // Qwik's SSR output DOES serialize a literal `value="…"` attribute
         // for a static, never-reassigned value (needed so the control
-        // paints correctly before any JS runs) — but @builder.io/qwik's
+        // paints correctly before any JS runs) — but @qwik.dev/core's
         // OWN resumability runtime unconditionally strips that attribute
         // again shortly after hydration (confirmed via core.cjs's
         // `_setProperty`: it always sets `node[key] = value` AND, for a
@@ -472,10 +501,29 @@ export async function snapshotParityRoot(
         // attributes (the implicit-insertion signature — a REAL Material table's own `<tbody>`
         // always carries `role`/`class`, see `qwik-material/table`, and is never touched by this)
         // is transparent, splicing its own children in its place.
+        //
+        // "NO attributes" means none BESIDES the ones already ignored everywhere else in this
+        // walk (Qwik v2 regression, 2026-11-01): v2's per-element vnode-reference attribute
+        // (literally named `:`) gets written onto EVERY element its resume/inflate step walks,
+        // including this browser-auto-inserted `<tbody>` that Qwik's own JSX never created at
+        // all — confirmed live, it is the ONLY attribute the implicit `<tbody>` ever carries
+        // under v2, so a literal `attributes.length === 0` check (correct under v1, where the
+        // browser-inserted node had truly zero attributes) stopped matching it, and this
+        // table's rows showed up wrapped in one extra `<tbody>` level Angular's CSR-built DOM
+        // doesn't have.
+        const isImplicitTbody = (c: Element): boolean => {
+          if (c.tagName.toLowerCase() !== 'tbody') return false;
+          for (const attr of Array.from(c.attributes)) {
+            if (opts.ignoreAttrs.includes(attr.name)) continue;
+            if (opts.ignoreAttrPrefixes.some(p => attr.name.startsWith(p))) continue;
+            return false;
+          }
+          return true;
+        };
         const elementChildren =
           el.tagName.toLowerCase() === 'table'
             ? rawElementChildren.flatMap(c =>
-                c.tagName.toLowerCase() === 'tbody' && c.attributes.length === 0
+                isImplicitTbody(c)
                   ? Array.from(c.children).filter(cc => cc.tagName.toLowerCase() !== 'q:template')
                   : [c],
               )
@@ -610,21 +658,70 @@ const PIN_ROOT_CSS =
  * fresh contexts, so without this each one re-requests them, and a single slow response holds
  * up the page's `load` event until the test times out.
  */
-const FONT_CACHE = new Map<
-  string,
-  {status: number; headers: Record<string, string>; body: Buffer}
->();
+type CachedResponse = {status: number; headers: Record<string, string>; body: Buffer};
 
+/** In-memory layer (per worker) over the on-disk cache in `FONT_CACHE_DIR`. */
+const FONT_CACHE = new Map<string, CachedResponse>();
+/** URLs that failed to download this run: aborted immediately from then on. */
+const FONT_FAILURES = new Set<string>();
+/** Survives across runs (gitignored), so after one successful download no run needs the network. */
+const FONT_CACHE_DIR = path.resolve('.font-cache');
+/** Per-download timeout; raise it (`PARITY_FONT_TIMEOUT_MS=60000`) to prime the cache on a slow network. */
+const FONT_FETCH_TIMEOUT_MS = Number(process.env['PARITY_FONT_TIMEOUT_MS'] ?? 8000);
+
+function fontCacheFile(url: string): string {
+  return path.join(FONT_CACHE_DIR, createHash('sha1').update(url).digest('hex'));
+}
+
+function readCachedFont(url: string): CachedResponse | undefined {
+  const memo = FONT_CACHE.get(url);
+  if (memo) return memo;
+  const file = fontCacheFile(url);
+  if (!existsSync(file)) return undefined;
+  const {status, headers} = JSON.parse(readFileSync(`${file}.json`, 'utf8'));
+  const hit = {status, headers, body: readFileSync(file)};
+  FONT_CACHE.set(url, hit);
+  return hit;
+}
+
+function writeCachedFont(url: string, hit: CachedResponse): void {
+  FONT_CACHE.set(url, hit);
+  mkdirSync(FONT_CACHE_DIR, {recursive: true});
+  const file = fontCacheFile(url);
+  // Metadata first, body last via rename: readers key off the body file, which appears atomically
+  // (several workers may write the same entry concurrently).
+  writeFileSync(`${file}.json`, JSON.stringify({status: hit.status, headers: hit.headers}));
+  const tmp = `${file}.${process.pid}.tmp`;
+  writeFileSync(tmp, hit.body);
+  renameSync(tmp, file);
+}
+
+/**
+ * Serves Google Fonts (both dev-apps load Roboto/Material Icons from fonts.googleapis.com /
+ * fonts.gstatic.com) from a memory + on-disk cache. Every test opens two fresh contexts; fetching
+ * per page let one slow or failed response hold up the page's `load` event until the test timed
+ * out. A URL that can't be downloaded is aborted immediately for the rest of the run, so both
+ * apps fall back to the same local fonts instead of hanging.
+ */
 async function cacheGoogleFonts(ctx: BrowserContext): Promise<void> {
   await ctx.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, async route => {
     const url = route.request().url();
-    let hit = FONT_CACHE.get(url);
-    if (!hit) {
-      const response = await route.fetch();
-      hit = {status: response.status(), headers: response.headers(), body: await response.body()};
-      if (response.ok()) FONT_CACHE.set(url, hit);
+    const cached = readCachedFont(url);
+    if (cached) return route.fulfill(cached);
+    if (FONT_FAILURES.has(url)) return route.abort('failed');
+    try {
+      const response = await route.fetch({timeout: FONT_FETCH_TIMEOUT_MS});
+      const hit = {
+        status: response.status(),
+        headers: response.headers(),
+        body: await response.body(),
+      };
+      if (response.ok()) writeCachedFont(url, hit);
+      return route.fulfill(hit);
+    } catch {
+      FONT_FAILURES.add(url);
+      return route.abort('failed').catch(() => {});
     }
-    await route.fulfill(hit);
   });
 }
 

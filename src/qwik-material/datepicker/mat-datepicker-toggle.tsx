@@ -17,7 +17,7 @@
  * `MatTimepickerToggle`: `MatIconButton`'s public props don't expose `aria-haspopup`/
  * `aria-expanded`/a custom default `tabIndex`.
  */
-import {$, component$, useContext, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useContext, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {QWIK_CDK, type QwikCdkInternals} from '@angular-community/qwik-cdk';
 import {FocusIndicator} from '../button/internal/focus-indicator';

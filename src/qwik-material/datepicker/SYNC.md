@@ -6,13 +6,50 @@ plumbing, and the source of the "min-max"-style frozen-element-reference defense
 `src/qwik-material/core/SYNC.md` (the `DateAdapter`/`NativeDateAdapter`/`MAT_NATIVE_DATE_FORMATS`
 abstraction this reuses verbatim).
 
-**Status: all 13 contract scenarios implemented. 11/13 pass the full Angular-vs-Qwik DOM parity
-harness 3 consecutive times (`--repeat-each=3`). 2 remain documented open issues** (`typed-date-blur`,
-and the `(calendar)` half of `actions` — see "Open issues" below) **after real, extensive
-investigation did not find a fix.** `pnpm -C src/qwik-material build && test && typecheck &&
+**Status: all 13 contract scenarios implemented, 13/13 passing the full Angular-vs-Qwik DOM
+parity harness 3 consecutive times (`--repeat-each=3`)** as of the Qwik v2 regression pass below
+— `typed-date-blur` and the `(calendar)` half of `actions`, previously documented as open issues
+at handoff (see "Open issues" below for the historical record), are now fixed; see "Qwik v2
+regression fixes (2026-11-01)". `pnpm -C src/qwik-material build && test && typecheck &&
 lint:no-ssr-leaks` all pass with zero regressions; datepicker-scoped unit tests are 32/32; the
 regression specs for form-field/timepicker/select/dialog show no new failures (the one timepicker
 failure, `min-max`, predates this port — see its own SYNC.md).
+
+### Qwik v2 regression fixes (2026-11-01)
+
+Upgrading `@qwik.dev/core` 1.20 → 2.0.0-rc.4 broke 3 of this component's scenarios that had
+passed reliably under v1 (per the "Done when" table below, as it stood before this pass):
+`actions (field)` (newly broken), `actions (calendar)` and `typed-date-blur` (both previously
+*separately* broken for different, now-superseded reasons — see "Open issues"/"Resolved issues"
+below — but reproducible under v2 for a NEW reason regardless). Root causes, confirmed live via
+instrumented Playwright runs against the built preview (not assumed):
+
+1. **`useFocusTrap`'s anchor attach + auto-focus raced Qwik v2's deferred DOM commit.** Fixed in
+   `qwik-cdk/a11y/focus-trap/{focus-trap.ts,use-focus-trap.ts}` — see that package's own SYNC.md.
+   This alone fixed most of the datepicker popup's missing `cdk-focus-trap-anchor` siblings.
+2. **`ActionsOutlet`'s `<Slot/>` lost the actions row's Cancel/Apply text on the FIRST open.**
+   `mat-datepicker-content.tsx`'s `ActionsOutlet` projected `props.actionsContent` (arrives via a
+   prop, not literal JSX children at that call site) through `<Slot/>`; fixed by taking `content:
+   JSXOutput` as an explicit prop instead and interpolating `{props.content}` directly.
+3. **The SAME actions row broke AGAIN, specifically on a SECOND open.** `datepicker-runtime.ts`
+   deliberately reuses the exact same captured `JSXOutput` object across every open (by design —
+   worked fine under v1). Qwik v2's `JSXNodeImpl` caches render-time state on the node object
+   itself, so rendering the identical object a second time (in a brand-new overlay) corrupts it.
+   Fixed via `core/jsx-reuse.ts`'s new `cloneJsxForReuse()`, called at both
+   `openDatepickerPanel`/`openDateRangePickerPanel`.
+4. **`typed-date-blur`'s `mat-error` rendered with a permanently empty label.** Two compounding
+   issues: the route's own dev-app code still had an EARLIER, already-known-unnecessary
+   "frozen errors element" workaround (timepicker's SYNC.md had already found and removed the
+   same pattern there for a different prop) — removed, now passes `errors` the plain, idiomatic
+   way (`error-state`'s own convention). That alone wasn't sufficient: `MatFormField`'s own
+   `MatIdScope` helper ALSO projected the (now letter-for-letter correct) `<MatError>` through a
+   `<Slot/>` for the exact same reason as (2) — fixed the same way, in `qwik-material/form-field`
+   (shared code; see that package's own SYNC.md for the full writeup, kept here as a pointer
+   since it's outside this component's own files).
+
+All 3 scenarios now pass `--repeat-each=3` (9/9), plus a combined 108-test run alongside
+cdk-dialog/material-dialog/material-bottom-sheet/material-snack-bar/material-form-field with zero
+regressions.
 
 ## Upstream sync state (SCSS)
 
@@ -237,7 +274,7 @@ Single date, with an actions row (mirrors upstream's own two-field
 `datepicker-actions-example` almost verbatim):
 
 ```tsx
-import {$, component$, useSignal} from '@builder.io/qwik';
+import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatButton} from '@angular-community/qwik-material/button';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
 import {
@@ -303,12 +340,12 @@ the `[formControl]`-bound shape (`formBound` prop on `MatDatepickerInput`, `pick
 | `start-view-year` | pass 3× |
 | `start-view-multi-year` | pass 3× |
 | `min-max-filter` | pass 3× |
-| `typed-date-blur` | **open issue** — intermittent line-ripple flake (see "Open issues") |
+| `typed-date-blur` | pass 3× (Qwik v2 regression, fixed 2026-11-01 — see "Qwik v2 regression fixes" above) |
 | `disabled` | pass 3× |
 | `keyboard-nav` | pass 3× |
 | `escape-restore-focus` | pass 3× |
 | `actions` (field) | pass 3× |
-| `actions` (calendar) | **open issue** — deterministic ripple-loader diff (see "Open issues") |
+| `actions` (calendar) | pass 3× (Qwik v2 regression, fixed 2026-11-01 — see "Qwik v2 regression fixes" above) |
 | `range-basic` | pass 3× |
 | `touch-ui` | pass 3× |
 

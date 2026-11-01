@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every `<MatTabGroup>` / `<MatTabNav>` in a subtree.
@@ -29,4 +29,4 @@ export interface MatTabsConfig {
  * Context id used by `MatTabGroup` / `MatTabNav` to read config. The id
  * string is exposed publicly and MUST remain stable across releases.
  */
-export const MAT_TABS_CONFIG = createContextId<MatTabsConfig>('qwik-material/tabs-config');
+export const MAT_TABS_CONFIG = createContextId<MatTabsConfig>('qwikMaterial/tabsConfig');

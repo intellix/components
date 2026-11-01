@@ -1,5 +1,5 @@
-import {$, useContext, useSignal, type NoSerialize, type QRL} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {$, useContext, useSignal, type NoSerialize, type QRL} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import type {FocusOrigin} from '@angular-community/qwik-cdk/a11y';

@@ -1,4 +1,4 @@
-import {component$, useVisibleTask$} from '@builder.io/qwik';
+import {component$, useVisibleTask$} from '@qwik.dev/core';
 import {useDialog} from '@angular-community/qwik-cdk/dialog';
 import {ScenarioBody} from '../../../scenarios/_template';
 

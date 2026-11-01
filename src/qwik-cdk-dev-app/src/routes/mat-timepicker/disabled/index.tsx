@@ -1,10 +1,11 @@
-import {$, component$, useSignal} from '@builder.io/qwik';
+import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
 import {
   formatTimeForDisplay,
   MatTimepickerInput,
   MatTimepickerToggle,
   useMatTimepicker,
+  type MatTimepickerHandle,
 } from '@angular-community/qwik-material/timepicker';
 
 function time(hours: number, minutes: number): Date {
@@ -19,8 +20,10 @@ export default component$(() => {
   const picker = useMatTimepicker<Date>({
     value: value.value,
     disabled: true,
-    onValueChange$: $((v: Date | null) => (value.value = v)),
-  });
+    onValueChange$: $((v: Date | null) => {
+      value.value = v;
+    }),
+  }) as unknown as MatTimepickerHandle<unknown>;
   const invalid = picker.parseError.value || picker.minError.value || picker.maxError.value;
 
   return (

@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatSpinner} from '@angular-community/qwik-material/progress-spinner';
 
 // Port of src/components-examples/material/progress-spinner/progress-spinner-overview

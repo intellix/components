@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatList, MatListItem} from '@angular-community/qwik-material/list';
 
 // Port of src/components-examples/material/list/list-overview

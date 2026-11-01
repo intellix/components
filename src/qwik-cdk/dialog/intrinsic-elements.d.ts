@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for CDK Dialog's custom-element tag name. Upstream
@@ -7,7 +7,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * this tag name directly. See
  * docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'cdk-dialog-container': QwikIntrinsicElements['div'];

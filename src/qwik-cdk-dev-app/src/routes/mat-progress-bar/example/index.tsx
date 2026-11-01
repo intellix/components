@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatProgressBar} from '@angular-community/qwik-material/progress-bar';
 
 // Port of src/components-examples/material/progress-bar/progress-bar-determinate

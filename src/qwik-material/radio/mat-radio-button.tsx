@@ -5,8 +5,9 @@ import {
   useContext,
   useOnDocument,
   useSignal,
+  useTask$,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
@@ -38,6 +39,13 @@ import {MAT_RADIO_GROUP_STATE, MAT_RADIO_GROUP_STATE_DEFAULTS} from './radio-gro
  * difference — orthogonal to actual rendered behavior, which already keys
  * off the live property / `:checked` pseudo-class — doesn't show up as a
  * false-positive diff).
+ *
+ * Under Qwik v2, `checked` is ALSO backed by a `useTask$`-written `Signal`
+ * (not just a plain per-render expression) — see the big comment where
+ * `checkedSig` is declared in the component body below for why (a real,
+ * v2-specific race that can silently drop a click), mirroring
+ * `qwik-material/checkbox/mat-checkbox.tsx`'s own established pattern for
+ * the same hazard.
  */
 export interface MatRadioButtonProps {
   /** The value this button represents. Compared against the group's `value`
@@ -113,8 +121,54 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
   // for why that distinction matters here too). See radio-group-state.ts's
   // standalone doc comment.
   const localChecked = useSignal(() => props.checked ?? false);
+  const inputRef = useSignal<HTMLInputElement>();
 
-  const checked = standalone ? localChecked.value : state.value === props.value;
+  // Qwik v2 regression (NOT present under v1 — see this file's own prior
+  // comment on `tabIndex` below, which documents the v1 behavior this no
+  // longer matches): a JSX attribute bound to a PLAIN, per-render-computed
+  // expression (as `checked` used to be: `standalone ? localChecked.value :
+  // state.value === props.value`) only gets re-applied to the DOM when
+  // *this* component happens to re-render — it has no reactivity of its
+  // own. `useFocusOrigin()`'s `pointerdown`/`focusin` listeners (below)
+  // cause exactly such an unrelated re-render on every real click (focus
+  // always follows a pointer press) — and that re-render can land AFTER the
+  // browser's own native click has already flipped the real `<input>`'s
+  // `.checked` property to `true` but BEFORE `onNativeChange$` (also
+  // deferred — every Qwik v2 event handler resolves through a
+  // microtask-deferred `import()`, even cached) has run. When it lands
+  // first, this component re-renders with the stale `checked = false` (the
+  // group's `value` hasn't been updated yet) and reasserts it onto the
+  // native input, stomping the real toggle — so by the time
+  // `onNativeChange$` finally runs, `target.checked` reads `false` again
+  // and its (otherwise-necessary — see that handler's own doc comment)
+  // staleness guard discards the click entirely. Confirmed live: a real
+  // Playwright click (mousedown→mouseup with no delay — exactly
+  // `locator.click()`'s default) reproduces this every time; a delay of
+  // just a few ms between mousedown and mouseup (letting the pointerdown
+  // render land and settle first) does not, nor does a scripted
+  // `element.click()` (dispatches a single synthetic `click` with no
+  // separate `pointerdown`/`focusin` in between).
+  //
+  // Fix: mirror `qwik-material/checkbox/mat-checkbox.tsx`'s own established
+  // pattern for this exact hazard (see its "checked/indeterminate SSR
+  // limitation" comment) — make `checked` a real `Signal` written
+  // imperatively from a `useTask$` that tracks only the group/local state it
+  // actually depends on, decoupled from this component's general re-render
+  // cycle. The task reruns ONLY when `stateSignal.value` (a new object every
+  // `MatRadioGroup` render, so this still catches every real selection
+  // change) or `localChecked.value`/`props.value` changes — never merely
+  // because `focusOrigin` did — so a `focusin`-triggered render can no
+  // longer write a stale value over a native toggle that just happened.
+  const checkedSig = useSignal(() => standalone ? localChecked.value : state.value === props.value);
+  useTask$(({track}) => {
+    const live = track(() => stateSignal.value);
+    const local = track(() => localChecked.value);
+    const value = live.standalone ? local : live.value === props.value;
+    checkedSig.value = value;
+    const el = inputRef.value;
+    if (el) el.checked = value;
+  });
+  const checked = checkedSig.value;
 
   const effectiveDisabled = (props.disabled ?? false) || state.disabled;
   const effectiveRequired = (props.required ?? false) || state.required;
@@ -133,13 +187,17 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
   const focusOrigin = useFocusOrigin();
 
   // Roving tabindex — upstream `_updateTabIndex()` (radio.ts lines 745-795),
-  // simplified to its actual condition (no imperative DOM write needed; a
-  // declarative `tabIndex` JSX prop on <input> is forced through
-  // `setAttribute` by Qwik's runtime regardless of updates, so it never goes
-  // stale — see this file's top doc comment for why `checked` is different):
-  // disabled, or standalone (no group), or nothing in the group selected
-  // yet → use this button's own tabIndex; otherwise 0 if this IS the
-  // selected one, else -1.
+  // simplified to its actual condition: disabled, or standalone (no group),
+  // or nothing in the group selected yet → use this button's own tabIndex;
+  // otherwise 0 if this IS the selected one, else -1. Unlike `checked`
+  // above, this plain per-render expression does NOT need the same
+  // `useTask$`-backed signal treatment: nothing reads this native input's
+  // LIVE `tabindex` attribute to decide whether to apply an update (the way
+  // `onNativeChange$` reads `target.checked`), so a stale value written by
+  // an unrelated render (e.g. `focusOrigin` changing) is cosmetic at worst —
+  // it gets corrected for free the moment `checked`'s own fix (above) lets
+  // the real selection-change render land, since `tabIndexValue` is
+  // recomputed from the same `checked`/`state.value` in that very render.
   const ownTabIndex = props.tabIndex ?? 0;
   const hasGroupSelection = !standalone && state.value !== undefined && state.value !== null;
   const tabIndexValue =
@@ -166,7 +224,6 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
-  const inputRef = useSignal<HTMLInputElement>();
   const rippleContainerRef = useSignal<HTMLElement>();
 
   // Upstream `radio.html`: `[matRippleTrigger]="_rippleTrigger.nativeElement"`
@@ -309,7 +366,7 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
             class="mdc-radio__native-control"
             type="radio"
             id={inputId}
-            checked={checked}
+            checked={checkedSig.value}
             disabled={(effectiveDisabled && !effectiveDisabledInteractive) || undefined}
             name={effectiveName}
             value={props.value != null ? String(props.value) : undefined}

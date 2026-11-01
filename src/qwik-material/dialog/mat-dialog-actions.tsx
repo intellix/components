@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, useVisibleTask$} from '@builder.io/qwik';
+import {component$, Slot, useContext, useVisibleTask$} from '@qwik.dev/core';
 import {MAT_DIALOG_CONTAINER} from './mat-dialog-tokens';
 
 export interface MatDialogActionsProps {

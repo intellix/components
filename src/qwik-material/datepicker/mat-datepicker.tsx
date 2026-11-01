@@ -39,7 +39,7 @@
  * `use-mat-datepicker.ts`'s `_actionsContent` doc comment for why a `Signal` is still needed
  * here, unlike `_formFieldOrigin`).
  */
-import {component$, type JSXOutput} from '@builder.io/qwik';
+import {component$, type JSXOutput} from '@qwik.dev/core';
 import type {MatDatepickerHandle, MatDateRangePickerHandle} from './use-mat-datepicker';
 
 export interface MatDatepickerProps<D = unknown> {

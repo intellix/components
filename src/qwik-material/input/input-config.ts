@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every `MatInput` in a subtree. Mirrors upstream's
@@ -15,7 +15,7 @@ export interface MatInputConfig {
  * Context id used by `MatInput` to read config. The id string is exposed
  * publicly and MUST remain stable across releases.
  */
-export const MAT_INPUT_CONFIG = createContextId<MatInputConfig>('qwik-material/input-config');
+export const MAT_INPUT_CONFIG = createContextId<MatInputConfig>('qwikMaterial/inputConfig');
 
 /**
  * Mirrors upstream's implicit default (`this._config?.disabledInteractive

@@ -18,7 +18,7 @@
  * so (also matching `PaginatorNavButton`) the actual tooltip show/hide interaction is not wired —
  * only the static `mat-mdc-tooltip-trigger` class is reproduced.
  */
-import {$, component$, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatButton} from '../button/mat-button';
 import {FocusIndicator} from '../button/internal/focus-indicator';

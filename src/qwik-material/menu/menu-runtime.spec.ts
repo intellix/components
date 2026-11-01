@@ -1,4 +1,4 @@
-import {$} from '@builder.io/qwik';
+import {$} from '@qwik.dev/core';
 import {describe, expect, it} from 'vitest';
 import {createMatMenu} from './menu-ref';
 import {

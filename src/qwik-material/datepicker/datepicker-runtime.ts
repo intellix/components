@@ -32,8 +32,8 @@
  * `this._model === this._globalModel`) and auto-closes once "complete" (mirrors `(!this._model ||
  * this._model.isComplete()) && !this._actionsPortal`).
  */
-import {noSerialize, type QRL, type Signal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {noSerialize, type QRL, type Signal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import {focusVia} from '@angular-community/qwik-cdk/a11y';
 import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qwik-cdk';
@@ -50,6 +50,7 @@ import {
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 import {DATEPICKER_INTL} from './datepicker-intl';
 import {MatDatepickerContent, type MatDatepickerContentProps} from './mat-datepicker-content';
 import {isRangeComplete, rangeSelectionFinished, type DateRange} from './date-range-selection';
@@ -360,7 +361,7 @@ export function openDatepickerPanel<D>(
     selected: activeModel as unknown as Signal<unknown>,
     startDateAccessibleName: null,
     endDateAccessibleName: null,
-    actionsContent: picker._actionsContent.value,
+    actionsContent: cloneJsxForReuse(picker._actionsContent.value),
     actionsRippleMemory: picker._actionsRippleMemory,
     touchUi: picker.touchUi.value,
     dialogLabelledBy: picker._formFieldLabelId,
@@ -462,7 +463,7 @@ export function openDateRangePickerPanel<D>(
     selected: activeModel as unknown as Signal<unknown>,
     startDateAccessibleName: picker._startInputRef.value?.placeholder || null,
     endDateAccessibleName: picker._endInputRef.value?.placeholder || null,
-    actionsContent: picker._actionsContent.value,
+    actionsContent: cloneJsxForReuse(picker._actionsContent.value),
     actionsRippleMemory: picker._actionsRippleMemory,
     touchUi: picker.touchUi.value,
     dialogLabelledBy: picker._formFieldLabelId,

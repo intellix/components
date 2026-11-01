@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {MatFormFieldAppearance} from '../form-field/form-field-config';
 
 /**
@@ -33,5 +33,5 @@ export interface MatPaginatorConfig {
  * remain stable across releases.
  */
 export const MAT_PAGINATOR_CONFIG = createContextId<MatPaginatorConfig>(
-  'qwik-material/paginator-config',
+  'qwikMaterial/paginatorConfig',
 );

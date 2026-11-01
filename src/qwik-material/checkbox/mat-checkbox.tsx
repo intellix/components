@@ -7,7 +7,7 @@ import {
   useTask$,
   useVisibleTask$,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
@@ -238,7 +238,10 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
   // mark, filled background) never apply until the first interaction. Static per
   // instance, so the conditional hook is order-stable (same exception as
   // form-field's initially-floating label).
-  if (props.indeterminate) {
+  // Decided once, at mount: the condition must not change between renders (a hook appearing or
+  // disappearing shifts every later hook — `indeterminate` clears on click).
+  const startsIndeterminate = useSignal(() => !!props.indeterminate).value;
+  if (startsIndeterminate) {
     // eslint-disable-next-line qwik/no-use-visible-task
     useVisibleTask$(
       () => {

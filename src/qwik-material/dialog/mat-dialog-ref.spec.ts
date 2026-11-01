@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import type {Signal} from '@builder.io/qwik';
+import type {Signal} from '@qwik.dev/core';
 import {createMatDialogRef, MatDialogState, MARK_OPENED, MARK_CLOSED} from './mat-dialog-ref';
 import type {MatDialogRef} from './mat-dialog-ref';
 

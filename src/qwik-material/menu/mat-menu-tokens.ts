@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {MenuPositionX, MenuPositionY} from './menu-positions';
 
 /**
@@ -36,5 +36,5 @@ export const MAT_MENU_DEFAULT_OPTIONS_FACTORY: Required<
  * `createMatMenu()` via `useContext(MAT_MENU_DEFAULT_OPTIONS, {})`.
  */
 export const MAT_MENU_DEFAULT_OPTIONS = createContextId<MatMenuDefaultOptions>(
-  'qwik-material/menu-default-options',
+  'qwikMaterial/menuDefaultOptions',
 );

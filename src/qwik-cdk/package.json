@@ -15,15 +15,15 @@
     "test:css-parity": "node ./scripts/diff-prebuilt-css.mjs"
   },
   "peerDependencies": {
-    "@builder.io/qwik": "^1.5.0"
+    "@qwik.dev/core": ">=2.0.0-rc.4"
   },
   "devDependencies": {
-    "@builder.io/qwik": "^1.5.0",
+    "@qwik.dev/core": "2.0.0-rc.4",
     "@types/node": "*",
     "happy-dom": "*",
     "sass": "*",
     "typescript": "*",
-    "vite": "*",
+    "vite": "^8.3.5",
     "vite-plugin-dts": "*",
     "vitest": "*"
   },

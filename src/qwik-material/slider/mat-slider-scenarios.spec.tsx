@@ -33,7 +33,7 @@
  * SYNC.md "no additional Qwik-only spec").
  */
 import {describe, it, expect} from 'vitest';
-import {$} from '@builder.io/qwik';
+import {$} from '@qwik.dev/core';
 import {MatSlider, type MatSliderColor, type MatSliderProps} from './public-api';
 
 describe('MatSlider surface — sanity', () => {

@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every MatButtonToggleGroup / MatButtonToggle in a subtree.
@@ -15,5 +15,5 @@ export interface MatButtonToggleConfig {}
  * inject it directly in advanced scenarios.
  */
 export const MAT_BUTTON_TOGGLE_CONFIG = createContextId<MatButtonToggleConfig>(
-  'qwik-material/button-toggle-config',
+  'qwikMaterial/buttonToggleConfig',
 );

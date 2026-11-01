@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every MatSlideToggle in a subtree. Consumers provide
@@ -32,5 +32,5 @@ export interface MatSlideToggleConfig {
  * inject it directly in advanced scenarios.
  */
 export const MAT_SLIDE_TOGGLE_CONFIG = createContextId<MatSlideToggleConfig>(
-  'qwik-material/slide-toggle-config',
+  'qwikMaterial/slideToggleConfig',
 );

@@ -1,4 +1,4 @@
-import {$, createContextId, type QRL, type Signal} from '@builder.io/qwik';
+import {$, createContextId, type QRL, type Signal} from '@qwik.dev/core';
 import type {MatRadioColor} from './radio-color';
 
 /**
@@ -61,7 +61,7 @@ export interface MatRadioGroupState {
  * this mirrors).
  */
 export const MAT_RADIO_GROUP_STATE = createContextId<Signal<MatRadioGroupState>>(
-  'qwik-material/radio-group-state',
+  'qwikMaterial/radioGroupState',
 );
 
 /**

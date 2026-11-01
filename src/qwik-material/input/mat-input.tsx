@@ -1,4 +1,4 @@
-import {$, component$, useContext, useSignal, useTask$, type QRL} from '@builder.io/qwik';
+import {$, component$, useContext, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
   MAT_FORM_FIELD_CONTROL_STATE,

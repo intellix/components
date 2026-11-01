@@ -1,4 +1,5 @@
-import type {QRL, Signal} from '@builder.io/qwik';
+import {$, useOn} from '@qwik.dev/core';
+import type {QRL, Signal} from '@qwik.dev/core';
 
 /**
  * Directive hooks — "Composing directives" in `qwik-material/README.md`.
@@ -82,7 +83,7 @@ import type {QRL, Signal} from '@builder.io/qwik';
  * never persisted across a resume boundary the way a QRL closure must be.
  */
 
-/** The same shape Qwik's own `ref` JSX prop accepts (`Ref<EL>` in `@builder.io/qwik`,
+/** The same shape Qwik's own `ref` JSX prop accepts (`Ref<EL>` in `@qwik.dev/core`,
  *  not itself exported, so re-declared structurally here). */
 export type HostRef<EL extends Element = Element> =
   | Signal<Element | undefined>
@@ -90,7 +91,7 @@ export type HostRef<EL extends Element = Element> =
 
 /**
  * The same shape Qwik's own `on<Event>$` JSX props accept
- * (`QRLEventHandlerMulti` in `@builder.io/qwik`, not itself exported, so
+ * (`QRLEventHandlerMulti` in `@qwik.dev/core`, not itself exported, so
  * re-declared structurally here): a single handler QRL, or (possibly
  * nested) arrays of them — every one runs, in order, when the event fires.
  */
@@ -319,4 +320,49 @@ export function extraHostAttrs(
     if (!knownKeys.has(key) && props[key] !== undefined) out[key] = props[key];
   }
   return out;
+}
+
+/** The `HostHandler` props a host component forwards from directive hooks (besides `onClick$`). */
+export interface ForwardedHostHandlers {
+  onMouseDown$?: HostHandler<MouseEvent>;
+  onMouseEnter$?: HostHandler<MouseEvent>;
+  onMouseLeave$?: HostHandler<MouseEvent>;
+  onKeyDown$?: HostHandler<KeyboardEvent>;
+  onFocusIn$?: HostHandler<FocusEvent>;
+  onFocusOut$?: HostHandler<FocusEvent>;
+}
+
+/**
+ * Forwards a host component's directive-hook handlers to its own root element via `useOn()`,
+ * reading `props` live. Use this instead of `onMouseEnter$={props.onMouseEnter$}`-style JSX props
+ * on a root that ALSO has `useOn()` listeners for the same events (the button family's ripple
+ * loader and focus origin): under Qwik v2 the `useOn()` listeners replace a same-named JSX-prop
+ * handler on that element instead of joining it, so e.g. `useMatTooltip()`'s `mouseenter` never
+ * ran on a `<MatButton>`.
+ */
+export function useForwardedHostHandlers(props: ForwardedHostHandlers): void {
+  useOn(
+    'mousedown',
+    $((e: MouseEvent, el: Element) => callHostHandler(props.onMouseDown$, e, el)),
+  );
+  useOn(
+    'mouseenter',
+    $((e: MouseEvent, el: Element) => callHostHandler(props.onMouseEnter$, e, el)),
+  );
+  useOn(
+    'mouseleave',
+    $((e: MouseEvent, el: Element) => callHostHandler(props.onMouseLeave$, e, el)),
+  );
+  useOn(
+    'keydown',
+    $((e: KeyboardEvent, el: Element) => callHostHandler(props.onKeyDown$, e, el)),
+  );
+  useOn(
+    'focusin',
+    $((e: FocusEvent, el: Element) => callHostHandler(props.onFocusIn$, e, el)),
+  );
+  useOn(
+    'focusout',
+    $((e: FocusEvent, el: Element) => callHostHandler(props.onFocusOut$, e, el)),
+  );
 }

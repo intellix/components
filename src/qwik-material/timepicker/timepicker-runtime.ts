@@ -18,9 +18,16 @@
  * `$()` handler, and why a plain singleton sidesteps it cleanly for the one locale/format bag
  * this project ever needs.
  */
-import {noSerialize, type Signal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
-import {DOWN_ARROW, ENTER, ESCAPE, hasModifierKey, TAB, UP_ARROW} from '@angular-community/qwik-cdk/keycodes';
+import {noSerialize, type Signal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
+import {
+  DOWN_ARROW,
+  ENTER,
+  ESCAPE,
+  hasModifierKey,
+  TAB,
+  UP_ARROW,
+} from '@angular-community/qwik-cdk/keycodes';
 import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qwik-cdk';
 import {
   createFlexibleConnectedPositionStrategy,
@@ -450,7 +457,10 @@ function handleOpenKeydown<D>(
   } else if (keyCode === ENTER) {
     event.preventDefault();
     const activeIndex = manager?.activeItemIndex ?? -1;
-    const active = activeIndex != null && activeIndex >= 0 ? picker._renderOptions.value[activeIndex] : undefined;
+    const active =
+      activeIndex != null && activeIndex >= 0
+        ? picker._renderOptions.value[activeIndex]
+        : undefined;
     if (active) {
       selectTimepickerOption(picker, active, animationsDisabled);
     } else {

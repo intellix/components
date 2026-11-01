@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 
 /**
  * The persistent ripple `<span>` that upstream MDC uses as the target for

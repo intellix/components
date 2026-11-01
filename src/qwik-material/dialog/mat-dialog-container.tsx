@@ -7,7 +7,7 @@ import {
   useStore,
   useVisibleTask$,
   type NoSerialize,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useFocusTrap} from '@angular-community/qwik-cdk/a11y';
 import type {MatDialogConfig} from './mat-dialog-config';
 import {

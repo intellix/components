@@ -1,4 +1,4 @@
-import {$, component$, useContext, useOn, type QRL} from '@builder.io/qwik';
+import {$, component$, useContext, useOn, type QRL} from '@qwik.dev/core';
 import type {MatProgressBarColor} from './progress-bar-color';
 import type {MatProgressBarMode} from './progress-bar-mode';
 import {MAT_PROGRESS_BAR_CONFIG, type MatProgressBarConfig} from './progress-bar-config';

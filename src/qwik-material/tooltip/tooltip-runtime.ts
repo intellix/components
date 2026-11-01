@@ -15,8 +15,8 @@
  * routing them all through these free functions avoids duplicating it five
  * times, and is call-site-safe regardless of which `$()` scope calls it.
  */
-import {noSerialize, type NoSerialize, type Signal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {noSerialize, type NoSerialize, type Signal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,

@@ -1,5 +1,5 @@
-import {$, component$, useTask$, type NoSerialize, type Signal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {$, component$, useTask$, type NoSerialize, type Signal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {finalizeHidden} from './tooltip-runtime';
 

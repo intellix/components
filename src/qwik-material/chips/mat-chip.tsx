@@ -1,4 +1,4 @@
-import {$, component$, Slot, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, Slot, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';

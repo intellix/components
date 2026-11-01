@@ -1,4 +1,4 @@
-import {component$, Slot} from '@builder.io/qwik';
+import {component$, Slot} from '@qwik.dev/core';
 import {mergeHostProps} from '../core/host-props';
 import {useMatStepperNext, useMatStepperPrevious} from './use-stepper-buttons';
 

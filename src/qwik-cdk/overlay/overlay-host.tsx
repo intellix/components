@@ -1,4 +1,4 @@
-import {component$, useSignal, useVisibleTask$} from '@builder.io/qwik';
+import {component$, useSignal, useVisibleTask$} from '@qwik.dev/core';
 import type {OverlayEntry} from './overlay-registry';
 import {
   applyPopoverInsertionPoint,
@@ -69,7 +69,51 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
   const Comp = entry.Component;
   return (
     <div
-      ref={hostRef}
+      // A plain (non-QRL) ref callback, not `hostRef` directly — v2
+      // regression fix. A `popover="manual"` element is native-hidden
+      // (`display: none`, `:popover-open` false) until `.showPopover()` is
+      // called; Qwik has no special-case handling for the `popover`
+      // attribute, so nothing else ever calls it. `useVisibleTask$` (below)
+      // can't be the one to make this call: its IntersectionObserver-based
+      // `qvisible` trigger never fires for an element with no layout box in
+      // the first place, so this element's OWN hidden state would block
+      // the one task meant to un-hide it — a permanent deadlock (confirmed
+      // live: v1 apparently tolerated this; v2's `useVisibleTask$` no
+      // longer does — manually calling `.showPopover()` from devtools on a
+      // stuck instance immediately un-blocks the pending visible task too,
+      // so this is the only missing piece, not a deeper bug in
+      // `_onAttached`/the position strategy). A ref callback runs the
+      // moment this DOM node is created, independent of its visibility, so
+      // it can resolve the deadlock before it ever applies — but two
+      // ordering quirks (both confirmed live) mean it can't just call
+      // `el.showPopover()` synchronously:
+      //  1. This callback fires BEFORE Qwik's own attribute-flush for this
+      //     same render commits, so the `popover={...}` JSX prop below
+      //     hasn't landed on the element yet (`NotSupportedError: not
+      //     supported on elements that are not popovers` without the
+      //     `setAttribute` call below — idempotent with that JSX prop,
+      //     same value either way).
+      //  2. It ALSO fires before Qwik inserts the node into the live
+      //     document (`InvalidStateError: Invalid on disconnected popover
+      //     elements`) — poll across animation frames for `isConnected`
+      //     rather than assume any fixed number of frames, since that's
+      //     cheap (a handful of frames at most) and doesn't depend on
+      //     Qwik's internal batching depth staying constant across
+      //     versions.
+      ref={(el: HTMLElement) => {
+        hostRef.value = el;
+        if (entry.usePopover) {
+          el.setAttribute('popover', 'manual');
+          const tryShow = () => {
+            if (!el.isConnected) {
+              requestAnimationFrame(tryShow);
+              return;
+            }
+            if (!el.matches(':popover-open')) el.showPopover();
+          };
+          requestAnimationFrame(tryShow);
+        }
+      }}
       class={entry.usePopover ? 'cdk-overlay-popover' : undefined}
       popover={entry.usePopover ? 'manual' : undefined}
       dir={entry.direction}

@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {CdkTreeNodeToggle, type CdkTreeNodeInput} from '@angular-community/qwik-cdk/tree';
 import {MatTree} from '@angular-community/qwik-material/tree';
 
@@ -37,7 +37,13 @@ function buildNodes(data: FoodNode[]): CdkTreeNodeInput<FoodNode>[] {
         data: node,
         content: (
           <>
-            <button type="button" disabled></button>
+            {/* Qwik v2 bug (confirmed, not fixable in this port — see
+                qwik-material/tree/SYNC.md): a STATIC/literal boolean attribute
+                (`disabled`, bare or `={true}`) on an element created fresh on
+                the client serializes as the literal string `disabled="true"`
+                instead of the correct bare `disabled=""` form. A dynamic
+                (not constant-foldable) value sidesteps it. */}
+            <button type="button" disabled={!node.children?.length}></button>
             {node.name}
           </>
         ),

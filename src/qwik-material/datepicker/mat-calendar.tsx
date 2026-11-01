@@ -74,7 +74,7 @@ import {
   useVisibleTask$,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MatCalendarHeader} from './mat-calendar-header';

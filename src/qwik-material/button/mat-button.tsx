@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type JSXOutput} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type JSXOutput} from '@qwik.dev/core';
 import {
   APPEARANCE_CLASSES,
   type MatButtonAppearance,
@@ -11,7 +11,13 @@ import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
-import {callHostHandler, extraHostAttrs, type HostHandler, type HostRef} from '../core/host-props';
+import {
+  callHostHandler,
+  extraHostAttrs,
+  type HostHandler,
+  type HostRef,
+  useForwardedHostHandlers,
+} from '../core/host-props';
 
 /** Props this component already names explicitly — excluded from the generic
  *  `extraHostAttrs()` passthrough (see that prop's doc comment below). Kept
@@ -195,6 +201,8 @@ export const MatButton = component$<MatButtonProps>(props => {
   // reconciles the WHOLE vnode tree, so the ripple span + its host attribute
   // must come from the same declarative render rather than be mutated
   // imperatively (see useRippleLoader()'s doc comment).
+  // Directive-hook handlers via useOn(), not JSX props — see useForwardedHostHandlers().
+  useForwardedHostHandlers(props);
   const rippleInitialized = useRippleLoader();
   const rippleAttrs = rippleLoaderHostAttrs({
     className: 'mat-mdc-button-ripple',
@@ -219,12 +227,6 @@ export const MatButton = component$<MatButtonProps>(props => {
         aria-describedby={describedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
-        onMouseDown$={props.onMouseDown$}
-        onMouseEnter$={props.onMouseEnter$}
-        onMouseLeave$={props.onMouseLeave$}
-        onKeyDown$={props.onKeyDown$}
-        onFocusIn$={props.onFocusIn$}
-        onFocusOut$={props.onFocusOut$}
         {...extraAttrs}
         {...rippleAttrs}
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
@@ -253,12 +255,6 @@ export const MatButton = component$<MatButtonProps>(props => {
       aria-describedby={describedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
-      onMouseDown$={props.onMouseDown$}
-      onMouseEnter$={props.onMouseEnter$}
-      onMouseLeave$={props.onMouseLeave$}
-      onKeyDown$={props.onKeyDown$}
-      onFocusIn$={props.onFocusIn$}
-      onFocusOut$={props.onFocusOut$}
       {...extraAttrs}
       {...rippleAttrs}
       mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}

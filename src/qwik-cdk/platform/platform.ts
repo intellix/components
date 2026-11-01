@@ -1,5 +1,5 @@
-import {createContextId, useContext} from '@builder.io/qwik';
-import {isBrowser as qIsBrowser} from '@builder.io/qwik/build';
+import {createContextId, useContext} from '@qwik.dev/core';
+import {isBrowser as qIsBrowser} from '@qwik.dev/core/build';
 
 /** Re-export for direct use outside Qwik components. */
 export const isBrowser = qIsBrowser;
@@ -65,7 +65,7 @@ function hasGlobalProp(name: string) {
   return typeof globalThis !== 'undefined' && name in globalThis;
 }
 
-export const PLATFORM = createContextId<Platform>('qwik-cdk/platform');
+export const PLATFORM = createContextId<Platform>('qwikCdk/platform');
 
 export function usePlatform(): Platform {
   return useContext(PLATFORM);

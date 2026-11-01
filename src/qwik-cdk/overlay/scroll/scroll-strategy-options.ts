@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {createContextId, useContext} from '@builder.io/qwik';
+import {createContextId, useContext} from '@qwik.dev/core';
 import type {ScrollStrategy} from './scroll-strategy';
 import {createNoopScrollStrategy} from './noop-scroll-strategy';
 import {createBlockScrollStrategy} from './block-scroll-strategy';
@@ -44,7 +44,7 @@ export function createScrollStrategyOptions(): ScrollStrategyOptions {
 }
 
 export const SCROLL_STRATEGY_OPTIONS = createContextId<ScrollStrategyOptions>(
-  'qwik-cdk/scroll-strategy-options',
+  'qwikCdk/scrollStrategyOptions',
 );
 
 export function useScrollStrategyOptions(): ScrollStrategyOptions {

@@ -1,4 +1,4 @@
-import {component$, Slot} from '@builder.io/qwik';
+import {component$, Slot} from '@qwik.dev/core';
 import type {Portal} from './portal';
 
 export interface CdkPortalOutletProps<P = any> {

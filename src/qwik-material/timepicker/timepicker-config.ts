@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every `useMatTimepicker()`/`<MatTimepickerToggle>` in a subtree that
@@ -17,5 +17,5 @@ export interface MatTimepickerConfig {
 /** Context id used by `useMatTimepicker()`/`<MatTimepickerToggle>` to read config. The id string
  *  is exposed publicly and MUST remain stable across releases. */
 export const MAT_TIMEPICKER_CONFIG = createContextId<MatTimepickerConfig>(
-  'qwik-material/timepicker-config',
+  'qwikMaterial/timepickerConfig',
 );

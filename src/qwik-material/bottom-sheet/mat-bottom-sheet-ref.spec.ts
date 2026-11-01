@@ -1,5 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
-import type {Signal} from '@builder.io/qwik';
+import type {Signal} from '@qwik.dev/core';
 import {
   createMatBottomSheetRef,
   MARK_CLOSED,

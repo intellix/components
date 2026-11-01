@@ -9,7 +9,7 @@
 // TODO: refactor clipping detection into a separate thing (part of scrolling module)
 // TODO: doesn't handle both flexible width and height when it has to scroll along both axis.
 
-import {isBrowser} from '@builder.io/qwik/build';
+import {isBrowser} from '@qwik.dev/core/build';
 import type {PositionStrategy, PositionStrategyOverlayHandle} from './position-strategy';
 import {
   type ConnectedPosition,

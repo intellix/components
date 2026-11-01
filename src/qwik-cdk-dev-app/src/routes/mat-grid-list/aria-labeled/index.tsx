@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatGridList, MatGridTile} from '@angular-community/qwik-material/grid-list';
 
 export default component$(() => (

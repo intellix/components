@@ -11,7 +11,7 @@
  * QRLs are fetched on demand and their captured signals are serializable.
  */
 
-import {createContextId, type Signal, type NoSerialize} from '@builder.io/qwik';
+import {createContextId, type Signal, type NoSerialize} from '@qwik.dev/core';
 import type {OverlayEntry} from '../overlay/overlay-registry';
 import type {DialogConfig} from '../dialog/dialog-config';
 import type {DialogRef} from '../dialog/dialog-ref';
@@ -61,4 +61,4 @@ export interface QwikCdkInternals {
  * (`useStore` in `<QwikCdkRoot>`) makes mutation of `keyboardDispatcher` /
  * `outsideClickDispatcher` from `useVisibleTask$` survive the SSR→CSR resume.
  */
-export const QWIK_CDK = createContextId<QwikCdkInternals>('qwik-cdk/internals');
+export const QWIK_CDK = createContextId<QwikCdkInternals>('qwikCdk/internals');

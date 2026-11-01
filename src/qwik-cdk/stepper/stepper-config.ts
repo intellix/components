@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {StepperOptions} from './step-types';
 
 /**
@@ -14,5 +14,5 @@ import type {StepperOptions} from './step-types';
  * nothing to it.
  */
 export const CDK_STEPPER_GLOBAL_OPTIONS = createContextId<StepperOptions>(
-  'qwik-cdk/stepper-global-options',
+  'qwikCdk/stepperGlobalOptions',
 );

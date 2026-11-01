@@ -9,8 +9,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {component$, jsx} from '@builder.io/qwik';
-import type {Signal} from '@builder.io/qwik';
+import {component$, jsx} from '@qwik.dev/core';
+import type {Signal} from '@qwik.dev/core';
 import {createOverlayService, type OverlayConfig} from './public-api';
 import type {OverlayEntry, OverlayRegistry} from './public-api';
 import {createIdGenerator} from '../a11y/id-generator';

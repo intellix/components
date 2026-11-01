@@ -1,4 +1,4 @@
-import {component$, noSerialize, Slot, useContextProvider, useSignal} from '@builder.io/qwik';
+import {component$, noSerialize, Slot, useContextProvider, useSignal} from '@qwik.dev/core';
 import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import {createBlockScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';

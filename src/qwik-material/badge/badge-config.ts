@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {MatBadgeColor} from './badge-color';
 import type {MatBadgePosition} from './badge-position';
 import type {MatBadgeSize} from './badge-size';
@@ -31,4 +31,4 @@ export interface MatBadgeConfig {
  * Provided by <QwikMaterialProvider matBadgeConfig={…}>. Consumed by
  * MatBadge via `useContext(MAT_BADGE_CONFIG, DEFAULTS)`.
  */
-export const MAT_BADGE_CONFIG = createContextId<MatBadgeConfig>('qwik-material/badge-config');
+export const MAT_BADGE_CONFIG = createContextId<MatBadgeConfig>('qwikMaterial/badgeConfig');

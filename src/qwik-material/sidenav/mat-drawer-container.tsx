@@ -10,7 +10,7 @@ import {
   type Component,
   type FunctionComponent,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {createInteractivityChecker} from '@angular-community/qwik-cdk/a11y';
 import {getFirstTabbableElement, getLastTabbableElement} from './focus-helpers';
 import {MAT_SIDENAV_CONFIG, type MatSidenavConfig} from './sidenav-config';
@@ -173,6 +173,41 @@ function createContainer(
     const showingBackdrop = isShowingBackdrop(registry.value, backdropOverride.value);
     const hasOpen = hasOpenNonSide(registry.value);
 
+    // Qwik v2 regression: the backdrop `<div>` is the FIRST JSX child, but it
+    // (like the focus-trap anchors around it) only starts rendering once a
+    // registering `MatDrawer`/`MatSidenav`'s own task has populated
+    // `registry` — which happens on the client, strictly after this
+    // container's OWN first SSR render (the raw SSR HTML has no backdrop/
+    // anchor at all; confirmed live). That means the backdrop's first real
+    // appearance is a brand-new PREPEND into a parent that already has
+    // other children (`<mat-drawer>`/`<mat-drawer-content>`, present since
+    // SSR via `<Slot>`) — and under v2 that specific shape (a new leading
+    // child inserted where NO sibling existed before it, while OTHER new
+    // siblings — the focus-trap anchors — are inserted in the very same
+    // pass) lands the new node at the wrong spot: appended as the LAST
+    // child of the container instead of prepended as the first (confirmed
+    // live; the anchors, whose own "insert before" reference is an
+    // already-existing node from SSR, land correctly). Adding a `key` to
+    // every one of these conditionally-rendered siblings did not change
+    // this. Patched imperatively, the same escape-hatch category already
+    // used elsewhere in this file (`mat-drawer-transition`'s class toggle
+    // above) for a declarative update that doesn't reliably land.
+    const backdropRef = useSignal<HTMLElement>();
+    useVisibleTask$(({track}) => {
+      // Re-derive from tracked SIGNALS (not the outer, plain `hasBackdrop`
+      // const) so this task actually re-fires on every registration change
+      // — `track()` only establishes a subscription for a reactive read.
+      const reg = track(() => registry.value);
+      const override = track(() => backdropOverride.value);
+      const show = containerHasBackdrop(reg, override);
+      if (!show) return;
+      const el = backdropRef.value;
+      const parent = hostRef.value;
+      if (el && parent && parent.firstChild !== el) {
+        parent.insertBefore(el, parent.firstChild);
+      }
+    });
+
     const startEntry = Object.values(registry.value).find(d => d.position === 'start');
     const endEntry = Object.values(registry.value).find(d => d.position === 'end');
 
@@ -204,12 +239,15 @@ function createContainer(
       <HostTag ref={hostRef} id={props.id} class={classes} style={props.style}>
         {hasBackdrop && (
           <div
+            ref={backdropRef}
+            key="backdrop"
             class={['mat-drawer-backdrop', showingBackdrop && 'mat-drawer-shown'].filter(Boolean)}
             onClick$={onBackdropClicked$}
           />
         )}
         {startEntry && (
           <FocusTrapAnchor
+            key="start-anchor-begin"
             entry={startEntry}
             enabled={trapEnabledFor(startEntry, registry.value, backdropOverride.value)}
             boundary="start"
@@ -218,6 +256,7 @@ function createContainer(
         <Slot name="start-drawer" />
         {startEntry && (
           <FocusTrapAnchor
+            key="start-anchor-end"
             entry={startEntry}
             enabled={trapEnabledFor(startEntry, registry.value, backdropOverride.value)}
             boundary="end"
@@ -226,6 +265,7 @@ function createContainer(
         <Slot />
         {endEntry && (
           <FocusTrapAnchor
+            key="end-anchor-begin"
             entry={endEntry}
             enabled={trapEnabledFor(endEntry, registry.value, backdropOverride.value)}
             boundary="start"
@@ -234,6 +274,7 @@ function createContainer(
         <Slot name="end-drawer" />
         {endEntry && (
           <FocusTrapAnchor
+            key="end-anchor-end"
             entry={endEntry}
             enabled={trapEnabledFor(endEntry, registry.value, backdropOverride.value)}
             boundary="end"

@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $} from '@builder.io/qwik';
+import {component$, Slot, useContext, $} from '@qwik.dev/core';
 import type {MatFabOwnProps} from './mat-fab-button';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
@@ -7,7 +7,7 @@ import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
-import {callHostHandler, extraHostAttrs} from '../core/host-props';
+import {callHostHandler, extraHostAttrs, useForwardedHostHandlers} from '../core/host-props';
 
 // Mini-FAB has no 'extended' prop; everything else matches MatFabProps
 // (via its index-signature-free MatFabOwnProps — see that type's doc
@@ -90,6 +90,8 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
   // useRippleLoader() doc comment: this component's focus classes above
   // ALSO come from a signal, so the ripple span/attribute must too, or an
   // unrelated focus-triggered re-render would clobber an imperative mutation.
+  // Directive-hook handlers via useOn(), not JSX props — see useForwardedHostHandlers().
+  useForwardedHostHandlers(props);
   const rippleInitialized = useRippleLoader();
 
   const children = (
@@ -128,12 +130,6 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
         aria-describedby={describedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
-        onMouseDown$={props.onMouseDown$}
-        onMouseEnter$={props.onMouseEnter$}
-        onMouseLeave$={props.onMouseLeave$}
-        onKeyDown$={props.onKeyDown$}
-        onFocusIn$={props.onFocusIn$}
-        onFocusOut$={props.onFocusOut$}
         {...extraAttrs}
         {...rippleAttrs}
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
@@ -155,12 +151,6 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
       aria-describedby={describedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
-      onMouseDown$={props.onMouseDown$}
-      onMouseEnter$={props.onMouseEnter$}
-      onMouseLeave$={props.onMouseLeave$}
-      onKeyDown$={props.onKeyDown$}
-      onFocusIn$={props.onFocusIn$}
-      onFocusOut$={props.onFocusOut$}
       {...extraAttrs}
       {...rippleAttrs}
       mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}

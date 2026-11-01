@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {MatProgressBarColor} from './progress-bar-color';
 import type {MatProgressBarMode} from './progress-bar-mode';
 
@@ -20,5 +20,5 @@ export interface MatProgressBarConfig {
  * directly in advanced scenarios.
  */
 export const MAT_PROGRESS_BAR_CONFIG = createContextId<MatProgressBarConfig>(
-  'qwik-material/progress-bar-config',
+  'qwikMaterial/progressBarConfig',
 );

@@ -1,4 +1,4 @@
-import {component$, type Signal} from '@builder.io/qwik';
+import {component$, type Signal} from '@qwik.dev/core';
 import {MatOption} from '../core/mat-option';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';

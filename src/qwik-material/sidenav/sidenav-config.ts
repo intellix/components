@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every `MatDrawerContainer`/`MatSidenavContainer` in a
@@ -17,4 +17,4 @@ export interface MatSidenavConfig {
  * Context id used by MatDrawerContainer/MatSidenavContainer to read config.
  * The id string is exposed publicly and MUST remain stable across releases.
  */
-export const MAT_SIDENAV_CONFIG = createContextId<MatSidenavConfig>('qwik-material/sidenav-config');
+export const MAT_SIDENAV_CONFIG = createContextId<MatSidenavConfig>('qwikMaterial/sidenavConfig');

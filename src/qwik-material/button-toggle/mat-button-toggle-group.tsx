@@ -7,7 +7,7 @@ import {
   useSignal,
   useTask$,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MAT_BUTTON_TOGGLE_CONFIG, type MatButtonToggleConfig} from './button-toggle-config';
 import {
@@ -111,9 +111,43 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
   // would otherwise each start from the same stale `values` and drop the
   // earlier change; upstream updates its SelectionModel synchronously.
   const pendingValues = useSignal<readonly unknown[] | undefined>(undefined);
+  // Qwik v2 regression: this task used to clear `pendingValues`
+  // UNCONDITIONALLY whenever `props.values` changed (any round trip
+  // completing meant "we're caught up, drop the overlay"). Under v2, two
+  // rapid clicks on DIFFERENT toggles can have the SECOND one's `onClick$`
+  // read `stateSignal.value` (capturing a STALE `onToggle` closure, with
+  // a stale closed-over `propValues`) before the FIRST click's
+  // `onValuesChange$` round trip has landed — and if Qwik also serializes
+  // concurrent invocations of the SAME QRL to full completion before
+  // starting the next queued one (confirmed live via instrumentation:
+  // the second call's `onToggle` body doesn't even START running until
+  // the first one's `await onValuesChange$?.resolve()` — and everything
+  // after it — has entirely finished), that stale closure's capture
+  // happened BEFORE the first click, yet its body runs AFTER. By the time
+  // it finally runs, this task has ALREADY cleared `pendingValues` to
+  // `undefined` (reacting to the first click's own round trip), so the
+  // second call falls through to its OWN stale `propValues` fallback —
+  // which doesn't contain the first click's change either — and
+  // overwrites it, discarding it. Confirmed live: rapid clicks on toggle
+  // 0 then toggle 1 non-deterministically left toggle 0 unchecked, even
+  // after fixing `onToggle`'s own read-compute-write to be atomic (see
+  // its doc comment) — the clicks were never actually interleaved at
+  // that level; this reset was the real culprit.
+  //
+  // Clearing only when the incoming `props.values` already matches
+  // `pendingValues.value` exactly (both as sets) keeps the ORIGINAL
+  // intent — stop overriding `propValues` once the consumer has
+  // genuinely caught up — while leaving `pendingValues` in place for a
+  // round trip that's STILL in flight for a newer click, so a late,
+  // stale-closured call like the one above still finds the fresher
+  // selection through the shared signal instead of its own stale capture.
   useTask$(({track}) => {
-    track(() => props.values);
-    pendingValues.value = undefined;
+    const incoming = track(() => props.values) ?? [];
+    const pending = pendingValues.value;
+    if (pending === undefined) return;
+    const matches =
+      pending.length === incoming.length && pending.every(v => incoming.includes(v));
+    if (matches) pendingValues.value = undefined;
   });
 
   // Route-once QRL that children fire — internally forks by mode. Captured
@@ -137,19 +171,56 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
       // it never deselects). `checked` is passed through defensively.
       onChange$?.(checked ? itemValue : undefined);
     } else {
-      // Load the consumer callback *before* reading the selection: queued
-      // toggles can resume in any order while chunks load, so each one must
-      // compute from the latest pending selection and emit synchronously —
-      // the last to run then emits the complete set. Toggle against that
-      // selection rather than the child's `checked`, which was derived from
-      // the same possibly-stale props.
-      await onValuesChange$?.resolve();
-      const current = pendingValues.value ?? propValues ?? [];
+      // Read-compute-write `pendingValues` BEFORE any `await` — Qwik v2
+      // regression: this used to `await onValuesChange$?.resolve()` FIRST
+      // (see the removed comment's reasoning below), but under v2 every
+      // QRL resolves through a microtask-deferred `import()` even when
+      // already cached, which widens that await into a real yield point.
+      // Two rapid clicks on DIFFERENT toggles each reach their own
+      // `onToggle` call synchronously from `onClick$` (no await before
+      // it), but if the FIRST call's own body yields at that leading
+      // `await` before touching `pendingValues` at all, the SECOND call's
+      // body can run its own read-then-write of `pendingValues` in the
+      // gap — then the FIRST call resumes and reads the SAME stale
+      // `pendingValues`/`propValues` the second one already read,
+      // computing a `next` that doesn't include the second click's
+      // change, and overwrites it. Confirmed live: rapid clicks on toggle
+      // 0 then toggle 1 non-deterministically left toggle 0 unchecked.
+      // Reading, computing and writing `pendingValues` here with NO
+      // intervening `await` makes that whole step atomic with respect to
+      // any other `onToggle` invocation (JS never interleaves synchronous
+      // code) — two such calls can still run in either order, but neither
+      // can observe the other's read "mid-write" anymore.
+      // `props.values` (the LIVE prop, read fresh here), NOT the
+      // destructured-at-render-top `propValues` local: `onToggle` is a
+      // `$()` closure, captured by SOME specific render of this group, but
+      // a call to it can run much later (e.g. queued behind an earlier
+      // click's own handler — Qwik appears to process one event's handler
+      // to full completion, awaits included, before starting the next
+      // queued one) — by then, `propValues` is whatever THAT render saw,
+      // which can predate an EARLIER click's round trip that has since
+      // landed. `props` itself is the same live reactive object across
+      // every render of this component instance, so reading `props.values`
+      // here always reflects the CURRENT value regardless of which render
+      // created this particular closure. Confirmed live: this, not the
+      // `pendingValues` read/write atomicity above, was the actual reason
+      // rapid clicks on two different toggles could still drop one —
+      // `pendingValues` had, correctly, already been cleared (the earlier
+      // click's round trip HAD landed), but the fallback below was reading
+      // a stale snapshot of it from before that click happened at all.
+      const current = pendingValues.value ?? props.values ?? [];
       const next = current.includes(itemValue)
         ? current.filter(v => v !== itemValue)
         : [...current, itemValue];
       pendingValues.value = next;
-      onValuesChange$?.(next);
+      // NOW it's safe to await loading the consumer's callback.
+      await onValuesChange$?.resolve();
+      // Re-read `pendingValues` (not the locally-captured `next`): a LATER
+      // call's own atomic read-compute-write above may have landed while
+      // this call was awaiting — emit whatever is current, not a
+      // snapshot from before this call yielded, so the last call to
+      // actually run this line emits the complete, up-to-date set.
+      onValuesChange$?.(pendingValues.value ?? next);
     }
   });
 

@@ -1,4 +1,4 @@
-import type {JSXOutput, QRL} from '@builder.io/qwik';
+import type {JSXOutput, QRL} from '@qwik.dev/core';
 import type {MenuPositionX, MenuPositionY} from './menu-positions';
 
 /**

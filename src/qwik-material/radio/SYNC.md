@@ -101,3 +101,46 @@ Fixed with two guards, one per layer:
 Covered by `qwik-cdk-parity-tests/specs/material-radio/rapid-clicks.spec.ts`
 (single-select group and standalone-sharing-a-name cases, 5 fresh loads each
 since the race only shows up some of the time).
+
+## Qwik v2 regression: a real click silently dropped (2026-11-01)
+
+Upgrading to `@qwik.dev/core@2.0.0-rc.4` broke every click-driven parity
+scenario (`basic`, `preselected`, `color`, `label-position`,
+`disabled-individual`, `required`, `named-group`, `aria-attrs` — 9 of
+`material-radio`'s parity specs): clicking a radio did nothing at all, with
+no console error. Root cause had nothing to do with the rapid-clicks race
+above — it reproduced on the FIRST, only click of a fresh page, and only via
+a *trusted* pointer click (`page.mouse.click()` / Playwright's
+`locator.click()`, mousedown→mouseup with no delay); neither a scripted
+`element.click()` nor a same-process synthetic `dispatchEvent()` sequence
+triggered it, and inserting just a ~5ms delay between mousedown and mouseup
+made it disappear too.
+
+`checked` used to be a plain per-render expression (`standalone ?
+localChecked.value : state.value === props.value`) read directly by the
+native `<input>`'s JSX `checked` prop. That prop has no reactivity of its
+own under v2 — it's only re-applied to the DOM when the *component itself*
+re-renders. `useFocusOrigin()`'s `pointerdown`/`focusin` listeners (every
+real click focuses the element right after pressing it) each deferred a
+re-render — and Qwik v2 resolves every event handler via a
+microtask-deferred `import()`, even an already-cached one, so handler
+*invocations* don't preserve DOM-event order. When the focus-driven
+re-render landed before `onNativeChange$` (the input's own `change`
+handler) got a turn, it recomputed `checked` from the (not-yet-updated)
+group `value` — still `false` — and reasserted that onto the native
+`<input>`, overwriting the real click's native toggle. By the time
+`onNativeChange$` finally ran, its own (otherwise legitimate — see "Rapid
+clicks" above) `if (!target.checked) return` staleness guard read that
+stomped-back `false` and silently discarded the click.
+
+Fixed by giving `checked` the same treatment
+`qwik-material/checkbox/mat-checkbox.tsx` already uses for the identical
+hazard: a dedicated `Signal` (`checkedSig`) written imperatively from a
+`useTask$` that tracks only `stateSignal.value`/`localChecked.value` — i.e.
+only re-fires when the actual selection state changes, never merely because
+`focusOrigin` did. `tabIndexValue` needed no equivalent fix: nothing reads
+the native input's *live* `tabindex` attribute to gate a decision the way
+`onNativeChange$` reads `target.checked`, so a stale value an unrelated
+render might still momentarily write is cosmetic — it self-corrects the
+moment the real selection-change render lands (recomputed from the same
+`checked`/`state.value` in that same pass).

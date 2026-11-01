@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for the custom-element host tags rendered by the ported
@@ -11,7 +11,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * category/rationale as `../scenarios/intrinsic-elements.d.ts` and every per-component
  * `intrinsic-elements.d.ts` (e.g. `qwik-material/menu/intrinsic-elements.d.ts`).
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'autocomplete-simple-example': QwikIntrinsicElements['div'];

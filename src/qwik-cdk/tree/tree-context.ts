@@ -1,4 +1,4 @@
-import {createContextId, type QRL, type Signal} from '@builder.io/qwik';
+import {createContextId, type QRL, type Signal} from '@qwik.dev/core';
 
 /**
  * Shared state a tree (`MatTree`) provides and `CdkTreeNodeToggle` (placed
@@ -31,4 +31,4 @@ export interface CdkTreeToggleState {
   dataByKey: Map<string, unknown>;
 }
 
-export const CDK_TREE_TOGGLE_STATE = createContextId<CdkTreeToggleState>('cdk-tree-toggle-state');
+export const CDK_TREE_TOGGLE_STATE = createContextId<CdkTreeToggleState>('cdkTreeToggleState');

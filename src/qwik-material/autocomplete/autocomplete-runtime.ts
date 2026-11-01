@@ -53,8 +53,8 @@
  * always has the CURRENT `cfg` in scope — never through the key manager's
  * own `onTabOut`/`onKeydown('Tab')` path at all.
  */
-import {noSerialize, type NoSerialize, type QRL, type Signal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {noSerialize, type NoSerialize, type QRL, type Signal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import type {MatFormFieldControlState} from '../core/mat-form-field-control';
 import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qwik-cdk';

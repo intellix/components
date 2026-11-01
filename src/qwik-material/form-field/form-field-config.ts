@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /** Mirrors upstream's `MatFormFieldAppearance`. */
 export type MatFormFieldAppearance = 'fill' | 'outline';
@@ -37,7 +37,7 @@ export interface MatFormFieldConfig {
  * exposed publicly and MUST remain stable across releases.
  */
 export const MAT_FORM_FIELD_CONFIG = createContextId<MatFormFieldConfig>(
-  'qwik-material/form-field-config',
+  'qwikMaterial/formFieldConfig',
 );
 
 /**

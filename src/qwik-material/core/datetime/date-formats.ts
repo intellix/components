@@ -2,7 +2,7 @@
  * Qwik port of upstream `MatDateFormats` + the `MAT_DATE_FORMATS` injection
  * token (`src/material/core/datetime/date-formats.ts`).
  */
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /** Mirrors upstream `MatDateFormats` exactly — the shape every `Intl.DateTimeFormat`-compatible
  *  format option bag is read from. `timeInput`/`timeOptionLabel` are the two fields
@@ -29,4 +29,4 @@ export type MatDateFormats = {
  * — no scenario needs a non-default format bag — so this is the always-available extension
  * point for later, matching upstream's naming for drop-in familiarity.
  */
-export const MAT_DATE_FORMATS = createContextId<MatDateFormats>('qwik-material/date-formats');
+export const MAT_DATE_FORMATS = createContextId<MatDateFormats>('qwikMaterial/dateFormats');

@@ -4,7 +4,7 @@
  * comment for the shared `useTask$`-based grid computation / plain-singleton-adapter rationale
  * this mirrors.
  */
-import {$, component$, useSignal, useTask$, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';

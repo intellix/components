@@ -1,4 +1,4 @@
-import {$, component$, Slot, useContext, useSignal} from '@builder.io/qwik';
+import {$, component$, Slot, useContext, useSignal} from '@qwik.dev/core';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatPseudoCheckbox} from '../core/mat-pseudo-checkbox';

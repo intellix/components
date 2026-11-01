@@ -9,8 +9,29 @@ export interface DomNode {
   text?: string;
 }
 
-const IGNORE_ATTRS = new Set(['ng-version', 'data-overlay-id', 'id', 'style']);
-const IGNORE_ATTR_PREFIXES = ['_ngcontent-', '_nghost-', 'ng-reflect-', 'data-q'];
+const IGNORE_ATTRS = new Set(['ng-version', 'data-overlay-id', 'id', 'style', ':']);
+const IGNORE_ATTR_PREFIXES = [
+  '_ngcontent-',
+  '_nghost-',
+  'ng-reflect-',
+  'data-q',
+  // Qwik SSR/event-listener bookkeeping — v1's `q:*`/`on:*`/`on-document:*`/
+  // `on-window:*` plus v2's renamed `q-e:*`/`q-ep:*`/`q-d:*`/`q-dp:*`/
+  // `q-w:*`/`q-wp:*` (see lib/material-parity.ts's own IGNORE_ATTR_PREFIXES
+  // for the full rationale — kept in sync with it here).
+  'q:',
+  'on:',
+  'on-document:',
+  'on-window:',
+  'q-e:',
+  'q-ep:',
+  'q-d:',
+  'q-dp:',
+  'q-w:',
+  'q-wp:',
+  'preventdefault:',
+  'stoppropagation:',
+];
 const IGNORE_CLASS_PREFIXES = ['ng-reflect-', '_ngcontent-', '_nghost-'];
 const KEEP_STYLES = [
   'display',

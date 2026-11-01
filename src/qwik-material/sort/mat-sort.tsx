@@ -5,7 +5,7 @@ import {
   useContextProvider,
   useSignal,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {MAT_SORT_CONFIG, type MatSortConfig} from './sort-config';
 import type {Sort, SortDirection} from './sort-direction';
 import {MAT_SORT_STATE, type MatSortSharedState, type MatSortTableConfig} from './sort-state';

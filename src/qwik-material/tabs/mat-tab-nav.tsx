@@ -1,4 +1,4 @@
-import {$, component$, Slot, useContext, useContextProvider, useSignal} from '@builder.io/qwik';
+import {$, component$, Slot, useContext, useContextProvider, useSignal} from '@qwik.dev/core';
 import {focusVia} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';

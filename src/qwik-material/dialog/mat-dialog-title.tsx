@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, useSignal, useVisibleTask$} from '@builder.io/qwik';
+import {component$, Slot, useContext, useSignal, useVisibleTask$} from '@qwik.dev/core';
 import {MAT_DIALOG_CONTAINER} from './mat-dialog-tokens';
 
 let _idSeq = 0;

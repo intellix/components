@@ -1,4 +1,4 @@
-import {$, component$, useSignal} from '@builder.io/qwik';
+import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatError, MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
 import {
   formatDateForDisplay,
@@ -6,6 +6,7 @@ import {
   MatDatepickerInput,
   MatDatepickerToggle,
   useMatDatepicker,
+  type MatDatepickerHandle,
 } from '@angular-community/qwik-material/datepicker';
 
 // Mirrors src/dev-app/qwik-parity/datepicker.ts's DatepickerTypedDateBlur — [formControl]
@@ -13,19 +14,30 @@ import {
 // gated on the matDatepickerParse error. No popup interaction at all. touched/dirty/parseError
 // come from `picker` itself (see use-mat-datepicker.ts's doc comment) — no separate
 // useMatFormControl() needed, mirroring qwik-material/timepicker's own min-max scenario.
+//
+// `errors` is a plain conditional `<MatError>` reconstructed fresh every render (mirrors
+// `mat-form-field/error-state`'s own established convention) — NOT frozen into a
+// `useSignal(() => <MatError>{errorLabel}</MatError>)`. An earlier revision of this route froze
+// it defensively, mirroring timepicker's `min-max` workaround for a DIFFERENT prop; timepicker's
+// own SYNC.md later found that specific freeze unnecessary (removed) and the real fix belonged
+// inside `MatFormField` itself (all of `label`/`iconSuffix`/.../`infixContent` now freeze
+// internally; `errors` never needed it — it goes through `MatFormField`'s normal, safe
+// top-level diff). Confirmed live under Qwik v2: the frozen element here, specifically, is what
+// broke — `mat-error` rendered but stayed permanently EMPTY (not merely stale) the first time
+// its `<Slot/>`-projected `{errorLabel}` signal content needed to update after the element's own
+// first render pass, consistent with the same "a JSXNode object isn't safe to reuse across
+// multiple render passes under v2" issue `datepicker-runtime.ts`'s `cloneJsxForReuse` call sites
+// work around for a DIFFERENT prop (`MatDatepicker`'s `actions`). Removing the freeze (so a
+// fresh node is built every render, same as every OTHER scenario's `errors` prop) fixes it
+// directly, with no clone needed, since nothing here holds onto one specific node across
+// multiple opens/renders the way `actions` does.
 export default component$(() => {
   const value = useSignal<Date | null>(null);
   const picker = useMatDatepicker<Date>({
-    onValueChange$: $((v: Date | null) => (value.value = v)),
-  });
-
-  // ── Frozen `errors` element — see qwik-material/timepicker's min-max route for why this
-  // pattern (never hand MatFormField's `errors` prop a NEW element reference after mount) is
-  // used defensively here too.
-  const errorLabel = useSignal('');
-  const nextErrorLabel = picker.parseError.value ? 'Please enter a valid date' : '';
-  if (errorLabel.value !== nextErrorLabel) errorLabel.value = nextErrorLabel;
-  const errorElement = useSignal(() => <MatError>{errorLabel}</MatError>);
+    onValueChange$: $((v: Date | null) => {
+      value.value = v;
+    }),
+  }) as unknown as MatDatepickerHandle<unknown>;
 
   return (
     <>
@@ -45,7 +57,7 @@ export default component$(() => {
           }
           iconSuffix={<MatDatepickerToggle picker={picker} />}
           infixContent={<MatDatepicker picker={picker} />}
-          errors={errorElement.value}
+          errors={picker.parseError.value ? <MatError>Please enter a valid date</MatError> : undefined}
         />
       </div>
       <main data-scenario-ready>ready</main>

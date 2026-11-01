@@ -1,4 +1,4 @@
-import {component$, Slot, type QRL} from '@builder.io/qwik';
+import {component$, Slot, type QRL} from '@qwik.dev/core';
 import {mergeHostProps} from '../core/host-props';
 import type {TooltipPosition, TooltipTouchGestures} from './tooltip-position';
 import {useMatTooltip} from './use-mat-tooltip';

@@ -1,4 +1,4 @@
-import {createContextId, type NoSerialize, type Signal} from '@builder.io/qwik';
+import {createContextId, type NoSerialize, type Signal} from '@qwik.dev/core';
 import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import type {MatDialogRef} from './mat-dialog-ref';
@@ -8,14 +8,14 @@ import type {MatDialogRef} from './mat-dialog-ref';
  * time; the container provides it. Consumers read via
  * `const data = useContext(MAT_DIALOG_DATA) as MyShape;`.
  */
-export const MAT_DIALOG_DATA = createContextId<unknown>('qwik-material/dialog-data');
+export const MAT_DIALOG_DATA = createContextId<unknown>('qwikMaterial/dialogData');
 
 /**
  * Default options merged into every open() config. Provided by
  * <QwikMaterialProvider matDialogDefaults={…}>. Optional; defaults to {}.
  */
 export const MAT_DIALOG_DEFAULT_OPTIONS = createContextId<Partial<MatDialogConfig>>(
-  'qwik-material/dialog-default-options',
+  'qwikMaterial/dialogDefaultOptions',
 );
 
 /**
@@ -24,7 +24,7 @@ export const MAT_DIALOG_DEFAULT_OPTIONS = createContextId<Partial<MatDialogConfi
  * Default: createBlockScrollStrategy() from qwik-cdk.
  */
 export const MAT_DIALOG_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
-  'qwik-material/dialog-scroll-strategy',
+  'qwikMaterial/dialogScrollStrategy',
 );
 
 /**
@@ -32,22 +32,20 @@ export const MAT_DIALOG_SCROLL_STRATEGY = createContextId<NoSerialize<() => Scro
  * MatDialogContainer; consumed by MatDialogClose and by the consumer's dialog
  * body if it needs to call ref.close() imperatively.
  */
-export const MAT_DIALOG_REF = createContextId<NoSerialize<MatDialogRef>>(
-  'qwik-material/dialog-ref',
-);
+export const MAT_DIALOG_REF = createContextId<NoSerialize<MatDialogRef>>('qwikMaterial/dialogRef');
 
 /**
  * Internal API surface the container provides so its own descendants
  * (MatDialogTitle, MatDialogActions) can register ids / action counts.
  */
 export interface MatDialogContainerApi {
-  registerTitleId$: import('@builder.io/qwik').QRL<(id: string) => void>;
-  unregisterTitleId$: import('@builder.io/qwik').QRL<(id: string) => void>;
-  incrementActionSectionCount$: import('@builder.io/qwik').QRL<() => void>;
-  decrementActionSectionCount$: import('@builder.io/qwik').QRL<() => void>;
+  registerTitleId$: import('@qwik.dev/core').QRL<(id: string) => void>;
+  unregisterTitleId$: import('@qwik.dev/core').QRL<(id: string) => void>;
+  incrementActionSectionCount$: import('@qwik.dev/core').QRL<() => void>;
+  decrementActionSectionCount$: import('@qwik.dev/core').QRL<() => void>;
 }
 export const MAT_DIALOG_CONTAINER = createContextId<MatDialogContainerApi>(
-  'qwik-material/dialog-container-api',
+  'qwikMaterial/dialogContainerApi',
 );
 
 /**
@@ -56,5 +54,5 @@ export const MAT_DIALOG_CONTAINER = createContextId<MatDialogContainerApi>(
  * falls back to a frozen `{value: false}` shim when absent.
  */
 export const MAT_ANIMATIONS_DISABLED = createContextId<Signal<boolean>>(
-  'qwik-material/animations-disabled',
+  'qwikMaterial/animationsDisabled',
 );

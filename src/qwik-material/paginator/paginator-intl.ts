@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Qwik-port equivalent of upstream `MatPaginatorIntl` (`src/material/paginator/paginator-intl.ts`).
@@ -67,4 +67,4 @@ export const DEFAULT_PAGINATOR_INTL: MatPaginatorIntl = {
  * every `MatPaginator` in that subtree's strings — see this file's module doc comment. Falls back
  * to {@link DEFAULT_PAGINATOR_INTL} when nothing provides it.
  */
-export const MAT_PAGINATOR_INTL = createContextId<MatPaginatorIntl>('qwik-material/paginator-intl');
+export const MAT_PAGINATOR_INTL = createContextId<MatPaginatorIntl>('qwikMaterial/paginatorIntl');

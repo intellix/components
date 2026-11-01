@@ -1,4 +1,4 @@
-import type {Signal} from '@builder.io/qwik';
+import type {Signal} from '@qwik.dev/core';
 import type {MatBottomSheetConfig} from './mat-bottom-sheet-config';
 
 /**
