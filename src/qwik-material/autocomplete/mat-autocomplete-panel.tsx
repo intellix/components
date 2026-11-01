@@ -1,6 +1,7 @@
 import {component$, type Signal} from '@qwik.dev/core';
 import {MatOption} from '../core/mat-option';
 import {MatOptgroup} from '../core/mat-optgroup';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 import type {
   ResolvedAutocompleteNode,
   ResolvedAutocompleteOption,
@@ -86,7 +87,15 @@ export const MatAutocompletePanel = component$<MatAutocompletePanelProps>(props 
       hideSingleSelectionIndicator={props.hideSingleSelectionIndicator}
       onSelectInteraction$={() => props.onOptionSelect(option)}
     >
-      {option.content}
+      {/* `cloneJsxForReuse`, not `option.content` directly — this component re-renders itself
+          every time `props.tree.value` changes (live refiltering, the whole point of `tree`
+          being a Signal here — see this file's own doc comment), re-interpolating whichever
+          resolved options are still present. A real Qwik v2 regression, confirmed for the
+          identical pattern in `qwik-material/menu`'s `MenuPanel` (see `core/jsx-reuse.ts`'s doc
+          comment), applied here preemptively — see `mat-select-panel.tsx`'s matching comment for
+          the full rationale (no current scenario exercises non-string `content`; a no-op for
+          the common plain-string case). */}
+      {cloneJsxForReuse(option.content)}
     </MatOption>
   );
 

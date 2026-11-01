@@ -8,6 +8,7 @@ import {
   type Signal,
 } from '@qwik.dev/core';
 import {isBrowser} from '@qwik.dev/core/build';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 import type {MenuPositionX, MenuPositionY} from './menu-positions';
 
 /** Name of the enter animation `@keyframes` (mirrors upstream `menu.ts`). */
@@ -138,7 +139,17 @@ export const MenuPanel = component$<MenuPanelProps>(props => {
       onAnimationEnd$={handleAnimationEnd$}
       onAnimationCancel$={handleAnimationEnd$}
     >
-      <div class="mat-mdc-menu-content">{props.content}</div>
+      {/* `cloneJsxForReuse`, not `props.content` directly — this component re-renders itself
+          (`isAnimating`'s `classes` dependency above) once the enter animation's `animationend`
+          fires, independent of `props.content` ever changing. Confirmed live: Qwik v2 corrupts
+          a `JSXNode` object rendered a SECOND time even within the SAME mount (not just across
+          separate opens, which `core/jsx-reuse.ts`'s own doc comment covers) — every menu
+          item's `<Slot/>`-projected text (`mat-menu-item-text`) silently went empty the instant
+          `mat-menu-panel-animating` was removed, every time, reproducible down to the exact
+          frame via a fine-grained Playwright poll. Rebuilding a fresh tree on EVERY render
+          (cheap; this isn't a hot path) sidesteps it regardless of how many times this
+          component re-renders during one open. */}
+      <div class="mat-mdc-menu-content">{cloneJsxForReuse(props.content)}</div>
     </div>
   );
 });
