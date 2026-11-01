@@ -1,4 +1,4 @@
-import {component$, createContextId, Slot, useContext, useContextProvider} from '@qwik.dev/core';
+import {component$, createContextId, useContext, useContextProvider, type JSXOutput} from '@qwik.dev/core';
 
 /**
  * Context a `<MatHint>`/`<MatError>` reads as its id FALLBACK (an explicit
@@ -11,8 +11,7 @@ export const MAT_ASSIGNED_ID = createContextId<string | undefined>('qwikMaterial
 /**
  * Wraps a single hint/error WITHOUT cloning it, providing the id
  * `MatFormField` generated for this slot via context instead. Renders no
- * DOM of its own (`<Slot/>` with no wrapping host tag) — purely a context
- * boundary.
+ * DOM of its own beyond `content` itself — purely a context boundary.
  *
  * Replaces an earlier approach that CLONED the hint/error's JSX descriptor
  * to inject `id` as a prop directly (`withProps()`/`withGeneratedId()` in
@@ -25,10 +24,27 @@ export const MAT_ASSIGNED_ID = createContextId<string | undefined>('qwikMaterial
  * the same issue. See `core/mat-form-field-control.ts`'s
  * `MatFormFieldControlState.assignedId` doc comment for the analogous fix
  * applied to the control itself (a context STORE FIELD, not a clone).
+ *
+ * Qwik v2 upgrade (2026-11-01): the ABOVE fix stopped being sufficient —
+ * "frozen" became "gone entirely". `content` used to be `<Slot/>`-
+ * projected children (`<MatIdScope id={x}>{node}</MatIdScope>`); confirmed
+ * live (`material-form-field/error-state`, `<MatError>Name is
+ * required</MatError>` built by the CONSUMER and handed to
+ * `<MatFormField errors={...}>`, the same "data stored across a component
+ * boundary" shape `qwik-material/stepper`'s `StepContent` fix addresses —
+ * see that file's doc comment for the general mechanism): the SAME
+ * unrelated `MatFormField` re-render that used to merely leave the
+ * Slot-projected text stale now wiped it to empty outright. `content` is
+ * now a plain PROP (`JSXOutput`, same object every time, since the
+ * CONSUMER's own render never re-runs just because `MatFormField` did),
+ * returned directly with no `<Slot/>` involved — Qwik skips re-rendering
+ * a child whose props haven't changed by reference, so this component (and
+ * therefore `content`'s own nested `<Slot/>` projections, if any) never
+ * re-renders just because `MatFormField` did.
  */
-export const MatIdScope = component$<{id: string}>(props => {
+export const MatIdScope = component$<{id: string; content: JSXOutput}>(props => {
   useContextProvider(MAT_ASSIGNED_ID, props.id);
-  return <Slot />;
+  return props.content;
 });
 
 /** Sentinel passed as `useContext`'s default — see `useAssignedId()`'s own doc comment for why
