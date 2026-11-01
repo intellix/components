@@ -117,3 +117,39 @@ for the pattern in practice.
    'flat'` only, right where the quirk is documented.
 5. **No `MatTreeFlatDataSource`/`MatTreeNestedDataSource` convenience
    wrappers.** See removed-files above.
+
+## Qwik v2 regressions (2026-11-01)
+
+Upgrading to `@qwik.dev/core@2.0.0-rc.4` broke 3/10 `material-tree` parity scenarios
+(`flat-basic`, `flat-initially-expanded`, `keyboard-nav`), for two unrelated reasons, both local
+to this port (no shared-`qwik-cdk`-only fix was needed):
+
+1. **A leaf node's STATIC `disabled` attribute (`<button type="button" disabled>`, in the dev-app
+   scenario fixtures) serialized as the literal string `disabled="true"` instead of the correct
+   bare `disabled=""` form, whenever the element was created fresh on the CLIENT** (i.e. the first
+   time its parent node expands — nothing under a collapsed flat-tree node exists in the SSR
+   output at all; an element already present at SSR time, as in `flat-initially-expanded`'s
+   initially-open case, is unaffected). Confirmed this is a Qwik core bug, not fixable in this
+   port: a DYNAMIC (not constant-foldable) value for the same attribute does not hit it. Worked
+   around in the affected dev-app scenario fixtures (`flat-basic`, `flat-initially-expanded`,
+   `keyboard-nav`, `qwik-only`) by using `disabled={!node.children?.length}` instead of the bare
+   literal — real consumers hitting the same bug need the identical kind of workaround (any
+   runtime-computed, non-constant expression for a boolean attribute).
+2. **Expanding/collapsing a FLAT-variant node (inserting/removing sibling `<mat-tree-node>`
+   elements — only this variant's DOM shape does that; nested trees always keep every node
+   present, toggling `display:none` instead) corrupted ALREADY-EXISTING sibling rows two ways**:
+   their `tabindex` attribute went missing outright (same "attribute diffing breaks around a
+   sibling-count change" category as `qwik-material/sidenav`'s backdrop-insertion-position bug —
+   see that SYNC.md), AND — confirmed live, same DOM node reference (`===`) before and after —
+   real DOM focus was unconditionally dropped to `<body>`, implying the existing row was actually
+   detached and reattached during the insertion even though its JS identity didn't change (a
+   browser ALWAYS clears focus when the focused element leaves the document, however briefly;
+   nothing then asks to focus it again). Fixed with an imperative `useVisibleTask$` (NOT
+   `useTask$` — that runs before the resulting DOM patch lands, confirmed live to still see the
+   pre-insertion DOM) in `MatTree`, flat variant only: tracks `activeKey`/a plain-array-turned-
+   signal standing in for "the visible set changed" (`track()` doesn't subscribe to a plain array
+   read — mirrors `mat-tab-group.tsx`'s own `stateSignal.value = nextState` convention to make a
+   per-render value trackable), re-walks every current `[role="treeitem"]` row to set `.tabIndex`
+   directly, and restores focus to the active row whenever it finds focus sitting on `<body>`
+   right after one of its own runs (safe to assume this component's own fault, not a deliberate
+   focus-away, since this task only runs in reaction to the tree's own click/keydown handlers).
