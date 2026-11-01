@@ -41,7 +41,6 @@
 import {
   $,
   component$,
-  Slot,
   useOn,
   useSignal,
   useVisibleTask$,
@@ -103,7 +102,10 @@ export interface MatDatepickerContentProps {
  */
 const RIPPLE_TRIGGERS = ['mouseover', 'focusin', 'mousedown', 'touchstart'] as const;
 
-const ActionsOutlet = component$<{memory: Signal<Record<number, boolean>>}>(props => {
+const ActionsOutlet = component$<{
+  memory: Signal<Record<number, boolean>>;
+  content: JSXOutput | undefined;
+}>(props => {
   const hostRef = useSignal<HTMLElement>();
 
   for (const type of RIPPLE_TRIGGERS) {
@@ -131,7 +133,7 @@ const ActionsOutlet = component$<{memory: Signal<Record<number, boolean>>}>(prop
 
   return (
     <div ref={hostRef} class="mat-datepicker-actions">
-      <Slot />
+      {props.content}
     </div>
   );
 });
@@ -210,7 +212,7 @@ export const MatDatepickerContent = component$<MatDatepickerContentProps>(props 
           onPreviewChange$={props.isRange ? onPreviewChange$ : undefined}
         />
         {hasActions && (
-          <ActionsOutlet memory={props.actionsRippleMemory}>{props.actionsContent}</ActionsOutlet>
+          <ActionsOutlet memory={props.actionsRippleMemory} content={props.actionsContent} />
         )}
         {/* Invisible close button for screen reader users — always hidden in this port (no
             scenario ever tabs this far/focuses it; upstream only un-hides it on its OWN focus). */}
