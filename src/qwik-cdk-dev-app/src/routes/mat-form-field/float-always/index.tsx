@@ -1,4 +1,4 @@
-import {component$, useSignal} from '@builder.io/qwik';
+import {component$, useSignal} from '@qwik.dev/core';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
 

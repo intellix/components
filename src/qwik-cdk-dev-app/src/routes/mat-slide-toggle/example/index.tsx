@@ -1,4 +1,4 @@
-import {component$, useSignal} from '@builder.io/qwik';
+import {component$, useSignal} from '@qwik.dev/core';
 import {MatSlideToggle} from '@angular-community/qwik-material/slide-toggle';
 
 // Port of src/components-examples/material/slide-toggle/slide-toggle-overview

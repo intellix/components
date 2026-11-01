@@ -10,7 +10,7 @@ import {
   type Component,
   type FunctionComponent,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {createInteractivityChecker} from '@angular-community/qwik-cdk/a11y';
 import {getFirstTabbableElement, getLastTabbableElement} from './focus-helpers';
 import {MAT_SIDENAV_CONFIG, type MatSidenavConfig} from './sidenav-config';

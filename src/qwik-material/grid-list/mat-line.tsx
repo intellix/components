@@ -1,4 +1,4 @@
-import {component$, Slot} from '@builder.io/qwik';
+import {component$, Slot} from '@qwik.dev/core';
 
 /**
  * Port of upstream `MatLine` (`src/material/core/line/line.ts`) — a

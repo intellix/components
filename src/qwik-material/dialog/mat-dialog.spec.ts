@@ -1,5 +1,5 @@
 import {describe, it, expect, beforeEach} from 'vitest';
-import {component$, jsx, type NoSerialize, type Signal} from '@builder.io/qwik';
+import {component$, jsx, type NoSerialize, type Signal} from '@qwik.dev/core';
 import {createMatDialogService, type MatDialogService} from './mat-dialog';
 import type {MatDialogRef} from './mat-dialog-ref';
 import {MatDialogState, MARK_CLOSED} from './mat-dialog-ref';

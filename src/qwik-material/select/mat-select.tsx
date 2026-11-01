@@ -6,7 +6,7 @@ import {
   type JSXOutput,
   type NoSerialize,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {

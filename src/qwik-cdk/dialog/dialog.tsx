@@ -8,8 +8,8 @@ import {
   type NoSerialize,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import type {DialogConfig} from './dialog-config';
 import {createDialogRef, type DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';

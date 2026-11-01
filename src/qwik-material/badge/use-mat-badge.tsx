@@ -1,4 +1,4 @@
-import {useContext, type JSXOutput} from '@builder.io/qwik';
+import {useContext, type JSXOutput} from '@qwik.dev/core';
 import {createIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {HostProps} from '../core/host-props';
 import type {MatBadgeColor} from './badge-color';

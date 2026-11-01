@@ -1,5 +1,5 @@
 import {describe, expect, it, vi} from 'vitest';
-import type {Signal} from '@builder.io/qwik';
+import type {Signal} from '@qwik.dev/core';
 import {
   createMatSnackBarRef,
   MARK_DISMISSED,

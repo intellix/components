@@ -5,8 +5,8 @@ import {
   useSignal,
   type JSXOutput,
   type QRL,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {MatChipOption} from './mat-chip-option';
 import type {MatChipRemoveButtonDef} from './mat-chip';
 import {

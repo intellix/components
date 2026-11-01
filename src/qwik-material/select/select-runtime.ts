@@ -15,8 +15,8 @@
  * `$()` boundaries — they just call these plain functions directly, exactly
  * like `mat-tooltip.tsx` calls `showTooltip`/`hideTooltip`.
  */
-import {noSerialize, type NoSerialize, type QRL, type Signal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {noSerialize, type NoSerialize, type QRL, type Signal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {
   A,
   ALT,

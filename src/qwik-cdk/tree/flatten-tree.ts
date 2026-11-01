@@ -1,4 +1,4 @@
-import type {JSXOutput} from '@builder.io/qwik';
+import type {JSXOutput} from '@qwik.dev/core';
 
 /**
  * One node of a tree, as the consumer provides it. This is the node-

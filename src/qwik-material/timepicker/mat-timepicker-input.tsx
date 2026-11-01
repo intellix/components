@@ -1,4 +1,4 @@
-import {$, component$, useContext, useSignal, type QRL} from '@builder.io/qwik';
+import {$, component$, useContext, useSignal, type QRL} from '@qwik.dev/core';
 import {
   MAT_FORM_FIELD_CONNECTED_ORIGIN,
   MAT_FORM_FIELD_CONTROL_STATE,

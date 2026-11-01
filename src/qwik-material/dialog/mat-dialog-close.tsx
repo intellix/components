@@ -1,4 +1,4 @@
-import {$, component$, Slot, useContext} from '@builder.io/qwik';
+import {$, component$, Slot, useContext} from '@qwik.dev/core';
 import {MAT_DIALOG_REF} from './mat-dialog-tokens';
 
 export interface MatDialogCloseProps {

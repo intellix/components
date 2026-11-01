@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $} from '@builder.io/qwik';
+import {component$, Slot, useContext, $} from '@qwik.dev/core';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {FocusIndicator} from './internal/focus-indicator';

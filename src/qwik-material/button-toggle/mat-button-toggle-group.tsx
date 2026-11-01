@@ -7,7 +7,7 @@ import {
   useSignal,
   useTask$,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MAT_BUTTON_TOGGLE_CONFIG, type MatButtonToggleConfig} from './button-toggle-config';
 import {

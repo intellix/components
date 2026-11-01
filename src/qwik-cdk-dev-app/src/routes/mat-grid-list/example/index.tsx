@@ -1,4 +1,4 @@
-import {component$, useStyles$} from '@builder.io/qwik';
+import {component$, useStyles$} from '@qwik.dev/core';
 import {MatGridList, MatGridTile} from '@angular-community/qwik-material/grid-list';
 import styles from './example.css?inline';
 

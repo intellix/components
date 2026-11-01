@@ -1,4 +1,4 @@
-import {$, createContextId, type QRL, type Signal} from '@builder.io/qwik';
+import {$, createContextId, type QRL, type Signal} from '@qwik.dev/core';
 
 /**
  * Selection mode for MatButtonToggleGroup. Drives the child's role

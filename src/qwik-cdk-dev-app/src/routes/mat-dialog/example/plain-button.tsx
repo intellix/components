@@ -1,4 +1,4 @@
-import {$, component$, Slot, useSignal, type QRL} from '@builder.io/qwik';
+import {$, component$, Slot, useSignal, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 
 export interface PlainButtonProps {

@@ -1,4 +1,4 @@
-import {createContextId, type Signal} from '@builder.io/qwik';
+import {createContextId, type Signal} from '@qwik.dev/core';
 
 /**
  * State `MatTabNav` publishes for its `MatTabLink` descendants. Unlike

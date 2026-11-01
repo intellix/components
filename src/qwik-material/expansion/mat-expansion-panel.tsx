@@ -7,8 +7,8 @@ import {
   useTask$,
   useVisibleTask$,
   type QRL,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {useCdkAccordionItem} from '@angular-community/qwik-cdk/accordion';
 import {focusVia, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';

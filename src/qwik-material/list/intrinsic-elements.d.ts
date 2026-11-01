@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material List's custom-element tag
@@ -15,7 +15,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * `MatSubheader` / `MatListItemAvatar` / etc. render a polymorphic `as`
  * host (default `div`) instead of inventing a tag here.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-list': QwikIntrinsicElements['div'];

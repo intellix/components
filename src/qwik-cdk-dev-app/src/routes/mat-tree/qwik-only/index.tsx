@@ -1,4 +1,4 @@
-import {component$, useStore} from '@builder.io/qwik';
+import {component$, useStore} from '@qwik.dev/core';
 import {CdkTreeNodeToggle, type CdkTreeNodeInput} from '@angular-community/qwik-cdk/tree';
 import {MatTree, MatTreeNodeToggle} from '@angular-community/qwik-material/tree';
 

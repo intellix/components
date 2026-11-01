@@ -1,5 +1,5 @@
-import {createContextId, useContext} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {createContextId, useContext} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 
 export interface OverlayContainer {
   getContainerElement(): HTMLElement | null;

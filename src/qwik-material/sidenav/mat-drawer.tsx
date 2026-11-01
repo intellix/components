@@ -9,8 +9,8 @@ import {
   type Component,
   type FunctionComponent,
   type QRL,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {useIdGenerator, type AutoFocusTarget} from '@angular-community/qwik-cdk/a11y';
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import {applyDrawerAutoFocus} from './focus-helpers';

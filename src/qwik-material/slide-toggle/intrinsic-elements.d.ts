@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Slide Toggle's custom-element
@@ -7,7 +7,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * .mat-mdc-slide-toggle class). Types as QwikIntrinsicElements['div'] — no
  * custom camelCase attrs need widening.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-slide-toggle': QwikIntrinsicElements['div'];

@@ -1,4 +1,4 @@
-import {component$, type Signal} from '@builder.io/qwik';
+import {component$, type Signal} from '@qwik.dev/core';
 import {MatOption} from '../core/mat-option';
 import {MatOptgroup} from '../core/mat-optgroup';
 import type {ResolvedSelectNode, ResolvedSelectOption} from './select-option-resolver';

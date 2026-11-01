@@ -1,4 +1,4 @@
-import {$, component$, useContext, useSignal} from '@builder.io/qwik';
+import {$, component$, useContext, useSignal} from '@qwik.dev/core';
 import {
   MAT_DIALOG_DATA,
   MAT_DIALOG_REF,

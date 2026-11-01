@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatList, MatListItem, MatListItemTitle} from '@angular-community/qwik-material/list';
 
 export default component$(() => (

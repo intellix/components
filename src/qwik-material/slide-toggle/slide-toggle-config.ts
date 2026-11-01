@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every MatSlideToggle in a subtree. Consumers provide

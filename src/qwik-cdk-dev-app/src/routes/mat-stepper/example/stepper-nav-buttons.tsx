@@ -1,4 +1,4 @@
-import {component$, Slot} from '@builder.io/qwik';
+import {component$, Slot} from '@qwik.dev/core';
 import {MatButton} from '@angular-community/qwik-material/button';
 import {useMatStepperNext, useMatStepperPrevious} from '@angular-community/qwik-material/stepper';
 

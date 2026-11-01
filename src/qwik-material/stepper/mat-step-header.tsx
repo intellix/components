@@ -1,4 +1,4 @@
-import {$, component$, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import type {StepperOrientation, StepState} from '@angular-community/qwik-cdk/stepper';
 import {MatIcon} from '../icon/mat-icon';

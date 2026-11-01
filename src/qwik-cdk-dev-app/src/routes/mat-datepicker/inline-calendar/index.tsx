@@ -1,4 +1,4 @@
-import {$, component$, useSignal} from '@builder.io/qwik';
+import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatCalendar} from '@angular-community/qwik-material/datepicker';
 
 const JAN_1_2024 = new Date(2024, 0, 1);

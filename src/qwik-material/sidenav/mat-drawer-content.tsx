@@ -6,7 +6,7 @@ import {
   useVisibleTask$,
   type Component,
   type FunctionComponent,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {
   computeContentMargins,
   isShowingBackdropForInert,

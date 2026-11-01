@@ -8,7 +8,7 @@ import {
   useStore,
   type ClassList,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 
 /** Submission state of the nearest enclosing {@link MatForm}. */
 export interface MatFormState {

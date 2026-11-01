@@ -1,5 +1,5 @@
 import {defineConfig} from 'vitest/config';
-import {qwikVite} from '@builder.io/qwik/optimizer';
+import {qwikVite} from '@qwik.dev/core/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
 
@@ -145,9 +145,9 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [
-        '@builder.io/qwik',
-        '@builder.io/qwik/build',
-        '@builder.io/qwik-city',
+        '@qwik.dev/core',
+        '@qwik.dev/core/build',
+        '@qwik.dev/router',
         '@angular-community/qwik-cdk',
         /^@angular-community\/qwik-cdk\/.+$/,
         // qwik-material/table depends on qwik-material/sort (MatSortHeader

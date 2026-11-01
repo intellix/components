@@ -6,7 +6,7 @@ import {
   useStore,
   useVisibleTask$,
   type NoSerialize,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import type {Direction} from './bidi/directionality';
 import {
   type OverlayEntry,

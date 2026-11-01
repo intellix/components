@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Button Toggle's custom-element
@@ -8,7 +8,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * QwikIntrinsicElements['div'] — no custom camelCase attrs need widening
  * (unlike grid-list's cols/rowspan/colspan). See design spec §5 deviation #10.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-button-toggle-group': QwikIntrinsicElements['div'];

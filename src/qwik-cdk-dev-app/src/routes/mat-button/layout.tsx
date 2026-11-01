@@ -1,4 +1,4 @@
-import {component$, Slot} from '@builder.io/qwik';
+import {component$, Slot} from '@qwik.dev/core';
 import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 
 // Mirrors the Angular dev-app's default icon font-set

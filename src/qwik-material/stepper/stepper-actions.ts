@@ -1,4 +1,4 @@
-import {createContextId, type QRL} from '@builder.io/qwik';
+import {createContextId, type QRL} from '@qwik.dev/core';
 
 /**
  * Context `MatStepper` provides so `MatStepperNext`/`MatStepperPrevious` —

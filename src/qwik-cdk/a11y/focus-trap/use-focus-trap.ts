@@ -1,5 +1,5 @@
-import {type Signal, useSignal, useTask$} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {type Signal, useSignal, useTask$} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {createFocusTrap, type FocusTrap} from './focus-trap';
 import {
   createInteractivityChecker,

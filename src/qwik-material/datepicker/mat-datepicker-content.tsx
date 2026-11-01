@@ -48,7 +48,7 @@ import {
   type JSXOutput,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useFocusTrap} from '@angular-community/qwik-cdk/a11y';
 import {MatButton} from '../button/mat-button';
 import type {DateAdapter} from '../core/datetime/date-adapter';

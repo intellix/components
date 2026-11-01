@@ -11,7 +11,7 @@
  * QRLs are fetched on demand and their captured signals are serializable.
  */
 
-import {createContextId, type Signal, type NoSerialize} from '@builder.io/qwik';
+import {createContextId, type Signal, type NoSerialize} from '@qwik.dev/core';
 import type {OverlayEntry} from '../overlay/overlay-registry';
 import type {DialogConfig} from '../dialog/dialog-config';
 import type {DialogRef} from '../dialog/dialog-ref';

@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 
 /**
  * Props shared by MatCardImage and its 4 size variants. Upstream applies

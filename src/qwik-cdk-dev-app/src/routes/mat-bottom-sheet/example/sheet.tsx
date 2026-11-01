@@ -1,4 +1,4 @@
-import {$, component$, useContext} from '@builder.io/qwik';
+import {$, component$, useContext} from '@qwik.dev/core';
 import {MAT_BOTTOM_SHEET_REF} from '@angular-community/qwik-material/bottom-sheet';
 import {MatNavList, MatListItem, MatListItemTitle} from '@angular-community/qwik-material/list';
 

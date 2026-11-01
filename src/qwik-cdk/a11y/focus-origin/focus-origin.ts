@@ -1,5 +1,5 @@
-import {$, useOn, useSignal, type Signal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {$, useOn, useSignal, type Signal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import type {FocusOptions, FocusOrigin} from '../focus-monitor/focus-monitor';
 import {consumeRecentKeydown, wasRecentKeydown} from './recent-keydown';
 

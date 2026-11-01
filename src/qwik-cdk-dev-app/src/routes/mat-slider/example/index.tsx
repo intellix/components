@@ -1,4 +1,4 @@
-import {component$, useStyles$} from '@builder.io/qwik';
+import {component$, useStyles$} from '@qwik.dev/core';
 import {MatSlider} from '@angular-community/qwik-material/slider';
 import styles from './slider-overview-example.css?inline';
 

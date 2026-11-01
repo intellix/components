@@ -1,4 +1,4 @@
-import {component$, Slot, type QRL} from '@builder.io/qwik';
+import {component$, Slot, type QRL} from '@qwik.dev/core';
 import {mergeHostProps} from '../core/host-props';
 import type {MatMenuRef} from './menu-ref';
 import {useMatMenuTrigger} from './use-mat-menu-trigger';

@@ -1,4 +1,4 @@
-import {$, component$, Slot, useContext} from '@builder.io/qwik';
+import {$, component$, Slot, useContext} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {type MatExpansionConfig, MAT_EXPANSION_CONFIG} from './expansion-config';
 import {MAT_EXPANSION_PANEL_STATE, MAT_EXPANSION_PANEL_STATE_DEFAULTS} from './panel-state';

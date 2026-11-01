@@ -1,5 +1,5 @@
 import {defineConfig} from 'vitest/config';
-import {qwikVite} from '@builder.io/qwik/optimizer';
+import {qwikVite} from '@qwik.dev/core/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
 
@@ -65,7 +65,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: ['@builder.io/qwik', '@builder.io/qwik/build', '@builder.io/qwik-city'],
+      external: ['@qwik.dev/core', '@qwik.dev/core/build', '@qwik.dev/router'],
       output: {preserveModules: false, entryFileNames: '[name].js'},
     },
     target: 'es2022',

@@ -29,7 +29,7 @@
  * `props.dateFilter` directly instead (a `QRL` is itself callable, resolving+invoking in one
  * step) — handlers have no such sync-render constraint.
  */
-import {$, component$, useSignal, useTask$, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';

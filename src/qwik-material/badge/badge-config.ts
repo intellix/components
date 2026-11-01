@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {MatBadgeColor} from './badge-color';
 import type {MatBadgePosition} from './badge-position';
 import type {MatBadgeSize} from './badge-size';

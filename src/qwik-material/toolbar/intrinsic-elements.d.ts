@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Toolbar's custom-element tag
@@ -7,7 +7,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * classes. See design spec
  * docs/superpowers/specs/2026-07-25-qwik-material-toolbar-port-design.md §3.1.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-toolbar': QwikIntrinsicElements['div'];

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {createContextId, useContext} from '@builder.io/qwik';
+import {createContextId, useContext} from '@qwik.dev/core';
 
 /** The input modalities detected by this service. Null if unknown. */
 export type InputModality = 'keyboard' | 'mouse' | 'touch' | null;

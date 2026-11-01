@@ -1,5 +1,5 @@
 // src/qwik-cdk/dialog/dialog-tokens.ts
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {ScrollStrategy} from '../overlay/scroll/scroll-strategy';
 import type {DialogConfig} from './dialog-config';
 

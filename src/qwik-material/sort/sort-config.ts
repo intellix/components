@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /** Position of the arrow that displays when sorted. Mirrors upstream's
  *  `SortHeaderArrowPosition` (src/material/sort/sort.ts). */

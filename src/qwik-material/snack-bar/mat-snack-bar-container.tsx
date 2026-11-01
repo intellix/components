@@ -6,7 +6,7 @@ import {
   useSignal,
   useVisibleTask$,
   type NoSerialize,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {createPlatform, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {MatSnackBarConfig} from './snack-bar-config';
 import {MAT_SNACK_BAR_DATA, MAT_SNACK_BAR_REF} from './mat-snack-bar-tokens';

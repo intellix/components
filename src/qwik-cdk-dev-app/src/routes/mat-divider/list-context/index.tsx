@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatDivider} from '@angular-community/qwik-material/divider';
 
 export default component$(() => (

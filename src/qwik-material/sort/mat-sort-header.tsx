@@ -7,7 +7,7 @@ import {
   useSignal,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MAT_SORT_CONFIG, type MatSortConfig, type SortHeaderArrowPosition} from './sort-config';
@@ -293,7 +293,7 @@ export const MatSortHeader = component$<MatSortHeaderProps>(props => {
                 here with this SVG as fallback content. A Qwik named
                 `<Slot name="matSortHeaderIcon">` with inline fallback
                 children did NOT render its fallback in this project's
-                installed @builder.io/qwik@1.20.0 when no consumer provided
+                installed @qwik.dev/core@1.20.0 when no consumer provided
                 matching content (verified live via the dev-app: the slot
                 comment markers rendered with nothing between them) — so the
                 default arrow is rendered unconditionally instead. No parity

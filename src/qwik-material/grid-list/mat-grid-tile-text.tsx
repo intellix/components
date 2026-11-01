@@ -1,4 +1,4 @@
-import type {JSXChildren, JSXOutput} from '@builder.io/qwik';
+import type {JSXChildren, JSXOutput} from '@qwik.dev/core';
 import {partitionDirectChildren} from './jsx-children';
 import {MatGridAvatar} from './mat-grid-avatar';
 import {lineCountClass, MatLine} from './mat-line';

@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatIcon} from '@angular-community/qwik-material/icon';
 
 // Port of src/components-examples/material/icon/icon-overview

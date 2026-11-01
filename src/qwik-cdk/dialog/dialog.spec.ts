@@ -7,7 +7,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {component$, jsx, type NoSerialize} from '@builder.io/qwik';
+import {component$, jsx, type NoSerialize} from '@qwik.dev/core';
 import {
   createOverlayService,
   createOverlayKeyboardDispatcher,
@@ -18,7 +18,7 @@ import {createIdGenerator} from '../a11y/id-generator';
 import {createDialogService} from './dialog';
 import type {DialogService} from './dialog';
 import type {DialogRef} from './dialog-ref';
-import type {Signal} from '@builder.io/qwik';
+import type {Signal} from '@qwik.dev/core';
 
 // ---------------------------------------------------------------------------
 // Minimal stub components — never rendered, just passed by reference to open()

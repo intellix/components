@@ -1,4 +1,4 @@
-import {$, component$, useContext, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useContext, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {CDK_TREE_TOGGLE_STATE} from './tree-context';
 
 export interface CdkTreeNodeToggleProps {

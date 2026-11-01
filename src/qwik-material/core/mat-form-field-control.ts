@@ -1,4 +1,4 @@
-import {createContextId, type JSXOutput, type Signal} from '@builder.io/qwik';
+import {createContextId, type JSXOutput, type Signal} from '@qwik.dev/core';
 
 /** Mirrors `form-field/form-field-config.ts`'s `MatFormFieldColor` — redeclared
  *  here (rather than imported) so `core/` (the lower-level package) never

@@ -1,4 +1,4 @@
-import {$, component$, useContextProvider, useSignal, useStore, type QRL} from '@builder.io/qwik';
+import {$, component$, useContextProvider, useSignal, useStore, type QRL} from '@qwik.dev/core';
 import {
   CDK_TREE_TOGGLE_STATE,
   collectInitialExpanded,

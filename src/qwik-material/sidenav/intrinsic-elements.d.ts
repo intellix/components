@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Sidenav's custom-element tag
@@ -8,7 +8,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * custom camelCase attrs need widening (`inert` is passed as a plain string
  * attribute value, already valid on `div`).
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-drawer-container': QwikIntrinsicElements['div'];

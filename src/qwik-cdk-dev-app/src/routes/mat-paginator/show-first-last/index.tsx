@@ -1,4 +1,4 @@
-import {component$, useSignal} from '@builder.io/qwik';
+import {component$, useSignal} from '@qwik.dev/core';
 import {MatPaginator, type PageEvent} from '@angular-community/qwik-material/paginator';
 
 // Mirrors src/dev-app/qwik-parity/paginator.ts's PaginatorShowFirstLast — same inputs as `basic`

@@ -1,4 +1,4 @@
-import {createContextId, type NoSerialize} from '@builder.io/qwik';
+import {createContextId, type NoSerialize} from '@qwik.dev/core';
 import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import type {MatBottomSheetConfig} from './mat-bottom-sheet-config';
 import type {MatBottomSheetRef} from './mat-bottom-sheet-ref';

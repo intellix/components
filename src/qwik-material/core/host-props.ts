@@ -1,4 +1,4 @@
-import type {QRL, Signal} from '@builder.io/qwik';
+import type {QRL, Signal} from '@qwik.dev/core';
 
 /**
  * Directive hooks — "Composing directives" in `qwik-material/README.md`.
@@ -82,7 +82,7 @@ import type {QRL, Signal} from '@builder.io/qwik';
  * never persisted across a resume boundary the way a QRL closure must be.
  */
 
-/** The same shape Qwik's own `ref` JSX prop accepts (`Ref<EL>` in `@builder.io/qwik`,
+/** The same shape Qwik's own `ref` JSX prop accepts (`Ref<EL>` in `@qwik.dev/core`,
  *  not itself exported, so re-declared structurally here). */
 export type HostRef<EL extends Element = Element> =
   | Signal<Element | undefined>
@@ -90,7 +90,7 @@ export type HostRef<EL extends Element = Element> =
 
 /**
  * The same shape Qwik's own `on<Event>$` JSX props accept
- * (`QRLEventHandlerMulti` in `@builder.io/qwik`, not itself exported, so
+ * (`QRLEventHandlerMulti` in `@qwik.dev/core`, not itself exported, so
  * re-declared structurally here): a single handler QRL, or (possibly
  * nested) arrays of them — every one runs, in order, when the event fires.
  */

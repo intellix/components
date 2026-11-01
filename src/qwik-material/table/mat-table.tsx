@@ -1,4 +1,4 @@
-import {component$, useContextProvider, useSignal, type JSXOutput} from '@builder.io/qwik';
+import {component$, useContextProvider, useSignal, type JSXOutput} from '@qwik.dev/core';
 import {
   cdkColumnClass,
   createVirtualStickyElement,

@@ -1,4 +1,4 @@
-import {createContextId, type NoSerialize, type Signal} from '@builder.io/qwik';
+import {createContextId, type NoSerialize, type Signal} from '@qwik.dev/core';
 import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import type {MatDialogRef} from './mat-dialog-ref';
@@ -41,10 +41,10 @@ export const MAT_DIALOG_REF = createContextId<NoSerialize<MatDialogRef>>(
  * (MatDialogTitle, MatDialogActions) can register ids / action counts.
  */
 export interface MatDialogContainerApi {
-  registerTitleId$: import('@builder.io/qwik').QRL<(id: string) => void>;
-  unregisterTitleId$: import('@builder.io/qwik').QRL<(id: string) => void>;
-  incrementActionSectionCount$: import('@builder.io/qwik').QRL<() => void>;
-  decrementActionSectionCount$: import('@builder.io/qwik').QRL<() => void>;
+  registerTitleId$: import('@qwik.dev/core').QRL<(id: string) => void>;
+  unregisterTitleId$: import('@qwik.dev/core').QRL<(id: string) => void>;
+  incrementActionSectionCount$: import('@qwik.dev/core').QRL<() => void>;
+  decrementActionSectionCount$: import('@qwik.dev/core').QRL<() => void>;
 }
 export const MAT_DIALOG_CONTAINER = createContextId<MatDialogContainerApi>(
   'qwik-material/dialog-container-api',

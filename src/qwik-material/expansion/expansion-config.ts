@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /**
  * Mirrors `MatExpansionPanelDefaultOptions` / `MAT_EXPANSION_PANEL_DEFAULT_OPTIONS`

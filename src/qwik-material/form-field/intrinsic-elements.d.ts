@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material form-field's custom-element
@@ -10,7 +10,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * written via an object spread, which bypasses this typing entirely — see
  * `mat-form-field.tsx`).
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-form-field': QwikIntrinsicElements['div'];

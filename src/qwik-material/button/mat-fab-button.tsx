@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type JSXOutput} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type JSXOutput} from '@qwik.dev/core';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';

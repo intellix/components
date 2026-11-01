@@ -1,4 +1,4 @@
-import {$, component$, useContext, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useContext, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatFormField} from '@angular-community/qwik-material/form-field';
 import {MatSelect, type MatSelectOptionDef} from '@angular-community/qwik-material/select';

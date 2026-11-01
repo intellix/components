@@ -18,8 +18,8 @@ import {
   type QRL,
   type JSXOutput,
   type Signal,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qwik-cdk';
 import {
   focusVia,

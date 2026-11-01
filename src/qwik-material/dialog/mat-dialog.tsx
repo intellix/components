@@ -9,7 +9,7 @@ import {
   type NoSerialize,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {ensureCdkDispatchers, QWIK_CDK} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,

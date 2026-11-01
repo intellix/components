@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 
 /** A separator key with required modifiers — mirrors upstream's `SeparatorKey`. */
 export interface SeparatorKey {

@@ -32,8 +32,8 @@
  * `this._model === this._globalModel`) and auto-closes once "complete" (mirrors `(!this._model ||
  * this._model.isComplete()) && !this._actionsPortal`).
  */
-import {noSerialize, type QRL, type Signal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {noSerialize, type QRL, type Signal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import {focusVia} from '@angular-community/qwik-cdk/a11y';
 import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qwik-cdk';

@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Grid List's custom-element
@@ -17,7 +17,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * upstream's `[attr.rowspan]` / `[attr.colspan]` host bindings
  * (mat-grid-tile.tsx), same pattern.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-grid-list': QwikIntrinsicElements['div'] & {cols?: number};

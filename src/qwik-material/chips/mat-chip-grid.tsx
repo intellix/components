@@ -7,8 +7,8 @@ import {
   type JSXOutput,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {focusVia, useIdGenerator, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MAT_FORM_FIELD_CONTROL_STATE} from '../core/mat-form-field-control';

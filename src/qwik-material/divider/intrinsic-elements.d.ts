@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Divider's custom-element tag
@@ -9,7 +9,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * docs/superpowers/specs/2026-07-31-qwik-material-divider-port-design.md
  * §3.4 + §6 deviation #6.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-divider': QwikIntrinsicElements['hr'];

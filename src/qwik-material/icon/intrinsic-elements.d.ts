@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Icon's custom-element tag name.
@@ -8,7 +8,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * The `fontIcon` custom attribute mirrors upstream's `[attr.fontIcon]` host
  * binding; CSS renders the glyph via `[fontIcon]::before` in icon.scss.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-icon': QwikIntrinsicElements['span'] & {fontIcon?: string};

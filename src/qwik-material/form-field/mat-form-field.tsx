@@ -9,7 +9,7 @@ import {
   useVisibleTask$,
   type JSXOutput,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {
@@ -259,7 +259,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // read again after this line.
   //
   // This is deliberate, not an oversight: a genuine Qwik 1.20 CORE bug (confirmed live by
-  // instrumenting node_modules/@builder.io/qwik's own dist, not inferred) means rendering
+  // instrumenting node_modules/@qwik.dev/core's own dist, not inferred) means rendering
   // `{props.control}` directly is unsafe whenever a CONSUMER reconstructs that JSX element
   // fresh on every one of ITS OWN re-renders (the common, idiomatic way to write it — e.g.
   // `control={<MatChipGrid rows={rowsSignal} .../>}` written inline in a route's return JSX).

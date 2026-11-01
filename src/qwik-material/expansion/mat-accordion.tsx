@@ -1,5 +1,5 @@
-import {$, component$, Slot, useContextProvider, useSignal} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {$, component$, Slot, useContextProvider, useSignal} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {useCdkAccordion} from '@angular-community/qwik-cdk/accordion';
 import {focusVia} from '@angular-community/qwik-cdk/a11y';
 import {

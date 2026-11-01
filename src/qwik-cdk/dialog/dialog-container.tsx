@@ -1,4 +1,4 @@
-import {component$, Slot, useSignal} from '@builder.io/qwik';
+import {component$, Slot, useSignal} from '@qwik.dev/core';
 import {useFocusTrap} from '../a11y/focus-trap/use-focus-trap';
 import type {DialogConfig} from './dialog-config';
 // @ts-expect-error - side-effect scss import; bundled by Vite

@@ -1,4 +1,4 @@
-import {$, type Signal, useOn, useSignal} from '@builder.io/qwik';
+import {$, type Signal, useOn, useSignal} from '@qwik.dev/core';
 import {handleRippleEvent, rippleAnimationConfig} from '../../core/ripple/ripple-dom';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 

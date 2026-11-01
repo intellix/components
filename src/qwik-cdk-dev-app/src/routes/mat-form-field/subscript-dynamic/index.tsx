@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatFormField, MatHint, MatLabel} from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
 

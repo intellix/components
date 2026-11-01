@@ -1,4 +1,4 @@
-import type {JSXChildren, JSXOutput} from '@builder.io/qwik';
+import type {JSXChildren, JSXOutput} from '@qwik.dev/core';
 import {collectTypedChildren} from './jsx-children';
 import {MatGridTile, renderGridTile, type MatGridTileProps} from './mat-grid-tile';
 import {TileCoordinator} from './tile-coordinator';

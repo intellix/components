@@ -1,4 +1,4 @@
-import {component$, Slot, useSignal} from '@builder.io/qwik';
+import {component$, Slot, useSignal} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 
 export interface MatTabNavPanelProps {

@@ -1,4 +1,4 @@
-import {createContextId, useContext, type Signal} from '@builder.io/qwik';
+import {createContextId, useContext, type Signal} from '@qwik.dev/core';
 
 export type Direction = 'ltr' | 'rtl';
 

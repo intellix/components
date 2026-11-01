@@ -1,4 +1,4 @@
-import {$, useSignal, useVisibleTask$, type QRL, type Signal} from '@builder.io/qwik';
+import {$, useSignal, useVisibleTask$, type QRL, type Signal} from '@qwik.dev/core';
 import {
   clampScrollDistance,
   getMaxScrollDistance,

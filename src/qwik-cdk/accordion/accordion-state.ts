@@ -1,4 +1,4 @@
-import {createContextId, type Signal} from '@builder.io/qwik';
+import {createContextId, type Signal} from '@qwik.dev/core';
 
 /**
  * Broadcast written by `useCdkAccordionItem()`'s `setExpanded$` whenever an

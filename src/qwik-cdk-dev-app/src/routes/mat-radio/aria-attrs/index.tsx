@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatRadioButton} from '@angular-community/qwik-material/radio';
 
 export default component$(() => (

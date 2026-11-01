@@ -1,4 +1,4 @@
-import {component$, useContext, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {component$, useContext, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context';
 

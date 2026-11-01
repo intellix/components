@@ -7,7 +7,7 @@ import {
   useTask$,
   useVisibleTask$,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';

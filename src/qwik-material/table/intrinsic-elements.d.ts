@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 // The flex table form's row/cell elements are custom-element directive
 // selectors upstream (`mat-table`, `mat-header-row`, `mat-row`,
@@ -7,7 +7,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
 // every other qwik-material custom-element declaration, e.g. menu's
 // `mat-menu`) since only generic attributes (`class`, `role`, `style`,
 // `id`) are ever set on them.
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-table': QwikIntrinsicElements['div'];

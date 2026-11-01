@@ -1,4 +1,4 @@
-import {$, useContext, useSignal, useTask$, type QRL} from '@builder.io/qwik';
+import {$, useContext, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import {useIdGenerator} from '../a11y/id-generator';
 import {CDK_ACCORDION_STATE, CDK_ACCORDION_STATE_DEFAULTS} from './accordion-state';
 import {shouldAutoClose} from './unique-selection';

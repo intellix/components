@@ -1,4 +1,4 @@
-import {createContextId, type QRL, type Signal} from '@builder.io/qwik';
+import {createContextId, type QRL, type Signal} from '@qwik.dev/core';
 
 /**
  * Shared state a tree (`MatTree`) provides and `CdkTreeNodeToggle` (placed

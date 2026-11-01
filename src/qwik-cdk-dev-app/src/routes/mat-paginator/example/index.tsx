@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatPaginator} from '@angular-community/qwik-material/paginator';
 
 // Qwik port of material.angular.dev's `paginator-overview` docs example — see

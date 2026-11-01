@@ -25,7 +25,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {component$, jsx} from '@builder.io/qwik';
+import {component$, jsx} from '@qwik.dev/core';
 import {createMatBottomSheetService, type MatBottomSheetService} from './mat-bottom-sheet';
 import type {MatBottomSheetRef} from './mat-bottom-sheet-ref';
 import {MARK_CLOSED, MARK_OPENED, REGISTER_ANIMATION_HANDLERS} from './mat-bottom-sheet-ref';

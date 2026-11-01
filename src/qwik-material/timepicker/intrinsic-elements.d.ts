@@ -1,11 +1,11 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for `<mat-timepicker>`/`<mat-timepicker-toggle>`'s custom-element tag
  * names — same convention as `<mat-select>`/`<mat-form-field>`/`<mat-option>` elsewhere in this
  * project. See `mat-timepicker-input.tsx`/`mat-timepicker-toggle.tsx`.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       /** The empty, `display:none` marker host rendered by `<MatTimepickerInput>` — see that

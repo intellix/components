@@ -1,4 +1,4 @@
-import {component$, Slot, useSignal, useVisibleTask$, type NoSerialize} from '@builder.io/qwik';
+import {component$, Slot, useSignal, useVisibleTask$, type NoSerialize} from '@qwik.dev/core';
 import {useFocusTrap} from '@angular-community/qwik-cdk/a11y';
 import {Breakpoints, observeBreakpoints} from '@angular-community/qwik-cdk/layout';
 import type {MatBottomSheetConfig} from './mat-bottom-sheet-config';

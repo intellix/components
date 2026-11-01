@@ -1,4 +1,4 @@
-import {component$, useStyles$} from '@builder.io/qwik';
+import {component$, useStyles$} from '@qwik.dev/core';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
 import {MatSelect} from '@angular-community/qwik-material/select';

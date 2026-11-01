@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material Card's custom-element tag
@@ -7,7 +7,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * names directly (not just their .mat-mdc-card-* classes). See design spec
  * docs/superpowers/specs/2026-07-20-qwik-material-card-port-design.md §3.1.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-card': QwikIntrinsicElements['div'];

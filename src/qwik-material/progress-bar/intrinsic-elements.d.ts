@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for Angular Material ProgressBar's custom-element tag
@@ -8,7 +8,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * docs/superpowers/specs/2026-07-29-qwik-material-progress-bar-port-design.md
  * §3.1 + §6 deviation #12.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-progress-bar': QwikIntrinsicElements['div'] & {mode?: string};

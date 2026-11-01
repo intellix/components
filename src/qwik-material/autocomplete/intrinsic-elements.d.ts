@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for `<mat-autocomplete>`'s custom-element tag name
@@ -7,7 +7,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * why this renders as a permanently-empty placeholder element, a sibling of
  * the native `<input>`.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-autocomplete': QwikIntrinsicElements['div'];

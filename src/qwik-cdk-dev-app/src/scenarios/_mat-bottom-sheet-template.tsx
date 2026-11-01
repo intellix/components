@@ -1,4 +1,4 @@
-import {$, component$, useContext} from '@builder.io/qwik';
+import {$, component$, useContext} from '@qwik.dev/core';
 import {
   MAT_BOTTOM_SHEET_DATA,
   MAT_BOTTOM_SHEET_REF,

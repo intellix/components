@@ -8,8 +8,8 @@ import {
   type NoSerialize,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {

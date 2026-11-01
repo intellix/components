@@ -1,4 +1,4 @@
-import {$, component$, useContext, type JSXOutput, type QRL} from '@builder.io/qwik';
+import {$, component$, useContext, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
@@ -96,7 +96,12 @@ export const MatTimepickerToggle = component$<MatTimepickerToggleProps>(props =>
     // prop achieves the same "never present" result.
     <mat-timepicker-toggle
       id={props.id}
-      class={['mat-timepicker-toggle', ...(props.class ? (Array.isArray(props.class) ? props.class : [props.class]) : [])] as string[]}
+      class={
+        [
+          'mat-timepicker-toggle',
+          ...(props.class ? (Array.isArray(props.class) ? props.class : [props.class]) : []),
+        ] as string[]
+      }
       onClick$={onClick$}
     >
       <button
@@ -110,7 +115,7 @@ export const MatTimepickerToggle = component$<MatTimepickerToggleProps>(props =>
         // attribute on the Angular template's `<mat-timepicker-toggle>`) evaluates to `0`, NOT
         // `NaN` — so EVERY toggle gets a default tabIndex of `0`, confirmed live, even though
         // nothing in this port's templates ever writes one explicitly.
-        tabIndex={disabled ? -1 : props.tabIndex ?? 0}
+        tabIndex={disabled ? -1 : (props.tabIndex ?? 0)}
         {...disabledAttr(disabled)}
         {...rippleAttrs}
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}

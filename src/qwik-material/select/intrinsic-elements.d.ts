@@ -1,4 +1,4 @@
-import type {QwikIntrinsicElements} from '@builder.io/qwik';
+import type {QwikIntrinsicElements} from '@qwik.dev/core';
 
 /**
  * TypeScript augmentation for `<mat-select>`'s custom-element tag name —
@@ -6,7 +6,7 @@ import type {QwikIntrinsicElements} from '@builder.io/qwik';
  * `<mat-option>`/`<mat-optgroup>` elsewhere in this project. See
  * `mat-select.tsx`.
  */
-declare module '@builder.io/qwik' {
+declare module '@qwik.dev/core' {
   namespace QwikJSX {
     interface IntrinsicElements {
       'mat-select': QwikIntrinsicElements['div'];

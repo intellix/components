@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $} from '@builder.io/qwik';
+import {component$, Slot, useContext, $} from '@qwik.dev/core';
 import type {MatFabOwnProps} from './mat-fab-button';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';

@@ -1,4 +1,4 @@
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import type {TooltipPosition, TooltipTouchGestures} from './tooltip-position';
 
 /**

@@ -1,4 +1,4 @@
-import {$, useContextProvider, useSignal, type QRL} from '@builder.io/qwik';
+import {$, useContextProvider, useSignal, type QRL} from '@qwik.dev/core';
 import {
   CDK_ACCORDION_STATE,
   type CdkAccordionOpenCloseAllBroadcast,

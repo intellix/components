@@ -1,4 +1,4 @@
-import {component$, useSignal} from '@builder.io/qwik';
+import {component$, useSignal} from '@qwik.dev/core';
 import {MatTabGroup} from '@angular-community/qwik-material/tabs';
 
 export default component$(() => {

@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $, type JSXOutput} from '@builder.io/qwik';
+import {component$, Slot, useContext, $, type JSXOutput} from '@qwik.dev/core';
 import {
   APPEARANCE_CLASSES,
   type MatButtonAppearance,

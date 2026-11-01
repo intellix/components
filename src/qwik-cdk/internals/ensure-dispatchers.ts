@@ -1,4 +1,4 @@
-import {noSerialize} from '@builder.io/qwik';
+import {noSerialize} from '@qwik.dev/core';
 import {createPlatform} from '../platform/platform';
 import {
   createNoopScrollStrategy,

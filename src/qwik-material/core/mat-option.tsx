@@ -1,4 +1,4 @@
-import {$, component$, Slot, useSignal, type QRL} from '@builder.io/qwik';
+import {$, component$, Slot, useSignal, type QRL} from '@qwik.dev/core';
 import {ENTER, SPACE, hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import {createIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatPseudoCheckbox} from './mat-pseudo-checkbox';

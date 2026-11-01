@@ -1,4 +1,4 @@
-import {$, component$, useSignal} from '@builder.io/qwik';
+import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatSlider} from '@angular-community/qwik-material/slider';
 
 // Mirrors src/dev-app/qwik-parity/slider.ts's SliderDisplayWith — same

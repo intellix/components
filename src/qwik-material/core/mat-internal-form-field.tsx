@@ -1,4 +1,4 @@
-import {component$, Slot, type QRL} from '@builder.io/qwik';
+import {component$, Slot, type QRL} from '@qwik.dev/core';
 
 /**
  * Props for <MatInternalFormField>. Mirrors upstream's `_MatInternalFormField`

@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {AutoOpen, FocusableBody} from '../../../scenarios/_template';
 
 export default component$(() => (

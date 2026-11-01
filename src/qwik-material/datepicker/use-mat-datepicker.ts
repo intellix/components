@@ -22,7 +22,7 @@
  * the open/select logic (which needs to know the value shape to resolve `startAt`'s
  * fallback-to-current-value and to compare/assign dates) is duplicated per hook.
  */
-import {useSignal, type JSXOutput, type NoSerialize, type QRL, type Signal} from '@builder.io/qwik';
+import {useSignal, type JSXOutput, type NoSerialize, type QRL, type Signal} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';

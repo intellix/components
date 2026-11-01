@@ -1,5 +1,5 @@
-import {createContextId, useContext} from '@builder.io/qwik';
-import {isBrowser as qIsBrowser} from '@builder.io/qwik/build';
+import {createContextId, useContext} from '@qwik.dev/core';
+import {isBrowser as qIsBrowser} from '@qwik.dev/core/build';
 
 /** Re-export for direct use outside Qwik components. */
 export const isBrowser = qIsBrowser;

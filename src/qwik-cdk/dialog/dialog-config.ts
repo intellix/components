@@ -1,5 +1,5 @@
 // src/qwik-cdk/dialog/dialog-config.ts
-import type {QRL} from '@builder.io/qwik';
+import type {QRL} from '@qwik.dev/core';
 import type {Direction} from '../bidi/directionality';
 import type {PositionStrategy} from '../overlay/position/position-strategy';
 import type {ScrollStrategy} from '../overlay/scroll/scroll-strategy';

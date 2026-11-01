@@ -1,4 +1,4 @@
-import {$, useContext} from '@builder.io/qwik';
+import {$, useContext} from '@qwik.dev/core';
 import type {HostProps} from '../core/host-props';
 import {MAT_STEPPER_ACTIONS} from './stepper-actions';
 

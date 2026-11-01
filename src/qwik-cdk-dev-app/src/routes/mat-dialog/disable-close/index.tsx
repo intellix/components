@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {MatAutoOpen} from '../../../scenarios/_mat-template';
 

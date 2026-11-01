@@ -1,5 +1,5 @@
-import {$, component$, useOn, useSignal, type JSXOutput, type QRL} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {$, component$, useOn, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatChip, type MatChipRemoveButtonDef} from './mat-chip';
 

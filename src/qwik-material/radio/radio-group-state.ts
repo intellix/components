@@ -1,4 +1,4 @@
-import {$, createContextId, type QRL, type Signal} from '@builder.io/qwik';
+import {$, createContextId, type QRL, type Signal} from '@qwik.dev/core';
 import type {MatRadioColor} from './radio-color';
 
 /**

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {createContextId} from '@builder.io/qwik';
+import {createContextId} from '@qwik.dev/core';
 import {createPlatform, type Platform} from '../../platform';
 import {
   createInputModalityDetector,

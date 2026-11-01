@@ -1,4 +1,4 @@
-import {component$, Slot, useContext} from '@builder.io/qwik';
+import {component$, Slot, useContext} from '@qwik.dev/core';
 import type {MatCardAppearance} from './card-appearance';
 import {MAT_CARD_CONFIG, type MatCardConfig} from './card-config';
 

@@ -6,7 +6,7 @@ import {
   useTask$,
   useVisibleTask$,
   type QRL,
-} from '@builder.io/qwik';
+} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {computeRippleBox} from './slider-ripple';
 import {

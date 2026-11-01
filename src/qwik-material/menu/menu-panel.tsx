@@ -6,8 +6,8 @@ import {
   type JSXOutput,
   type QRL,
   type Signal,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import type {MenuPositionX, MenuPositionY} from './menu-positions';
 
 /** Name of the enter animation `@keyframes` (mirrors upstream `menu.ts`). */

@@ -1,4 +1,4 @@
-import {$, component$, useSignal, useTask$, type Signal} from '@builder.io/qwik';
+import {$, component$, useSignal, useTask$, type Signal} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
 import {MatChipGrid, type MatChipRowDef} from '@angular-community/qwik-material/chips';

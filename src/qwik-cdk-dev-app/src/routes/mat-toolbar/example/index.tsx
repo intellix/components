@@ -1,4 +1,4 @@
-import {component$, useStyles$} from '@builder.io/qwik';
+import {component$, useStyles$} from '@qwik.dev/core';
 import {MatToolbar} from '@angular-community/qwik-material/toolbar';
 import {MatIconButton} from '@angular-community/qwik-material/button';
 import {MatIcon} from '@angular-community/qwik-material/icon';

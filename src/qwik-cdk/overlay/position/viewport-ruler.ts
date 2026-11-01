@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {isBrowser} from '@builder.io/qwik/build';
+import {isBrowser} from '@qwik.dev/core/build';
 
 export function getViewportSize(): {width: number; height: number} {
   if (!isBrowser) return {width: 0, height: 0};

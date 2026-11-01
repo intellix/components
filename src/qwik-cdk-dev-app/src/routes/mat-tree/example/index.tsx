@@ -1,4 +1,4 @@
-import {$, component$, useContext} from '@builder.io/qwik';
+import {$, component$, useContext} from '@qwik.dev/core';
 import {CDK_TREE_TOGGLE_STATE, type CdkTreeNodeInput} from '@angular-community/qwik-cdk/tree';
 import {MatIconButton} from '@angular-community/qwik-material/button';
 import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';

@@ -17,12 +17,12 @@
  */
 
 import {describe, expect, it, vi} from 'vitest';
-import type {NoSerialize, Signal} from '@builder.io/qwik';
-import {noSerialize} from '@builder.io/qwik';
+import type {NoSerialize, Signal} from '@qwik.dev/core';
+import {noSerialize} from '@qwik.dev/core';
 import {attachSnackBar, mergeConfig, type AttachSnackBarCtx} from './mat-snack-bar';
 import {MARK_DISMISSED, MARK_OPENED, type MatSnackBarRef} from './mat-snack-bar-ref';
 import type {LiveAnnouncer} from '@angular-community/qwik-cdk/a11y';
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import type {MatSnackBarConfig} from './snack-bar-config';
 
 // ---------------------------------------------------------------------------

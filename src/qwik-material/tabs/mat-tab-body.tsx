@@ -1,4 +1,4 @@
-import {component$, useSignal, useTask$, type JSXOutput} from '@builder.io/qwik';
+import {component$, useSignal, useTask$, type JSXOutput} from '@qwik.dev/core';
 
 /**
  * Internal per-tab body — `src/material/tabs/tab-body.html` + `tab-body.ts`

@@ -6,8 +6,8 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {createContextId, useContext} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+import {createContextId, useContext} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {createPlatform, type Platform, _getEventTarget} from '../../platform/public-api';
 import {type BaseOverlayDispatcher, canReceiveOverlayEvent} from './base-overlay-dispatcher';
 import type {OverlayRef} from '../overlay-ref';

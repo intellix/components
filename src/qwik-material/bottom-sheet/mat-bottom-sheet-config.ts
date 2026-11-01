@@ -1,4 +1,4 @@
-import type {QRL} from '@builder.io/qwik';
+import type {QRL} from '@qwik.dev/core';
 import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 
 /** Options for where to set focus to automatically on bottom sheet open. */

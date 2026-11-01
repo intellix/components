@@ -1,4 +1,4 @@
-import {createContextId, useContext, type Signal} from '@builder.io/qwik';
+import {createContextId, useContext, type Signal} from '@qwik.dev/core';
 
 /**
  * Monotonic ID generator used to mint stable `cdk-overlay-N`, `cdk-dialog-N`,

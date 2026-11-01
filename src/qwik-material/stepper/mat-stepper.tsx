@@ -8,8 +8,8 @@ import {
   useVisibleTask$,
   type JSXOutput,
   type QRL,
-} from '@builder.io/qwik';
-import {isBrowser} from '@builder.io/qwik/build';
+} from '@qwik.dev/core';
+import {isBrowser} from '@qwik.dev/core/build';
 import {focusVia, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
   CDK_STEPPER_GLOBAL_OPTIONS,

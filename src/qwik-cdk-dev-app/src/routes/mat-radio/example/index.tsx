@@ -1,4 +1,4 @@
-import {component$, useSignal, useStyles$} from '@builder.io/qwik';
+import {component$, useSignal, useStyles$} from '@qwik.dev/core';
 import {MatRadioGroup, MatRadioButton} from '@angular-community/qwik-material/radio';
 import styles from './example.css?inline';
 

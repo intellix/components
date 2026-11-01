@@ -24,7 +24,7 @@
  * and as the forward-compatible extension point a later `QwikMaterialProvider`
  * prop can wire up without changing any call site.
  */
-import {createContextId, useContext} from '@builder.io/qwik';
+import {createContextId, useContext} from '@qwik.dev/core';
 import type {DateAdapter} from './date-adapter';
 import {DEFAULT_DATE_ADAPTER} from './native-date-adapter';
 import {MAT_DATE_FORMATS, type MatDateFormats} from './date-formats';

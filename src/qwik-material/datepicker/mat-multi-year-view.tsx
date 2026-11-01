@@ -5,7 +5,7 @@
  * anchoring math (the `start-view-multi-year` scenario's 1968-1991 window for `startAt=1990`
  * lives there, unit-tested).
  */
-import {$, component$, useSignal, useTask$, type QRL} from '@builder.io/qwik';
+import {$, component$, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MatCalendarBody} from './mat-calendar-body';

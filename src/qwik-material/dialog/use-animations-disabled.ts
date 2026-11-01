@@ -1,4 +1,4 @@
-import {useContext, type Signal} from '@builder.io/qwik';
+import {useContext, type Signal} from '@qwik.dev/core';
 import {MAT_ANIMATIONS_DISABLED} from './mat-dialog-tokens';
 
 /**

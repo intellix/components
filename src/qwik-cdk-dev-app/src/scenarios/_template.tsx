@@ -1,8 +1,8 @@
-import {component$, useVisibleTask$} from '@builder.io/qwik';
-import type {Component} from '@builder.io/qwik';
+import {component$, useVisibleTask$} from '@qwik.dev/core';
+import type {Component} from '@qwik.dev/core';
 import {useDialog, DIALOG_DATA} from '@angular-community/qwik-cdk/dialog';
 import type {DialogConfig} from '@angular-community/qwik-cdk/dialog';
-import {useContext} from '@builder.io/qwik';
+import {useContext} from '@qwik.dev/core';
 
 // Each body below wraps its content in the same custom-element tag name as
 // the Angular mirror component's explicit `selector`

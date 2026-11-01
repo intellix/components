@@ -1,4 +1,4 @@
-import type {JSXChildren, JSXOutput} from '@builder.io/qwik';
+import type {JSXChildren, JSXOutput} from '@qwik.dev/core';
 
 /**
  * Props accepted by the `<MatMenu>` placeholder. Only `panelClass` affects

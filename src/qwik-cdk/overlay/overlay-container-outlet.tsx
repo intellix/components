@@ -1,4 +1,4 @@
-import {component$, useContext} from '@builder.io/qwik';
+import {component$, useContext} from '@qwik.dev/core';
 import {OverlayHost} from './overlay-host';
 import {QWIK_CDK} from '../internals/internals';
 

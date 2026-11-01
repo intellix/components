@@ -1,4 +1,4 @@
-import {$, component$, useContext} from '@builder.io/qwik';
+import {$, component$, useContext} from '@qwik.dev/core';
 import {MAT_SNACK_BAR_DATA, MAT_SNACK_BAR_REF} from './mat-snack-bar-tokens';
 import {MatSnackBarAction, MatSnackBarActions, MatSnackBarLabel} from './mat-snack-bar-content';
 

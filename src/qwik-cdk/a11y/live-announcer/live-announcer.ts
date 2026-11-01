@@ -1,4 +1,4 @@
-import {isBrowser} from '@builder.io/qwik/build';
+import {isBrowser} from '@qwik.dev/core/build';
 
 /**
  * Qwik port of `@angular/cdk/a11y`'s `LiveAnnouncer` (src/cdk/a11y/live-announcer/live-announcer.ts).

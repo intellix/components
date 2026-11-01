@@ -1,4 +1,4 @@
-import {createContextId, type NoSerialize} from '@builder.io/qwik';
+import {createContextId, type NoSerialize} from '@qwik.dev/core';
 import type {MatSnackBarConfig} from './snack-bar-config';
 import type {MatSnackBarRef} from './mat-snack-bar-ref';
 

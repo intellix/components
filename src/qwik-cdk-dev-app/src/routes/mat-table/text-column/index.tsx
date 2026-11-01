@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatTable, matTextColumn, type MatTableRow} from '@angular-community/qwik-material/table';
 
 interface PeriodicElement {

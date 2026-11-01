@@ -1,4 +1,4 @@
-import type {Signal} from '@builder.io/qwik';
+import type {Signal} from '@qwik.dev/core';
 
 /** Event payload for `MatSnackBarRef.afterDismissed`. Mirrors upstream `MatSnackBarDismiss`. */
 export interface MatSnackBarDismiss {

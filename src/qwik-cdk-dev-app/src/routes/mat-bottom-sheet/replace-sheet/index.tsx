@@ -1,4 +1,4 @@
-import {$, component$} from '@builder.io/qwik';
+import {$, component$} from '@qwik.dev/core';
 import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {useMatBottomSheet} from '@angular-community/qwik-material/bottom-sheet';
 import {BottomSheetFirstBody} from '../../../scenarios/_mat-bottom-sheet-template';

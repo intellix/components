@@ -423,7 +423,7 @@ export async function snapshotParityRoot(
         // live (qwik-material/form-field's disabled/readonly scenarios):
         // Qwik's SSR output DOES serialize a literal `value="…"` attribute
         // for a static, never-reassigned value (needed so the control
-        // paints correctly before any JS runs) — but @builder.io/qwik's
+        // paints correctly before any JS runs) — but @qwik.dev/core's
         // OWN resumability runtime unconditionally strips that attribute
         // again shortly after hydration (confirmed via core.cjs's
         // `_setProperty`: it always sets `node[key] = value` AND, for a

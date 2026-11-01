@@ -1,4 +1,4 @@
-import {component$} from '@builder.io/qwik';
+import {component$} from '@qwik.dev/core';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
 import {MatSelect} from '@angular-community/qwik-material/select';
 import {NativeSelectControl} from './native-select-control';

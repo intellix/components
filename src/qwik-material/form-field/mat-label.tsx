@@ -1,4 +1,4 @@
-import {component$, Slot} from '@builder.io/qwik';
+import {component$, Slot} from '@qwik.dev/core';
 
 /**
  * Mirrors upstream's `MatLabel` (`src/material/form-field/directives/label.ts`)

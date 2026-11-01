@@ -1,4 +1,4 @@
-import {component$, createContextId, Slot, useContext, useContextProvider} from '@builder.io/qwik';
+import {component$, createContextId, Slot, useContext, useContextProvider} from '@qwik.dev/core';
 
 /**
  * Context a `<MatHint>`/`<MatError>` reads as its id FALLBACK (an explicit
