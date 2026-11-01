@@ -326,3 +326,25 @@ Verified: `specs/material-menu/angular-parity.spec.ts` + `qwik-only.spec.ts` 21/
 (including `lazy-content`, previously failing for an unrelated-looking but actually identical
 reason — its `DomPortalOutlet`-mirroring extra `<div>` wrapper also sits inside `props.content`).
 qwik-material unit tests 785/785, typecheck clean.
+
+## Remaining known issue: `mat-menu/example` (interaction 2) — auto-focused first item shows the wrong focus-origin class (2026-11-01, Qwik v2)
+
+**Not fixed. Documented with evidence, same treatment as `qwik-material/timepicker`'s own
+`min-max` open issue** — the ONE remaining failure among this component's own specs
+(`specs/material-menu` itself, both `angular-parity.spec.ts` and `qwik-only.spec.ts`, is 100%
+green; only `specs/examples`' `mat-menu/example` interaction 2 is affected).
+
+After `[click trigger (open)]`, the auto-focused first menu item ("Item 1") carries
+`cdk-mouse-focused` on Qwik vs. `cdk-program-focused` on Angular (plus the resulting
+`background-color` difference that class drives). `mat-menu/example` composes
+`useMatMenuTrigger()`'s `hostProps` onto `<MatButton>` (the directive-hooks pattern) — the SAME
+structural shape as `qwik-material/tooltip/mat-tooltip/example`'s own remaining open issue (see
+that package's SYNC.md for the full writeup), where a native `mouseenter`/`mouseleave`-style
+event targeting a `<MatButton>` host misbehaves specifically because of the invisible, overlapping
+`<span class="mat-mdc-button-touch-target">` every `MatButton` renders. This failure is a
+POINTER-ORIGIN misattribution rather than tooltip visibility, so it wasn't independently traced
+to the exact same mechanism down to the same level of confirmation — flagged here as the likely
+same root-cause family rather than a separately fully-diagnosed bug, given the time available.
+Not pursued further for the same reason given there (squarely inside Qwik's own event handling,
+not this port's code; a workaround would need to change `MatButton`'s DOM, conflicting with the
+hard DOM-parity requirement).
