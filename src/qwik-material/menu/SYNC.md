@@ -287,3 +287,42 @@ events (a cross-chunk QRL-ordering race, not a style preference).
   `material-tabs`, `material-toolbar` parity/Qwik-only specs re-run green (one isolated
   `material-stepper` timeout under heavy parallel load reproduced as a pass in isolation —
   resource contention, not a regression).
+
+## Qwik v2 regression: `MenuPanel`'s item text lost on self re-render (2026-11-01)
+
+Upgrading to `@qwik.dev/core` 2.0.0-rc.4 broke every "(overlay)" parity scenario: menu items
+opened with the right structure but a permanently empty `.mat-mdc-menu-item-text` label.
+
+Root cause, confirmed live via a fine-grained (20ms-step) Playwright poll: `MenuPanel` reads its
+own `isAnimating` signal inside its `classes` computation, so it re-renders ITSELF (not a parent
+cascade) once the enter animation's `animationend` fires (~120ms after open) — independent of
+`props.content` (the menu's resolved items, built once by `menu-runtime.ts`'s `openMenu`) ever
+changing. The item text was correct for those first ~120ms, then went empty in the exact frame
+`mat-menu-panel-animating` was removed. Qwik v2's `JSXNodeImpl` caches render-time state on the
+node object itself, so re-rendering the IDENTICAL `props.content` object a second time — even
+within the SAME still-mounted component — corrupts it, the same underlying issue
+`qwik-material/core/jsx-reuse.ts`'s `cloneJsxForReuse()` was written for (originally found in
+`qwik-material/datepicker`'s `ActionsOutlet`, which hit the "reused across SEPARATE opens" variant
+of this bug; this is the "re-rendered twice within the SAME open" variant).
+
+Ruled out before finding the real mechanism: `<Slot/>` itself (`MatMenuItem`'s text uses `<Slot/>`
+the same way `MatDialogClose`'s does, which was never broken), sibling count/conditional-sibling
+position around the Slot (stripping `MatMenuItem` down to a bare `<button><span><Slot/></span>
+</button>` with zero other siblings did NOT fix it), and the `content$()` QRL/async-callback
+indirection (an isolated scratch route rendering `<MatMenuItem>` both directly and through
+`MenuPanel` showed stable, correct text indefinitely — because no real CSS animation ever played
+there, so `isAnimating` never flipped, so `MenuPanel` never self-re-rendered at all).
+
+Fix: `menu-panel.tsx` renders `{cloneJsxForReuse(props.content)}` instead of `{props.content}` —
+rebuilt fresh via the public `jsx()` factory on every render, so it doesn't matter how many times
+this component re-renders during one open. Applied preemptively to the identical `option.content`
+pattern in `qwik-material/select/mat-select-panel.tsx` and
+`qwik-material/autocomplete/mat-autocomplete-panel.tsx` (both panels self-re-render for their own
+reasons — `exiting`/`tree` signals read in their own `classes`/render body — and both forward a
+stored `JSXOutput` the same way); no current scenario exercises non-plain-text option content, so
+that's a no-op today, but the failure mode is identical and now understood.
+
+Verified: `specs/material-menu/angular-parity.spec.ts` + `qwik-only.spec.ts` 21/21 passing
+(including `lazy-content`, previously failing for an unrelated-looking but actually identical
+reason — its `DomPortalOutlet`-mirroring extra `<div>` wrapper also sits inside `props.content`).
+qwik-material unit tests 785/785, typecheck clean.

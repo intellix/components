@@ -523,3 +523,15 @@ times; `specs/material-form-field`, `material-menu`, `material-chips`,
   which Angular leaves in the live DOM verbatim (same category as a directive-selector
   attribute Material's own template emits). No existing select scenario sets this prop true, so
   this is purely additive. See `qwik-material/paginator/SYNC.md`.
+
+## Qwik v2 preemptive fix: `mat-select-panel.tsx`'s `option.content` (2026-11-01)
+
+`MatSelectPanel` re-renders itself (reads its own `props.exiting.value` in its `classes`
+computation) more than once per open, independent of `option.content` ever changing — the exact
+pattern `qwik-material/menu`'s `MenuPanel` was confirmed to corrupt under Qwik v2 when
+`option.content` is a real `JSXOutput` (not the plain string most options use) — see
+`qwik-material/menu/SYNC.md`'s "Qwik v2 regression" section for the full root-cause writeup.
+`renderOption` now wraps it: `{cloneJsxForReuse(option.content)}` instead of `{option.content}`.
+No current select scenario passes non-plain-text `content`, so this is a no-op today
+(`cloneJsxForReuse` returns a string unchanged) — applied preemptively since the bug is
+understood and the fix is free for the common case.
