@@ -144,3 +144,36 @@ group therefore keeps the selection it last emitted (`pendingValues`, reset when
 single-select mode ignores clicks older (by `event.timeStamp`) than the one that
 produced the current selection. Covered by
 `qwik-cdk-parity-tests/specs/material-button-toggle/rapid-clicks.spec.ts`.
+
+### Qwik v2 regression: multi-select rapid clicks dropping one (2026-11-01)
+
+Upgrading to `@qwik.dev/core@2.0.0-rc.4` reliably broke `rapid-clicks.spec.ts`'s multi-select
+case (previously only "sometimes" — this exact race, "the race only shows up some of the time"
+per this file's own original note). Two clicks on DIFFERENT toggles, fired back to back: Qwik
+appears to process one event's handler to full completion — including every `await` inside it —
+before starting the next QUEUED one (confirmed live via instrumentation: the second click's
+`onToggle` body didn't even START running until the first one's ENTIRE handler, awaits included,
+had finished). That's not the bug by itself; the bug was that the SECOND click's `onToggle`
+closure — captured by `onClick$` reading `stateSignal.value` EARLY, before the first click's own
+round trip landed — closed over a now-stale `propValues` local (`const propValues = props.values`,
+destructured once per GROUP render). By the time this queued call finally ran (after the first
+click fully resolved), `pendingValues` had, correctly, already been cleared (the first click's
+round trip HAD landed by then) — so the fallback `?? propValues` kicked in, and THAT was the stale
+snapshot, silently dropping the first click's selection.
+
+Fixed two ways, both in `mat-button-toggle-group.tsx`'s `onToggle`:
+- The read-compute-write of `pendingValues` now happens with NO `await` in between (previously
+  `await onValuesChange$?.resolve()` ran FIRST) — not actually the root cause here (events turned
+  out to be fully serialized, not interleaved), but a real hardening against the possibility
+  either way, and emits via a fresh re-read of `pendingValues.value` rather than the
+  locally-captured `next`.
+- The fallback reads `props.values` directly (the live, same-object-across-every-render props
+  proxy) instead of the per-render-destructured `propValues` local — this was the actual fix.
+  `onToggle` is a `$()` closure that can run long after the render that created it, and `props`
+  (unlike a destructured local) always reflects the CURRENT value regardless of which render's
+  closure is running.
+- The `pendingValues`-clearing task was ALSO loosened from "clear whenever `props.values` changes
+  at all" to "clear only when it already matches `pendingValues.value` as a set" — belt-and-
+  suspenders for a scenario where a newer click's write races ahead of an older round trip's
+  feedback; did not end up being the actual fix for THIS bug (the real fix was the `props.values`
+  read above), but is strictly safer than the unconditional version either way.
