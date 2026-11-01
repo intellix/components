@@ -3,6 +3,7 @@ import {
   component$,
   Slot,
   useContext,
+  useOn,
   useSignal,
   useTask$,
   useVisibleTask$,
@@ -329,14 +330,32 @@ function createDrawer(
       }
     });
 
-    const onKeyDown$ = $((event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || (props.disableClose ?? false) || hasModifierKey(event)) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      props.onOpenedChange$?.(false);
-    });
+    // Qwik v2 regression: a `$`-suffixed JSX event prop (`onKeyDown$={...}`)
+    // is only recognized/wired as an event listener by the compiler for a
+    // STATICALLY-named intrinsic tag (`<div onKeyDown$={...}>`). This
+    // component's host tag is dynamic (`<HostTag>` below, a
+    // `FunctionComponent`-typed string alias — mirrors
+    // `mat-progress-spinner.tsx`'s own, otherwise harmless, use of the same
+    // trick), and under v2 that confuses the compiler into treating
+    // `onKeyDown$` as a plain prop instead of an event registration: it got
+    // serialized as a literal `onKeyDown$="<function source>"` DOM
+    // attribute instead of a `q-e:keydown` listener (confirmed live — see
+    // SYNC.md). `useOn()` attaches directly to this component's own host
+    // element via Qwik's imperative API, bypassing JSX prop analysis
+    // entirely, so it is immune to this — same category of hook
+    // `useFocusOrigin()` already relies on for the identical reason
+    // (qwik-cdk/a11y/focus-origin/focus-origin.ts).
+    useOn(
+      'keydown',
+      $((event: KeyboardEvent) => {
+        if (event.key !== 'Escape' || (props.disableClose ?? false) || hasModifierKey(event)) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        props.onOpenedChange$?.(false);
+      }),
+    );
 
     const isSidenav = hostTag === 'mat-sidenav';
     const fixedInViewport = isSidenav && (props.fixedInViewport ?? false);
@@ -374,7 +393,6 @@ function createDrawer(
         class={classes}
         style={style}
         tabIndex={tabIndexValue}
-        onKeyDown$={onKeyDown$}
       >
         {/* `cdkscrollable` mirrors upstream's bare `cdkScrollable` directive-selector attribute
             (`drawer.html`'s `<div class="mat-drawer-inner-container" cdkScrollable>`) — a static,
