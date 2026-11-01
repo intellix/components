@@ -533,3 +533,12 @@ WRONG active element and skipped its own redirect entirely rather than fixing th
 Fixed by porting the missing exclusion verbatim (`target?.closest('.mat-mdc-chip')`) rather than
 trying to out-schedule the race: `onWrapperClick$` now never attempts to redirect focus for a
 chip-originated click in the first place, so which QRL resolves first stops mattering.
+
+## Conditional notch-measure hook frozen at mount (Qwik v2, 2026-11-01)
+
+The initially-floating outline notch measurement is a conditional `useVisibleTask$`. Its condition
+read `controlProps.value` off the frozen `control` snapshot, but under Qwik v2 a JSX node's props are
+live, so it reflected the control's current value: selecting a value in an outlined select made the
+hook appear mid-lifetime and shifted every later hook (`animationsEnabled` read the wrong slot,
+dropping `mat-form-field-animations-enabled` for good — `material-select/outline-basic`). The
+condition is now evaluated once in a `useSignal` initializer.

@@ -572,8 +572,8 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // `labelRef` are never populated (no real DOM to measure `scrollWidth` against on the
   // server) — and since `controlState.shouldLabelFloat` is ALREADY `true` on that very first
   // run, it never "flips" again to give that task a reason to re-run once a real DOM exists.
-  // `initialControlShouldFloat` is known statically (from the control's own props) BEFORE any
-  // hook runs, and is stable for the lifetime of this component instance, so calling
+  // `initialControlShouldFloat` is known (from the control's own props) BEFORE any hook runs;
+  // frozen at mount below, so it's stable for the lifetime of this component instance and calling
   // `useVisibleTask$` conditionally on it is safe (this instance either always or never calls
   // it, never a different count across ITS OWN re-renders — the only thing Qwik's hook-order
   // rule actually requires). This keeps the eager cost scoped to exactly the controls that
@@ -581,7 +581,16 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // design doc rule 6/expansion's own "mount-driven-timing exception" precedent (the
   // `mat-form-field-animations-enabled` timer just below is the SAME kind of exception, just
   // unconditional since every form-field needs it once).
-  if (hasOutline && initialControlShouldFloat && hasFloatingLabel) {
+  // Evaluated ONCE, at mount (a signal initializer), so this conditional hook's presence can never
+  // change between renders. Under Qwik v2 a JSX node's props are live, so `controlProps` (read off
+  // the frozen `control` snapshot) still reflects the control's CURRENT value: once an outlined
+  // select got a value, `initialControlShouldFloat` flipped to true, this `useVisibleTask$` appeared
+  // mid-lifetime, and every later hook read the wrong slot (e.g. `animationsEnabled` came back
+  // `false`, dropping `mat-form-field-animations-enabled` for good).
+  const measureNotchAtMount = useSignal(
+    () => hasOutline && initialControlShouldFloat && hasFloatingLabel,
+  ).value;
+  if (measureNotchAtMount) {
     // eslint-disable-next-line qwik/no-use-visible-task
     useVisibleTask$(({cleanup}) => {
       const notch = notchRef.value as HTMLElement | undefined;

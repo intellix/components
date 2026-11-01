@@ -563,7 +563,9 @@ root causes, both confirmed live via fine-grained Playwright polls:
    comment). Same fix applied to `qwik-material/autocomplete/mat-autocomplete.tsx`'s
    `handleBlur$`.
 
-### Remaining known issue: `outline-basic` — `mat-form-field-animations-enabled` never settles once the select opens
+### Resolved (2026-11-01): `outline-basic` — `mat-form-field-animations-enabled` never settles once the select opens
+
+**Root cause found:** a conditional hook in `MatFormField` whose condition flipped mid-lifetime under Qwik v2's live JSX props, shifting later hooks — see form-field/SYNC.md "Conditional notch-measure hook frozen at mount". The investigation notes below are kept for history; the "Qwik v2 scheduler bug" hypothesis in them was wrong.
 
 **Not fixed. Documented here with evidence after extensive investigation, same treatment as
 `qwik-material/timepicker`'s own `min-max` open issue.**
