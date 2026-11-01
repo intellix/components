@@ -213,6 +213,25 @@
     `_forceFocus()`'s temporary `tabindex="-1"` + blur/mousedown cleanup for non-natively-
     focusable targets), moved here from being dialog-specific since both `CdkDialogContainer`
     and `MatDialogContainer` need it identically.
+  - 2026-11-01 (Qwik v2 regression fix): under v1, `createFocusTrap`'s automatic
+    `attachAnchors()` call (on construction, unless `deferAnchors`) and `useFocusTrap`'s
+    `Promise.resolve().then(applyAutoFocus)` one-tick defer both ran late enough that the trap
+    element was already attached to its parent and its own (slotted) content had already
+    committed. Under v2's vnode renderer, a `ref` signal can populate one or more animation
+    frames *before* that commit lands — confirmed live: `element.parentNode` was `null` when
+    `attachAnchors()` ran (anchors silently never inserted — every dialog/bottom-sheet/datepicker
+    overlay was missing its `cdk-focus-trap-anchor cdk-visually-hidden` siblings), and
+    `element.querySelector(...)` found nothing when `applyAutoFocus('first-heading')` ran a
+    microtask later (the heading existed moments after, just not yet). Fixed: `focus-trap.ts`'s
+    auto-attach-on-create path now retries `attachAnchors()` across `requestAnimationFrame`s
+    until it succeeds or the trap is destroyed first; `use-focus-trap.ts` added
+    `scheduleAutoFocus()`, which waits (same rAF-bounded, ~1s, cancellable-on-cleanup pattern)
+    for `element.childElementCount > 0` before running the unchanged `applyAutoFocus()` for every
+    variant except `false`/`'dialog'` (which only ever touches the trap element itself, never
+    its content, so it keeps the original single-microtask defer). Same underlying timing issue,
+    independently rediscovered and fixed the same way, as `qwik-cdk/overlay/overlay-host.tsx`'s
+    `popover` bootstrap fix (see overlay/SYNC.md) — both are "a ref populated before Qwik v2
+    finished committing this node/its children" races.
 
 ### `ListKeyManager` / `FocusKeyManager` / `Typeahead`
 

@@ -401,7 +401,22 @@ export const MatSelect = component$<MatSelectProps>(props => {
   });
 
   const onHostBlur$ = $(() => {
-    focused.value = false;
+    // Qwik v2 regression guard, `focused` only — NOT `onTouched$`/`cancelTypeahead` below (a
+    // blur that bounces right back is still a REAL blur for "touched" purposes, matching
+    // upstream; `cancelTypeahead` is idempotent either way). A REAL click on an option
+    // genuinely blurs the host first (mousedown on a non-focusable `<mat-option>` — ordinary
+    // browser behavior, matches upstream), then `selectOption()` (select-runtime.ts)
+    // immediately re-focuses it via `hostRef.value?.focus()`, synchronously, in the SAME click
+    // handler. Both this blur handler and that focus call are separate `$()` QRLs; under Qwik
+    // v2, their FIRST-ever invocation can resolve out of order while their chunks load
+    // (confirmed live: a fine-grained Playwright poll showed `mat-focused` present immediately
+    // after a `multiple` select's first option toggle, then removed ~20ms later, with
+    // `document.activeElement` never actually leaving the host the whole time — a SECOND click
+    // on the same select, chunks now warm, never showed the glitch). By the time this
+    // handler's CODE actually runs, the DOM's real focus state may have already moved on past
+    // the stale event that queued it — checking it directly (not trusting "a blur event fired,
+    // so we must be blurred") avoids clobbering a focus state that's already correct.
+    if (document.activeElement !== hostRef.value) focused.value = false;
     keyManager.value?.cancelTypeahead();
     if (!disabled && !panelOpen.value) {
       props.onTouched$?.();

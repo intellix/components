@@ -184,7 +184,15 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
     handleTimepickerBlur(picker);
     const liveEmpty = !picker._inputRef.value?.value;
     if (formField) {
-      formField.focused = false;
+      // Qwik v2 regression guard, `focused` only — see `qwik-material/select/mat-select.tsx`'s
+      // matching `onHostBlur$` comment for the full root-cause writeup (same race, same fix):
+      // clicking a time option genuinely blurs the input first (mousedown on a non-focusable
+      // `<mat-option>`), then the click handler immediately re-focuses it synchronously; under
+      // Qwik v2 this handler and that refocus's own handler (separate `$()` QRLs) can resolve
+      // out of order on their first-ever invocation. `handleTimepickerBlur`/`empty`/
+      // `shouldLabelFloat` above are deliberately NOT guarded — a blur that bounces right back
+      // is still a REAL blur for "touched"/value-reformatting purposes (matches upstream).
+      if (document.activeElement !== picker._inputRef.value) formField.focused = false;
       formField.empty = liveEmpty;
       formField.shouldLabelFloat = !liveEmpty;
     }

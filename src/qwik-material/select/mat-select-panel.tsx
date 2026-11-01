@@ -1,6 +1,7 @@
 import {component$, type Signal} from '@qwik.dev/core';
 import {MatOption} from '../core/mat-option';
 import {MatOptgroup} from '../core/mat-optgroup';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 import type {ResolvedSelectNode, ResolvedSelectOption} from './select-option-resolver';
 
 /**
@@ -80,7 +81,18 @@ export const MatSelectPanel = component$<MatSelectPanelProps>(props => {
       groupInertLabel={groupInertLabel}
       onSelectInteraction$={() => props.onOptionSelect(option)}
     >
-      {option.content}
+      {/* `cloneJsxForReuse`, not `option.content` directly — this component re-renders
+          itself (`props.exiting.value`'s `classes` dependency above, also `activeIndex`/
+          `activeOptionHidden`) more than once per open while `option.content` (when an option
+          uses rich, non-plain-text content) stays the SAME object across those re-renders.
+          Confirmed as a real Qwik v2 regression for the identical pattern in
+          `qwik-material/menu`'s `MenuPanel` (see `core/jsx-reuse.ts`'s doc comment) — applied
+          here preemptively, since no current scenario exercises non-string `content`, but the
+          failure mode (a `<Slot/>`-projected custom option body silently going empty) is
+          identical and confirmed to need this. A no-op for the common case (`content` is a
+          plain string — the vast majority of options — which `cloneJsxForReuse` returns
+          unchanged). */}
+      {cloneJsxForReuse(option.content)}
     </MatOption>
   );
 

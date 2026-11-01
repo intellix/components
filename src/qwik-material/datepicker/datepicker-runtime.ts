@@ -50,6 +50,7 @@ import {
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 import {DATEPICKER_INTL} from './datepicker-intl';
 import {MatDatepickerContent, type MatDatepickerContentProps} from './mat-datepicker-content';
 import {isRangeComplete, rangeSelectionFinished, type DateRange} from './date-range-selection';
@@ -360,7 +361,7 @@ export function openDatepickerPanel<D>(
     selected: activeModel as unknown as Signal<unknown>,
     startDateAccessibleName: null,
     endDateAccessibleName: null,
-    actionsContent: picker._actionsContent.value,
+    actionsContent: cloneJsxForReuse(picker._actionsContent.value),
     actionsRippleMemory: picker._actionsRippleMemory,
     touchUi: picker.touchUi.value,
     dialogLabelledBy: picker._formFieldLabelId,
@@ -462,7 +463,7 @@ export function openDateRangePickerPanel<D>(
     selected: activeModel as unknown as Signal<unknown>,
     startDateAccessibleName: picker._startInputRef.value?.placeholder || null,
     endDateAccessibleName: picker._endInputRef.value?.placeholder || null,
-    actionsContent: picker._actionsContent.value,
+    actionsContent: cloneJsxForReuse(picker._actionsContent.value),
     actionsRippleMemory: picker._actionsRippleMemory,
     touchUi: picker.touchUi.value,
     dialogLabelledBy: picker._formFieldLabelId,

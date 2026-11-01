@@ -482,3 +482,31 @@ that starts floated) kept the fallback font's width.
 - The `mat-form-field-animations-enabled` mount timer uses `useVisibleTask$`'s `document-ready`
   strategy: the default intersection-observer strategy never ran it for offscreen fields, while
   upstream's `ngAfterViewInit` timer runs for every field.
+
+## `MatIdScope`'s errors/hints lost their text under Qwik v2 (2026-11-01)
+
+`MatIdScope` (`id-scope.tsx`) wraps each error/hint `MatFormField` renders (its `errors`/
+`hintStart`/`hintEnd` props — see "The architecture problem this port had to solve" above for why
+these are named props, never nested `<Slot>` children) purely to provide the generated id via
+context, with no DOM of its own. It originally rendered `<Slot/>` to project that content through.
+
+Under Qwik v2 this broke: `<mat-error>`/`<mat-hint>` rendered with the right tag/classes/id but a
+permanently EMPTY label — confirmed live (the `error-state` scenario, and `qwik-material/
+datepicker`'s `typed-date-blur`, which exercises the same path). Reproducible even with a
+brand-new `<MatError>` built fresh on every render (ruling out any JSXOutput-object-reuse angle —
+see `core/jsx-reuse.ts`'s doc comment for that SEPARATE v2 regression); this is specifically about
+a `<Slot/>` whose projected content arrived via a PROP from several component-boundaries away
+(`MatFormField`'s own `errors`/`hintStart`/`hintEnd` props) rather than as literal JSX children
+authored inline at the `<MatIdScope>` call site.
+
+Fixed by having `MatIdScope` take `content: JSXOutput` as an explicit prop and return it directly
+(`return props.content`) instead of `<Slot/>`. All 3 call sites in `mat-form-field.tsx` (the
+`errorsArray.map(...)`, `hintStart`, `hintEnd`) updated to pass `content={node}` instead of JSX
+children. Same fix, same root cause, as `qwik-material/datepicker`'s `ActionsOutlet` (see that
+package's SYNC.md) — both are a `<Slot/>` projecting content that isn't its own component's JSX
+children breaking under v2's renderer.
+
+Verified: `specs/material-form-field/angular-parity.spec.ts` full suite + `specs/material-
+datepicker` + `specs/cdk-dialog` + `specs/material-dialog` + `specs/material-bottom-sheet` +
+`specs/material-snack-bar` together, 108/108 passing. `qwik-material` unit tests unaffected
+(785 passed, 484 pre-existing skips), typecheck clean.
