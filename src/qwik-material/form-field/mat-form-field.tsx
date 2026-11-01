@@ -786,9 +786,7 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
         {showErrors ? (
           <div class="mat-mdc-form-field-error-wrapper">
             {errorsArray.map((node, i) => (
-              <MatIdScope key={errorIds[i]} id={errorIds[i]}>
-                {node}
-              </MatIdScope>
+              <MatIdScope key={errorIds[i]} id={errorIds[i]} content={node} />
             ))}
           </div>
         ) : (
@@ -809,11 +807,11 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
               </mat-hint>
             )}
             {hintStartSnapshot.value && (
-              <MatIdScope id={hintStartId as string}>{hintStartSnapshot.value}</MatIdScope>
+              <MatIdScope id={hintStartId as string} content={hintStartSnapshot.value} />
             )}
             <div class="mat-mdc-form-field-hint-spacer" />
             {hintEndSnapshot.value && (
-              <MatIdScope id={hintEndId as string}>{hintEndSnapshot.value}</MatIdScope>
+              <MatIdScope id={hintEndId as string} content={hintEndSnapshot.value} />
             )}
           </div>
         )}
