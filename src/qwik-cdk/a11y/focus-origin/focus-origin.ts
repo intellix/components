@@ -1,7 +1,12 @@
 import {$, useOn, useSignal, type Signal} from '@qwik.dev/core';
 import {isBrowser} from '@qwik.dev/core/build';
 import type {FocusOptions, FocusOrigin} from '../focus-monitor/focus-monitor';
-import {consumeRecentKeydown, wasRecentKeydown} from './recent-keydown';
+import {
+  consumeRecentKeydown,
+  consumeRecentPointerModality,
+  getRecentPointerModality,
+  wasRecentKeydown,
+} from './recent-keydown';
 
 export type {FocusOrigin};
 
@@ -80,15 +85,15 @@ export function focusVia(element: HTMLElement, origin: FocusOrigin, options?: Fo
  * qwik-material/button-toggle/mat-button-toggle.tsx for why that matters).
  *
  * Origin resolution, simplified from `InputModalityDetector` +
- * `FocusMonitor`'s joint algorithm down to two signals:
- *  - `pointerdown` (component-scoped, lazy `useOn()` — fine here, since the
- *    element being clicked IS this component's own host, so the listener is
- *    always already attached where the event lands) records whether the
- *    most recent pointer interaction was touch or mouse.
+ * `FocusMonitor`'s joint algorithm down to:
  *  - `focusin` (bubbles, unlike `focus` — covers descendant focus for free,
- *    i.e. upstream's `checkChildren: true`) then resolves the origin:
- *    `wasRecentKeydown()` (./recent-keydown.ts) true means `'keyboard'`;
- *    otherwise the just-recorded pointer modality; otherwise `'program'`.
+ *    i.e. upstream's `checkChildren: true`) resolves the origin:
+ *    `wasRecentKeydown()` true means `'keyboard'`; otherwise
+ *    `getRecentPointerModality()` (./recent-keydown.ts — both eagerly,
+ *    synchronously tracked at `<QwikCdkRoot>`, NOT via this component's own
+ *    lazy `pointerdown` listener; see that file's doc comment for why a
+ *    v2-only race demanded that for the pointer-modality flag too, not
+ *    just the keydown one originally); otherwise `'program'`.
  *  - `focusout` (bubbles version of `blur`) clears the origin. No
  *    `checkChildren`-style "don't clear if focus moved to a descendant"
  *    guard — callers with more than one focusable descendant under the
@@ -118,19 +123,6 @@ export function focusVia(element: HTMLElement, origin: FocusOrigin, options?: Fo
  */
 export function useFocusOrigin(): Signal<FocusOrigin> {
   const origin = useSignal<FocusOrigin>(null);
-  const lastPointerModality = useSignal<'mouse' | 'touch' | null>(null);
-
-  useOn(
-    'pointerdown',
-    $((event: PointerEvent) => {
-      lastPointerModality.value = event.pointerType === 'touch' ? 'touch' : 'mouse';
-      // A pointer press is a newer, more specific signal than whatever
-      // stale keydown might still be flagged (e.g. the user finished
-      // typing in a different, previously-focused field) — invalidate it
-      // so the upcoming focus change (if any) isn't misattributed.
-      consumeRecentKeydown();
-    }),
-  );
 
   useOn(
     'focusin',
@@ -142,12 +134,12 @@ export function useFocusOrigin(): Signal<FocusOrigin> {
         origin.value = pending as FocusOrigin;
       } else if (wasRecentKeydown()) {
         origin.value = 'keyboard';
-      } else if (lastPointerModality.value) {
-        origin.value = lastPointerModality.value;
+      } else if (getRecentPointerModality()) {
+        origin.value = getRecentPointerModality();
       } else {
         origin.value = 'program';
       }
-      lastPointerModality.value = null;
+      consumeRecentPointerModality();
       consumeRecentKeydown();
     }),
   );
