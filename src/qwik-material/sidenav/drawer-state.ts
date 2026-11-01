@@ -108,7 +108,7 @@ export interface MatDrawerContainerState {
 }
 
 export const MAT_DRAWER_CONTAINER_STATE = createContextId<MatDrawerContainerState>(
-  'qwik-material/drawer-container-state',
+  'qwikMaterial/drawerContainerState',
 );
 
 function findByPosition(

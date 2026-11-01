@@ -60,5 +60,5 @@ export const MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY: Required<
  * `MatTooltip` via `useContext(MAT_TOOLTIP_DEFAULT_OPTIONS, {})`.
  */
 export const MAT_TOOLTIP_DEFAULT_OPTIONS = createContextId<MatTooltipDefaultOptions>(
-  'qwik-material/tooltip-default-options',
+  'qwikMaterial/tooltipDefaultOptions',
 );

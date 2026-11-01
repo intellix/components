@@ -6,7 +6,7 @@ import {component$, createContextId, Slot, useContext, useContextProvider} from 
  * plain `string | undefined` — never a function, same reasoning as every
  * other piece of state this port passes across a component boundary.
  */
-export const MAT_ASSIGNED_ID = createContextId<string | undefined>('qwik-material/assigned-id');
+export const MAT_ASSIGNED_ID = createContextId<string | undefined>('qwikMaterial/assignedId');
 
 /**
  * Wraps a single hint/error WITHOUT cloning it, providing the id

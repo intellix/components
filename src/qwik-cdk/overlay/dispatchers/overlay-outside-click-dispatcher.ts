@@ -174,7 +174,7 @@ function containsPierceShadowDom(parent: HTMLElement | null, child: HTMLElement 
 }
 
 export const OVERLAY_OUTSIDE_CLICK_DISPATCHER = createContextId<OverlayOutsideClickDispatcher>(
-  'qwik-cdk/overlay-outside-click-dispatcher',
+  'qwikCdk/overlayOutsideClickDispatcher',
 );
 
 export function useOverlayOutsideClickDispatcher(): OverlayOutsideClickDispatcher {

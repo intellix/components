@@ -88,7 +88,7 @@ export function createOverlayKeyboardDispatcher(): OverlayKeyboardDispatcher {
 }
 
 export const OVERLAY_KEYBOARD_DISPATCHER = createContextId<OverlayKeyboardDispatcher>(
-  'qwik-cdk/overlay-keyboard-dispatcher',
+  'qwikCdk/overlayKeyboardDispatcher',
 );
 
 export function useOverlayKeyboardDispatcher(): OverlayKeyboardDispatcher {

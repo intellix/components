@@ -17,5 +17,5 @@ export interface MatTimepickerConfig {
 /** Context id used by `useMatTimepicker()`/`<MatTimepickerToggle>` to read config. The id string
  *  is exposed publicly and MUST remain stable across releases. */
 export const MAT_TIMEPICKER_CONFIG = createContextId<MatTimepickerConfig>(
-  'qwik-material/timepicker-config',
+  'qwikMaterial/timepickerConfig',
 );

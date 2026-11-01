@@ -17,4 +17,4 @@ export interface MatSidenavConfig {
  * Context id used by MatDrawerContainer/MatSidenavContainer to read config.
  * The id string is exposed publicly and MUST remain stable across releases.
  */
-export const MAT_SIDENAV_CONFIG = createContextId<MatSidenavConfig>('qwik-material/sidenav-config');
+export const MAT_SIDENAV_CONFIG = createContextId<MatSidenavConfig>('qwikMaterial/sidenavConfig');

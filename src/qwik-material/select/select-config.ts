@@ -35,4 +35,4 @@ export interface MatSelectConfig {
  * Context id used by `MatSelect` to read config. The id string is exposed
  * publicly and MUST remain stable across releases.
  */
-export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwik-material/select-config');
+export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwikMaterial/selectConfig');

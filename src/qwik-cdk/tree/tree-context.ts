@@ -31,4 +31,4 @@ export interface CdkTreeToggleState {
   dataByKey: Map<string, unknown>;
 }
 
-export const CDK_TREE_TOGGLE_STATE = createContextId<CdkTreeToggleState>('cdk-tree-toggle-state');
+export const CDK_TREE_TOGGLE_STATE = createContextId<CdkTreeToggleState>('cdkTreeToggleState');

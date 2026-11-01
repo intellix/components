@@ -15,4 +15,4 @@ export interface MatListConfig {}
  * read config. The id string is exposed publicly and MUST remain stable
  * across releases — consumers may inject it directly in advanced scenarios.
  */
-export const MAT_LIST_CONFIG = createContextId<MatListConfig>('qwik-material/list-config');
+export const MAT_LIST_CONFIG = createContextId<MatListConfig>('qwikMaterial/listConfig');

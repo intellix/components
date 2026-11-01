@@ -31,9 +31,7 @@ export function createIdGenerator(): IdGenerator {
  * can rebuild a cheap `IdGenerator` wrapper around it on every call, during
  * SSR or CSR, with no synchronization gap.
  */
-export const ID_GENERATOR_COUNTER = createContextId<Signal<number>>(
-  'qwik-cdk/id-generator-counter',
-);
+export const ID_GENERATOR_COUNTER = createContextId<Signal<number>>('qwikCdk/idGeneratorCounter');
 
 /**
  * Fallback counter for components rendered without a `<QwikCdkRoot>` ancestor

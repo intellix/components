@@ -73,7 +73,7 @@ export interface MatSortSharedState {
  * it once per consuming render, and the REACTIVE primitives consumers
  * subscribe to are the two inner Signals themselves, not this wrapper.
  */
-export const MAT_SORT_STATE = createContextId<MatSortSharedState>('qwik-material/sort-state');
+export const MAT_SORT_STATE = createContextId<MatSortSharedState>('qwikMaterial/sortState');
 
 /**
  * Sensible defaults for a <MatSortHeader> rendered without a <MatSort>

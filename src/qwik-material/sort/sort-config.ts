@@ -25,4 +25,4 @@ export interface MatSortConfig {
  * Context id used by MatSort / MatSortHeader to read config. The id string
  * is exposed publicly and MUST remain stable across releases.
  */
-export const MAT_SORT_CONFIG = createContextId<MatSortConfig>('qwik-material/sort-config');
+export const MAT_SORT_CONFIG = createContextId<MatSortConfig>('qwikMaterial/sortConfig');

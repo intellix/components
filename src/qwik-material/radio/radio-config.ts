@@ -22,7 +22,7 @@ export interface MatRadioConfig {
  * Context id used by MatRadioButton to read config. The id string is exposed
  * publicly and MUST remain stable across releases.
  */
-export const MAT_RADIO_CONFIG = createContextId<MatRadioConfig>('qwik-material/radio-config');
+export const MAT_RADIO_CONFIG = createContextId<MatRadioConfig>('qwikMaterial/radioConfig');
 
 /**
  * Mirrors upstream's `MAT_RADIO_DEFAULT_OPTIONS` factory

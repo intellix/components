@@ -172,7 +172,7 @@ export function createInputModalityDetector(
 }
 
 export const INPUT_MODALITY_DETECTOR = createContextId<InputModalityDetector>(
-  'qwik-cdk/input-modality-detector',
+  'qwikCdk/inputModalityDetector',
 );
 
 export function useInputModalityDetector(): InputModalityDetector {

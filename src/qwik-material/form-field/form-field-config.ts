@@ -37,7 +37,7 @@ export interface MatFormFieldConfig {
  * exposed publicly and MUST remain stable across releases.
  */
 export const MAT_FORM_FIELD_CONFIG = createContextId<MatFormFieldConfig>(
-  'qwik-material/form-field-config',
+  'qwikMaterial/formFieldConfig',
 );
 
 /**

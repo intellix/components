@@ -13,7 +13,7 @@ export interface Overlay {
   position(): OverlayPositionBuilder;
 }
 
-export const OVERLAY = createContextId<Overlay>('qwik-cdk/overlay');
+export const OVERLAY = createContextId<Overlay>('qwikCdk/overlay');
 
 export function useOverlay(): Overlay {
   return useContext(OVERLAY);

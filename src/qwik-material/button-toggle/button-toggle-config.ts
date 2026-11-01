@@ -15,5 +15,5 @@ export interface MatButtonToggleConfig {}
  * inject it directly in advanced scenarios.
  */
 export const MAT_BUTTON_TOGGLE_CONFIG = createContextId<MatButtonToggleConfig>(
-  'qwik-material/button-toggle-config',
+  'qwikMaterial/buttonToggleConfig',
 );

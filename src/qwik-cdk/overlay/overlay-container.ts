@@ -22,7 +22,7 @@ export function createDefaultOverlayContainer(): OverlayContainer {
   };
 }
 
-export const OVERLAY_CONTAINER = createContextId<OverlayContainer>('qwik-cdk/overlay-container');
+export const OVERLAY_CONTAINER = createContextId<OverlayContainer>('qwikCdk/overlayContainer');
 export function useOverlayContainer(): OverlayContainer {
   return useContext(OVERLAY_CONTAINER);
 }

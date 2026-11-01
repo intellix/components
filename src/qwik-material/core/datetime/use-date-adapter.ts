@@ -32,7 +32,7 @@ import {MAT_NATIVE_DATE_FORMATS} from './native-date-formats';
 
 /** Context id a provider can use to override the `DateAdapter` every date-aware component reads
  *  via `useDateAdapter()`. See this module's doc comment. */
-export const MAT_DATE_ADAPTER = createContextId<DateAdapter<unknown>>('qwik-material/date-adapter');
+export const MAT_DATE_ADAPTER = createContextId<DateAdapter<unknown>>('qwikMaterial/dateAdapter');
 
 /** Reads the `MAT_DATE_ADAPTER` context, falling back to the `en-US` native adapter. */
 export function useDateAdapter(): DateAdapter<unknown> {

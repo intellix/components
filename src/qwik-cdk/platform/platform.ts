@@ -65,7 +65,7 @@ function hasGlobalProp(name: string) {
   return typeof globalThis !== 'undefined' && name in globalThis;
 }
 
-export const PLATFORM = createContextId<Platform>('qwik-cdk/platform');
+export const PLATFORM = createContextId<Platform>('qwikCdk/platform');
 
 export function usePlatform(): Platform {
   return useContext(PLATFORM);

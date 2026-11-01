@@ -37,5 +37,5 @@ export interface MatAutocompleteConfig {
  * exposed publicly and MUST remain stable across releases.
  */
 export const MAT_AUTOCOMPLETE_CONFIG = createContextId<MatAutocompleteConfig>(
-  'qwik-material/autocomplete-config',
+  'qwikMaterial/autocompleteConfig',
 );

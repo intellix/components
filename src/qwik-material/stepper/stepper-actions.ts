@@ -21,5 +21,5 @@ export interface MatStepperActions {
 }
 
 export const MAT_STEPPER_ACTIONS = createContextId<MatStepperActions>(
-  'qwik-material/stepper-actions',
+  'qwikMaterial/stepperActions',
 );

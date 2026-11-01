@@ -40,5 +40,5 @@ export interface MatChipListboxSelectionState {
 }
 
 export const MAT_CHIP_LISTBOX_SELECTION = createContextId<Signal<MatChipListboxSelectionState>>(
-  'qwik-material/chip-listbox-selection',
+  'qwikMaterial/chipListboxSelection',
 );

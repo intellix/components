@@ -17,9 +17,7 @@ export interface MatListBaseState {
 }
 
 /** Context id used by <MatListItem> to read its container's interactivity. */
-export const MAT_LIST_BASE_STATE = createContextId<MatListBaseState>(
-  'qwik-material/list-base-state',
-);
+export const MAT_LIST_BASE_STATE = createContextId<MatListBaseState>('qwikMaterial/listBaseState');
 
 /**
  * Default used when a <MatListItem> is rendered without a <MatList> /

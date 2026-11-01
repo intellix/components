@@ -61,7 +61,7 @@ export interface MatRadioGroupState {
  * this mirrors).
  */
 export const MAT_RADIO_GROUP_STATE = createContextId<Signal<MatRadioGroupState>>(
-  'qwik-material/radio-group-state',
+  'qwikMaterial/radioGroupState',
 );
 
 /**

@@ -36,7 +36,7 @@ export interface MatTabNavState {
 }
 
 export const MAT_TAB_NAV_STATE = createContextId<Signal<MatTabNavState>>(
-  'qwik-material/tab-nav-state',
+  'qwikMaterial/tabNavState',
 );
 
 /**

@@ -267,7 +267,7 @@ export interface MatFormFieldControlState {
  * default, so every consumer MUST go through a `<MatFormField>`.
  */
 export const MAT_FORM_FIELD_CONTROL_STATE = createContextId<MatFormFieldControlState>(
-  'qwik-material/form-field-control-state',
+  'qwikMaterial/formFieldControlState',
 );
 
 /**
@@ -287,7 +287,7 @@ export const MAT_FORM_FIELD_CONTROL_STATE = createContextId<MatFormFieldControlS
  * autocomplete/datepicker/chips port can read the same context the same way.
  */
 export const MAT_FORM_FIELD_CONNECTED_ORIGIN = createContextId<Signal<Element | undefined>>(
-  'qwik-material/form-field-connected-origin',
+  'qwikMaterial/formFieldConnectedOrigin',
 );
 
 /**

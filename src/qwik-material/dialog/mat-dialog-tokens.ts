@@ -8,14 +8,14 @@ import type {MatDialogRef} from './mat-dialog-ref';
  * time; the container provides it. Consumers read via
  * `const data = useContext(MAT_DIALOG_DATA) as MyShape;`.
  */
-export const MAT_DIALOG_DATA = createContextId<unknown>('qwik-material/dialog-data');
+export const MAT_DIALOG_DATA = createContextId<unknown>('qwikMaterial/dialogData');
 
 /**
  * Default options merged into every open() config. Provided by
  * <QwikMaterialProvider matDialogDefaults={…}>. Optional; defaults to {}.
  */
 export const MAT_DIALOG_DEFAULT_OPTIONS = createContextId<Partial<MatDialogConfig>>(
-  'qwik-material/dialog-default-options',
+  'qwikMaterial/dialogDefaultOptions',
 );
 
 /**
@@ -24,7 +24,7 @@ export const MAT_DIALOG_DEFAULT_OPTIONS = createContextId<Partial<MatDialogConfi
  * Default: createBlockScrollStrategy() from qwik-cdk.
  */
 export const MAT_DIALOG_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
-  'qwik-material/dialog-scroll-strategy',
+  'qwikMaterial/dialogScrollStrategy',
 );
 
 /**
@@ -32,9 +32,7 @@ export const MAT_DIALOG_SCROLL_STRATEGY = createContextId<NoSerialize<() => Scro
  * MatDialogContainer; consumed by MatDialogClose and by the consumer's dialog
  * body if it needs to call ref.close() imperatively.
  */
-export const MAT_DIALOG_REF = createContextId<NoSerialize<MatDialogRef>>(
-  'qwik-material/dialog-ref',
-);
+export const MAT_DIALOG_REF = createContextId<NoSerialize<MatDialogRef>>('qwikMaterial/dialogRef');
 
 /**
  * Internal API surface the container provides so its own descendants
@@ -47,7 +45,7 @@ export interface MatDialogContainerApi {
   decrementActionSectionCount$: import('@qwik.dev/core').QRL<() => void>;
 }
 export const MAT_DIALOG_CONTAINER = createContextId<MatDialogContainerApi>(
-  'qwik-material/dialog-container-api',
+  'qwikMaterial/dialogContainerApi',
 );
 
 /**
@@ -56,5 +54,5 @@ export const MAT_DIALOG_CONTAINER = createContextId<MatDialogContainerApi>(
  * falls back to a frozen `{value: false}` shim when absent.
  */
 export const MAT_ANIMATIONS_DISABLED = createContextId<Signal<boolean>>(
-  'qwik-material/animations-disabled',
+  'qwikMaterial/animationsDisabled',
 );

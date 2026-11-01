@@ -67,4 +67,4 @@ export const DEFAULT_PAGINATOR_INTL: MatPaginatorIntl = {
  * every `MatPaginator` in that subtree's strings — see this file's module doc comment. Falls back
  * to {@link DEFAULT_PAGINATOR_INTL} when nothing provides it.
  */
-export const MAT_PAGINATOR_INTL = createContextId<MatPaginatorIntl>('qwik-material/paginator-intl');
+export const MAT_PAGINATOR_INTL = createContextId<MatPaginatorIntl>('qwikMaterial/paginatorIntl');

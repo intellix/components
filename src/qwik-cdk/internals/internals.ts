@@ -61,4 +61,4 @@ export interface QwikCdkInternals {
  * (`useStore` in `<QwikCdkRoot>`) makes mutation of `keyboardDispatcher` /
  * `outsideClickDispatcher` from `useVisibleTask$` survive the SSR→CSR resume.
  */
-export const QWIK_CDK = createContextId<QwikCdkInternals>('qwik-cdk/internals');
+export const QWIK_CDK = createContextId<QwikCdkInternals>('qwikCdk/internals');

@@ -36,5 +36,5 @@ export interface MatAccordionState {
  * `useContext()` fallback and treat `undefined` as "standalone".
  */
 export const MAT_ACCORDION_STATE = createContextId<Signal<MatAccordionState | undefined>>(
-  'qwik-material/accordion-state',
+  'qwikMaterial/accordionState',
 );

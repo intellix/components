@@ -44,7 +44,7 @@ export function createScrollStrategyOptions(): ScrollStrategyOptions {
 }
 
 export const SCROLL_STRATEGY_OPTIONS = createContextId<ScrollStrategyOptions>(
-  'qwik-cdk/scroll-strategy-options',
+  'qwikCdk/scrollStrategyOptions',
 );
 
 export function useScrollStrategyOptions(): ScrollStrategyOptions {

@@ -39,5 +39,5 @@ export const MAT_CHECKBOX_CONFIG_DEFAULTS: MatCheckboxConfig = {
  * directly in advanced scenarios.
  */
 export const MAT_CHECKBOX_CONFIG = createContextId<MatCheckboxConfig>(
-  'qwik-material/checkbox-config',
+  'qwikMaterial/checkboxConfig',
 );

@@ -22,5 +22,5 @@ export interface MatExpansionConfig {
  * releases, matching every other `qwik-material` config token.
  */
 export const MAT_EXPANSION_CONFIG = createContextId<MatExpansionConfig>(
-  'qwik-material/expansion-config',
+  'qwikMaterial/expansionConfig',
 );

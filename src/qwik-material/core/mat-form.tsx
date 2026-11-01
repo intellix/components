@@ -15,7 +15,7 @@ export interface MatFormState {
   submitted: boolean;
 }
 
-export const MAT_FORM = createContextId<MatFormState>('qwik-material/form');
+export const MAT_FORM = createContextId<MatFormState>('qwikMaterial/form');
 
 const NO_FORM: MatFormState = {submitted: false};
 

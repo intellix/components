@@ -32,5 +32,5 @@ export interface MatSlideToggleConfig {
  * inject it directly in advanced scenarios.
  */
 export const MAT_SLIDE_TOGGLE_CONFIG = createContextId<MatSlideToggleConfig>(
-  'qwik-material/slide-toggle-config',
+  'qwikMaterial/slideToggleConfig',
 );

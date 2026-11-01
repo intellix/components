@@ -369,4 +369,4 @@ export function createFocusMonitor(
  * `focusVia()` (programmatic focus with an explicit origin) or one shared
  * instance across a subtree, neither of which `useFocusOrigin()` covers.
  */
-export const FOCUS_MONITOR = createContextId<FocusMonitor>('qwik-cdk/focus-monitor');
+export const FOCUS_MONITOR = createContextId<FocusMonitor>('qwikCdk/focusMonitor');

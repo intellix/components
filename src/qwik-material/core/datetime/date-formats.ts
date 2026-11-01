@@ -29,4 +29,4 @@ export type MatDateFormats = {
  * — no scenario needs a non-default format bag — so this is the always-available extension
  * point for later, matching upstream's naming for drop-in familiarity.
  */
-export const MAT_DATE_FORMATS = createContextId<MatDateFormats>('qwik-material/date-formats');
+export const MAT_DATE_FORMATS = createContextId<MatDateFormats>('qwikMaterial/dateFormats');

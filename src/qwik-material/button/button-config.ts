@@ -36,4 +36,4 @@ export interface MatButtonConfig {
  * Provided by `<QwikMaterialProvider matButtonConfig={…}>`. Consumed by
  * every MatButton variant via `useContext(MAT_BUTTON_CONFIG, DEFAULTS)`.
  */
-export const MAT_BUTTON_CONFIG = createContextId<MatButtonConfig>('qwik-material/button-config');
+export const MAT_BUTTON_CONFIG = createContextId<MatButtonConfig>('qwikMaterial/buttonConfig');

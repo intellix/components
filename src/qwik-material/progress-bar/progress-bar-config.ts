@@ -20,5 +20,5 @@ export interface MatProgressBarConfig {
  * directly in advanced scenarios.
  */
 export const MAT_PROGRESS_BAR_CONFIG = createContextId<MatProgressBarConfig>(
-  'qwik-material/progress-bar-config',
+  'qwikMaterial/progressBarConfig',
 );

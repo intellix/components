@@ -23,5 +23,5 @@ export interface MatProgressSpinnerConfig {
  * consumers may inject it directly in advanced scenarios.
  */
 export const MAT_PROGRESS_SPINNER_CONFIG = createContextId<MatProgressSpinnerConfig>(
-  'qwik-material/progress-spinner-config',
+  'qwikMaterial/progressSpinnerConfig',
 );

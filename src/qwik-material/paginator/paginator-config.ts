@@ -33,5 +33,5 @@ export interface MatPaginatorConfig {
  * remain stable across releases.
  */
 export const MAT_PAGINATOR_CONFIG = createContextId<MatPaginatorConfig>(
-  'qwik-material/paginator-config',
+  'qwikMaterial/paginatorConfig',
 );

@@ -52,4 +52,4 @@ export interface OverlayRegistry {
   get(id: string): OverlayEntry | undefined;
 }
 
-export const OVERLAY_REGISTRY = createContextId<OverlayRegistry>('qwik-cdk/overlay-registry');
+export const OVERLAY_REGISTRY = createContextId<OverlayRegistry>('qwikCdk/overlayRegistry');

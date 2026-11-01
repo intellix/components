@@ -29,7 +29,7 @@ export function createDirectionality(initial: Direction = 'ltr'): Directionality
   };
 }
 
-export const DIRECTIONALITY = createContextId<Directionality>('qwik-cdk/directionality');
+export const DIRECTIONALITY = createContextId<Directionality>('qwikCdk/directionality');
 
 export function useDirectionality(): Directionality {
   return useContext(DIRECTIONALITY);

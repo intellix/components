@@ -8,7 +8,7 @@ import type {MatSnackBarRef} from './mat-snack-bar-ref';
  * `const data = useContext(MAT_SNACK_BAR_DATA) as MyShape;` — mirrors
  * `qwik-material/dialog`'s `MAT_DIALOG_DATA`.
  */
-export const MAT_SNACK_BAR_DATA = createContextId<unknown>('qwik-material/snack-bar-data');
+export const MAT_SNACK_BAR_DATA = createContextId<unknown>('qwikMaterial/snackBarData');
 
 /**
  * Default options merged into every `open()`/`openFromComponent()`/
@@ -16,7 +16,7 @@ export const MAT_SNACK_BAR_DATA = createContextId<unknown>('qwik-material/snack-
  * `<QwikMaterialProvider matSnackBarDefaults={…}>`. Optional; defaults to {}.
  */
 export const MAT_SNACK_BAR_DEFAULT_OPTIONS = createContextId<Partial<MatSnackBarConfig>>(
-  'qwik-material/snack-bar-default-options',
+  'qwikMaterial/snackBarDefaultOptions',
 );
 
 /**
@@ -26,5 +26,5 @@ export const MAT_SNACK_BAR_DEFAULT_OPTIONS = createContextId<Partial<MatSnackBar
  * that need to call `ref.dismissWithAction()` imperatively.
  */
 export const MAT_SNACK_BAR_REF = createContextId<NoSerialize<MatSnackBarRef> | undefined>(
-  'qwik-material/snack-bar-ref',
+  'qwikMaterial/snackBarRef',
 );
