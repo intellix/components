@@ -13,8 +13,10 @@ import {diffNodes, type DomNode} from './structural-diff.js';
  *
  * The comparison is structural: tags, nesting, classes, attributes and text.
  * Framework bookkeeping is stripped (Angular `_ngcontent-*`, `ng-reflect-*`;
- * Qwik `q:*`, `on:*`, comments). Auto-generated ids keep their shape but
- * have digits replaced with `#`, because Angular's counters are app-global.
+ * Qwik `q:*`, `q-e:*`/`q-ep:*`/`q-d:*`/`q-dp:*`/`q-w:*`/`q-wp:*` (v2's
+ * renamed-from-`on:*`/`on-document:*`/`on-window:*` event-listener
+ * attributes), comments). Auto-generated ids keep their shape but have
+ * digits replaced with `#`, because Angular's counters are app-global.
  */
 
 const ANGULAR_URL = `${process.env['ANGULAR_URL'] ?? 'http://localhost:4200'}/qwik-parity`;
@@ -36,10 +38,31 @@ const IGNORE_ATTR_PREFIXES = [
   '_ngcontent-',
   '_nghost-',
   'ng-reflect-',
-  'q:',
+  // Qwik v1 event-listener attributes (`on:click`, `on-document:click`,
+  // `on-window:click`). Superseded by the `q-e:`/`q-d:`/`q-w:` scheme
+  // below on v2, but harmless to keep listed (nothing emits these
+  // anymore post-migration; kept for the historical record and in case
+  // any cached v1 SSR output is ever compared).
   'on:',
   'on-document:',
   'on-window:',
+  // `q:` SSR/resumability bookkeeping (`q:key`, `q:id`, `q:render`, ...).
+  // NOTE: this is a literal "q" + colon prefix — it does NOT match v2's
+  // event-listener attributes below, which use a hyphen before the colon
+  // (`q-e:`, not `q:e:`), so those need their own entries.
+  'q:',
+  // Qwik v2 event-listener attributes — renamed from v1's `on:`/
+  // `on-document:`/`on-window:` scheme (https://next.qwik.dev/docs/upgrade/):
+  // `q-e:` element-scoped, `q-d:` document-scoped, `q-w:` window-scoped,
+  // each with a `q-ep:`/`q-dp:`/`q-wp:` passive-listener variant (new in
+  // v2, no v1 equivalent). Same category as `q:`/v1's `on:` above: Qwik
+  // event-dispatch bookkeeping with no Angular equivalent attribute.
+  'q-e:',
+  'q-ep:',
+  'q-d:',
+  'q-dp:',
+  'q-w:',
+  'q-wp:',
   // Qwik-specific declarative event-handling bookkeeping (e.g.
   // `preventdefault:click`, `stoppropagation:click`) — these tell
   // qwikloader's dispatcher to call `event.preventDefault()`/
