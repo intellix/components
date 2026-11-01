@@ -454,6 +454,28 @@ independent of whatever remains unresolved above.**
   independent of Angular) under a quiescent system to get a real before/after failure-rate
   number, since reproduction rate is confirmed non-constant under CPU contention.
 
+## Qwik v2 regression: stale-blur race clobbering `mat-focused` (2026-11-01)
+
+`interval`/`custom-options` both failed after clicking a time option: `mat-focused`/
+`mdc-text-field--focused`/`mdc-line-ripple--active` all missing from the form field afterward,
+despite `document.activeElement` never actually leaving the input the whole time. Same root
+cause and fix as `qwik-material/select/mat-select.tsx`'s `onHostBlur$` — see that file's own
+SYNC.md "Qwik v2 regressions" section for the full write-up (clicking an option genuinely blurs
+the input first — mousedown on a non-focusable `<mat-option>` — then the click handler
+immediately re-focuses it; the blur handler and the resulting focus event's own handler are
+separate `$()` QRLs that can resolve out of order on their first-ever invocation under Qwik v2).
+`mat-timepicker-input.tsx`'s `handleBlur$` now checks `document.activeElement` before clobbering
+`formField.focused` — NOT before `handleTimepickerBlur`/`empty`/`shouldLabelFloat`, which should
+still apply on a genuine blur regardless of how fast focus bounces back.
+
+Also benefited, with no code change needed here, from the shared `qwik-cdk/overlay` fix for the
+reparented-overlay teardown crash (`overlay-ref.ts` — this component's `withPopoverLocation
+('inline')` makes it a reparented consumer too; see `qwik-cdk/overlay/SYNC.md` and
+`qwik-material/select/SYNC.md`).
+
+material-timepicker: 6/6 scenarios passing (twice each); only `min-max` (above, predates this
+v2 pass) still fails.
+
 ## Deviations from upstream (summary)
 
 1. No `MAT_DATE_LOCALE`/live locale switching — `createNativeDateAdapter`'s
