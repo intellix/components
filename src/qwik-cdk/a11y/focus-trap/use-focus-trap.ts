@@ -112,13 +112,15 @@ export function useFocusTrap(
     // Auto-focus if requested. Mirrors CdkDialogContainer._trapFocus(), which
     // defers one render past attach (afterNextRender) so the trap's content
     // has settled before moving focus.
+    let cancelled = false;
     if (options.autoFocus !== undefined) {
       previouslyFocusedElement.value = document.activeElement as HTMLElement;
       const autoFocus = options.autoFocus;
-      Promise.resolve().then(() => applyAutoFocus(element, trap, checker, autoFocus));
+      scheduleAutoFocus(element, trap, checker, autoFocus, () => cancelled);
     }
 
     cleanup(() => {
+      cancelled = true;
       trap.destroy();
       trapInstance.value = null;
 
@@ -145,6 +147,45 @@ export function useFocusTrap(
     trapInstance,
     enabled,
   };
+}
+
+/**
+ * Runs `applyAutoFocus` once the trap element's content has actually landed in the DOM,
+ * retrying across animation frames in the meantime (bounded to ~1s, same budget as
+ * `overlay-host.tsx`'s popover bootstrap fix). Mirrors `CdkDialogContainer._trapFocus()`'s
+ * one-tick defer (`afterNextRender`) — a single microtask was enough under Qwik v1 for the
+ * trap's slotted content (e.g. a dialog's own heading/tabbable children) to have committed,
+ * but under v2's vnode renderer that commit can land one or more frames later than the `ref`
+ * that gives this hook its `element`, so a same-tick query can race ahead of empty children
+ * (confirmed live: `auto-focus-first-heading` queried for an `h2` that existed moments later
+ * but not yet at that microtask). `false`/`'dialog'` doesn't depend on descendant content
+ * (it only moves focus to the trap element itself), so it skips the wait entirely.
+ */
+function scheduleAutoFocus(
+  element: HTMLElement,
+  trap: FocusTrap,
+  checker: InteractivityChecker,
+  autoFocus: AutoFocusTarget,
+  isCancelled: () => boolean,
+): void {
+  if (autoFocus === false || autoFocus === 'dialog') {
+    Promise.resolve().then(() => {
+      if (!isCancelled()) applyAutoFocus(element, trap, checker, autoFocus);
+    });
+    return;
+  }
+
+  let attempts = 0;
+  const MAX_ATTEMPTS = 60; // ~1s at 60fps
+  const attempt = () => {
+    if (isCancelled()) return;
+    if (element.childElementCount === 0 && ++attempts < MAX_ATTEMPTS) {
+      requestAnimationFrame(attempt);
+      return;
+    }
+    applyAutoFocus(element, trap, checker, autoFocus);
+  };
+  Promise.resolve().then(attempt);
 }
 
 /** Mirrors `CdkDialogContainer._trapFocus()`'s switch over `DialogConfig.autoFocus`. */

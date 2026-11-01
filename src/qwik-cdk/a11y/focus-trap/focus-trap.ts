@@ -52,6 +52,7 @@ export function createFocusTrap(
   let endAnchor: HTMLElement | null = null;
   let hasAttachedAnchors = false;
   let enabled = true;
+  let destroyed = false;
 
   /** Toggle tabindex (presence, not just value) so arrow-key nav doesn't hit the anchor. */
   function toggleAnchorTabIndex(isEnabled: boolean, anchor: HTMLElement) {
@@ -136,6 +137,7 @@ export function createFocusTrap(
     },
 
     destroy() {
+      destroyed = true;
       if (startAnchor) {
         startAnchor.removeEventListener('focus', startAnchorListener);
         startAnchor.remove();
@@ -227,7 +229,20 @@ export function createFocusTrap(
   };
 
   if (!(options?.deferAnchors ?? false)) {
-    trap.attachAnchors();
+    // `element.parentNode` can still be `null` here: under Qwik v2's vnode
+    // renderer, a `ref` callback/signal can populate before the node is
+    // actually committed into the live DOM (the commit lands a frame later),
+    // unlike v1 where the DOM insertion and the ref were effectively
+    // simultaneous. `attachAnchors()` is a no-op when there's no parent to
+    // insert into, so retry across animation frames (same pattern as
+    // `overlay-host.tsx`'s `popover` bootstrap fix) until it either succeeds
+    // or the trap is destroyed first (e.g. the dialog closes before its
+    // first paint - rare, but possible under a fast scripted close).
+    const tryAttach = () => {
+      if (destroyed || trap.attachAnchors()) return;
+      requestAnimationFrame(tryAttach);
+    };
+    tryAttach();
   }
 
   return trap;
