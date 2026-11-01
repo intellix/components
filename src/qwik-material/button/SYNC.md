@@ -123,3 +123,12 @@ growing one bespoke prop per directive:
 Verified: the full `specs/material-button` suite, `specs/examples`'s `mat-menu`/`mat-tooltip`/
 `mat-badge`/`mat-stepper` examples, and `specs/material-paginator` all stay green across this
 change (nothing in the existing API surface changed shape — only additions).
+
+## Directive-hook handlers forwarded via `useOn()` (Qwik v2, 2026-11-01)
+
+The button family forwards `onMouseDown$`/`onMouseEnter$`/`onMouseLeave$`/`onKeyDown$`/
+`onFocusIn$`/`onFocusOut$` with `useForwardedHostHandlers(props)` (core/host-props.ts) instead of
+JSX props on the root. The root also carries `useOn()` listeners for the same events (ripple
+loader, focus origin), and under Qwik v2 those REPLACE a same-named JSX-prop handler on that element
+rather than joining it: `useMatTooltip()`'s `mouseenter` on a `<MatButton>` never ran (button's
+`q-e:mouseenter` held only the ripple loader's entries). `onClick$` is unaffected (no `useOn('click')`).
