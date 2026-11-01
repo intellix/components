@@ -279,3 +279,12 @@ flagged here with evidence for whoever picks it up next. A real fix likely needs
 relying on index-based matching (match by the chip's own stable key/id instead) or to recompute
 the correction unconditionally on every relevant render rather than only reactively via an
 event.
+
+## Ripple-disabled correction made robust (Qwik v2, 2026-11-01)
+
+`MatChipSet`/`MatChipGrid`'s imperative `mat-ripple-loader-disabled` correction raced Qwik v2's
+re-render after a chip was added/removed: the re-render could re-apply the attribute after the
+event-scheduled correction, and the correction's index-based matching ran while an added/removed
+element was still lagging in the DOM (`grid-input` failed ~1 in 3, `removable` ~1 in 10, both 0 on
+Qwik 1). The correction now also runs when the chip/row list length changes, and retries on the next
+frame (up to 10) until the DOM and the array agree in length. 110/110 over 10 repeats.

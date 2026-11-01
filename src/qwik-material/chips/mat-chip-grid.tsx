@@ -4,6 +4,7 @@ import {
   useContext,
   useOn,
   useSignal,
+  useTask$,
   type JSXOutput,
   type QRL,
   type Signal,
@@ -423,7 +424,7 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
   const fixupRippleDisabled$ = $(() => {
     const root = containerRef.value;
     if (!root || !isBrowser) return;
-    requestAnimationFrame(() => {
+    const apply = (attempt: number) => {
       // Re-read `props.rows`/the rows context LIVE here, rather than closing over the
       // outer-scope `rows` const: `useOn()`'s registered handler reference can go stale
       // (confirmed live — a sibling re-render that changes `rows` without ALSO re-triggering
@@ -433,6 +434,12 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
       const liveRows = Array.isArray(props.rows) ? props.rows : props.rows.value;
       const liveDisabled = props.disabled ?? false;
       const rowEls = queryRowEls(root);
+      // Index-based matching is only valid once the DOM caught up with the array (an added or
+      // removed row can lag a frame or two under Qwik v2); retry briefly.
+      if (rowEls.length !== liveRows.length && attempt < 10) {
+        requestAnimationFrame(() => apply(attempt + 1));
+        return;
+      }
       rowEls.forEach((el, i) => {
         const def = liveRows[i];
         if (!def) return;
@@ -443,11 +450,19 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
           el.removeAttribute('mat-ripple-loader-disabled');
         }
       });
-    });
+    };
+    requestAnimationFrame(() => apply(0));
   });
   useOn('pointerdown', fixupRippleDisabled$);
   useOn('keydown', fixupRippleDisabled$);
   useOn('focusin', fixupRippleDisabled$);
+  // Also after the row list changes (always the result of an interaction, e.g. Enter adding
+  // "Mango"): under Qwik v2 that re-render can re-apply the attribute AFTER the keydown-scheduled
+  // correction already ran, leaving the original rows ripple-disabled intermittently.
+  useTask$(({track}) => {
+    track(() => (Array.isArray(props.rows) ? props.rows : props.rows.value).length);
+    if (isBrowser) fixupRippleDisabled$();
+  });
 
   const classes = [
     'mat-mdc-chip-set',

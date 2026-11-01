@@ -1,4 +1,4 @@
-import {$, component$, useOn, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
+import {$, component$, useOn, useSignal, useTask$, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {isBrowser} from '@qwik.dev/core/build';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatChip, type MatChipRemoveButtonDef} from './mat-chip';
@@ -135,7 +135,7 @@ export const MatChipSet = component$<MatChipSetProps>(props => {
     // Deferred to the next frame: this chip-set's own re-render (triggered by the SAME
     // event bubbling to here) must land first, or `querySelectorAll` below could still see
     // last render's elements mid-removal.
-    requestAnimationFrame(() => {
+    const apply = (attempt: number) => {
       // Re-read `props.chips`/`props.disabled` LIVE here, rather than closing over the
       // outer-scope `chips`/`disabled` consts: `useOn()`'s registered handler reference can
       // go stale (confirmed live — a sibling re-render that changes `chips` without ALSO
@@ -147,6 +147,12 @@ export const MatChipSet = component$<MatChipSetProps>(props => {
       const liveChips = props.chips;
       const liveDisabled = props.disabled ?? false;
       const chipEls = Array.from(root.querySelectorAll('mat-chip'));
+      // Index-based matching is only valid once the DOM caught up with the array (a removed
+      // chip's element can still be present for a frame or two under Qwik v2); retry briefly.
+      if (chipEls.length !== liveChips.length && attempt < 10) {
+        requestAnimationFrame(() => apply(attempt + 1));
+        return;
+      }
       chipEls.forEach((el, i) => {
         const def = liveChips[i];
         if (!def) return;
@@ -162,11 +168,19 @@ export const MatChipSet = component$<MatChipSetProps>(props => {
           el.removeAttribute('mat-ripple-loader-disabled');
         }
       });
-    });
+    };
+    requestAnimationFrame(() => apply(0));
   });
   useOn('pointerdown', fixupRippleDisabled$);
   useOn('keydown', fixupRippleDisabled$);
   useOn('focusin', fixupRippleDisabled$);
+  // Also after the chip list changes (always the result of an interaction, e.g. removing a
+  // chip): under Qwik v2 that re-render can re-apply the attribute AFTER the event-scheduled
+  // correction already ran (same race as MatChipGrid's).
+  useTask$(({track}) => {
+    track(() => props.chips.length);
+    if (isBrowser) fixupRippleDisabled$();
+  });
 
   return (
     <mat-chip-set
