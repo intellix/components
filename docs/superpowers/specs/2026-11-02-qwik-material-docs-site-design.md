@@ -44,3 +44,50 @@ component in Qwik: overview guide, live examples with source, API reference, and
 ## Non-goals
 
 Versioned docs, search (later), harness/testing docs (harnesses are not ported).
+
+## Phase 1 implementation notes (2026-11-02)
+
+Phase 1 is implemented in `src/qwik-material-docs/` (app), `src/qwik-material-examples/` (the
+shared example-module package the "Examples" decision above called for), and
+`src/qwik-cdk-parity-tests/specs/docs-site/` (smoke suite). See
+`src/qwik-material-docs/README.md` for how to run/build/extend it. Notable deviations from the
+plan as written above:
+
+- **35 components, not 34.** The design doc's rough count was off by one — `input` is its own
+  material.angular.dev component page, separate from `form-field` (verified against
+  `src/qwik-material/*` — 35 entry points excluding `core`). The CDK section covers all 13 of
+  `qwik-cdk`'s real entry points (`a11y`, `accordion`, `bidi`, `coercion`, `dialog`, `keycodes`,
+  `layout`, `overlay`, `platform`, `portal`, `stepper`, `table`, `tree`).
+- **Static build does NOT use `@qwik.dev/router`'s `ssgAdapter`.** Running any real page through
+  it fails with `Code(Q14)` ("QRL can not be dynamically resolved") the instant `<QwikCdkRoot>` is
+  anywhere in the tree — reproduced on a one-line `<div>Hello</div>` homepage with no other
+  content, confirmed via bisection down to just `<QwikCdkRoot>`'s `useStore`/`useContextProvider`
+  setup rendering a bare `<Slot/>` (every other piece — its `useVisibleTask$`, inline bootstrap
+  `<script>`, `<OverlayContainerOutlet/>`, the conditional `.scss` side-effect import — individually
+  disabled, still fails). An equivalent-shaped synthetic stand-in component defined inline (not
+  imported from `qwik-cdk`) renders through the same SSG pipeline with no error, so this looks like
+  a real, not-yet-root-caused interaction between the SSG worker's module loading and something
+  specific to `qwik-cdk/root.tsx`'s own module graph — `<QwikCdkRoot>` had never been exercised
+  through a true build-time SSG pass anywhere in this repo before (`qwik-cdk-dev-app` only ever
+  does per-request SSR, which is unaffected). Worked around with a hand-rolled prerender script
+  (`scripts/prerender.mjs`) that drives the same per-request SSR path (`createQwikRouter` Node
+  middleware) `qwik-cdk-dev-app` already uses successfully, producing the identical output shape
+  (static `index.html` per route under `dist/`). `vite.ssg.config.ts` is kept in the app for
+  reference/documentation and in case a future `@qwik.dev/router` patch fixes the underlying issue.
+- **The top Overview/API/Examples tab bar is plain `<a>` navigation styled with qwik-material's own
+  `mat-mdc-tab-*` CSS classes, not a live `<MatTabNav>`/`<MatTabLink>`.** Those components own
+  their entire host element and have no `href` prop (by design — see "Composing directives" in
+  `qwik-material/README.md`), and this is real multi-page navigation between sibling routes, not a
+  same-page panel switch. The sidenav (`ComponentNav`/`CdkNav`) and every card use real
+  `<MatNavList>`/`<MatListItem as="a">`/`<MatCard>` components, which do support `href` — only the
+  section-tab bar needed this compromise.
+- **"Using with Formisch" links to the real, already-proven-DOM-identical
+  `src/qwik-cdk-dev-app/src/routes/formisch/account/` example rather than embedding it live** — it
+  needs `@formisch/qwik`/`valibot` plus `ssr.noExternal`, which the docs app doesn't otherwise
+  depend on; scoped out of Phase 1 rather than widening this app's dependency surface for one guide.
+- **The API JSON generator (`ts-morph`) stays at the syntax level** (prints each prop's literal
+  type-annotation text) rather than resolving through the full TypeScript checker — every prop
+  interface in this codebase already carries an explicit annotation, so this is both simpler (no
+  need to add every dependency package to the ts-morph project to get a valid program) and a more
+  faithful reference (shows exactly what a consumer writes, e.g. `QRL<(event: PointerEvent) =>
+  void>`, not an expanded structural type).

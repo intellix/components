@@ -1,0 +1,571 @@
+/*
+ * Global shell styles for the qwik-material docs site. Layout/typography only — every color
+ * referenced here is one of qwik-material's own `--mat-sys-*` design tokens (core-prebuilt.css),
+ * which are already defined via `light-dark()`, so this site follows the system color scheme for
+ * free, with zero dark-mode-specific rules of its own.
+ */
+
+:root {
+  --docs-sidenav-width: 280px;
+  --docs-toolbar-height: 64px;
+  --docs-max-content-width: 840px;
+  --docs-gutter: 24px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: Roboto, Arial, sans-serif;
+  background: var(--mat-sys-background);
+  color: var(--mat-sys-on-background);
+  font-size: var(--mat-sys-body-large-size, 16px);
+  line-height: var(--mat-sys-body-large-line-height, 1.5);
+}
+
+a {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code,
+pre {
+  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+:not(pre) > code {
+  background: var(--mat-sys-surface-container);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-size: 0.9em;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.docs-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.docs-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  padding: 8px 16px;
+}
+
+.docs-skip-link:focus {
+  left: 8px;
+  top: 8px;
+}
+
+/* ---------- Header / toolbar ---------- */
+
+.docs-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* M3's toolbar styles deliberately don't theme `.mat-primary` the way M2's did (the `color` input
+   is "deprecated in M3 but honoured" per `toolbar-color.ts` — it still adds the class, but M3's
+   own CSS has nothing keyed off it); set the app-bar's surface explicitly instead, same as
+   material.angular.dev's own header does with its `docs-header-background` class. */
+.docs-header .mat-toolbar {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+.docs-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--mat-sys-on-primary);
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.docs-header-brand .docs-header-mark {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+}
+
+.docs-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 16px;
+}
+
+.docs-header-nav a {
+  color: var(--mat-sys-on-primary);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.docs-header-nav a:hover,
+.docs-header-nav a[aria-current='page'] {
+  background: color-mix(in srgb, var(--mat-sys-on-primary) 16%, transparent);
+  text-decoration: none;
+}
+
+.docs-header-spacer {
+  flex: 1 1 auto;
+}
+
+.docs-header-github {
+  color: var(--mat-sys-on-primary);
+}
+
+.docs-header-menu-toggle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .docs-header-nav {
+    display: none;
+  }
+
+  .docs-header-menu-toggle {
+    display: inline-flex;
+  }
+}
+
+/* ---------- Sidenav / component nav ---------- */
+
+.docs-shell-sidenav-container {
+  min-height: calc(100vh - var(--docs-toolbar-height));
+}
+
+.docs-nav {
+  width: var(--docs-sidenav-width);
+  padding: 8px 0 32px;
+}
+
+.docs-nav-category {
+  padding: 16px 16px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.docs-subheader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px var(--docs-gutter);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  font-weight: 500;
+}
+
+.docs-shell-content {
+  padding: var(--docs-gutter);
+  max-width: var(--docs-max-content-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.docs-shell-body {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.docs-shell-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---------- Homepage ---------- */
+
+.docs-hero {
+  background: linear-gradient(135deg, var(--mat-sys-primary), var(--mat-sys-tertiary));
+  color: var(--mat-sys-on-primary);
+  padding: 64px var(--docs-gutter);
+  text-align: center;
+}
+
+.docs-hero h1 {
+  font-size: clamp(32px, 6vw, 56px);
+  margin: 0 0 8px;
+}
+
+.docs-hero p {
+  font-size: 18px;
+  margin: 0 0 24px;
+  opacity: 0.92;
+}
+
+.docs-section {
+  padding: 40px var(--docs-gutter);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.docs-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.docs-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin: 32px 0;
+}
+
+/* ---------- Card grid (component/CDK/guide lists) ---------- */
+
+.docs-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.docs-card-link {
+  display: block;
+  color: inherit;
+}
+
+.docs-card-link:hover {
+  text-decoration: none;
+}
+
+.docs-entry-card {
+  height: 100%;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.docs-card-link:hover .docs-entry-card {
+  box-shadow: var(--mat-sys-level2);
+}
+
+.docs-entry-card h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.docs-entry-card p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.docs-category-block {
+  margin-bottom: 40px;
+}
+
+/* ---------- Component page header + section tabs ---------- */
+
+.docs-page-header {
+  padding: 24px 0 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.docs-page-header h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+}
+
+.docs-page-header .docs-page-summary {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0 0 16px;
+  max-width: 760px;
+}
+
+.docs-section-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.docs-section-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.docs-section-tab:hover {
+  background: var(--mat-sys-surface-container);
+  text-decoration: none;
+}
+
+.docs-section-tab[aria-current='page'] {
+  color: var(--mat-sys-primary);
+  border-bottom-color: var(--mat-sys-primary);
+}
+
+/* ---------- Prose (rendered Markdown) ---------- */
+
+.docs-prose {
+  max-width: var(--docs-max-content-width);
+}
+
+.docs-prose h2 {
+  font-size: 22px;
+  margin-top: 40px;
+  padding-top: 8px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.docs-prose h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.docs-prose h3 {
+  font-size: 18px;
+  margin-top: 28px;
+}
+
+.docs-prose p,
+.docs-prose li {
+  font-size: 15px;
+}
+
+.docs-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+.docs-prose th,
+.docs-prose td {
+  border: 1px solid var(--mat-sys-outline-variant);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.docs-prose th {
+  background: var(--mat-sys-surface-container);
+}
+
+.docs-prose pre {
+  margin: 16px 0;
+  overflow-x: auto;
+}
+
+.docs-prose pre.shiki,
+pre.docs-code {
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ---------- Example embed ---------- */
+
+.docs-example {
+  margin: 24px 0 32px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.docs-example-preview {
+  padding: 24px;
+  background: var(--mat-sys-surface);
+}
+
+.docs-example-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 4px 16px;
+  background: var(--mat-sys-surface-container-low);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.docs-example-toolbar .docs-example-id {
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.docs-example-source {
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.docs-example-source-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px 0;
+  background: var(--mat-sys-surface-container-low);
+}
+
+.docs-example-source-tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px 6px 0 0;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+.docs-example-source-tab[aria-selected='true'] {
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
+
+.docs-example-source pre {
+  margin: 0;
+  border-radius: 0;
+  max-height: 480px;
+}
+
+.docs-example-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 24px;
+  background: var(--mat-sys-surface-container-low);
+  border: 1px dashed var(--mat-sys-outline);
+  border-radius: 12px;
+  margin: 24px 0 32px;
+}
+
+.docs-example-placeholder .docs-example-placeholder-badge {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+/* ---------- API reference ---------- */
+
+.docs-api-group {
+  margin-bottom: 40px;
+}
+
+.docs-api-group h2 {
+  font-size: 20px;
+}
+
+.docs-api-member {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.docs-api-member-header {
+  padding: 12px 16px;
+  background: var(--mat-sys-surface-container-low);
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.docs-api-member-body {
+  padding: 4px 16px 12px;
+}
+
+.docs-api-member-summary {
+  font-size: 14px;
+  color: var(--mat-sys-on-surface-variant);
+  margin: 8px 0;
+}
+
+.docs-api-prop-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.docs-api-prop-table th,
+.docs-api-prop-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  vertical-align: top;
+}
+
+.docs-api-prop-table code {
+  font-size: 12px;
+}
+
+.docs-api-optional {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 11px;
+}
+
+details.docs-api-details > summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--mat-sys-primary);
+  margin-top: 4px;
+}
+
+/* ---------- Footer ---------- */
+
+.docs-footer {
+  padding: 32px var(--docs-gutter);
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 13px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+/* ---------- Not-yet-adapted overview placeholder ---------- */
+
+.docs-overview-placeholder {
+  padding: 24px;
+  background: var(--mat-sys-surface-container-low);
+  border-radius: 12px;
+  border: 1px dashed var(--mat-sys-outline);
+}
+
+@media (max-width: 900px) {
+  .docs-shell-body {
+    flex-direction: column;
+  }
+
+  .docs-nav {
+    width: 100%;
+  }
+}
