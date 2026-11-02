@@ -558,3 +558,19 @@ empty text once enough unrelated re-renders had landed. Same root cause, same fi
 `menu/menu-panel.tsx`'s and `select/mat-select-panel.tsx`'s existing `cloneJsxForReuse()` calls
 ("rendering the exact same `JSXOutput` object a SECOND time corrupts it" — `core/jsx-reuse.ts`) —
 `MatIdScope` now returns `cloneJsxForReuse(props.content)` instead of `props.content` directly.
+
+## Fixed: `id-scope.tsx`'s `NO_SCOPE` sentinel was a `Symbol`, which crashes real SSR with `Code(Q20)` (2026-11-02)
+
+`useAssignedId()`'s own `NO_SCOPE` private sentinel (added for the `useContext(X, undefined)`
+always-throws fix, see this file's doc comment) used a `Symbol()`, which Qwik's SSR serializer
+can't write out if that sentinel is ever actually stored (a `<MatHint>`/`<MatError>` genuinely
+rendered with no `MatIdScope`/`MatFormField` ancestor) — throws `Code(Q20)`
+(`QError.serializeErrorUnknownType`) the moment that happens through a real SSR pass, not just
+vitest's JSDOM-based unit tests. Root-caused and fixed alongside the identical bug in
+`core/mat-form-field-control.ts`'s `NO_FORM_FIELD`/`NO_CONNECTED_ORIGIN` sentinels — see that
+file's SYNC.md entry for the full "why" (reading Qwik core's own `useContext` source). Fix here
+is the same: `NO_SCOPE` is now `Object.freeze({})`, not `Symbol('no-id-scope')`. Nothing in this
+project's currently-shipped routes exercises `useAssignedId()`'s standalone path through a real
+SSR build, so this was a preemptive fix (same latent bug, not yet observed crashing anything),
+unlike `NO_FORM_FIELD`/`NO_CONNECTED_ORIGIN`, which crashed `qwik-material-docs`'s real
+`/components/autocomplete/overview/` page for real.

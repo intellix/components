@@ -274,8 +274,25 @@ export const MAT_FORM_FIELD_CONTROL_STATE = createContextId<MatFormFieldControlS
 /** Sentinel passed as `useContext`'s default — see {@link useOptionalFormFieldControlState}'s
  *  own doc comment for why the literal value `undefined` can't be used as that default
  *  directly. Module-private (mirrors `form-field/id-scope.ts`'s identical `NO_SCOPE` fix for
- *  `MAT_ASSIGNED_ID`). */
-const NO_FORM_FIELD = Symbol('no-form-field-control-state');
+ *  `MAT_ASSIGNED_ID`).
+ *
+ *  A frozen plain object, NOT a `Symbol` (confirmed live, a real Qwik core behavior, not a
+ *  guess): `useContext(ctx, defaultValue)`'s own implementation, when the context is genuinely
+ *  missing, calls its internal `set(defaultValue)` — which stores the default into the
+ *  component's serializable sequential-scope slot so the client can resume without re-resolving
+ *  it. Qwik's SSR serializer only recognizes a small whitelist of its OWN well-known internal
+ *  `Symbol`s (`NEEDS_COMPUTATION`, `STORE_ALL_PROPS`, `_UNINITIALIZED`, `explicitUndefined`) —
+ *  any other `Symbol`, including this one, hits its generic `case 'symbol':` fallthrough and
+ *  throws `Code(Q20)` (`QError.serializeErrorUnknownType`). This was latent the whole time this
+ *  used `Symbol(...)` (vitest's JSDOM-based unit tests never exercise real SSR-to-string
+ *  serialization, so it stayed invisible there) and only surfaced building the real docs site:
+ *  `autocomplete-plain-input` is the one example port-wide that genuinely renders a control with
+ *  no `<MatFormField>` ancestor, so it's the only scenario that ever actually stores this
+ *  sentinel instead of a real context value — crashing `/components/autocomplete/overview/`'s
+ *  real SSR (confirmed via `node server/entry.preview.js`-based direct route fetches isolating
+ *  it to exactly that route). A plain object serializes fine (Qwik's generic object support),
+ *  so swapping the sentinel's type — not the comparison logic — fixes it. */
+const NO_FORM_FIELD: unknown = Object.freeze({});
 
 /**
  * Reads the `MAT_FORM_FIELD_CONTROL_STATE` context, or `undefined` for a control used
@@ -324,8 +341,9 @@ export const MAT_FORM_FIELD_CONNECTED_ORIGIN = createContextId<Signal<Element | 
 );
 
 /** Sentinel for {@link useOptionalFormFieldConnectedOrigin} — see
- *  {@link useOptionalFormFieldControlState}'s doc comment for why. */
-const NO_CONNECTED_ORIGIN = Symbol('no-form-field-connected-origin');
+ *  {@link useOptionalFormFieldControlState}'s doc comment for why this is a frozen plain object,
+ *  not a `Symbol` (the same `Code(Q20)` SSR-serialization crash applies here too). */
+const NO_CONNECTED_ORIGIN: unknown = Object.freeze({});
 
 /** Reads `MAT_FORM_FIELD_CONNECTED_ORIGIN`, or `undefined` for a control used standalone (no
  *  `<MatFormField>` ancestor) — same "can't pass literal `undefined` as `useContext`'s default"

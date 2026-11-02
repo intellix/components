@@ -15,6 +15,19 @@ import {NativeSelectControl} from '../_lib/native-select-control';
  * classes (`ng-untouched ng-pristine ng-valid` — no validators, so always valid) are added as
  * plain literal extra classes here, same "hardcode the one fixed resulting DOM state" approach
  * `select-form`'s `<form>` wrapper uses.
+ *
+ * Upstream's own template wraps this checkbox in a literal `<p>` — kept as a structural parity
+ * gap (`EXPECTED_FAILURES['select-disabled']` in `specs/examples-forms/angular-parity.spec.ts`)
+ * rather than reproduced here: `MatCheckbox`'s own first rendered child is a `<div>`
+ * (`.mdc-checkbox`), and per the HTML5 parsing algorithm a `<div>` start tag always closes any
+ * open `<p>` in scope, however deeply nested through an intervening custom element. Once a real
+ * browser parses this page's SSR'd HTML (true for the docs site, unlike the parity harness's
+ * Angular-vs-Qwik structural diffing, which never actually resumes either side), that silent
+ * reparse desyncs Qwik's resumability data for the WHOLE page, not just this widget — confirmed
+ * via the docs site's smoke test crashing with `Code(Q27)` (vnode materialize) on this page. A
+ * `<div>` wrapper here avoids the browser's auto-close entirely, at the cost of this one
+ * wrapper's tag name no longer matching upstream's `<p>` — see `form-field-appearance`'s and
+ * `datepicker-disabled`'s doc comments for the same fix, same reasoning.
  */
 export default component$(() => {
   const disabled = useSignal(false);
@@ -22,7 +35,7 @@ export default component$(() => {
 
   return (
     <select-disabled-example>
-      <p>
+      <div>
         <MatCheckbox
           class="ng-untouched ng-pristine ng-valid"
           checked={disabled.value}
@@ -30,7 +43,7 @@ export default component$(() => {
         >
           Disable select
         </MatCheckbox>
-      </p>
+      </div>
 
       <h4>mat-select</h4>
       <MatFormField

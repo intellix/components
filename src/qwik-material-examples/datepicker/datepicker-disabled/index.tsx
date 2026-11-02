@@ -19,6 +19,17 @@ import {
  * this example needed (upstream's `<input matInput disabled>`/`<mat-datepicker-toggle disabled>`
  * already override independently of each other and of `<mat-datepicker>`'s own state; this
  * port's hook-driven `disabled` had no per-element override at all before).
+ *
+ * Each card below is wrapped in a `<div>`, not upstream's literal `<p>`: `MatFormField`'s own
+ * first rendered child is a `<div class="mat-mdc-text-field-wrapper">`, and per the HTML5
+ * parsing algorithm a `<div>` start tag always closes any open `<p>` in scope, however deeply
+ * nested through an intervening custom element — the same `<p>`/`<div>` HTML5-parsing conflict
+ * as `select-disabled` and `form-field-appearance` (see their doc comments). On the real docs
+ * site, a real browser parses this page's SSR'd HTML and that auto-close desyncs Qwik's
+ * resumability data for the WHOLE page (confirmed via the docs site's smoke test crashing with
+ * `Code(Q27)`, vnode materialize, with `<p>` in place) — `<div>` avoids it, at the cost of this
+ * wrapper's tag no longer matching upstream (already an accepted gap — see
+ * `specs/examples-forms/angular-parity.spec.ts`'s `EXPECTED_FAILURES['datepicker-disabled']`).
  */
 export default component$(() => {
   const value1 = useSignal<Date | null>(null);
@@ -45,7 +56,7 @@ export default component$(() => {
 
   return (
     <datepicker-disabled-example>
-      <p>
+      <div>
         <MatFormField
           label={<MatLabel>Completely disabled</MatLabel>}
           control={
@@ -58,9 +69,9 @@ export default component$(() => {
           iconSuffix={<MatDatepickerToggle picker={picker1} />}
           infixContent={<MatDatepicker picker={picker1} />}
         />
-      </p>
+      </div>
 
-      <p>
+      <div>
         <MatFormField
           label={<MatLabel>Popup disabled</MatLabel>}
           control={
@@ -73,9 +84,9 @@ export default component$(() => {
           iconSuffix={<MatDatepickerToggle picker={picker2} disabled />}
           infixContent={<MatDatepicker picker={picker2} />}
         />
-      </p>
+      </div>
 
-      <p>
+      <div>
         <MatFormField
           label={<MatLabel>Input disabled</MatLabel>}
           control={
@@ -89,7 +100,7 @@ export default component$(() => {
           iconSuffix={<MatDatepickerToggle picker={picker3} />}
           infixContent={<MatDatepicker picker={picker3} />}
         />
-      </p>
+      </div>
     </datepicker-disabled-example>
   );
 });
