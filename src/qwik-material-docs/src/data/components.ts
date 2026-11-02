@@ -46,6 +46,7 @@ export const COMPONENTS: ComponentEntry[] = [
     summary: 'Suggests options as the user types into a text input.',
     devAppId: 'mat-autocomplete',
     entryPoint: 'autocomplete',
+    hasOverviewGuide: true,
   },
   {
     id: 'badge',
@@ -168,6 +169,7 @@ export const COMPONENTS: ComponentEntry[] = [
     summary: 'The native `<input>`/`<textarea>` control used inside `<MatFormField>`.',
     devAppId: 'mat-form-field',
     entryPoint: 'input',
+    hasOverviewGuide: true,
   },
   {
     id: 'list',

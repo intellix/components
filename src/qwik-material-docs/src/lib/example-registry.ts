@@ -8,6 +8,12 @@ import type {Component} from '@qwik.dev/core';
 // runtime and keeps this registry a plain, generatable lookup table.
 // ---------------------------------------------------------------------------------------------
 import Ex_autocomplete_example from '@angular-community/qwik-material-examples/autocomplete/example';
+import Ex_autocomplete_filter from '@angular-community/qwik-material-examples/autocomplete/autocomplete-filter';
+import Ex_autocomplete_display from '@angular-community/qwik-material-examples/autocomplete/autocomplete-display';
+import Ex_autocomplete_require_selection from '@angular-community/qwik-material-examples/autocomplete/autocomplete-require-selection';
+import Ex_autocomplete_auto_active_first_option from '@angular-community/qwik-material-examples/autocomplete/autocomplete-auto-active-first-option';
+import Ex_autocomplete_plain_input from '@angular-community/qwik-material-examples/autocomplete/autocomplete-plain-input';
+import Ex_autocomplete_optgroup from '@angular-community/qwik-material-examples/autocomplete/autocomplete-optgroup';
 import Ex_badge_example from '@angular-community/qwik-material-examples/badge/example';
 import Ex_bottom_sheet_example from '@angular-community/qwik-material-examples/bottom-sheet/example';
 import Ex_button_example from '@angular-community/qwik-material-examples/button/example';
@@ -30,6 +36,9 @@ import Ex_grid_list_example from '@angular-community/qwik-material-examples/grid
 import Ex_icon_example from '@angular-community/qwik-material-examples/icon/example';
 import Ex_list_example from '@angular-community/qwik-material-examples/list/example';
 import Ex_menu_example from '@angular-community/qwik-material-examples/menu/example';
+import Ex_menu_icons from '@angular-community/qwik-material-examples/menu/menu-icons';
+import Ex_menu_position from '@angular-community/qwik-material-examples/menu/menu-position';
+import Ex_menu_nested from '@angular-community/qwik-material-examples/menu/menu-nested';
 import Ex_paginator_example from '@angular-community/qwik-material-examples/paginator/example';
 import Ex_progress_bar_example from '@angular-community/qwik-material-examples/progress-bar/example';
 import Ex_progress_spinner_example from '@angular-community/qwik-material-examples/progress-spinner/example';
@@ -110,6 +119,12 @@ export interface ExampleSourceBundle {
 /** `<pkg>/<route>` -> the live example component. */
 export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>> = {
   'autocomplete/example': Ex_autocomplete_example,
+  'autocomplete/autocomplete-filter': Ex_autocomplete_filter,
+  'autocomplete/autocomplete-display': Ex_autocomplete_display,
+  'autocomplete/autocomplete-require-selection': Ex_autocomplete_require_selection,
+  'autocomplete/autocomplete-auto-active-first-option': Ex_autocomplete_auto_active_first_option,
+  'autocomplete/autocomplete-plain-input': Ex_autocomplete_plain_input,
+  'autocomplete/autocomplete-optgroup': Ex_autocomplete_optgroup,
   'badge/example': Ex_badge_example,
   'bottom-sheet/example': Ex_bottom_sheet_example,
   'button/example': Ex_button_example,
@@ -132,6 +147,9 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'icon/example': Ex_icon_example,
   'list/example': Ex_list_example,
   'menu/example': Ex_menu_example,
+  'menu/menu-icons': Ex_menu_icons,
+  'menu/menu-position': Ex_menu_position,
+  'menu/menu-nested': Ex_menu_nested,
   'paginator/example': Ex_paginator_example,
   'progress-bar/example': Ex_progress_bar_example,
   'progress-spinner/example': Ex_progress_spinner_example,

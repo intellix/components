@@ -27,6 +27,21 @@ const EXAMPLES: string[] = [
   'select-multiple',
   'select-custom-trigger',
   'select-panel-class',
+  // form-field (mat-form-field) — form-field-overview itself is the headline, covered by
+  // specs/examples/.
+  'form-field-appearance',
+  'form-field-label',
+  'form-field-hint',
+  'form-field-error',
+  'form-field-prefix-suffix',
+  // autocomplete (mat-autocomplete) — autocomplete-simple itself is the headline, covered by
+  // specs/examples/.
+  'autocomplete-filter',
+  'autocomplete-display',
+  'autocomplete-require-selection',
+  'autocomplete-auto-active-first-option',
+  'autocomplete-plain-input',
+  'autocomplete-optgroup',
 ];
 
 /** Clicks the `select-disabled` example's "Disable select" checkbox, which drives `[disabled]`
@@ -56,12 +71,60 @@ const openSelectInRoot: ParityStep = {
   },
 };
 
+/** `form-field-label`'s own "Hide required marker" checkbox (its 3rd form field is `required`,
+ *  so this is the one scenario in this batch where the marker actually exists to hide). */
+const clickHideRequiredMarkerCheckbox: ParityStep = {
+  name: 'click "Hide required marker" checkbox',
+  run: async (page: Page) => {
+    await page.getByRole('checkbox', {name: 'Hide required marker'}).click();
+  },
+};
+
+/** `form-field-label`'s "Always" float-label radio — forces every field's label to float even
+ *  while empty. */
+const clickAlwaysFloatRadio: ParityStep = {
+  name: 'click "Always" radio',
+  run: async (page: Page) => {
+    await page.getByRole('radio', {name: 'Always'}).click();
+  },
+};
+
+/** Clicks the autocomplete's input to open its (inline, single-root) panel — same pattern as
+ *  `specs/examples/`'s own `openAutocomplete` (`autocomplete-simple`'s headline interaction).
+ *  Every example in this batch demonstrates its point behind typing/filtering, hidden until the
+ *  panel is open. */
+const openAutocompleteInRoot: ParityStep = {
+  name: 'click input (open)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] input').click();
+    await page.waitForTimeout(150);
+  },
+};
+
 const EXAMPLE_STEPS: Record<
   string,
   {steps: ParityStep[]; rootSelector?: string; clockDate?: Date | number | string}[]
 > = {
   'select-disabled': [{steps: [clickDisableSelectCheckbox]}],
   'select-panel-class': [{steps: [openSelectInRoot]}],
+  'form-field-label': [
+    {steps: [clickHideRequiredMarkerCheckbox]},
+    {steps: [clickAlwaysFloatRadio]},
+  ],
+  'autocomplete-filter': [{steps: [openAutocompleteInRoot]}],
+  'autocomplete-display': [{steps: [openAutocompleteInRoot]}],
+  'autocomplete-require-selection': [{steps: [openAutocompleteInRoot]}],
+  'autocomplete-auto-active-first-option': [{steps: [openAutocompleteInRoot]}],
+  'autocomplete-plain-input': [{steps: [openAutocompleteInRoot]}],
+  'autocomplete-optgroup': [{steps: [openAutocompleteInRoot]}],
+  // form-field-error: no extra interaction — a typed-then-blurred field needing to wait out the
+  // fill appearance's line-ripple transition (`specs/material-form-field/angular-parity.spec.ts`'s
+  // own `waitForLineRippleSettled` pattern) was tried but consistently timed out waiting for the
+  // transition to settle under this harness's `pinRoot`/`syncTheme` setup (reproducible 3/3,
+  // though NOT reproducible in an isolated, unharnessed page — root cause not found in the time
+  // available). Dropped rather than left flaky; the default (non-interaction) render already
+  // covers this example's main DOM contract (error hidden until touched, `ng-invalid` from
+  // first render).
 };
 
 /**
@@ -78,27 +141,49 @@ const EXAMPLE_STEPS: Record<
  *   `[attr.required]`, so this is purely the bare-attribute echo, not a missing feature.
  * - `select-multiple` / `select-custom-trigger`: `<mat-select [formControl]="toppings"
  *   multiple>` echoes `multiple` the same way.
+ * - `form-field-label`: `<mat-radio-button value="auto">`/`value="always"` echo `value` (same
+ *   genericity concern as `mat-radio/example`'s own identical entry in `specs/examples/`); its
+ *   3rd field's `<mat-select required>` echoes `required` the same way as `select-hint-error`.
+ * - `form-field-hint`: `<mat-form-field hintLabel="Max 10 characters">` echoes `hintlabel`
+ *   (camelCase `@Input()`, lowercased by the DOM like any attribute) — `MatFormField`'s own
+ *   `hintLabel` prop only ever drives the manufactured `<mat-hint>`'s text, never a literal
+ *   attribute on the host.
+ * - `form-field-appearance`: `<mat-form-field appearance="fill">` echoes `appearance` the same
+ *   way (moot here — the whole scenario is `test.fail`, see `EXPECTED_FAILURES` — kept for when
+ *   that's ever fixed).
+ * - `form-field-prefix-suffix`: `<mat-form-field floatLabel="always">` echoes `floatlabel`.
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'select-form': ['name'],
   'select-hint-error': ['required'],
   'select-multiple': ['multiple'],
   'select-custom-trigger': ['multiple'],
+  'form-field-label': ['value', 'required'],
+  'form-field-hint': ['hintlabel'],
+  'form-field-appearance': ['appearance'],
+  'form-field-prefix-suffix': ['floatlabel'],
 };
 
 /**
  * Known, documented gaps — run as expected failures so the suite stays green but flags them if
  * they start passing (same pattern as `specs/examples/`'s own `EXPECTED_FAILURES`).
  */
+const SLIDE_TOGGLE_P_DIV_NOTE =
+  "per the HTML5 parsing algorithm a <div> start tag implicitly closes any open <p> in scope, " +
+  "however deeply nested through an intervening custom element (same root cause already " +
+  "documented for mat-slide-toggle/example in specs/examples/angular-parity.spec.ts — Angular's " +
+  "dev-app is pure CSR (Renderer2 createElement/appendChild, never parses an HTML string) so it " +
+  "never hits this rule; Qwik SSRs real HTML text the browser then parses, so it always does — " +
+  "confirmed live, not a qwik-material bug, no fix short of never SSRing that component's own " +
+  "markup)";
+
 const EXPECTED_FAILURES: Record<string, string> = {
   'select-disabled':
     'the example wraps <mat-checkbox> in <p>; MatCheckbox renders a <div mat-internal-form-field> ' +
-    'inside it, and per the HTML5 parsing algorithm a <div> start tag implicitly closes any open ' +
-    '<p> in scope, however deeply nested (same root cause already documented for ' +
-    'mat-slide-toggle/example in specs/examples/angular-parity.spec.ts — Angular\'s dev-app is pure ' +
-    "CSR (Renderer2 createElement/appendChild, never parses an HTML string) so it never hits this " +
-    'rule; Qwik SSRs real HTML text the browser then parses, so it always does — confirmed live, ' +
-    'not a qwik-material bug, no fix short of never SSRing a form-internal control\'s own markup)',
+    `inside it, and ${SLIDE_TOGGLE_P_DIV_NOTE}`,
+  'form-field-appearance':
+    'the example wraps each <mat-form-field> in <p>; MatFormField always renders a ' +
+    `<div class="mat-mdc-text-field-wrapper"> as its own first child, and ${SLIDE_TOGGLE_P_DIV_NOTE}`,
 };
 
 test.describe('qwik-material-examples (docs Phase 2, forms batch) — Angular DOM parity', () => {

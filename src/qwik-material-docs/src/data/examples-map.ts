@@ -19,7 +19,27 @@ export interface PortedExample {
 
 /** devAppId -> ordered list of ported examples (first one is the "headline" example). */
 export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
-  'mat-autocomplete': [{route: 'example', upstreamId: 'autocomplete-simple', pkg: 'autocomplete'}],
+  'mat-autocomplete': [
+    {route: 'example', upstreamId: 'autocomplete-simple', pkg: 'autocomplete'},
+    {route: 'autocomplete-filter', upstreamId: 'autocomplete-filter', pkg: 'autocomplete'},
+    {route: 'autocomplete-display', upstreamId: 'autocomplete-display', pkg: 'autocomplete'},
+    {
+      route: 'autocomplete-require-selection',
+      upstreamId: 'autocomplete-require-selection',
+      pkg: 'autocomplete',
+    },
+    {
+      route: 'autocomplete-auto-active-first-option',
+      upstreamId: 'autocomplete-auto-active-first-option',
+      pkg: 'autocomplete',
+    },
+    {
+      route: 'autocomplete-plain-input',
+      upstreamId: 'autocomplete-plain-input',
+      pkg: 'autocomplete',
+    },
+    {route: 'autocomplete-optgroup', upstreamId: 'autocomplete-optgroup', pkg: 'autocomplete'},
+  ],
   'mat-badge': [{route: 'example', upstreamId: 'badge-overview', pkg: 'badge'}],
   'mat-bottom-sheet': [{route: 'example', upstreamId: 'bottom-sheet-overview', pkg: 'bottom-sheet'}],
   'mat-button': [{route: 'example', upstreamId: 'button-overview', pkg: 'button'}],
@@ -43,7 +63,12 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-grid-list': [{route: 'example', upstreamId: 'grid-list-overview', pkg: 'grid-list'}],
   'mat-icon': [{route: 'example', upstreamId: 'icon-overview', pkg: 'icon'}],
   'mat-list': [{route: 'example', upstreamId: 'list-overview', pkg: 'list'}],
-  'mat-menu': [{route: 'example', upstreamId: 'menu-overview', pkg: 'menu'}],
+  'mat-menu': [
+    {route: 'example', upstreamId: 'menu-overview', pkg: 'menu'},
+    {route: 'menu-icons', upstreamId: 'menu-icons', pkg: 'menu'},
+    {route: 'menu-position', upstreamId: 'menu-position', pkg: 'menu'},
+    {route: 'menu-nested', upstreamId: 'menu-nested', pkg: 'menu'},
+  ],
   'mat-paginator': [{route: 'example', upstreamId: 'paginator-overview', pkg: 'paginator'}],
   'mat-progress-bar': [{route: 'example', upstreamId: 'progress-bar-determinate', pkg: 'progress-bar'}],
   'mat-progress-spinner': [

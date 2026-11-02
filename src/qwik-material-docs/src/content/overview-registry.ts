@@ -14,6 +14,8 @@ import toolbarMd from './overviews/toolbar.md?raw';
 import expansionMd from './overviews/expansion.md?raw';
 import sortMd from './overviews/sort.md?raw';
 import inputMd from './overviews/input.md?raw';
+import menuMd from './overviews/menu.md?raw';
+import autocompleteMd from './overviews/autocomplete.md?raw';
 
 export const OVERVIEW_MARKDOWN: Record<string, string> = {
   button: buttonMd,
@@ -24,4 +26,6 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   expansion: expansionMd,
   sort: sortMd,
   input: inputMd,
+  menu: menuMd,
+  autocomplete: autocompleteMd,
 };
