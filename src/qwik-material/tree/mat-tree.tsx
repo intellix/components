@@ -60,6 +60,17 @@ export interface MatTreeProps<T = unknown> {
    *  structure, never `matTreeNodePadding`, matching every reference
    *  scenario). */
   padding?: boolean;
+  /** Nested variant only. Upstream's nested group-wrapper `<div role="group">` visibility is
+   *  entirely CONSUMER-AUTHORED (part of the `*matTreeNodeDef` template a real consumer writes),
+   *  and real examples use either of two equally valid patterns: an inline `[style.display]`
+   *  binding, or a stylesheet class toggled via `[class.foo]`. Since `<MatTree>` synthesizes this
+   *  wrapper itself (see `SYNC.md` deviation 1), it must pick ONE default — the inline-style
+   *  form (matching every scenario in this port's own parity contract). Set `nestedHiddenClass`
+   *  to switch to the class-toggle form instead (e.g. a real upstream doc example whose own CSS
+   *  defines `.example-tree-invisible { display: none; }`): the wrapper then gets this class
+   *  while collapsed and NO `style` attribute at all, matching that pattern exactly — you own
+   *  defining the class's actual CSS. Omit for the default inline-style behavior. */
+  nestedHiddenClass?: string;
   id?: string;
   class?: string | ReadonlyArray<string>;
   /** Fires when a node without its own toggle (a leaf, in every reference
@@ -330,16 +341,37 @@ export const MatTree = component$((props: MatTreeProps<unknown>) => {
       onClick$: $((event: Event) => handleRowClick(event, key)),
       onKeyDown$: $((event: KeyboardEvent) => handleRowKeyDown(event, key)),
     };
-    if (node.isExpandable) {
-      const groupStyle: string | undefined = show
-        ? everCollapsed[key]
-          ? ''
-          : undefined
-        : 'display: none';
+    // Whether to render the `<div class="mat-tree-node">` row-wrapper + `<div role="group">`
+    // children outlet is driven by whether this node ACTUALLY HAS children — mirroring upstream's
+    // real mechanism (a `*matTreeNodeDef; when: hasChild` template literally authoring that
+    // wrapper markup, matched by testing `node.children.length > 0`, same as `hasChildren` below)
+    // — NOT by the separate, purely-ARIA `node.isExpandable` flag (`meta.isExpandable`/
+    // `ariaExpanded` above), which upstream's own `_isExpandable()` computes independently from
+    // template matching (`this._inputIsExpandable`, the literal `[isExpandable]` binding value —
+    // never inferred from children, confirmed in `src/cdk/tree/tree.ts`). Every existing nested
+    // scenario happens to set `isExpandable: true` on exactly the same nodes that have children,
+    // so this was previously indistinguishable from branching on `node.isExpandable` directly —
+    // but a `childrenAccessor`-style tree (e.g. `tree-nested-child-accessor-overview`) that never
+    // binds `[isExpandable]` at all still needs its children rendered. See `SYNC.md`.
+    const hasChildren = !!node.children?.length;
+    if (hasChildren) {
+      // `nestedHiddenClass` set: a pure, stateless boolean class toggle (no `style` attribute at
+      // all, no history quirk — unlike the style-binding variant below, removing a class leaves
+      // no residual trace, so `everCollapsed` doesn't apply here). Not set: the default inline
+      // `[style.display]` form, including its `style=""` "ever collapsed" quirk — see
+      // `nestedHiddenClass`'s own doc comment and SYNC.md.
+      const groupClass = props.nestedHiddenClass && !show ? props.nestedHiddenClass : undefined;
+      const groupStyle: string | undefined = props.nestedHiddenClass
+        ? undefined
+        : show
+          ? everCollapsed[key]
+            ? ''
+            : undefined
+          : 'display: none';
       return (
         <mat-nested-tree-node key={key} {...rowAttrs}>
           <div class="mat-tree-node">{node.content}</div>
-          <div role="group" style={groupStyle}>
+          <div role="group" class={groupClass} style={groupStyle}>
             {(node.children ?? []).map(child => renderNestedNode(child))}
           </div>
         </mat-nested-tree-node>

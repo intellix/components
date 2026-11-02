@@ -44,6 +44,7 @@ declare module '@qwik.dev/core' {
       'toolbar-overview-example': QwikIntrinsicElements['div'];
       'tooltip-overview-example': QwikIntrinsicElements['div'];
       'tree-flat-child-accessor-overview-example': QwikIntrinsicElements['div'];
+      'tree-nested-child-accessor-overview-example': QwikIntrinsicElements['div'];
       'bottom-sheet-overview-example-sheet': QwikIntrinsicElements['div'];
       'dialog-overview-example-dialog': QwikIntrinsicElements['div'];
     }

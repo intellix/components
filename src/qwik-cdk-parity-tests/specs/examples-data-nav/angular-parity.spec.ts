@@ -49,6 +49,7 @@ const EXAMPLES: string[] = [
   'table-sticky-header',
   'table-sticky-footer',
   'table-sticky-columns',
+  'tree-nested-child-accessor-overview',
 ];
 
 const SETTLE_MS = 150;
@@ -59,6 +60,16 @@ const clickSortHeader = (index: number): ParityStep => ({
   name: `click sort header ${index}`,
   run: async (page: Page) => {
     await page.locator('[data-parity-root] th[mat-sort-header]').nth(index).click({force: true});
+    await page.waitForTimeout(SETTLE_MS);
+  },
+});
+
+/** `tree-nested-child-accessor-overview` — expanding a node via its icon toggle button. Mirrors
+ *  `specs/examples/angular-parity.spec.ts`'s `clickTreeToggle` pattern. */
+const clickTreeToggle = (label: string): ParityStep => ({
+  name: `click toggle "${label}"`,
+  run: async (page: Page) => {
+    await page.locator(`button[aria-label="Toggle ${label}"]`).click();
     await page.waitForTimeout(SETTLE_MS);
   },
 });
@@ -137,6 +148,7 @@ const clickTab = (index: number): ParityStep => ({
 
 const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
   'table-sorting': [{steps: [clickSortHeader(1)]}],
+  'tree-nested-child-accessor-overview': [{steps: [clickTreeToggle('Fruit')]}],
   'tab-group-custom-label': [{steps: [clickTab(1)]}],
   'tab-nav-bar-basic': [{steps: [clickTab(1)]}],
   'tab-group-preserve-content': [{steps: [clickTab(1)]}],

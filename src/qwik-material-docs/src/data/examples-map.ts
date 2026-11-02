@@ -238,6 +238,11 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   ],
   'mat-tree': [
     {route: 'example', upstreamId: 'tree-flat-child-accessor-overview', pkg: 'tree'},
+    {
+      route: 'tree-nested-child-accessor-overview',
+      upstreamId: 'tree-nested-child-accessor-overview',
+      pkg: 'tree',
+    },
   ],
 };
 

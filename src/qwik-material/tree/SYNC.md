@@ -153,3 +153,51 @@ to this port (no shared-`qwik-cdk`-only fix was needed):
    directly, and restores focus to the active row whenever it finds focus sitting on `<body>`
    right after one of its own runs (safe to assume this component's own fault, not a deliberate
    focus-away, since this task only runs in reaction to the tree's own click/keydown handlers).
+
+## Docs Phase 2 (2026-11-02): `tree-nested-child-accessor-overview` port + two `MatTree` fixes
+
+Ported material.angular.dev's [nested-tree `childrenAccessor`
+example](https://material.angular.dev/components/tree/overview#tree-nested-child-accessor-overview)
+(`qwik-material-examples/tree/tree-nested-child-accessor-overview`) — the nested-variant sibling
+of the already-ported `tree-flat-child-accessor-overview`, same `FOOD_DATA`/icon-toggle-button
+composition. Getting this to exact DOM parity needed two small, additive `MatTree` changes, found
+by comparing live against the real Angular dev-app (`specs/examples-data-nav`):
+
+1. **The nested-variant group-wrapper/children structure now renders based on whether a node
+   ACTUALLY HAS children, not on its separate `isExpandable` flag.** Previously `renderNestedNode`
+   branched on `node.isExpandable` for BOTH the `aria-expanded` attribute AND whether to render the
+   `<div class="mat-tree-node">`/`<div role="group">` wrapper at all — indistinguishable from
+   branching on children-presence in every PRE-EXISTING nested scenario (`nested-basic`,
+   `nested-initially-expanded`), which always set `isExpandable: true` on exactly the nodes that
+   have children. But `tree-nested-child-accessor-overview-example.html` never binds
+   `[isExpandable]` at all (confirmed live, same finding as the already-ported flat sibling
+   example) while still needing its children to render — upstream's own `_isExpandable()`
+   (`src/cdk/tree/tree.ts`) returns the literal, never-inferred `[isExpandable]` input value
+   regardless of variant, while the group-wrapper DOM is purely a consequence of which
+   `*matTreeNodeDef` TEMPLATE matched (`when: hasChild`, testing `children.length > 0`) —
+   genuinely decoupled upstream. Fixed by branching the wrapper/children structure on
+   `!!node.children?.length` directly (same value `flatten-tree.ts`'s `FlatTreeEntry.hasChildren`
+   already computes), leaving the separate `aria-expanded` computation (still keyed off
+   `node.isExpandable`) untouched. Zero behavior change for every existing covered scenario
+   (`isExpandable` and "has children" coincided in all of them); regression-verified via
+   `specs/material-tree` (30/30, run 3×).
+2. **New `nestedHiddenClass` prop on `MatTreeProps` — an escape hatch for the nested group
+   wrapper's hide mechanism.** Upstream's nested group-wrapper
+   visibility is entirely consumer-authored (part of the per-node template), and real examples use
+   either of two valid patterns: an inline `[style.display]` binding (what `src/dev-app/qwik-parity/
+   tree.ts`'s OWN hand-authored mirror scenarios use, and what `MatTree` hardcoded as its one
+   synthesized default — see the "Deviations" list above), or a stylesheet class toggle
+   (`[class.example-tree-invisible]="!tree.isExpanded(node)"`, what the REAL
+   `tree-nested-child-accessor-overview-example.html` uses, with `.example-tree-invisible {
+   display: none; }` in its own `.css`). Since `MatTree` must pick one default and can't infer
+   which a given consumer "would have" authored, `nestedHiddenClass?: string` opts a tree INTO the
+   class-toggle form: the wrapper gets this class while collapsed and no `style` attribute at all
+   (no `everCollapsed` quirk either — a class binding has no residual-trace history the way the
+   style binding's `style=""` does). Omitting it keeps the existing default. Also needed: the
+   example passes `class="example-tree"` on `<MatTree>` itself (the real `<mat-tree>` here carries
+   a literal, unbound `class="example-tree"` from its own template — already supported by the
+   existing `class` prop, no library change needed for that half).
+
+Verification: `specs/examples-data-nav` (`tree-nested-child-accessor-overview`, 2/2, run 3×),
+`specs/material-tree` (30/30, run 3× — regression for both `MatTree` changes), `specs/examples`
+(`mat-tree/example`, `mat-paginator/example`, run 3× — unaffected).

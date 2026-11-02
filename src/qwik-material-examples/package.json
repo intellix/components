@@ -149,6 +149,7 @@
     "./tooltip/tooltip-delay": "./tooltip/tooltip-delay/index.tsx",
     "./tooltip/tooltip-modified-defaults": "./tooltip/tooltip-modified-defaults/index.tsx",
     "./tooltip/tooltip-manual": "./tooltip/tooltip-manual/index.tsx",
-    "./tree/example": "./tree/example/index.tsx"
+    "./tree/example": "./tree/example/index.tsx",
+    "./tree/tree-nested-child-accessor-overview": "./tree/tree-nested-child-accessor-overview/index.tsx"
   }
 }

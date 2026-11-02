@@ -1,0 +1,32 @@
+/* Copied from src/components-examples/material/tree/tree-nested-child-accessor-overview/
+   tree-nested-child-accessor-overview-example.css, prefixed with this route's own host tag — see
+   table/table-sorting/table-sorting-example.css's header comment for why a plain CSS import
+   needs this (no component-scoped CSS encapsulation here). `.example-tree-invisible` is also
+   passed to `<MatTree nestedHiddenClass="example-tree-invisible">` — see that example's own
+   `index.tsx` header comment. */
+tree-nested-child-accessor-overview-example .example-tree-invisible {
+  display: none;
+}
+
+tree-nested-child-accessor-overview-example .example-tree ul,
+tree-nested-child-accessor-overview-example .example-tree li {
+  margin-top: 0;
+  margin-bottom: 0;
+  list-style-type: none;
+}
+
+/*
+ * This padding sets alignment of the nested nodes.
+ */
+tree-nested-child-accessor-overview-example .example-tree .mat-nested-tree-node div[role='group'] {
+  padding-left: 40px;
+}
+
+/*
+ * Padding for leaf nodes.
+ * Leaf nodes need to have padding so as to align with other non-leaf nodes
+ * under the same parent.
+ */
+tree-nested-child-accessor-overview-example .example-tree div[role='group'] > .mat-nested-tree-node {
+  padding-left: 40px;
+}
