@@ -1,10 +1,6 @@
 import {$, useTask$, type QRL} from '@qwik.dev/core';
 import type {FieldStore, FormStore} from '@formisch/qwik';
-import {
-  DEFAULT_DATE_ADAPTER,
-  type DateAdapter,
-  type HostRef,
-} from '@angular-community/qwik-material/core';
+import type {HostRef} from '@angular-community/qwik-material/core';
 import {
   setMatDatepickerValue,
   type MatDatepickerHandle,
@@ -201,13 +197,23 @@ export function matSelectBindings(field: AnyField): MatFieldState & {
 
 /** `MatRadioGroup` bindings — controlled `value` + `onChange$`, same "custom control" pattern as
  *  `matSelectBindings`. No separate "touched without changing" case (there's no way to interact
- *  with a radio group without selecting something). */
+ *  with a radio group without selecting something).
+ *
+ *  `value` falls back to `undefined`, NEVER `''` — confirmed live (an Angular-vs-Qwik parity
+ *  diff on this exact page): `MatRadioGroup`'s roving-tabindex formula
+ *  (`radio/mat-radio-button.tsx`'s `hasGroupSelection`) treats ANY non-`null`/`undefined` group
+ *  value, including `''`, as "a selection exists, it just doesn't match this button" — giving
+ *  EVERY button `tabIndex={-1}` instead of the correct "nothing selected yet, each button keeps
+ *  its own default tabIndex (0)". Every other scenario in this port already seeds an unselected
+ *  group with `undefined` (never `''`); this is the first consumer whose underlying state
+ *  (Formisch's own empty-string default for an unset required string field) needed an explicit
+ *  conversion at the wiring boundary. */
 export function matRadioGroupBindings(field: AnyField): {
-  value: string;
+  value: string | undefined;
   onChange$: QRL<(value: unknown) => void>;
 } {
   return {
-    value: (field.input.value as string | undefined) ?? '',
+    value: (field.input.value as string | undefined) || undefined,
     onChange$: $((value: unknown) => field.onInput(value as string)),
   };
 }
@@ -236,19 +242,37 @@ export function matSlideToggleBindings(field: AnyField): {
 
 // ── Datepicker ───────────────────────────────────────────────────────────────────────────────
 //
-// `birthday`'s Formisch input is a plain ISO-8601 string (`account-schema.ts`); the datepicker's
-// own `picker.value` is a typed `Date | null` (qwik-material/datepicker's `NativeDateAdapter`).
-// Converted at this boundary rather than teaching the schema a `Date` type, so the schema stays
-// the same plain-string shape `getInput(form)`/the JSON panel/`setInput` all deal in.
-
-const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<Date>;
-
+// `birthday`'s Formisch input is a plain ISO-8601 (`YYYY-MM-DD`) string (`account-schema.ts`);
+// the datepicker's own `picker.value` is a typed `Date | null` (qwik-material/datepicker's
+// `NativeDateAdapter`). Converted at this boundary rather than teaching the schema a `Date`
+// type, so the schema stays the same plain-string shape `getInput(form)`/the JSON panel/
+// `setInput` all deal in.
+//
+// Deliberately NOT `DateAdapter.toIso8601()`/`.deserialize()` — confirmed live (a real, off-by-
+// one-day bug outside UTC): `NativeDateAdapter`'s `format()`/`parse()` (what the DATEPICKER INPUT
+// itself actually uses for typing/display) read/construct dates via LOCAL-TIME getters
+// (`date.getFullYear()`/`getMonth()`/`getDate()`, confirmed in `native-date-adapter.ts`'s own
+// `getYear`/`getMonth`/`getDate`), but `toIso8601()` specifically reads UTC getters instead (its
+// own deliberate choice for ISO8601 serialization — see that function's own comment). Round-
+// tripping a LOCAL-midnight `Date` (what typing/picking a date actually produces) through
+// `toIso8601()` reads it back a calendar day off whenever the local timezone isn't UTC+0 exactly
+// — this spike's own test caught it (typed "7/14/1992", the picker displayed "7/13/1992" after
+// round-tripping through Formisch). These two tiny LOCAL-TIME-based helpers avoid the mismatch
+// by never touching UTC at all, matching the datepicker's own convention throughout.
 export function isoToDate(iso: string | undefined): Date | null {
-  return iso ? (adapter.deserialize(iso) as Date | null) : null;
+  if (!iso) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export function dateToIso(date: Date | null): string {
-  return date != null && adapter.isValid(date) ? adapter.toIso8601(date) : '';
+  if (date == null || Number.isNaN(date.getTime())) return '';
+  const year = String(date.getFullYear()).padStart(4, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /** `useMatDatepicker()`'s `onValueChange$` — fires uniformly whether the user typed or picked a

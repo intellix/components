@@ -162,6 +162,7 @@ export default component$(() => {
                   label={<MatLabel>Bio</MatLabel>}
                   style="width: 100%"
                   hintStart={<MatHint>Optional — shown on your public profile</MatHint>}
+                  {...matFieldState(bioField)}
                   control={
                     <MatInput
                       as="textarea"
@@ -217,7 +218,10 @@ export default component$(() => {
               </div>
 
               <div class="formisch-demo__field">
-                <MatSlideToggle {...matSlideToggleBindings(newsletterField)}>
+                <MatSlideToggle
+                  class={ngStatusClasses(newsletterField)}
+                  {...matSlideToggleBindings(newsletterField)}
+                >
                   Send me the monthly newsletter
                 </MatSlideToggle>
               </div>
@@ -340,6 +344,9 @@ export default component$(() => {
           </pre>
         </aside>
       </div>
+      {/* Parity-harness readiness marker — see `src/qwik-cdk-parity-tests/README.md` and every
+          other `/qwik-parity`-compared route's identical sibling. */}
+      <div data-scenario-ready style="display: none"></div>
     </div>
   );
 });

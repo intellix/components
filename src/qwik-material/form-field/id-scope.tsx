@@ -5,6 +5,7 @@ import {
   useContextProvider,
   type JSXOutput,
 } from '@qwik.dev/core';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /**
  * Context a `<MatHint>`/`<MatError>` reads as its id FALLBACK (an explicit
@@ -45,10 +46,23 @@ export const MAT_ASSIGNED_ID = createContextId<string | undefined>('qwikMaterial
  * same fix applied to `qwik-material/datepicker`'s `ActionsOutlet` (see that file's doc comment)
  * — both are instances of "a `<Slot/>` whose projected content didn't originate as this
  * component's own JSX children" breaking under v2.
+ *
+ * Returns `cloneJsxForReuse(props.content)`, not `props.content` directly — a SEPARATE Qwik v2
+ * regression from the one above (`core/jsx-reuse.ts`'s own doc comment): rendering the exact
+ * same `JSXOutput` object a SECOND time corrupts it, and a caller whose `hintStart`/`hintEnd`/
+ * `errors` prop is a STATIC expression (e.g. `hintStart={<MatHint>MM/DD/YYYY</MatHint>}`, never
+ * recomputed) hands `MatFormField` the SAME frozen snapshot object on every one of ITS OWN
+ * re-renders (`hintStartSnapshot.value` etc. — see `mat-form-field.tsx`) — and `MatFormField`
+ * re-renders often, independent of that hint ever changing (focus/blur, the 300ms animations-
+ * enabled timer, any `MAT_FORM_FIELD_CONTROL_STATE` write). Confirmed live building the Formisch
+ * integration spike: a `<MatHint>` on a field that goes through many unrelated re-renders (a
+ * datepicker whose OWN value changes repeatedly) rendered with completely empty text the moment
+ * a later, unrelated re-render landed — same empty-content signature as `menu/menu-panel.tsx`'s
+ * identical, already-documented fix for its own re-rendering-independent-of-content case.
  */
 export const MatIdScope = component$<{id: string; content: JSXOutput}>(props => {
   useContextProvider(MAT_ASSIGNED_ID, props.id);
-  return props.content;
+  return cloneJsxForReuse(props.content);
 });
 
 /** Sentinel passed as `useContext`'s default — see `useAssignedId()`'s own doc comment for why

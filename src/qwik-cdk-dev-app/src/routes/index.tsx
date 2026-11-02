@@ -529,6 +529,14 @@ export default component$(() => {
           </li>
         </ul>
       </section>
+      <section>
+        <h2>Formisch integration</h2>
+        <ul>
+          <li>
+            <a href="/formisch/account/">account form (Formisch + qwik-material)</a>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 });

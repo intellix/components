@@ -108,11 +108,16 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
   // write whenever that signal changes, regardless of which OTHER component triggered it — same
   // "guarded write during render" pattern `mat-form-field.tsx` itself uses for its own context
   // store.
+  // Upstream's `MatInput.empty` reads the NATIVE value: unparseable text ("not a date", model
+  // `null`) still counts as non-empty and floats the label. Computed unconditionally (not just
+  // `if (formField)`) because `ariaInvalid` below also needs it for the SAME "aria-invalid
+  // omitted while empty && required" rule `MatInput`'s own `emptySignal` enforces — confirmed
+  // against a real Angular mirror (a pristine, empty, required `[matDatepicker]` input has NO
+  // `aria-invalid` attribute at all, not `aria-invalid="false"`; this port previously always
+  // rendered one or the other, never omitting it — see datepicker/SYNC.md's 2026-11-02 entry).
+  const nativeText = (picker._elementRef.value as NativeInputElement | undefined)?.value;
+  const liveEmpty = picker.value.value == null && !nativeText;
   if (formField) {
-    // Upstream's `MatInput.empty` reads the NATIVE value: unparseable text ("not a date", model
-    // `null`) still counts as non-empty and floats the label.
-    const nativeText = (picker._elementRef.value as NativeInputElement | undefined)?.value;
-    const liveEmpty = picker.value.value == null && !nativeText;
     if (formField.empty !== liveEmpty) {
       formField.empty = liveEmpty;
       formField.shouldLabelFloat = formField.focused || !liveEmpty;
@@ -179,7 +184,10 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
     props.class,
   ].filter(Boolean) as string[];
 
-  const ariaInvalid: 'true' | 'false' = errorState ? 'true' : 'false';
+  // Mirrors `MatInput`'s identical formula (`mat-input.tsx`'s own `ariaInvalid`) — see the
+  // `liveEmpty` comment above for why this was wrong before.
+  const ariaInvalid: 'true' | 'false' | undefined =
+    liveEmpty && required ? undefined : errorState ? 'true' : 'false';
 
   return (
     // No `type` attribute — mirrors `MatInput`'s own established rule: upstream's real
