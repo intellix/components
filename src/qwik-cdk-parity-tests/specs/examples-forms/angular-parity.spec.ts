@@ -262,6 +262,16 @@ const EXPECTED_FAILURES: Record<string, string> = {
     'small fix like the other EXAMPLE_IGNORE_ATTRS entries (class additions across 4 elements, ' +
     "not an attribute to ignore) — documented here rather than widening MatDateRangeInput's " +
     'contract this late in the batch.',
+  'autocomplete-plain-input':
+    "upstream's real <input [formControl] [matAutocomplete]=\"auto\"> has NO matInput directive " +
+    'at all, so its class list has neither `cdk-text-field-autofill-monitored` nor ' +
+    '`mat-mdc-input-element`. This port\'s `MatAutocomplete` is ONE monolithic component always ' +
+    'covering both the trigger AND the matInput-equivalent control surface (see its own ' +
+    "SYNC.md) — it can't render a \"bare autocomplete, no matInput\" variant at all (same " +
+    'category as the `id`/`aria-invalid`/`aria-required` difference already ignored above via ' +
+    'EXAMPLE_IGNORE_ATTRS — that half is attribute-only and fixable that way; the class ' +
+    'difference found afterward is not). A real, accepted architectural simplification, not a ' +
+    'small fix.',
 };
 
 test.describe('qwik-material-examples (docs Phase 2, forms batch) — Angular DOM parity', () => {

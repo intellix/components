@@ -49,8 +49,15 @@ export default component$(() => {
     <datepicker-value-example>
       <MatFormField
         label={<MatLabel>Angular forms</MatLabel>}
+        touched={false}
+        dirty={false}
+        invalid={false}
         control={
-          <MatDatepickerInput picker={picker1} value={formatDateForDisplay(date.value) || undefined} />
+          <MatDatepickerInput
+            picker={picker1}
+            formBound
+            value={formatDateForDisplay(date.value) || undefined}
+          />
         }
         hintStart={<MatHint>MM/DD/YYYY</MatHint>}
         iconSuffix={<MatDatepickerToggle picker={picker1} />}
@@ -59,9 +66,13 @@ export default component$(() => {
 
       <MatFormField
         label={<MatLabel>Angular forms (w/ deserialization)</MatLabel>}
+        touched={false}
+        dirty={false}
+        invalid={false}
         control={
           <MatDatepickerInput
             picker={picker2}
+            formBound
             value={formatDateForDisplay(new Date(serializedDate.value)) || undefined}
           />
         }
