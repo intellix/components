@@ -12,6 +12,33 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 `src/qwik-material/slide-toggle/SYNC.md`,
 `src/qwik-material/expansion/SYNC.md`, and `src/qwik-material/core/SYNC.md`.
 
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+`MatDrawerContent`'s 50ms-delayed `setAttribute('inert', 'true')` while
+a backdrop is shown (`_drawerToggled`) is a genuine upstream addition
+after v21.2.14 — confirmed absent from drawer.ts at this version. This
+port had implemented it in real depth: an `inertEligible` per-drawer
+registry flag replicating a same-lifecycle quirk (a drawer that's
+`opened` from its very first render never gets `inert`, even with its
+backdrop genuinely shown — the "5." bug below is unaffected, a
+different lifecycle issue), plus the imperative apply-on-mount/
+apply-on-toggle call sites. Removed `isShowingBackdropForInert`/
+`inertEligible` and every `setAttribute`/`removeAttribute('inert', ...)`
+call from `drawer-state.ts`, `mat-drawer.tsx` and
+`mat-drawer-content.tsx` (content margins — the other half of what
+those same call sites compute — are untouched), `drawer-state.spec.ts`,
+and every `inert` mention in doc comments/the dev-app Angular
+reference/the Playwright parity spec's documented DOM baseline. This
+is what live-failed against the v21.2.14 reference: `mode-over`/
+`mode-push`/`position-end`/`disable-close` all diffed on a stray
+`inert="true"` the Qwik side alone was adding. No other deviation
+found — the `drawer-container.html`/`sidenav-container.html` widening
+to accept either `mat-drawer`/`mat-sidenav` tag in either container
+(also newer than v21.2.14) has no effect here: this port never does
+Angular-style `ng-content select`-based tag matching to begin with
+(see "Qwik has no equivalent" below), so it was never narrower than
+v21.2.14 in the first place.
+
 ## 2026-10-28 initial port
 
 New entry point, gated from the start by
@@ -205,7 +232,7 @@ accepted wart; no runtime validation enforces it.
 - `testing/` (`MatDrawerHarness`/`MatSidenavHarness`/etc.) — Angular test harness surface; no equivalent needed
 - Upstream `public-api.ts`/`index.ts` — replaced with our own re-export shape
 - `drawer.html`/`drawer-container.html`/`sidenav-container.html` — inlined into JSX
-- `drawer.spec.ts`/`sidenav.spec.ts` — ported to `mat-sidenav-scenarios.spec.tsx` (sanity + `describe.skip` DOM/Angular-only documentation blocks) per the project's smoke-only vitest constraint (`createDOM()` hangs this package's vitest worker — see button's own scenario-port comment). Real DOM/behavior coverage lives in `specs/material-sidenav/angular-parity.spec.ts` (Playwright). The pure registry-derived computations (margins, backdrop presence/visibility, trap-enabled, the `inertEligible` quirk) have no DOM dependency and ARE real unit tests, in `drawer-state.spec.ts`
+- `drawer.spec.ts`/`sidenav.spec.ts` — ported to `mat-sidenav-scenarios.spec.tsx` (sanity + `describe.skip` DOM/Angular-only documentation blocks) per the project's smoke-only vitest constraint (`createDOM()` hangs this package's vitest worker — see button's own scenario-port comment). Real DOM/behavior coverage lives in `specs/material-sidenav/angular-parity.spec.ts` (Playwright). The pure registry-derived computations (margins, backdrop presence/visibility, trap-enabled) have no DOM dependency and ARE real unit tests, in `drawer-state.spec.ts` (the `inertEligible` quirk's own tests were removed with the feature in the 2026-11-02 v21.2.14 rebaseline — see above)
 - `throwMatDuplicatedDrawerError` — no runtime validation that at most one drawer per position is registered; not exercised by any scenario and would need extra registry bookkeeping to replicate faithfully
 
 ## Deviations from upstream

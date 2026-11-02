@@ -1,22 +1,42 @@
 # qwik-cdk sync log
 
-Last fully-synced from angular/components commit: `7ef5967ff21070a1dfdb044132e7a3ee175688a1`
-(the merge-base of the qwik-cdk-dialog-port branch with main, ie. the upstream tip when the
-initial Dialog port landed).
+Upstream base: `@angular/cdk@21.2.14` (git tag `v21.2.14`, commit
+`8fe4d6a8ffcf`) as of the 2026-11-02 rebaseline onto the `qwik-port-21.2`
+branch/worktree. Originally built against this repo's `main` at
+`22.1.0-next`; last fully-synced from angular/components commit:
+`7ef5967ff21070a1dfdb044132e7a3ee175688a1` (the merge-base of the
+qwik-cdk-dialog-port branch with that `main`, ie. the upstream tip when
+the initial Dialog port landed) before the rebaseline.
+
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+None of the 17 upstream template/style files that changed between
+v21.2.14 and the port's 22.1-next base are under `src/cdk/` — all 17 are
+`src/material/` (see `qwik-material/SYNC.md`'s rollup). A broader diff of
+every non-spec `src/cdk/` TS file in that range found only mechanical,
+behavior-free changes repo-wide (the `constructor(...args: unknown[]);`
+compiler-boilerplate overload removed, `SimpleChanges` →
+`SimpleChanges<this>`) — nothing affecting DOM, classes, attributes, or
+computed styles for anything this package ports (platform, bidi,
+coercion, keycodes, portal, a11y, accordion, overlay, dialog, table,
+stepper, tree, layout). One incidental fix: `dialog/dialog-container.tsx`
+had an `@ts-expect-error` on its scss side-effect import that became an
+"Unused directive" error under v21.2.14's pinned TypeScript (5.9.2 vs.
+22.1-next's 6.0.2) — removed (see `dialog/SYNC.md`).
 
 ## Per-entry-point sync state
 
 | Entry-point | Last synced SHA | Status |
 |---|---|---|
-| platform | `7ef5967ff` | green — feature helpers ported verbatim with CDK-style `typeof document` guards |
-| bidi     | `7ef5967ff` | green — Directionality ported with signal-backed `value` |
-| coercion | `7ef5967ff` | green — pure function helpers ported verbatim |
-| keycodes | `7ef5967ff` | green — key constants + `hasModifierKey` ported verbatim |
-| portal   | `7ef5967ff` | green — collapsed Portal<P> type + `<CdkPortalOutlet>` only; ComponentPortal/TemplatePortal/DomPortal removed |
-| a11y     | `7ef5967ff` | partial — Dialog-required subset plus `useFocusOrigin()`'s `focusVia()` companion (2026-10-27, for expansion); LiveAnnouncer + key managers + `cdkTrapFocus` directive deferred (see a11y/SYNC.md) |
-| accordion | `7ef5967ff` | green (2026-10-27) — `useCdkAccordion`/`useCdkAccordionItem` hooks; `UniqueSelectionDispatcher` replaced by a per-instance `Signal` broadcast (see accordion/SYNC.md) |
-| overlay  | `7ef5967ff` | green — `OverlayConfig`, `OverlayRef`, `Overlay` service, position strategies (Global + FlexibleConnected), four scroll strategies, both dispatchers; `_CdkOverlayStyleLoader` replaced by Vite SCSS import |
-| dialog   | `7ef5967ff` | green — `Dialog`/`useDialog`/`DialogRef`/`DialogConfig`/`CdkDialogContainer` with `Promise<R>` + `QRL` callbacks replacing RxJS streams |
+| platform | v21.2.14 (8fe4d6a8ff) | green — feature helpers ported verbatim with CDK-style `typeof document` guards |
+| bidi     | v21.2.14 (8fe4d6a8ff) | green — Directionality ported with signal-backed `value` |
+| coercion | v21.2.14 (8fe4d6a8ff) | green — pure function helpers ported verbatim |
+| keycodes | v21.2.14 (8fe4d6a8ff) | green — key constants + `hasModifierKey` ported verbatim |
+| portal   | v21.2.14 (8fe4d6a8ff) | green — collapsed Portal<P> type + `<CdkPortalOutlet>` only; ComponentPortal/TemplatePortal/DomPortal removed |
+| a11y     | v21.2.14 (8fe4d6a8ff) | partial — Dialog-required subset plus `useFocusOrigin()`'s `focusVia()` companion (2026-10-27, for expansion); LiveAnnouncer + key managers + `cdkTrapFocus` directive deferred (see a11y/SYNC.md) |
+| accordion | v21.2.14 (8fe4d6a8ff) | green (2026-10-27) — `useCdkAccordion`/`useCdkAccordionItem` hooks; `UniqueSelectionDispatcher` replaced by a per-instance `Signal` broadcast (see accordion/SYNC.md) |
+| overlay  | v21.2.14 (8fe4d6a8ff) | green — `OverlayConfig`, `OverlayRef`, `Overlay` service, position strategies (Global + FlexibleConnected), four scroll strategies, both dispatchers; `_CdkOverlayStyleLoader` replaced by Vite SCSS import |
+| dialog   | v21.2.14 (8fe4d6a8ff) | green — `Dialog`/`useDialog`/`DialogRef`/`DialogConfig`/`CdkDialogContainer` with `Promise<R>` + `QRL` callbacks replacing RxJS streams |
 
 ## Sync recipe
 

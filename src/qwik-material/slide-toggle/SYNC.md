@@ -11,6 +11,17 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 `src/qwik-material/list/SYNC.md`, `src/qwik-material/button-toggle/SYNC.md`,
 and `src/qwik-material/core/SYNC.md`.
 
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+`fullWidth` (and its `.mat-slide-toggle-full-width` CSS) is a genuine
+upstream addition after v21.2.14 — confirmed absent from
+slide-toggle.ts/.md/.scss at this version. Removed the prop, its host
+class, and every example/test scenario built around it (the dev-app
+Angular reference's `full-width` scenario, the Qwik dev-app's
+`full-width` route, the prop-surface unit test, and the `full-width`
+case + documented DOM baseline in the Playwright parity spec). No other
+deviation found.
+
 ## 2026-10-27/28 initial port
 
 New entry point, gated from the start by

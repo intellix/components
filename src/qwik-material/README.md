@@ -4,6 +4,13 @@ Qwik port of Angular Material. First component: Dialog.
 
 Consumes [@angular-community/qwik-cdk](../qwik-cdk/README.md) for overlay, dialog primitives, and a11y foundations. Ships MDC-parity SCSS and JS class-based animation state machine matching Angular Material's timing (150 ms enter, 75 ms exit).
 
+## Upstream version
+
+Targets **`@angular/material@21.2.14`** (git tag `v21.2.14`, commit
+`8fe4d6a8ffcf`), rebaselined 2026-11-02 (see [SYNC.md](./SYNC.md) for
+what changed between the port's original 22.1-next base and this
+version).
+
 ## Qwik version
 
 Requires **Qwik v2** (`@qwik.dev/core` `>=2.0.0-rc.4`, a peer dependency; developed and tested

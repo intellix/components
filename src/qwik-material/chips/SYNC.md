@@ -29,6 +29,14 @@ container types, action-class rules, the ripple-loader contract, id
 generation) — it is the authoritative source this port was built against,
 not just upstream's source code.
 
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+Resynced `chip.scss` (had drifted onto 22.1-next content — the base
+this port was built against). The only difference: the newer
+`.mdc-evolution-chip--with-leading-action` selector variant, not
+present at v21.2.14 and never set by this port's chip component
+either — a pure dead-CSS removal. No other deviation found.
+
 ## Upstream sync state
 
 | File | Upstream path | Sync state | Notes |

@@ -17,6 +17,15 @@ and `docs/superpowers/specs/2026-10-27-qwik-material-remaining-components-roadma
 (wave 1: slide-toggle, checkbox, radio, expansion). Gated from the start by
 `specs/material-radio/angular-parity.spec.ts` (11/11 scenarios passing).
 
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+Resynced `_radio-common.scss` (had drifted onto 22.1-next content —
+the base this port was built against). The only difference:
+`cursor: pointer` on the radio icon is unconditional at v21.2.14 (the
+upstream `@if ($is-interactive)` guard around it is newer) — a pure
+CSS change with no component-level follow-up. No other deviation
+found.
+
 ## Upstream sync state
 
 | File | Upstream path | Sync state | Notes |

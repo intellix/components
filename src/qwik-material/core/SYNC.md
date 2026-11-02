@@ -26,6 +26,27 @@ folder is the TS-component counterpart: it holds the pieces of
 `material/core/` that are actual *components*, mirroring upstream's location
 rather than inventing a new one.
 
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+Upstream's `core/tokens/_classes.scss` and `core/tokens/_system.scss`
+both differ from v21.2.14 (`_classes.scss` now delegates its typography
+mixins to a new `core/theming/_typography.scss` file that doesn't
+exist at v21.2.14; `_system.scss` wraps every token-output line in a
+new `_output-token()` mixin, added purely to silence a Sass compiler
+warning) — but this port doesn't vendor either file at all; it
+generates `scss/core/default-theme.scss` by actually *running*
+`src/material/core/tokens/_system.scss`'s real `mat.theme()` mixin
+against this worktree's own `src/material/`/`src/cdk/` source (see
+"Default theme" below). Re-ran `node scripts/generate-default-theme.mjs`
+against this worktree's v21.2.14 source: the output is byte-identical
+to before — confirming the M3 token values/structure are unchanged,
+only the upstream Sass's internal plumbing is. No action needed; no
+other deviation found in this package's other token/style partials
+(`_elevation.scss`, `_sass-utils.scss`, `_token-utils.scss`, the
+`tokens/m3/*` files, etc. are deliberately-reduced stubs, not
+documented byte-identical copies, so they're out of scope for this
+check — see each file's own SYNC note if one exists).
+
 ## Upstream sync state
 
 | File | Upstream path | Sync state | Notes |

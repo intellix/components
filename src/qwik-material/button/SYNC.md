@@ -4,6 +4,19 @@ Tracks the sync state between this port and `src/material/button/` upstream.
 Every deviation from a verbatim copy is recorded here. Companion to
 `src/qwik-material/dialog/SYNC.md`.
 
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+Resynced `button.scss`, `fab.scss`, `icon-button.scss`, `_m3-button.scss`
+(had drifted onto 22.1-next content — the base this port was built
+against). All four differences were the newer `showProgress`/
+`[progressIndicator]` progress-indicator feature's CSS
+(`.mat-mdc-button-progress-indicator-container`/`-shown`,
+`button.html`/`icon-button.html`'s projected slot, `button-base.ts`'s
+`showProgress` input) — not present at v21.2.14, and this port never
+implemented that feature's component logic either (already deferred
+per `button.html.removed.md` and the SYNC table below), so this was a
+pure dead-CSS removal with no TSX follow-up. No other deviation found.
+
 ## Upstream sync state
 
 | File                                          | Upstream path                                                       | Sync state | Notes                                                                                     |

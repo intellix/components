@@ -20,6 +20,22 @@ Gated from the start by `specs/material-tabs/angular-parity.spec.ts`
 custom-label, lazy-content, preserve-content, align, header-below,
 dynamic-height, pagination, nav-bar, aria-label — run 3× clean).
 
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+Upstream split one `--mat-tab-animation-duration` CSS custom property
+into `--mat-tab-body-animation-duration` + `--mat-tab-header-
+animation-duration` (and added a `{body, header}` object form to
+`MatTabGroup.animationDuration`) after v21.2.14 — this port had
+already picked up the new var names (though not the new object-typed
+input) from the 22.1-next base it was built against. Reverted
+`mat-tab-group.tsx`/`mat-tab-nav.tsx` to set/read the single
+v21.2.14 var name, resynced `_tabs-common.scss`/`tab-body.scss` to
+match, and updated every doc comment/test description naming the old
+split vars (including the Playwright parity spec's documented DOM
+baseline). No other deviation found; `tab-group.html`'s only other
+upstream diff (`_bodyAnimationsDisabled()`/`_animationsDisabled()`
+renaming an internal method) has no DOM effect.
+
 ## Upstream sync state
 
 | File | Upstream path | Sync state | Notes |

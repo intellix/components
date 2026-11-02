@@ -2,7 +2,14 @@
 
 Tracks the sync state between this port and `src/material/bottom-sheet/` upstream.
 
-Last synced from angular/components commit: <this branch's fork point — see `git log --oneline -1 -- src/material/bottom-sheet`>
+Last synced from angular/components commit: v21.2.14 (8fe4d6a8ffcf) as of the 2026-11-02 rebaseline.
+
+## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
+
+No template/style/behavioral difference found. One incidental fix:
+`mat-bottom-sheet-container.tsx`'s `@ts-expect-error` on its scss
+side-effect import became an "Unused directive" error (TS2578) under
+v21.2.14's pinned TypeScript (5.9.2 vs. 22.1-next's 6.0.2) — removed.
 
 ## Real bugs found via live browser testing (not just vitest)
 
