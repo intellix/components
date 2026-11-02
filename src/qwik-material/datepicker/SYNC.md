@@ -405,3 +405,33 @@ actually have (Formisch's `field.input.value`, in the Formisch example) — whic
 because that task lives in a REAL component, not inside this hook. See `use-mat-datepicker.ts`'s
 `UseMatDatepickerOptions.value` doc comment. Not applied to `useMatDateRangePicker()`/range
 selections in this pass (no consumer needs it yet; same fix shape would apply).
+
+## Fixed: standalone `useContext` crash for the optional form-field contexts (2026-11-02)
+
+This component's `useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined)`/`useContext(
+MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined)` calls were switched to `core/mat-form-field-
+control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConnectedOrigin()`
+— see that file's own SYNC.md entry for the full write-up (a real, previously-latent Qwik
+`Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
+porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
+change for every existing (always form-field-nested) scenario.
+
+## Added: independent per-element `disabled` override (2026-11-02, docs example port)
+
+`MatDatepickerInput`/`MatDatepickerToggle` both used to read `picker.disabled.value`
+unconditionally — any `disabled` prop passed directly to either (not through the shared
+`useMatDatepicker()` call) was silently ignored, even though `MatDatepickerInputProps` already
+declared the field (inherited from `MatFormFieldControlProps`) and `MatDatepickerToggleProps` had
+no such field at all. Found porting the docs site's `datepicker-disabled` example, which needs 3
+independent combinations: the whole picker disabled, just the toggle, and just the input
+(upstream's real `<input matInput disabled>`/`<mat-datepicker-toggle disabled>` already override
+independently of each other and of `<mat-datepicker>`'s own state). Fixed: both components now
+compute `props.disabled ?? picker.disabled.value` (added a `disabled?: boolean` field to
+`MatDatepickerToggleProps`) and use that for their own rendered `disabled` attribute (and, for
+the input, the focus-handler's disabled gate) instead of the shared flag directly. Every
+pre-existing scenario omits this prop on the sub-components, so `props.disabled` is always
+`undefined` there and the fallback keeps the exact previous behavior — confirmed via `pnpm -C
+src/qwik-material test` (783/783 unchanged). Does NOT extend to `<MatDatepicker>`/`<MatCalendar>`
+themselves (upstream's `<mat-datepicker disabled="false">` forcing the CALENDAR enabled
+independently of the input) — not needed by any scenario's default (closed, non-interacting)
+render, so left as a documented gap rather than widening the fix further.

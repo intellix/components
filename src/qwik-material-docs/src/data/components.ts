@@ -112,6 +112,7 @@ export const COMPONENTS: ComponentEntry[] = [
     summary: 'A calendar-backed input for picking a single date.',
     devAppId: 'mat-datepicker',
     entryPoint: 'datepicker',
+    hasOverviewGuide: true,
   },
   {
     id: 'dialog',
@@ -299,6 +300,7 @@ export const COMPONENTS: ComponentEntry[] = [
     summary: 'A dropdown-backed input for picking a time of day.',
     devAppId: 'mat-timepicker',
     entryPoint: 'timepicker',
+    hasOverviewGuide: true,
   },
   {
     id: 'toolbar',

@@ -23,12 +23,12 @@
  * `for`) is how this control associates with that label instead, exactly mirroring
  * `_getAriaLabelledby()`.
  */
-import {component$, Slot, useContext, useSignal} from '@qwik.dev/core';
+import {component$, Slot, useSignal} from '@qwik.dev/core';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
-  MAT_FORM_FIELD_CONNECTED_ORIGIN,
-  MAT_FORM_FIELD_CONTROL_STATE,
   type MatFormFieldControlProps,
+  useOptionalFormFieldConnectedOrigin,
+  useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
@@ -74,8 +74,8 @@ export const MatDateRangeInput = component$<MatDateRangeInputProps>(props => {
   const id = useSignal(() => idGen.getId('mat-date-range-input-')).value;
   const separator = props.separator ?? '–';
 
-  const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined);
-  const connectedOrigin = useContext(MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined);
+  const formField = useOptionalFormFieldControlState();
+  const connectedOrigin = useOptionalFormFieldConnectedOrigin();
 
   const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];
   const ariaLabelledby = formField?.labelId || undefined;

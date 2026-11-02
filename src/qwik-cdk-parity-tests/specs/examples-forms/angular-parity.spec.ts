@@ -42,7 +42,37 @@ const EXAMPLES: string[] = [
   'autocomplete-auto-active-first-option',
   'autocomplete-plain-input',
   'autocomplete-optgroup',
+  // timepicker (mat-timepicker) — timepicker-overview itself is the headline, covered by
+  // specs/examples/.
+  'timepicker-forms',
+  'timepicker-datepicker-integration',
+  'timepicker-validation',
+  'timepicker-options',
+  'timepicker-custom-icon',
+  // datepicker (mat-datepicker) — datepicker-overview itself is the headline, covered by
+  // specs/examples/.
+  'datepicker-custom-icon',
+  'date-range-picker-overview',
+  'date-range-picker-forms',
+  'datepicker-start-view',
+  'datepicker-value',
+  'datepicker-min-max',
+  'datepicker-filter',
+  'datepicker-events',
+  'datepicker-disabled',
+  'datepicker-actions',
+  'datepicker-touch',
+  'datepicker-inline-calendar',
 ];
+
+/** `timepicker-forms`'s initial value is `new Date()` ("today", at 12:30) — deterministic only
+ *  under Playwright clock emulation, same mechanism (and same reasoning) as
+ *  `specs/examples/angular-parity.spec.ts`'s own `DATEPICKER_CLOCK` for `mat-datepicker/example`. */
+const TIMEPICKER_FORMS_CLOCK = new Date(2024, 0, 15, 10, 0, 0);
+
+/** `datepicker-value`'s 3 fields all show "today" — same clock-pinning need as
+ *  `TIMEPICKER_FORMS_CLOCK` above. */
+const DATEPICKER_VALUE_CLOCK = new Date(2024, 0, 15, 10, 0, 0);
 
 /** Clicks the `select-disabled` example's "Disable select" checkbox, which drives `[disabled]`
  *  on both the `<mat-select>` and the native `<select>` cards. */
@@ -152,16 +182,46 @@ const EXAMPLE_STEPS: Record<
  *   way (moot here — the whole scenario is `test.fail`, see `EXPECTED_FAILURES` — kept for when
  *   that's ever fixed).
  * - `form-field-prefix-suffix`: `<mat-form-field floatLabel="always">` echoes `floatlabel`.
+ * - `autocomplete-auto-active-first-option`: `<mat-autocomplete autoActiveFirstOption>` echoes
+ *   `autoactivefirstoption`; `autocomplete-require-selection`: `<mat-autocomplete
+ *   requireSelection>` echoes `requireselection` — same bare-attribute category, on
+ *   `MatAutocomplete`'s own host bindings this time.
+ * - `autocomplete-plain-input`: upstream's real `<input [formControl] [matAutocomplete]="auto">`
+ *   has NO `matInput` directive at all, so it gets no `id`/`aria-invalid`/`aria-required` from
+ *   Angular's own id-generation/form-field-control machinery. This port's `MatAutocomplete`
+ *   always renders those (it's one monolithic component covering both the trigger AND the
+ *   matInput-equivalent control surface — see its own SYNC.md) — a real, accepted
+ *   simplification (not fixable without splitting that monolith), not a bug.
+ * - `timepicker-validation`: `matTimepickerMin="12:30"`/`matTimepickerMax="17:30"` (plain STRING
+ *   attributes, not property bindings) echo `mattimepickermin`/`mattimepickermax`.
+ * - `timepicker-options`: `<mat-timepicker interval="45min">`/`interval="3.5h"` echo `interval`
+ *   the same way.
+ * - `timepicker-custom-icon` / `datepicker-custom-icon`: `<mat-icon matTimepickerToggleIcon>`/
+ *   `matDatepickerToggleIcon` echo `mattimepickertoggleicon`/`matdatepickertoggleicon` (the
+ *   projected-icon selector attribute, same category as `matsuffix` etc. in the global
+ *   `CONSUMER_SELECTOR_ATTRS` list over in `specs/examples/`, just not added there globally).
+ * - `datepicker-start-view`: `<mat-datepicker startView="year" [startAt]="startDate">` echoes
+ *   `startview` (bare, unlike the bound `startAt`).
+ * - `datepicker-touch`: `<mat-datepicker touchUi #picker>` echoes `touchui` the same way.
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'select-form': ['name'],
   'select-hint-error': ['required'],
   'select-multiple': ['multiple'],
+  'autocomplete-auto-active-first-option': ['autoactivefirstoption'],
+  'autocomplete-require-selection': ['requireselection'],
   'select-custom-trigger': ['multiple'],
   'form-field-label': ['value', 'required'],
   'form-field-hint': ['hintlabel'],
   'form-field-appearance': ['appearance'],
   'form-field-prefix-suffix': ['floatlabel'],
+  'autocomplete-plain-input': ['id', 'aria-invalid', 'aria-required'],
+  'timepicker-validation': ['mattimepickermin', 'mattimepickermax'],
+  'timepicker-options': ['interval'],
+  'timepicker-custom-icon': ['mattimepickertoggleicon'],
+  'datepicker-custom-icon': ['matdatepickertoggleicon'],
+  'datepicker-start-view': ['startview'],
+  'datepicker-touch': ['touchui'],
 };
 
 /**
@@ -177,6 +237,13 @@ const SLIDE_TOGGLE_P_DIV_NOTE =
   "confirmed live, not a qwik-material bug, no fix short of never SSRing that component's own " +
   "markup)";
 
+/** Per-id clock pin for the DEFAULT (non-interaction) comparison — see `TIMEPICKER_FORMS_CLOCK`'s
+ *  own doc comment. */
+const EXAMPLE_CLOCK: Record<string, Date | number | string> = {
+  'timepicker-forms': TIMEPICKER_FORMS_CLOCK,
+  'datepicker-value': DATEPICKER_VALUE_CLOCK,
+};
+
 const EXPECTED_FAILURES: Record<string, string> = {
   'select-disabled':
     'the example wraps <mat-checkbox> in <p>; MatCheckbox renders a <div mat-internal-form-field> ' +
@@ -184,6 +251,17 @@ const EXPECTED_FAILURES: Record<string, string> = {
   'form-field-appearance':
     'the example wraps each <mat-form-field> in <p>; MatFormField always renders a ' +
     `<div class="mat-mdc-text-field-wrapper"> as its own first child, and ${SLIDE_TOGGLE_P_DIV_NOTE}`,
+  'datepicker-disabled':
+    'the example wraps each <mat-form-field> in <p> (same shape as form-field-appearance), and ' +
+    SLIDE_TOGGLE_P_DIV_NOTE,
+  'date-range-picker-forms':
+    "MatDateRangeInput has no formBound concept — the real [formGroup]-bound example gets " +
+    'ng-untouched/ng-pristine/ng-valid on the mat-form-field, the <mat-date-range-input> host, ' +
+    'and both native inputs; this port has no mechanism to add those classes to a date-range ' +
+    'input at all (no scenario in this port needed it before). A real, scoped gap — not a ' +
+    'small fix like the other EXAMPLE_IGNORE_ATTRS entries (class additions across 4 elements, ' +
+    "not an attribute to ignore) — documented here rather than widening MatDateRangeInput's " +
+    'contract this late in the batch.',
 };
 
 test.describe('qwik-material-examples (docs Phase 2, forms batch) — Angular DOM parity', () => {
@@ -192,7 +270,13 @@ test.describe('qwik-material-examples (docs Phase 2, forms batch) — Angular DO
     test(id, ({browser}) => {
       const gap = EXPECTED_FAILURES[id];
       test.fail(gap !== undefined, gap);
-      return expectMaterialParity(browser, {pinRoot: true, route: 'examples', scenario: id, ignoreAttrs});
+      return expectMaterialParity(browser, {
+        pinRoot: true,
+        route: 'examples',
+        scenario: id,
+        ignoreAttrs,
+        clockDate: EXAMPLE_CLOCK[id],
+      });
     });
     for (const [i, extra] of (EXAMPLE_STEPS[id] ?? []).entries()) {
       test(`${id} (interaction ${i + 1})`, ({browser}) => {
@@ -204,7 +288,7 @@ test.describe('qwik-material-examples (docs Phase 2, forms batch) — Angular DO
           scenario: id,
           steps: extra.steps,
           rootSelector: extra.rootSelector,
-          clockDate: extra.clockDate,
+          clockDate: extra.clockDate ?? EXAMPLE_CLOCK[id],
           ignoreAttrs,
         });
       });

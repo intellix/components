@@ -1,4 +1,4 @@
-import {createContextId, type JSXOutput, type Signal} from '@qwik.dev/core';
+import {createContextId, useContext, type JSXOutput, type Signal} from '@qwik.dev/core';
 
 /** Mirrors `form-field/form-field-config.ts`'s `MatFormFieldColor` — redeclared
  *  here (rather than imported) so `core/` (the lower-level package) never
@@ -262,13 +262,46 @@ export interface MatFormFieldControlState {
 /**
  * Context id a `<MatFormField>` instance provides (seeded from
  * {@link readControlProps} on its own `control` prop) and the rendered
- * control reads/writes via its own lazy event handlers. Never exists
- * without an owning `MatFormField` — there is no sensible standalone
- * default, so every consumer MUST go through a `<MatFormField>`.
+ * control reads/writes via its own lazy event handlers. Absent for a
+ * control used standalone (no `<MatFormField>` ancestor) — see
+ * {@link useOptionalFormFieldControlState} for the only safe way to read
+ * that case.
  */
 export const MAT_FORM_FIELD_CONTROL_STATE = createContextId<MatFormFieldControlState>(
   'qwikMaterial/formFieldControlState',
 );
+
+/** Sentinel passed as `useContext`'s default — see {@link useOptionalFormFieldControlState}'s
+ *  own doc comment for why the literal value `undefined` can't be used as that default
+ *  directly. Module-private (mirrors `form-field/id-scope.ts`'s identical `NO_SCOPE` fix for
+ *  `MAT_ASSIGNED_ID`). */
+const NO_FORM_FIELD = Symbol('no-form-field-control-state');
+
+/**
+ * Reads the `MAT_FORM_FIELD_CONTROL_STATE` context, or `undefined` for a control used
+ * standalone (no `<MatFormField>` ancestor at all) — the shape every control in this port
+ * (`MatInput`, `MatSelect`, `MatAutocomplete`, the datepicker/timepicker inputs, …) needs for its
+ * own `isInFormField` check.
+ *
+ * Can't simply call `useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined)` — confirmed live (a
+ * genuine Qwik core behavior, not a guess, matching `form-field/id-scope.ts`'s identical
+ * `useAssignedId()` write-up for `MAT_ASSIGNED_ID`): `useContext`'s own implementation checks
+ * `defaultValue !== undefined` to decide whether a default was supplied at all, so passing the
+ * literal value `undefined` as the default is indistinguishable from passing none, and it throws
+ * `QError_notFoundContext` instead of returning it. This was latent in every one of this port's
+ * form controls (confirmed by grep — `MatInput`/`MatSelect`/`MatAutocomplete`/
+ * `MatDatepickerInput`/`MatDateRangeInput`/`MatTimepickerInput` all called the broken form
+ * directly) but never triggered, because every existing scenario in this whole project nests its
+ * control in a `<MatFormField>`. Surfaced porting the docs site's `autocomplete-plain-input`
+ * example — the first ever standalone usage of any of them.
+ */
+export function useOptionalFormFieldControlState(): MatFormFieldControlState | undefined {
+  const value = useContext(
+    MAT_FORM_FIELD_CONTROL_STATE,
+    NO_FORM_FIELD as unknown as MatFormFieldControlState,
+  );
+  return value === (NO_FORM_FIELD as unknown as MatFormFieldControlState) ? undefined : value;
+}
 
 /**
  * Context id a `<MatFormField>` instance provides, carrying a live
@@ -289,6 +322,23 @@ export const MAT_FORM_FIELD_CONTROL_STATE = createContextId<MatFormFieldControlS
 export const MAT_FORM_FIELD_CONNECTED_ORIGIN = createContextId<Signal<Element | undefined>>(
   'qwikMaterial/formFieldConnectedOrigin',
 );
+
+/** Sentinel for {@link useOptionalFormFieldConnectedOrigin} — see
+ *  {@link useOptionalFormFieldControlState}'s doc comment for why. */
+const NO_CONNECTED_ORIGIN = Symbol('no-form-field-connected-origin');
+
+/** Reads `MAT_FORM_FIELD_CONNECTED_ORIGIN`, or `undefined` for a control used standalone (no
+ *  `<MatFormField>` ancestor) — same "can't pass literal `undefined` as `useContext`'s default"
+ *  fix as {@link useOptionalFormFieldControlState}, for this sibling context. */
+export function useOptionalFormFieldConnectedOrigin(): Signal<Element | undefined> | undefined {
+  const value = useContext(
+    MAT_FORM_FIELD_CONNECTED_ORIGIN,
+    NO_CONNECTED_ORIGIN as unknown as Signal<Element | undefined>,
+  );
+  return value === (NO_CONNECTED_ORIGIN as unknown as Signal<Element | undefined>)
+    ? undefined
+    : value;
+}
 
 /**
  * Reads the props of a `JSXOutput` value produced by `<SomeComponent .../>`

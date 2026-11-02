@@ -485,3 +485,26 @@ their own) would have meant picking one or the other. `composeRef([internalRef, 
 the live element to both. Driving use case: a form library's field-registration ref (Formisch's
 `field.props.ref`), needed for `focus()`-on-invalid-submit and similar programmatic-focus features
 — see `qwik-material/README.md`'s "Using with Formisch".
+
+## Fixed: `useContext(X, undefined)` for an optional ancestor context always threw (2026-11-02)
+
+`MAT_FORM_FIELD_CONTROL_STATE`/`MAT_FORM_FIELD_CONNECTED_ORIGIN` (`core/mat-form-field-control.ts`)
+are meant to be OPTIONAL — every consumer reads them with a fallback for "no `<MatFormField>`
+ancestor" (`const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined); const
+isInFormField = formField !== undefined;`). But Qwik's own `useContext(context, defaultValue)`
+checks `defaultValue !== undefined` to decide whether a default was supplied AT ALL — passing the
+literal value `undefined` is indistinguishable from passing none, so it throws
+`QError_notFoundContext` (`Code(Q8)`) instead of returning it, every time there's genuinely no
+provider. This exact Qwik behavior was already found and fixed once before, for the sibling
+`MAT_ASSIGNED_ID` context — see `qwik-material/form-field/id-scope.ts`'s `useAssignedId()` — but
+the same raw `useContext(X, undefined)` anti-pattern had independently spread to `MatInput`,
+`MatSelect`, `MatAutocomplete`, `MatDatepickerInput`, `MatDateRangeInput`, and
+`MatTimepickerInput` for these two contexts specifically, undetected because every scenario in
+the whole 578-test parity suite nests its control in a `<MatFormField>` — surfaced porting the
+qwik-material-docs site's `autocomplete-plain-input` example (the first-ever standalone, no-
+form-field usage of any of them). Fixed centrally: this file now exports
+`useOptionalFormFieldControlState()`/`useOptionalFormFieldConnectedOrigin()` (the same private-
+`Symbol`-sentinel technique as `useAssignedId()`), and all 6 call sites were switched to them.
+Zero behavior change with a `<MatFormField>` ancestor present (`pnpm -C src/qwik-material test`
+783/783 unchanged, full parity suite unaffected) — only the previously-crashing standalone case
+now works. See each affected component's own SYNC.md for its one-line pointer here.

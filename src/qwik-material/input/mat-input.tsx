@@ -1,8 +1,8 @@
 import {$, component$, useContext, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
-  MAT_FORM_FIELD_CONTROL_STATE,
   type MatFormFieldControlProps,
+  useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import {MAT_INPUT_CONFIG, MAT_INPUT_CONFIG_DEFAULTS} from './input-config';
 import {useMatFormSubmitted} from '../core/mat-form';
@@ -74,7 +74,7 @@ export const MatInput = component$<MatInputProps>(props => {
   // Only present when actually nested in a `<MatFormField>` (context
   // absent otherwise — see core/mat-form-field-control.ts's doc comment:
   // "never exists without an owning MatFormField").
-  const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined);
+  const formField = useOptionalFormFieldControlState();
   const isInFormField = formField !== undefined;
 
   // Prefer the context store's LIVE touched/dirty/invalid (written by the

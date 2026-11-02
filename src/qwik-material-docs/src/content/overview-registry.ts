@@ -16,6 +16,9 @@ import sortMd from './overviews/sort.md?raw';
 import inputMd from './overviews/input.md?raw';
 import menuMd from './overviews/menu.md?raw';
 import autocompleteMd from './overviews/autocomplete.md?raw';
+import timepickerMd from './overviews/timepicker.md?raw';
+import datepickerMd from './overviews/datepicker.md?raw';
+import sidenavMd from './overviews/sidenav.md?raw';
 
 export const OVERVIEW_MARKDOWN: Record<string, string> = {
   button: buttonMd,
@@ -28,4 +31,7 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   input: inputMd,
   menu: menuMd,
   autocomplete: autocompleteMd,
+  timepicker: timepickerMd,
+  datepicker: datepickerMd,
+  sidenav: sidenavMd,
 };

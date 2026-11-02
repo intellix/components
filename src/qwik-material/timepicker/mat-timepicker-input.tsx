@@ -1,8 +1,8 @@
 import {$, component$, useContext, useSignal, type QRL} from '@qwik.dev/core';
 import {
-  MAT_FORM_FIELD_CONNECTED_ORIGIN,
-  MAT_FORM_FIELD_CONTROL_STATE,
   type MatFormFieldControlProps,
+  useOptionalFormFieldConnectedOrigin,
+  useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
@@ -146,13 +146,13 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
   // explicitly already.
   const formBound = props.formBound ?? false;
 
-  const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined);
+  const formField = useOptionalFormFieldControlState();
   const isInFormField = formField !== undefined;
   // Stashed for `timepicker-runtime.ts`'s `openTimepickerPanel`/origin resolution — see
   // `useMatTimepicker()`'s doc comment on `_formFieldOrigin` for why a plain field assignment
   // here (not a signal write) is safe: it's only ever READ later, from inside an event handler,
   // never during another component's own render.
-  picker._formFieldOrigin = useContext(MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined);
+  picker._formFieldOrigin = useOptionalFormFieldConnectedOrigin();
   picker._formFieldLabelId = formField?.labelId;
 
   // Always read LIVE off the shared handle — see this file's own doc comment for why

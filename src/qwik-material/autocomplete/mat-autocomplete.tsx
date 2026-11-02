@@ -19,9 +19,9 @@ import {
 } from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {
-  MAT_FORM_FIELD_CONNECTED_ORIGIN,
-  MAT_FORM_FIELD_CONTROL_STATE,
   type MatFormFieldControlProps,
+  useOptionalFormFieldConnectedOrigin,
+  useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import {composeRef, type HostRef} from '../core/host-props';
 import {MAT_AUTOCOMPLETE_CONFIG, type MatAutocompleteConfig} from './autocomplete-config';
@@ -251,8 +251,8 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();
-  const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined);
-  const formFieldOrigin = useContext(MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined);
+  const formField = useOptionalFormFieldControlState();
+  const formFieldOrigin = useOptionalFormFieldConnectedOrigin();
   const isInFormField = formField !== undefined;
 
   const disabled = props.disabled ?? false;

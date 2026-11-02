@@ -1,8 +1,8 @@
 import {$, component$, useContext, useSignal, type QRL} from '@qwik.dev/core';
 import {
-  MAT_FORM_FIELD_CONNECTED_ORIGIN,
-  MAT_FORM_FIELD_CONTROL_STATE,
   type MatFormFieldControlProps,
+  useOptionalFormFieldConnectedOrigin,
+  useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import type {DateAdapter} from '../core/datetime/date-adapter';
@@ -73,13 +73,18 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
   const ctx = useContext(QWIK_CDK);
   const required = props.required ?? false;
   const formBound = props.formBound ?? false;
+  // Mirrors upstream's `<input matInput [matDatepicker]="picker" disabled>` — overrides
+  // `picker.disabled` for THIS input only (the toggle and calendar are unaffected). Falls back
+  // to `picker.disabled.value` when omitted (every pre-existing usage). See
+  // `datepicker/SYNC.md`'s "independent per-element disabled" entry.
+  const disabledOverride = props.disabled ?? picker.disabled.value;
 
-  const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined);
+  const formField = useOptionalFormFieldControlState();
   const isInFormField = formField !== undefined;
   // Stashed for `datepicker-runtime.ts`'s `openDatepickerPanel`/origin resolution — see
   // `use-mat-datepicker.ts`'s own doc comment on `_formFieldOrigin` for why a plain field
   // assignment here (not a signal write) is safe.
-  picker._formFieldOrigin = useContext(MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined);
+  picker._formFieldOrigin = useOptionalFormFieldConnectedOrigin();
   picker._formFieldLabelId = formField?.labelId;
 
   // Unlike `MatInput`/`MatTimepickerInput` (whose touched/dirty/invalid can come from an
@@ -129,7 +134,7 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
   const initialDisplay = useSignal(() => formatDateForDisplay(picker.value.value));
 
   const handleFocus$ = $((event: FocusEvent) => {
-    if (!picker.disabled.value && formField) {
+    if (!disabledOverride && formField) {
       formField.focused = true;
       formField.shouldLabelFloat = true;
     }
@@ -197,7 +202,7 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
       ref={composeRef([picker._elementRef, props.ref])}
       id={id}
       class={classes}
-      disabled={picker.disabled.value || undefined}
+      disabled={disabledOverride || undefined}
       required={required || undefined}
       name={props.name || undefined}
       aria-haspopup="dialog"

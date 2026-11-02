@@ -22,6 +22,18 @@ import Ex_card_example from '@angular-community/qwik-material-examples/card/exam
 import Ex_checkbox_example from '@angular-community/qwik-material-examples/checkbox/example';
 import Ex_chips_example from '@angular-community/qwik-material-examples/chips/example';
 import Ex_datepicker_example from '@angular-community/qwik-material-examples/datepicker/example';
+import Ex_datepicker_custom_icon from '@angular-community/qwik-material-examples/datepicker/datepicker-custom-icon';
+import Ex_date_range_picker_overview from '@angular-community/qwik-material-examples/datepicker/date-range-picker-overview';
+import Ex_date_range_picker_forms from '@angular-community/qwik-material-examples/datepicker/date-range-picker-forms';
+import Ex_datepicker_start_view from '@angular-community/qwik-material-examples/datepicker/datepicker-start-view';
+import Ex_datepicker_value from '@angular-community/qwik-material-examples/datepicker/datepicker-value';
+import Ex_datepicker_min_max from '@angular-community/qwik-material-examples/datepicker/datepicker-min-max';
+import Ex_datepicker_filter from '@angular-community/qwik-material-examples/datepicker/datepicker-filter';
+import Ex_datepicker_events from '@angular-community/qwik-material-examples/datepicker/datepicker-events';
+import Ex_datepicker_disabled from '@angular-community/qwik-material-examples/datepicker/datepicker-disabled';
+import Ex_datepicker_actions from '@angular-community/qwik-material-examples/datepicker/datepicker-actions';
+import Ex_datepicker_touch from '@angular-community/qwik-material-examples/datepicker/datepicker-touch';
+import Ex_datepicker_inline_calendar from '@angular-community/qwik-material-examples/datepicker/datepicker-inline-calendar';
 import Ex_dialog_example from '@angular-community/qwik-material-examples/dialog/example';
 import Ex_divider_example from '@angular-community/qwik-material-examples/divider/example';
 import Ex_expansion_example from '@angular-community/qwik-material-examples/expansion/example';
@@ -54,6 +66,15 @@ import Ex_select_multiple from '@angular-community/qwik-material-examples/select
 import Ex_select_custom_trigger from '@angular-community/qwik-material-examples/select/select-custom-trigger';
 import Ex_select_panel_class from '@angular-community/qwik-material-examples/select/select-panel-class';
 import Ex_sidenav_example from '@angular-community/qwik-material-examples/sidenav/example';
+import Ex_sidenav_drawer_overview from '@angular-community/qwik-material-examples/sidenav/sidenav-drawer-overview';
+import Ex_sidenav_position from '@angular-community/qwik-material-examples/sidenav/sidenav-position';
+import Ex_sidenav_open_close from '@angular-community/qwik-material-examples/sidenav/sidenav-open-close';
+import Ex_sidenav_mode from '@angular-community/qwik-material-examples/sidenav/sidenav-mode';
+import Ex_sidenav_backdrop from '@angular-community/qwik-material-examples/sidenav/sidenav-backdrop';
+import Ex_sidenav_disable_close from '@angular-community/qwik-material-examples/sidenav/sidenav-disable-close';
+import Ex_sidenav_autosize from '@angular-community/qwik-material-examples/sidenav/sidenav-autosize';
+import Ex_sidenav_fixed from '@angular-community/qwik-material-examples/sidenav/sidenav-fixed';
+import Ex_sidenav_responsive from '@angular-community/qwik-material-examples/sidenav/sidenav-responsive';
 import Ex_slide_toggle_example from '@angular-community/qwik-material-examples/slide-toggle/example';
 import Ex_slider_example from '@angular-community/qwik-material-examples/slider/example';
 import Ex_snack_bar_example from '@angular-community/qwik-material-examples/snack-bar/example';
@@ -63,6 +84,11 @@ import Ex_table_example from '@angular-community/qwik-material-examples/table/ex
 import Ex_table_sorting from '@angular-community/qwik-material-examples/table/table-sorting';
 import Ex_tabs_example from '@angular-community/qwik-material-examples/tabs/example';
 import Ex_timepicker_example from '@angular-community/qwik-material-examples/timepicker/example';
+import Ex_timepicker_forms from '@angular-community/qwik-material-examples/timepicker/timepicker-forms';
+import Ex_timepicker_datepicker_integration from '@angular-community/qwik-material-examples/timepicker/timepicker-datepicker-integration';
+import Ex_timepicker_validation from '@angular-community/qwik-material-examples/timepicker/timepicker-validation';
+import Ex_timepicker_options from '@angular-community/qwik-material-examples/timepicker/timepicker-options';
+import Ex_timepicker_custom_icon from '@angular-community/qwik-material-examples/timepicker/timepicker-custom-icon';
 import Ex_toolbar_example from '@angular-community/qwik-material-examples/toolbar/example';
 import Ex_toolbar_simple from '@angular-community/qwik-material-examples/toolbar/toolbar-simple';
 import Ex_toolbar_multirow from '@angular-community/qwik-material-examples/toolbar/toolbar-multirow';
@@ -133,6 +159,18 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'checkbox/example': Ex_checkbox_example,
   'chips/example': Ex_chips_example,
   'datepicker/example': Ex_datepicker_example,
+  'datepicker/datepicker-custom-icon': Ex_datepicker_custom_icon,
+  'datepicker/date-range-picker-overview': Ex_date_range_picker_overview,
+  'datepicker/date-range-picker-forms': Ex_date_range_picker_forms,
+  'datepicker/datepicker-start-view': Ex_datepicker_start_view,
+  'datepicker/datepicker-value': Ex_datepicker_value,
+  'datepicker/datepicker-min-max': Ex_datepicker_min_max,
+  'datepicker/datepicker-filter': Ex_datepicker_filter,
+  'datepicker/datepicker-events': Ex_datepicker_events,
+  'datepicker/datepicker-disabled': Ex_datepicker_disabled,
+  'datepicker/datepicker-actions': Ex_datepicker_actions,
+  'datepicker/datepicker-touch': Ex_datepicker_touch,
+  'datepicker/datepicker-inline-calendar': Ex_datepicker_inline_calendar,
   'dialog/example': Ex_dialog_example,
   'divider/example': Ex_divider_example,
   'expansion/example': Ex_expansion_example,
@@ -165,6 +203,15 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'select/select-custom-trigger': Ex_select_custom_trigger,
   'select/select-panel-class': Ex_select_panel_class,
   'sidenav/example': Ex_sidenav_example,
+  'sidenav/sidenav-drawer-overview': Ex_sidenav_drawer_overview,
+  'sidenav/sidenav-position': Ex_sidenav_position,
+  'sidenav/sidenav-open-close': Ex_sidenav_open_close,
+  'sidenav/sidenav-mode': Ex_sidenav_mode,
+  'sidenav/sidenav-backdrop': Ex_sidenav_backdrop,
+  'sidenav/sidenav-disable-close': Ex_sidenav_disable_close,
+  'sidenav/sidenav-autosize': Ex_sidenav_autosize,
+  'sidenav/sidenav-fixed': Ex_sidenav_fixed,
+  'sidenav/sidenav-responsive': Ex_sidenav_responsive,
   'slide-toggle/example': Ex_slide_toggle_example,
   'slider/example': Ex_slider_example,
   'snack-bar/example': Ex_snack_bar_example,
@@ -174,6 +221,11 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'table/table-sorting': Ex_table_sorting,
   'tabs/example': Ex_tabs_example,
   'timepicker/example': Ex_timepicker_example,
+  'timepicker/timepicker-forms': Ex_timepicker_forms,
+  'timepicker/timepicker-datepicker-integration': Ex_timepicker_datepicker_integration,
+  'timepicker/timepicker-validation': Ex_timepicker_validation,
+  'timepicker/timepicker-options': Ex_timepicker_options,
+  'timepicker/timepicker-custom-icon': Ex_timepicker_custom_icon,
   'toolbar/example': Ex_toolbar_example,
   'toolbar/toolbar-simple': Ex_toolbar_simple,
   'toolbar/toolbar-multirow': Ex_toolbar_multirow,
