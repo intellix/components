@@ -41,7 +41,15 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   ],
   'mat-card': [{route: 'example', upstreamId: 'card-overview', pkg: 'card'}],
   'mat-checkbox': [{route: 'example', upstreamId: 'checkbox-overview', pkg: 'checkbox'}],
-  'mat-chips': [{route: 'example', upstreamId: 'chips-overview', pkg: 'chips'}],
+  'mat-chips': [
+    {route: 'example', upstreamId: 'chips-overview', pkg: 'chips'},
+    {route: 'chips-input', upstreamId: 'chips-input', pkg: 'chips'},
+    {route: 'chips-template-form', upstreamId: 'chips-template-form', pkg: 'chips'},
+    {route: 'chips-reactive-form', upstreamId: 'chips-reactive-form', pkg: 'chips'},
+    {route: 'chips-autocomplete', upstreamId: 'chips-autocomplete', pkg: 'chips'},
+    {route: 'chips-avatar', upstreamId: 'chips-avatar', pkg: 'chips'},
+    {route: 'chips-stacked', upstreamId: 'chips-stacked', pkg: 'chips'},
+  ],
   'mat-datepicker': [{route: 'example', upstreamId: 'datepicker-overview', pkg: 'datepicker'}],
   'mat-dialog': [
     {route: 'example', upstreamId: 'dialog-overview', pkg: 'dialog'},

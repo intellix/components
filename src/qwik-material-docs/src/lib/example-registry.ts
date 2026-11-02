@@ -18,6 +18,12 @@ import Ex_button_toggle_appearance from '@angular-community/qwik-material-exampl
 import Ex_card_example from '@angular-community/qwik-material-examples/card/example';
 import Ex_checkbox_example from '@angular-community/qwik-material-examples/checkbox/example';
 import Ex_chips_example from '@angular-community/qwik-material-examples/chips/example';
+import Ex_chips_input from '@angular-community/qwik-material-examples/chips/chips-input';
+import Ex_chips_template_form from '@angular-community/qwik-material-examples/chips/chips-template-form';
+import Ex_chips_reactive_form from '@angular-community/qwik-material-examples/chips/chips-reactive-form';
+import Ex_chips_autocomplete from '@angular-community/qwik-material-examples/chips/chips-autocomplete';
+import Ex_chips_avatar from '@angular-community/qwik-material-examples/chips/chips-avatar';
+import Ex_chips_stacked from '@angular-community/qwik-material-examples/chips/chips-stacked';
 import Ex_datepicker_example from '@angular-community/qwik-material-examples/datepicker/example';
 import Ex_dialog_example from '@angular-community/qwik-material-examples/dialog/example';
 import Ex_dialog_data from '@angular-community/qwik-material-examples/dialog/dialog-data';
@@ -119,6 +125,12 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'card/example': Ex_card_example,
   'checkbox/example': Ex_checkbox_example,
   'chips/example': Ex_chips_example,
+  'chips/chips-input': Ex_chips_input,
+  'chips/chips-template-form': Ex_chips_template_form,
+  'chips/chips-reactive-form': Ex_chips_reactive_form,
+  'chips/chips-autocomplete': Ex_chips_autocomplete,
+  'chips/chips-avatar': Ex_chips_avatar,
+  'chips/chips-stacked': Ex_chips_stacked,
   'datepicker/example': Ex_datepicker_example,
   'dialog/example': Ex_dialog_example,
   'dialog/dialog-data': Ex_dialog_data,

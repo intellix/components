@@ -36,6 +36,12 @@ const EXAMPLE_IDS = [
   'dialog-data',
   'dialog-content',
   'dialog-animations',
+  'chips-input',
+  'chips-template-form',
+  'chips-reactive-form',
+  'chips-autocomplete',
+  'chips-avatar',
+  'chips-stacked',
 ];
 
 /**
@@ -163,6 +169,7 @@ const EXAMPLE_STEPS: Record<
  * - `tooltip-manual`: `<button matButton="elevated" matTooltipPosition="right" ...>` writes
  *   `matTooltipPosition` bare.
  * - `dialog-content`: `<mat-dialog-actions align="end">` echoes `align`.
+ * - `chips-stacked`: `<mat-chip-option selected>` echoes `selected`.
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'button-disabled-interactive': ['disabledinteractive'],
@@ -172,6 +179,7 @@ const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'slider-formatting': ['min', 'max', 'step', 'showtickmarks', 'discrete'],
   'tooltip-manual': ['mattooltipposition'],
   'dialog-content': ['align'],
+  'chips-stacked': ['selected'],
 };
 
 /**
@@ -186,6 +194,43 @@ const EXPECTED_FAILURES: Record<string, string> = {
     'render with the standard appearance, which never matches upstream\'s distinctly-templated ' +
     "legacy group (no mat-pseudo-checkbox, different ripple-trigger wiring, a separate CSS class " +
     'ladder) — a real, large unported feature, not a fixable bug.',
+  'chips-input':
+    "this port's MatChipRow/MatChipRowDef have no editable/matChipEdit inline-editing feature " +
+    'at all (see qwik-material/chips/mat-chip-row.tsx), so the per-chip edit button and its ' +
+    'aria-description are not rendered — a real, documented unported feature, not a fixable bug.',
+  'chips-reactive-form':
+    "upstream binds [formControl] directly to <mat-chip-grid>, so Angular's NgControlStatus " +
+    'adds ng-pristine/ng-untouched/ng-valid to the real host from the first render; unlike ' +
+    'MatInput/MatSelect, MatChipGridProps has no touched/dirty/invalid/formBound fields at all ' +
+    '(confirmed against mat-chip-grid.tsx) to replicate those three classes.',
+  'chips-autocomplete':
+    'this port has no way to attach a MatAutocomplete trigger to the SAME input ' +
+    '<MatChipGrid> renders internally (no ref/hook escape hatch — see chips-autocomplete/' +
+    "index.tsx's own header comment); only the chip-grid-with-manual-entry part is ported, " +
+    'the whole free-form-typing + suggestion-panel feature is missing — a real, large unported ' +
+    'feature, not a fixable bug.',
+  'chips-template-form':
+    "upstream binds [(ngModel)] directly to <mat-chip-grid>, so Angular's NgControlStatus adds " +
+    'ng-pristine/ng-untouched/ng-valid to the real host from the first render; same ' +
+    "MatChipGridProps gap as chips-reactive-form's own entry above (no touched/dirty/invalid/" +
+    'formBound fields at all).',
+  'chips-avatar':
+    "found live: upstream's matChipAvatar directive adds its three classes " +
+    '(mat-mdc-chip-avatar/mdc-evolution-chip__icon/mdc-evolution-chip__icon--primary) directly ' +
+    'onto the projected <img> element itself (no extra wrapper) — this port\'s MatChip always ' +
+    'wraps `avatar` content in its OWN extra <span class="mat-mdc-chip-avatar ..."> (see ' +
+    'mat-chip.tsx), one level deeper than upstream for element content. Never caught before: ' +
+    "the only existing avatar scenario (mat-chips/avatar-trailing-icon) uses plain TEXT " +
+    'content, which has no tag to reveal the extra wrapper. A real fix would need the host ' +
+    'classes applied to arbitrary consumer-supplied JSXOutput, which this port has no ' +
+    'mechanism for (same category as MatCardAvatar always rendering its own <img>).',
+  'chips-stacked':
+    "this port's MatChipListbox models single-select as ONE shared computed value/option, " +
+    'derived once at mount from the FIRST option with `selected: true` — upstream allows each ' +
+    '`<mat-chip-option selected>` to independently start selected regardless of listbox mode ' +
+    '(confirmed live: all 4 real chips render aria-selected="true" simultaneously, even though ' +
+    'the listbox has no `multiple` attribute); this port only ever reflects ONE of them as ' +
+    'selected. A real fix would need a different initial-selection model, not a small change.',
 };
 
 test.describe('qwik-material-examples (non-headline) — Angular DOM parity', () => {

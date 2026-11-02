@@ -296,3 +296,50 @@ event-scheduled correction, and the correction's index-based matching ran while 
 element was still lagging in the DOM (`grid-input` failed ~1 in 3, `removable` ~1 in 10, both 0 on
 Qwik 1). The correction now also runs when the chip/row list length changes, and retries on the next
 frame (up to 10) until the DOM and the array agree in length. 110/110 over 10 repeats.
+
+## Three real gaps found porting docs examples (2026-11-02), documented not fixed
+
+Found while porting `chips-avatar`/`chips-stacked`/`chips-input`/`chips-template-form`/
+`chips-reactive-form`/`chips-autocomplete` (the remaining guide-embedded examples from
+`src/material/chips/chips.md`). None of these are small, safely-fixable bugs given this
+component's existing test surface; each is tracked as an expected parity-suite failure in
+`specs/examples-misc/angular-parity.spec.ts` instead:
+
+1. **`MatChip`'s avatar slot always wraps `avatar` content in an extra `<span
+   class="mat-mdc-chip-avatar mdc-evolution-chip__icon mdc-evolution-chip__icon--primary"
+   role="img">`.** Confirmed live (`chips-avatar`, the first scenario to pass a real `<img>` as
+   avatar content instead of plain text): upstream's `matChipAvatar` directive adds those three
+   classes + `role="img"` directly onto whatever element the consumer projects (`<img
+   matChipAvatar>`), with no extra wrapper — one level shallower than this port's rendering. The
+   existing `mat-chips/avatar-trailing-icon` scenario never caught this because it passes plain
+   text (`avatar: 'K'`), which has no tag to reveal the extra span. A real fix needs the host
+   classes applied to arbitrary consumer-supplied `JSXOutput`, which this port has no mechanism
+   for — same category as `MatCardAvatar` always rendering its own `<img>` rather than accepting
+   one.
+2. **`MatChipListbox` models single-select as one shared, derived value — not independent
+   per-option `selected` flags.** `chips-stacked`'s real markup is `@for (...) { <mat-chip-option
+   selected> }` inside a listbox with NO `multiple` attribute: upstream happily renders every
+   option with `aria-selected="true"` simultaneously (confirmed live) — nothing deselects the
+   others at parse time, only later user interaction would. This port's single-select mode
+   computes one `value` at mount (`props.options.find(o => o.selected)?.value`) and derives every
+   option's selected state FROM that one value, so passing `selected: true` on several options at
+   once only ever reflects one of them. A real fix needs a different initial-selection model for
+   this edge case.
+3. **`MatChipGridProps` has no `touched`/`dirty`/`invalid`/`formBound` fields at all**, unlike
+   `MatInput`/`MatSelect` (see `qwik-material/input/SYNC.md`'s "aria-label prop added" entry for
+   that established pattern). `chips-template-form`/`chips-reactive-form` bind `[(ngModel)]`/
+   `[formControl]` directly to `<mat-chip-grid>`, so Angular's `NgControlStatus` directive adds
+   `ng-pristine ng-untouched ng-valid` to the real host from the first render — this port has no
+   way to replicate those three classes on `<mat-chip-grid>` yet.
+4. **No way to compose a `MatAutocomplete` trigger onto `<MatChipGrid>`'s internally-rendered
+   input.** `chips-autocomplete` stacks `matChipInputFor` and `matAutocomplete` on the SAME
+   native `<input>` upstream; this port's `<MatChipGrid>` renders its own `<input>` from the
+   `input` data prop with no ref/hook escape hatch for a second behavior to attach to that exact
+   element (`qwik-material/autocomplete`'s `<MatAutocomplete>` is a standalone component with its
+   own host, not a composable directive hook like `useMatTooltip()`). Only the
+   chip-grid-with-manual-entry part is ported; the free-form-typing + suggestion-panel feature is
+   not reproduced at all.
+
+Also unported (documented in `chips-input`'s own file, no parity impact beyond the `editable`
+button itself): `editable`/`matChipEdit` inline editing — `MatChipRowProps`/`MatChipRowDef` have
+no `editable`/`onEdited$` fields (see `mat-chip-row.tsx`'s own doc comment).
