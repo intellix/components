@@ -159,6 +159,38 @@ function isComponentCall(initializer) {
   return text === 'component$' || text.endsWith('.component$');
 }
 
+function toPascalCase(id) {
+  return id
+    .split('-')
+    .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+    .join('');
+}
+
+/**
+ * Orders an entry point's exported components so its main component/hook comes first (e.g.
+ * `MatSelect` before `MatOptgroup`), then related components — alphabetical otherwise provides
+ * no signal a reader can use, and an entry point's OWN component is always the thing they came
+ * to read about first. Heuristic: the entry point id (e.g. `button-toggle`) converted to
+ * PascalCase (`ButtonToggle`) should exactly match the component name with a `Mat`/`Cdk` prefix
+ * stripped (`MatButtonToggle`, `CdkAccordion`) — or, for a plural entry point id naming a
+ * singular component (`chips` -> `MatChip`), the same check with a trailing `s` dropped. Falls
+ * back to plain alphabetical (unchanged) when nothing matches, which only affects entry points
+ * with no single obviously-main component (e.g. `qwik-cdk/keycodes`, all constants).
+ */
+function sortComponentsMainFirst(components, id) {
+  const sorted = [...components].sort((a, b) => a.name.localeCompare(b.name));
+  const pascal = toPascalCase(id);
+  const candidates = pascal.endsWith('s') ? [pascal, pascal.slice(0, -1)] : [pascal];
+  const isMain = name => candidates.some(c => name === `Mat${c}` || name === `Cdk${c}` || name === c);
+  let mainIndex = sorted.findIndex(c => isMain(c.name));
+  if (mainIndex === -1) {
+    mainIndex = sorted.findIndex(c => candidates.some(cand => c.name.endsWith(cand)));
+  }
+  if (mainIndex <= 0) return sorted;
+  const main = sorted[mainIndex];
+  return [main, ...sorted.slice(0, mainIndex), ...sorted.slice(mainIndex + 1)];
+}
+
 function analyzeEntryPoint(pkgRoot, id) {
   const publicApiPath = path.join(pkgRoot, id, 'public-api.ts');
   if (!fs.existsSync(publicApiPath)) return {id, error: `public-api.ts not found at ${publicApiPath}`};
@@ -277,13 +309,12 @@ function analyzeEntryPoint(pkgRoot, id) {
     types.push({name, kind: value.kind === 'interface' ? 'interface' : 'type', summary: '', details: '', members: value.props});
   }
 
-  components.sort((a, b) => a.name.localeCompare(b.name));
   hooks.sort((a, b) => a.name.localeCompare(b.name));
   functions.sort((a, b) => a.name.localeCompare(b.name));
   types.sort((a, b) => a.name.localeCompare(b.name));
   constants.sort((a, b) => a.name.localeCompare(b.name));
 
-  return {id, components, hooks, functions, types, constants};
+  return {id, components: sortComponentsMainFirst(components, id), hooks, functions, types, constants};
 }
 
 fs.mkdirSync(OUT_DIR, {recursive: true});

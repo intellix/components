@@ -1,4 +1,5 @@
 import {component$} from '@qwik.dev/core';
+import {renderInlineMarkdown} from '../lib/inline-markdown';
 
 interface ApiProp {
   name: string;
@@ -74,11 +75,11 @@ function PropsTable({props}: {props: ApiProp[]}) {
               <code>{p.type}</code>
             </td>
             <td>
-              {p.summary}
+              {renderInlineMarkdown(p.summary)}
               {p.details && (
                 <details class="docs-api-details">
-                  <summary>More</summary>
-                  <p>{p.details}</p>
+                  <summary>Details</summary>
+                  <p>{renderInlineMarkdown(p.details)}</p>
                 </details>
               )}
             </td>
@@ -121,7 +122,13 @@ export default component$<{data: ApiModule}>(({data}) => {
               </div>
               <div class="docs-api-member-body">
                 {(c.summary || c.details) && (
-                  <p class="docs-api-member-summary">{c.summary}</p>
+                  <p class="docs-api-member-summary">{renderInlineMarkdown(c.summary)}</p>
+                )}
+                {c.details && (
+                  <details class="docs-api-details">
+                    <summary>Details</summary>
+                    <p>{renderInlineMarkdown(c.details)}</p>
+                  </details>
                 )}
                 <PropsTable props={c.props} />
               </div>
@@ -141,11 +148,11 @@ export default component$<{data: ApiModule}>(({data}) => {
               </div>
               {(h.summary || h.details) && (
                 <div class="docs-api-member-body">
-                  <p class="docs-api-member-summary">{h.summary}</p>
+                  <p class="docs-api-member-summary">{renderInlineMarkdown(h.summary)}</p>
                   {h.details && (
                     <details class="docs-api-details">
-                      <summary>More</summary>
-                      <p>{h.details}</p>
+                      <summary>Details</summary>
+                      <p>{renderInlineMarkdown(h.details)}</p>
                     </details>
                   )}
                 </div>
@@ -166,11 +173,11 @@ export default component$<{data: ApiModule}>(({data}) => {
               </div>
               {(f.summary || f.details) && (
                 <div class="docs-api-member-body">
-                  <p class="docs-api-member-summary">{f.summary}</p>
+                  <p class="docs-api-member-summary">{renderInlineMarkdown(f.summary)}</p>
                   {f.details && (
                     <details class="docs-api-details">
-                      <summary>More</summary>
-                      <p>{f.details}</p>
+                      <summary>Details</summary>
+                      <p>{renderInlineMarkdown(f.details)}</p>
                     </details>
                   )}
                 </div>
@@ -187,7 +194,15 @@ export default component$<{data: ApiModule}>(({data}) => {
             <div class="docs-api-member" key={t.name}>
               <div class="docs-api-member-header">{t.name}</div>
               <div class="docs-api-member-body">
-                {(t.summary || t.details) && <p class="docs-api-member-summary">{t.summary}</p>}
+                {(t.summary || t.details) && (
+                  <p class="docs-api-member-summary">{renderInlineMarkdown(t.summary)}</p>
+                )}
+                {t.details && (
+                  <details class="docs-api-details">
+                    <summary>Details</summary>
+                    <p>{renderInlineMarkdown(t.details)}</p>
+                  </details>
+                )}
                 {t.members ? <PropsTable props={t.members} /> : <pre class="docs-code">{t.definition}</pre>}
               </div>
             </div>
@@ -205,7 +220,13 @@ export default component$<{data: ApiModule}>(({data}) => {
               </div>
               {(c.summary || c.details) && (
                 <div class="docs-api-member-body">
-                  <p class="docs-api-member-summary">{c.summary}</p>
+                  <p class="docs-api-member-summary">{renderInlineMarkdown(c.summary)}</p>
+                  {c.details && (
+                    <details class="docs-api-details">
+                      <summary>Details</summary>
+                      <p>{renderInlineMarkdown(c.details)}</p>
+                    </details>
+                  )}
                 </div>
               )}
             </div>
