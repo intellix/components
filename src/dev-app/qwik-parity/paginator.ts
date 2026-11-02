@@ -1,4 +1,4 @@
-import {Component, Service, Type} from '@angular/core';
+import {Component, Injectable, Type} from '@angular/core';
 import {MatPaginatorIntl, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
 import {Subject} from 'rxjs';
 
@@ -211,7 +211,7 @@ import {Subject} from 'rxjs';
 //
 // - `custom-intl`: provides a `MatPaginatorIntl` subclass-by-interface (same pattern as
 //   upstream's own `paginator-intl-example.ts` — a plain class implementing the
-//   `MatPaginatorIntl` interface, decorated `@Service({autoProvided: false})`, supplied via
+//   `MatPaginatorIntl` interface, decorated `@Injectable()`, supplied via
 //   `providers: [{provide: MatPaginatorIntl, useClass: ...}]`, NOT `extends MatPaginatorIntl`).
 //   EXACT label strings used below (document these verbatim — the Qwik port's own default-intl
 //   object must be swappable to produce byte-identical text):
@@ -398,11 +398,11 @@ export class PaginatorDisabled {
 
 /**
  * Mirrors upstream's own `paginator-intl-example.ts`: a plain class implementing (not
- * extending) `MatPaginatorIntl`, decorated `@Service({autoProvided: false})`, supplied through
+ * extending) `MatPaginatorIntl`, decorated `@Injectable()`, supplied through
  * `providers: [{provide: MatPaginatorIntl, useClass: ...}]` on the scenario below. See this
  * file's header for the exact strings and why they're documented verbatim.
  */
-@Service({autoProvided: false})
+@Injectable()
 class QwikParityPaginatorIntl implements MatPaginatorIntl {
   changes = new Subject<void>();
   itemsPerPageLabel = 'Rows:';
