@@ -1,0 +1,9 @@
+/* Copied from src/components-examples/material/table/table-sticky-header/
+   table-sticky-header-example.css, prefixed with this route's own host tag. */
+table-sticky-header-example .example-container {
+  height: 400px;
+  overflow: auto;
+}
+table-sticky-header-example table {
+  width: 100%;
+}

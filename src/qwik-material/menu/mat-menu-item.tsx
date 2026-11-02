@@ -18,6 +18,7 @@ import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-do
 import {MAT_MENU_DEFAULT_OPTIONS} from './mat-menu-tokens';
 import type {MatMenuRef} from './menu-ref';
 import {openMenu, type MenuRuntimeSignals} from './menu-runtime';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 import type {MenuCloseReason} from './menu-close-reason';
 
 /**
@@ -257,7 +258,12 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
       onTouchEnd$={rippleEvent$}
       onTouchCancel$={rippleEvent$}
     >
-      {props.icon}
+      {/* `cloneJsxForReuse`: this item re-renders on its own highlight-state signal change
+          (see menu/SYNC.md's "re-rendered twice within the SAME open" writeup) -- rendering the
+          SAME static `props.icon` JSXOutput object again on that re-render corrupts it (the
+          identical bug `menu-panel.tsx` already works around for `props.content` as a whole;
+          this is the same issue one level deeper, for an item's own `icon` prop). */}
+      {cloneJsxForReuse(props.icon)}
       <span class="mat-mdc-menu-item-text">
         <Slot />
       </span>

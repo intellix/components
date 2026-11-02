@@ -46,6 +46,7 @@ export const COMPONENTS: ComponentEntry[] = [
     summary: 'Suggests options as the user types into a text input.',
     devAppId: 'mat-autocomplete',
     entryPoint: 'autocomplete',
+    hasOverviewGuide: true,
   },
   {
     id: 'badge',
@@ -111,6 +112,7 @@ export const COMPONENTS: ComponentEntry[] = [
     summary: 'A calendar-backed input for picking a single date.',
     devAppId: 'mat-datepicker',
     entryPoint: 'datepicker',
+    hasOverviewGuide: true,
   },
   {
     id: 'dialog',
@@ -168,6 +170,7 @@ export const COMPONENTS: ComponentEntry[] = [
     summary: 'The native `<input>`/`<textarea>` control used inside `<MatFormField>`.',
     devAppId: 'mat-form-field',
     entryPoint: 'input',
+    hasOverviewGuide: true,
   },
   {
     id: 'list',
@@ -297,6 +300,7 @@ export const COMPONENTS: ComponentEntry[] = [
     summary: 'A dropdown-backed input for picking a time of day.',
     devAppId: 'mat-timepicker',
     entryPoint: 'timepicker',
+    hasOverviewGuide: true,
   },
   {
     id: 'toolbar',

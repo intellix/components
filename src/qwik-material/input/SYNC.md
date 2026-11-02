@@ -174,3 +174,13 @@ spread or a function call to know the value came from a signal. See
 `src/qwik-cdk-dev-app/src/routes/formisch/account/formisch-bindings.ts`'s module doc comment for
 the full write-up (three confirmed attempts) and `qwik-material/README.md`'s "Using with
 Formisch" gotchas list.
+
+## Fixed: standalone `useContext` crash for the optional form-field contexts (2026-11-02)
+
+This component's `useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined)`/`useContext(
+MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined)` calls were switched to `core/mat-form-field-
+control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConnectedOrigin()`
+— see that file's own SYNC.md entry for the full write-up (a real, previously-latent Qwik
+`Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
+porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
+change for every existing (always form-field-nested) scenario.

@@ -1,0 +1,25 @@
+/* Copied from src/components-examples/material/table/table-sticky-columns/
+   table-sticky-columns-example.css, prefixed with this route's own host tag. */
+table-sticky-columns-example .example-container {
+  height: 400px;
+  width: 550px;
+  max-width: 100%;
+  overflow: auto;
+}
+table-sticky-columns-example table {
+  width: 800px;
+}
+table-sticky-columns-example td.mat-column-star {
+  width: 20px;
+  padding-right: 8px;
+}
+table-sticky-columns-example th.mat-column-position,
+table-sticky-columns-example td.mat-column-position {
+  padding-left: 8px;
+}
+table-sticky-columns-example .mat-mdc-table-sticky-border-elem-right {
+  border-left: 1px solid #e0e0e0;
+}
+table-sticky-columns-example .mat-mdc-table-sticky-border-elem-left {
+  border-right: 1px solid #e0e0e0;
+}

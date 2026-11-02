@@ -1,0 +1,16 @@
+/* Copied from src/components-examples/material/sidenav/sidenav-autosize/sidenav-autosize-example.css,
+   prefixed with this route's own host tag. */
+sidenav-autosize-example .example-container {
+  width: 500px;
+  height: 300px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+sidenav-autosize-example .example-sidenav-content {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+sidenav-autosize-example .example-sidenav {
+  padding: 20px;
+}

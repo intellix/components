@@ -612,3 +612,13 @@ landing its write on a disconnected signal instance) rather than anything specif
 port's code, but the root cause was not conclusively isolated inside Qwik itself in the time
 available. Only `outline-basic` is affected among all `mat-select`/`mat-autocomplete`
 scenarios.
+
+## Fixed: standalone `useContext` crash for the optional form-field contexts (2026-11-02)
+
+This component's `useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined)`/`useContext(
+MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined)` calls were switched to `core/mat-form-field-
+control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConnectedOrigin()`
+— see that file's own SYNC.md entry for the full write-up (a real, previously-latent Qwik
+`Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
+porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
+change for every existing (always form-field-nested) scenario.

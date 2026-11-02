@@ -66,8 +66,21 @@ export const MatIdScope = component$<{id: string; content: JSXOutput}>(props => 
 });
 
 /** Sentinel passed as `useContext`'s default — see `useAssignedId()`'s own doc comment for why
- *  the literal value `undefined` can't be used as that default directly. Module-private. */
-const NO_SCOPE = Symbol('no-id-scope');
+ *  the literal value `undefined` can't be used as that default directly. Module-private.
+ *
+ *  A frozen plain object, NOT a `Symbol` (confirmed live, a real Qwik core behavior, not a
+ *  guess — see `core/mat-form-field-control.ts`'s identical `NO_FORM_FIELD` fix, the same bug
+ *  surfacing a second time): when the context is genuinely missing, `useContext`'s own
+ *  implementation calls its internal `set(defaultValue)`, storing the default into the
+ *  component's serializable sequential-scope slot for client resume. Qwik's SSR serializer only
+ *  recognizes a small whitelist of its OWN well-known `Symbol`s — any other `Symbol`, including
+ *  a `Symbol()` sentinel like this one used to be, hits its generic `case 'symbol':` fallthrough
+ *  and throws `Code(Q20)` (`QError.serializeErrorUnknownType`) the moment a `<MatHint>`/
+ *  `<MatError>` with no ancestor scope actually renders through a real SSR pass (vitest's
+ *  JSDOM-based unit tests never exercise that, so a `Symbol()` here stayed invisible until a
+ *  real build hit it). A plain object serializes fine, so swapping the sentinel's type — not the
+ *  comparison logic below — fixes it. */
+const NO_SCOPE: unknown = Object.freeze({});
 
 /**
  * Reads the `MAT_ASSIGNED_ID` context, or `undefined` outside a scope.

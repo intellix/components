@@ -1,0 +1,19 @@
+/* Copied from src/components-examples/material/tabs/tab-group-dynamic-height/
+   tab-group-dynamic-height-example.css, prefixed with this route's own host tag. */
+tab-group-dynamic-height-example .example-small-box,
+tab-group-dynamic-height-example .example-large-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px;
+  padding: 16px;
+  border-radius: 8px;
+}
+tab-group-dynamic-height-example .example-small-box {
+  height: 100px;
+  width: 100px;
+}
+tab-group-dynamic-height-example .example-large-box {
+  height: 300px;
+  width: 300px;
+}

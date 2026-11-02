@@ -1,0 +1,6 @@
+/* Copied from src/components-examples/material/tabs/tab-nav-bar-basic/tab-nav-bar-basic-example.css,
+   prefixed with this route's own host tag. */
+tab-nav-bar-basic-example .example-action-button {
+  margin-top: 8px;
+  margin-right: 8px;
+}

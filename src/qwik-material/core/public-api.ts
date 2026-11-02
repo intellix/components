@@ -18,6 +18,8 @@ export {
   MAT_FORM_FIELD_CONTROL_STATE,
   MAT_FORM_FIELD_CONNECTED_ORIGIN,
   readControlProps,
+  useOptionalFormFieldControlState,
+  useOptionalFormFieldConnectedOrigin,
   type MatFormFieldControlProps,
   type MatFormFieldControlState,
 } from './mat-form-field-control';

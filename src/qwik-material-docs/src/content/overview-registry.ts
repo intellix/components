@@ -9,9 +9,35 @@
 import buttonMd from './overviews/button.md?raw';
 import formFieldMd from './overviews/form-field.md?raw';
 import selectMd from './overviews/select.md?raw';
+import listMd from './overviews/list.md?raw';
+import toolbarMd from './overviews/toolbar.md?raw';
+import expansionMd from './overviews/expansion.md?raw';
+import sortMd from './overviews/sort.md?raw';
+import inputMd from './overviews/input.md?raw';
+import menuMd from './overviews/menu.md?raw';
+import autocompleteMd from './overviews/autocomplete.md?raw';
+import timepickerMd from './overviews/timepicker.md?raw';
+import datepickerMd from './overviews/datepicker.md?raw';
+import sidenavMd from './overviews/sidenav.md?raw';
+import tabsMd from './overviews/tabs.md?raw';
+import stepperMd from './overviews/stepper.md?raw';
+import tableMd from './overviews/table.md?raw';
 
 export const OVERVIEW_MARKDOWN: Record<string, string> = {
   button: buttonMd,
   'form-field': formFieldMd,
   select: selectMd,
+  list: listMd,
+  toolbar: toolbarMd,
+  expansion: expansionMd,
+  sort: sortMd,
+  input: inputMd,
+  menu: menuMd,
+  autocomplete: autocompleteMd,
+  timepicker: timepickerMd,
+  datepicker: datepickerMd,
+  sidenav: sidenavMd,
+  tabs: tabsMd,
+  stepper: stepperMd,
+  table: tableMd,
 };

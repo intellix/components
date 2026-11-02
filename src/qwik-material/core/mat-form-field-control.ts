@@ -1,4 +1,4 @@
-import {createContextId, type JSXOutput, type Signal} from '@qwik.dev/core';
+import {createContextId, useContext, type JSXOutput, type Signal} from '@qwik.dev/core';
 
 /** Mirrors `form-field/form-field-config.ts`'s `MatFormFieldColor` — redeclared
  *  here (rather than imported) so `core/` (the lower-level package) never
@@ -262,13 +262,63 @@ export interface MatFormFieldControlState {
 /**
  * Context id a `<MatFormField>` instance provides (seeded from
  * {@link readControlProps} on its own `control` prop) and the rendered
- * control reads/writes via its own lazy event handlers. Never exists
- * without an owning `MatFormField` — there is no sensible standalone
- * default, so every consumer MUST go through a `<MatFormField>`.
+ * control reads/writes via its own lazy event handlers. Absent for a
+ * control used standalone (no `<MatFormField>` ancestor) — see
+ * {@link useOptionalFormFieldControlState} for the only safe way to read
+ * that case.
  */
 export const MAT_FORM_FIELD_CONTROL_STATE = createContextId<MatFormFieldControlState>(
   'qwikMaterial/formFieldControlState',
 );
+
+/** Sentinel passed as `useContext`'s default — see {@link useOptionalFormFieldControlState}'s
+ *  own doc comment for why the literal value `undefined` can't be used as that default
+ *  directly. Module-private (mirrors `form-field/id-scope.ts`'s identical `NO_SCOPE` fix for
+ *  `MAT_ASSIGNED_ID`).
+ *
+ *  A frozen plain object, NOT a `Symbol` (confirmed live, a real Qwik core behavior, not a
+ *  guess): `useContext(ctx, defaultValue)`'s own implementation, when the context is genuinely
+ *  missing, calls its internal `set(defaultValue)` — which stores the default into the
+ *  component's serializable sequential-scope slot so the client can resume without re-resolving
+ *  it. Qwik's SSR serializer only recognizes a small whitelist of its OWN well-known internal
+ *  `Symbol`s (`NEEDS_COMPUTATION`, `STORE_ALL_PROPS`, `_UNINITIALIZED`, `explicitUndefined`) —
+ *  any other `Symbol`, including this one, hits its generic `case 'symbol':` fallthrough and
+ *  throws `Code(Q20)` (`QError.serializeErrorUnknownType`). This was latent the whole time this
+ *  used `Symbol(...)` (vitest's JSDOM-based unit tests never exercise real SSR-to-string
+ *  serialization, so it stayed invisible there) and only surfaced building the real docs site:
+ *  `autocomplete-plain-input` is the one example port-wide that genuinely renders a control with
+ *  no `<MatFormField>` ancestor, so it's the only scenario that ever actually stores this
+ *  sentinel instead of a real context value — crashing `/components/autocomplete/overview/`'s
+ *  real SSR (confirmed via `node server/entry.preview.js`-based direct route fetches isolating
+ *  it to exactly that route). A plain object serializes fine (Qwik's generic object support),
+ *  so swapping the sentinel's type — not the comparison logic — fixes it. */
+const NO_FORM_FIELD: unknown = Object.freeze({});
+
+/**
+ * Reads the `MAT_FORM_FIELD_CONTROL_STATE` context, or `undefined` for a control used
+ * standalone (no `<MatFormField>` ancestor at all) — the shape every control in this port
+ * (`MatInput`, `MatSelect`, `MatAutocomplete`, the datepicker/timepicker inputs, …) needs for its
+ * own `isInFormField` check.
+ *
+ * Can't simply call `useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined)` — confirmed live (a
+ * genuine Qwik core behavior, not a guess, matching `form-field/id-scope.ts`'s identical
+ * `useAssignedId()` write-up for `MAT_ASSIGNED_ID`): `useContext`'s own implementation checks
+ * `defaultValue !== undefined` to decide whether a default was supplied at all, so passing the
+ * literal value `undefined` as the default is indistinguishable from passing none, and it throws
+ * `QError_notFoundContext` instead of returning it. This was latent in every one of this port's
+ * form controls (confirmed by grep — `MatInput`/`MatSelect`/`MatAutocomplete`/
+ * `MatDatepickerInput`/`MatDateRangeInput`/`MatTimepickerInput` all called the broken form
+ * directly) but never triggered, because every existing scenario in this whole project nests its
+ * control in a `<MatFormField>`. Surfaced porting the docs site's `autocomplete-plain-input`
+ * example — the first ever standalone usage of any of them.
+ */
+export function useOptionalFormFieldControlState(): MatFormFieldControlState | undefined {
+  const value = useContext(
+    MAT_FORM_FIELD_CONTROL_STATE,
+    NO_FORM_FIELD as unknown as MatFormFieldControlState,
+  );
+  return value === (NO_FORM_FIELD as unknown as MatFormFieldControlState) ? undefined : value;
+}
 
 /**
  * Context id a `<MatFormField>` instance provides, carrying a live
@@ -289,6 +339,24 @@ export const MAT_FORM_FIELD_CONTROL_STATE = createContextId<MatFormFieldControlS
 export const MAT_FORM_FIELD_CONNECTED_ORIGIN = createContextId<Signal<Element | undefined>>(
   'qwikMaterial/formFieldConnectedOrigin',
 );
+
+/** Sentinel for {@link useOptionalFormFieldConnectedOrigin} — see
+ *  {@link useOptionalFormFieldControlState}'s doc comment for why this is a frozen plain object,
+ *  not a `Symbol` (the same `Code(Q20)` SSR-serialization crash applies here too). */
+const NO_CONNECTED_ORIGIN: unknown = Object.freeze({});
+
+/** Reads `MAT_FORM_FIELD_CONNECTED_ORIGIN`, or `undefined` for a control used standalone (no
+ *  `<MatFormField>` ancestor) — same "can't pass literal `undefined` as `useContext`'s default"
+ *  fix as {@link useOptionalFormFieldControlState}, for this sibling context. */
+export function useOptionalFormFieldConnectedOrigin(): Signal<Element | undefined> | undefined {
+  const value = useContext(
+    MAT_FORM_FIELD_CONNECTED_ORIGIN,
+    NO_CONNECTED_ORIGIN as unknown as Signal<Element | undefined>,
+  );
+  return value === (NO_CONNECTED_ORIGIN as unknown as Signal<Element | undefined>)
+    ? undefined
+    : value;
+}
 
 /**
  * Reads the props of a `JSXOutput` value produced by `<SomeComponent .../>`

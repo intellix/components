@@ -425,3 +425,26 @@ component's own `inputRef` signal. Same rationale as `qwik-material/input`'s ide
 — see `qwik-material/README.md`'s "Using with Formisch". Not exercised by this port's own
 Formisch example; added for consistency since the same gap (no way to hand out the live native
 element) applies identically here.
+
+## Fixed: standalone usage (no `<MatFormField>` ancestor) crashed with `Code(Q8)` (2026-11-02)
+
+Found porting the docs site's `autocomplete-plain-input` example (the first ever usage of
+`MatAutocomplete` with no `<MatFormField>` ancestor in this whole project). `mat-autocomplete.tsx`
+called `useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined)`/`useContext(
+MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined)` to read the OPTIONAL ancestor state — but Qwik's own
+`useContext(context, defaultValue)` checks `defaultValue !== undefined` to decide whether a
+default was supplied at all, so passing the literal value `undefined` is indistinguishable from
+passing none, and it throws `QError_notFoundContext` (`Code(Q8)`) instead of returning it. This
+exact bug (confirmed live, not a guess) was ALREADY found and fixed once before for a sibling
+context — see `qwik-material/form-field/id-scope.ts`'s `useAssignedId()` — but the same
+anti-pattern had silently spread to every other "optional ancestor" context read in the library
+(grep: `MatInput`, `MatSelect`, `MatAutocomplete`, `MatDatepickerInput`, `MatDateRangeInput`,
+`MatTimepickerInput` all had it for `MAT_FORM_FIELD_CONTROL_STATE`/`MAT_FORM_FIELD_CONNECTED_ORIGIN`
+specifically), latent and undetected because every existing scenario in the whole 578-test suite
+nests its control in a `<MatFormField>`. Fixed centrally: `core/mat-form-field-control.ts` now
+exports `useOptionalFormFieldControlState()`/`useOptionalFormFieldConnectedOrigin()` (the same
+private-`Symbol`-sentinel technique `useAssignedId()` already used), and every one of those 6
+call sites was switched to call them instead of the broken raw `useContext(..., undefined)` form.
+Zero behavior change when a `<MatFormField>` ancestor exists (confirmed: `pnpm -C src/qwik-material
+test` 783/783, full `src/qwik-cdk-parity-tests` suite unaffected) — only the previously-crashing
+standalone case now works.

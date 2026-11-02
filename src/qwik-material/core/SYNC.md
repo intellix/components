@@ -485,3 +485,57 @@ their own) would have meant picking one or the other. `composeRef([internalRef, 
 the live element to both. Driving use case: a form library's field-registration ref (Formisch's
 `field.props.ref`), needed for `focus()`-on-invalid-submit and similar programmatic-focus features
 — see `qwik-material/README.md`'s "Using with Formisch".
+
+## Fixed: `useContext(X, undefined)` for an optional ancestor context always threw (2026-11-02)
+
+`MAT_FORM_FIELD_CONTROL_STATE`/`MAT_FORM_FIELD_CONNECTED_ORIGIN` (`core/mat-form-field-control.ts`)
+are meant to be OPTIONAL — every consumer reads them with a fallback for "no `<MatFormField>`
+ancestor" (`const formField = useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined); const
+isInFormField = formField !== undefined;`). But Qwik's own `useContext(context, defaultValue)`
+checks `defaultValue !== undefined` to decide whether a default was supplied AT ALL — passing the
+literal value `undefined` is indistinguishable from passing none, so it throws
+`QError_notFoundContext` (`Code(Q8)`) instead of returning it, every time there's genuinely no
+provider. This exact Qwik behavior was already found and fixed once before, for the sibling
+`MAT_ASSIGNED_ID` context — see `qwik-material/form-field/id-scope.ts`'s `useAssignedId()` — but
+the same raw `useContext(X, undefined)` anti-pattern had independently spread to `MatInput`,
+`MatSelect`, `MatAutocomplete`, `MatDatepickerInput`, `MatDateRangeInput`, and
+`MatTimepickerInput` for these two contexts specifically, undetected because every scenario in
+the whole 578-test parity suite nests its control in a `<MatFormField>` — surfaced porting the
+qwik-material-docs site's `autocomplete-plain-input` example (the first-ever standalone, no-
+form-field usage of any of them). Fixed centrally: this file now exports
+`useOptionalFormFieldControlState()`/`useOptionalFormFieldConnectedOrigin()` (the same private-
+`Symbol`-sentinel technique as `useAssignedId()`), and all 6 call sites were switched to them.
+Zero behavior change with a `<MatFormField>` ancestor present (`pnpm -C src/qwik-material test`
+783/783 unchanged, full parity suite unaffected) — only the previously-crashing standalone case
+now works. See each affected component's own SYNC.md for its one-line pointer here.
+
+## Fixed: the `Symbol` sentinel above (and `id-scope.ts`'s identical one) crashed real SSR with `Code(Q20)` (2026-11-02)
+
+The fix just above swapped `useContext(X, undefined)` for `useContext(X, SENTINEL)`, using a
+private `Symbol()` as `SENTINEL` — but a `Symbol` turns out to be the wrong sentinel TYPE,
+independent of the `undefined`-detection bug it was fixing. Confirmed live (a genuine Qwik core
+behavior, not a guess, found reading `useContext`'s own source): when the context is genuinely
+missing, `useContext` calls its internal `set(defaultValue)`, which stores the default into the
+component's serializable sequential-scope slot so the client can resume without re-resolving it.
+Qwik's SSR serializer only recognizes a small whitelist of its OWN well-known internal `Symbol`s
+(`NEEDS_COMPUTATION`, `STORE_ALL_PROPS`, `_UNINITIALIZED`, `explicitUndefined`) — any OTHER
+`Symbol`, including a private sentinel like `NO_FORM_FIELD`/`NO_CONNECTED_ORIGIN` used to be,
+falls through to `throw qError(20 /* QError.serializeErrorUnknownType */, [typeof value])` the
+moment that component actually renders through a real SSR pass with the sentinel actually in use
+(i.e. a genuinely-standalone control, not just one with the fallback code PATH defined). Vitest's
+JSDOM-based unit tests never exercise real SSR-to-string serialization, so this stayed invisible
+through the full 783/783-passing suite; it only surfaced building the qwik-material-docs site for
+real, where `/components/autocomplete/overview/` (embedding `autocomplete-plain-input`, the one
+example port-wide that renders a control standalone) crashed on every real SSR render with
+`Code(Q20) symbol` — isolated to exactly that route via direct `server/entry.preview.js` fetches
+of individual routes. `form-field/id-scope.ts`'s `NO_SCOPE` sentinel (the original template this
+fix was modeled on) has the identical latent bug, confirmed by the same reasoning, and was fixed
+the same way even though nothing in this project's shipped routes currently exercises its own
+standalone (no `MatIdScope`/`MatFormField` ancestor) path through a real SSR build.
+
+Fix: both sentinels are now a frozen plain object (`Object.freeze({})`), not a `Symbol` — plain
+objects serialize fine under Qwik's generic object support. The `===` identity comparison that
+distinguishes "sentinel came back" from "a real value came back" is unaffected (any unique
+reference works for that; `Symbol` was never required). `pnpm -C src/qwik-material test` still
+783/783 after the change; `pnpm -C src/qwik-material-docs build && pnpm exec playwright test
+specs/docs-site` confirmed the crash gone.

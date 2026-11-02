@@ -1,0 +1,8 @@
+/* Copied from src/components-examples/material/stepper/stepper-animations/
+   stepper-animations-example.css, prefixed with this route's own host tag. */
+stepper-animations-example .example-input-wrapper {
+  margin-bottom: 16px;
+}
+stepper-animations-example label {
+  margin-right: 4px;
+}

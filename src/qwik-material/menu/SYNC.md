@@ -348,3 +348,25 @@ same root-cause family rather than a separately fully-diagnosed bug, given the t
 Not pursued further for the same reason given there (squarely inside Qwik's own event handling,
 not this port's code; a workaround would need to change `MatButton`'s DOM, conflicting with the
 hard DOM-parity requirement).
+
+## `MatMenuItem.icon` prop needed `cloneJsxForReuse` too (2026-11-02, Phase 2 docs examples)
+
+Found porting material.angular.dev's `menu-icons` docs example (real `<mat-icon>` content inside
+menu items, not the plain-text/emoji icons every existing scenario used). Confirmed live: the
+auto-focused first item's own `<mat-icon>` text went empty (`'dialpad'` -> `undefined`) while the
+OTHER two items' icons stayed correct — exactly the "re-rendered twice within the SAME open"
+mechanism documented above for `menu-panel.tsx`'s `props.content`, one level deeper: `MatMenuItem`
+itself re-renders when ITS OWN highlight-state signal flips (on auto-focus), and rendering the
+same static `props.icon` JSXOutput object again on that re-render corrupts it — independent of
+`menu-panel.tsx`'s own `cloneJsxForReuse(props.content)` fix, which only rebuilds the outer
+content fresh on `MenuPanel`'s re-renders, not on each individual item's own.
+
+Fix: `mat-menu-item.tsx` renders `{cloneJsxForReuse(props.icon)}` instead of `{props.icon}` —
+same one-line pattern as every other site already using this helper. Purely additive; no
+scenario previously exercised a real `JSXOutput` `icon` prop on an item that also gets
+auto-focused, so this was a latent gap, not a regression.
+
+Verified: `specs/examples-data-nav/angular-parity.spec.ts`'s `menu-icons` (base + both
+interactions) 3/3, run 3x. `specs/material-menu/angular-parity.spec.ts` + `qwik-only.spec.ts`
+still 21/21 (regression check — no existing scenario passes a JSXOutput `icon`, so this is a
+no-op for all of them, confirmed by the unchanged pass count).

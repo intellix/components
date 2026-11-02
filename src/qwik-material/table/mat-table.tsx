@@ -1,4 +1,5 @@
 import {component$, useContextProvider, useSignal, type JSXOutput} from '@qwik.dev/core';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 import {
   cdkColumnClass,
   createVirtualStickyElement,
@@ -191,7 +192,7 @@ function renderNoDataRow(noData: MatNoDataRowDef, displayedColumns: readonly str
   return (
     <tr role="row" class={rowClasses}>
       <td class={cellClasses} colSpan={noData.colSpan ?? displayedColumns.length}>
-        {noData.content}
+        {cloneJsxForReuse(noData.content)}
       </td>
     </tr>
   );
@@ -356,7 +357,7 @@ export const MatTable = component$<MatTableProps>(props => {
             (typeof col.sortHeader === 'object' ? col.sortHeader.id : undefined) ?? name;
           return (
             <MatSortHeader key={name} id={sortId} class={classes} role="columnheader" style={style}>
-              {col.header ?? null}
+              {cloneJsxForReuse(col.header) ?? null}
             </MatSortHeader>
           );
         }
@@ -366,7 +367,7 @@ export const MatTable = component$<MatTableProps>(props => {
           key: name,
           classes,
           style,
-          content: col?.header ?? null,
+          content: cloneJsxForReuse(col?.header) ?? null,
           ariaLabel: col?.headerAriaLabel,
         });
       }),
@@ -389,7 +390,7 @@ export const MatTable = component$<MatTableProps>(props => {
           key: name,
           classes: [...DATA_CELL_BASE_CLASSES, ...columnClasses(name), ...ve.classes],
           style: mergeStyle(ve.style, justifyStyle(col?.justify)),
-          content: row.cells[name] ?? null,
+          content: cloneJsxForReuse(row.cells[name]) ?? null,
         });
       }),
     }),
@@ -411,7 +412,7 @@ export const MatTable = component$<MatTableProps>(props => {
           key: name,
           classes: [...FOOTER_CELL_BASE_CLASSES, ...columnClasses(name), ...ve.classes],
           style: mergeStyle(ve.style, justifyStyle(col?.justify)),
-          content: col?.footer ?? null,
+          content: cloneJsxForReuse(col?.footer) ?? null,
         });
       }),
     }),

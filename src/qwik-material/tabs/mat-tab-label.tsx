@@ -2,6 +2,7 @@ import {$, component$, useSignal, useTask$, type JSXOutput, type QRL} from '@qwi
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /**
  * Internal per-tab header item — `src/material/tabs/tab-header.html`'s
@@ -170,7 +171,16 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
         {...({'mat-ripple': ''} as Record<string, string>)}
       />
       <span class="mdc-tab__content">
-        <span class="mdc-tab__text-label">{props.labelTemplate ?? props.label}</span>
+        {/* `cloneJsxForReuse`: this item re-renders on its own selected/focus-state signal
+            changes (roving tabindex, ripple, focus-origin tracking) — rendering the SAME static
+            `props.labelTemplate` JSXOutput object again on that re-render corrupts it, the same
+            documented Qwik v2 issue menu-panel.tsx/mat-menu-item.tsx already work around (see
+            qwik-material/menu/SYNC.md). Confirmed live: a custom `labelTemplate` tab's icon text
+            went empty after switching tabs (the second render of the OTHER, now-selected tab's
+            label). */}
+        <span class="mdc-tab__text-label">
+          {props.labelTemplate ? cloneJsxForReuse(props.labelTemplate) : props.label}
+        </span>
       </span>
       <span class="mdc-tab-indicator">
         <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline" />

@@ -1,0 +1,15 @@
+/* Copied from src/components-examples/material/table/table-sticky-footer/
+   table-sticky-footer-example.css, prefixed with this route's own host tag. */
+table-sticky-footer-example .example-container {
+  height: 270px;
+  overflow: auto;
+}
+table-sticky-footer-example table {
+  width: 100%;
+}
+table-sticky-footer-example tr.mat-mdc-footer-row {
+  font-weight: bold;
+}
+table-sticky-footer-example .mat-mdc-table-sticky {
+  border-top: 1px solid #e0e0e0;
+}

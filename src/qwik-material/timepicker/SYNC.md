@@ -514,3 +514,13 @@ identical addition (a form library's field-registration ref, e.g. Formisch's `fi
 — see `qwik-material/README.md`'s "Using with Formisch". Not exercised by this port's own example
 (the Formisch spike example uses input/select/radio/slide-toggle/checkbox/datepicker), added for
 consistency since the same gap applies identically here.
+
+## Fixed: standalone `useContext` crash for the optional form-field contexts (2026-11-02)
+
+This component's `useContext(MAT_FORM_FIELD_CONTROL_STATE, undefined)`/`useContext(
+MAT_FORM_FIELD_CONNECTED_ORIGIN, undefined)` calls were switched to `core/mat-form-field-
+control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConnectedOrigin()`
+— see that file's own SYNC.md entry for the full write-up (a real, previously-latent Qwik
+`Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
+porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
+change for every existing (always form-field-nested) scenario.

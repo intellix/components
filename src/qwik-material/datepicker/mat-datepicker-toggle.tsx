@@ -53,6 +53,11 @@ export interface MatDatepickerToggleProps<D = unknown> {
   ariaLabelledby?: string;
   tabIndex?: number | null;
   disableRipple?: boolean;
+  /** Mirrors upstream's `<mat-datepicker-toggle [for]="picker" disabled>` — overrides
+   *  `picker.disabled` for THIS toggle only (the input and calendar are unaffected). Falls back
+   *  to `picker.disabled.value` when omitted (every pre-existing usage). See
+   *  `datepicker/SYNC.md`'s "independent per-element disabled" entry. */
+  disabled?: boolean;
   /** Custom icon content — mirrors `matDatepickerToggleIcon`-projected content. Defaults to
    *  upstream's own inline SVG calendar icon. Named prop, not `<Slot>`-projected content — same
    *  "default content fallback doesn't apply" finding `MatTimepickerToggle`'s own `icon` prop
@@ -65,7 +70,7 @@ export interface MatDatepickerToggleProps<D = unknown> {
 export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props => {
   const picker = props.picker;
   const ctx = useContext(QWIK_CDK);
-  const disabled = picker.disabled.value;
+  const disabled = props.disabled ?? picker.disabled.value;
   const disableRipple = props.disableRipple ?? false;
 
   const focusOrigin = useFocusOrigin();
