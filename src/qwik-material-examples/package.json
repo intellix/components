@@ -1,0 +1,58 @@
+{
+  "name": "@angular-community/qwik-material-examples",
+  "version": "0.0.0",
+  "description": "Shared docs-example modules for qwik-material: one reusable component per material.angular.dev headline example, imported by both src/qwik-cdk-dev-app (parity routes) and src/qwik-material-docs (the docs site's live Examples tab). No build step — consumed directly from TypeScript source by both apps' Qwik/Vite pipelines, same as qwik-cdk/qwik-material are consumed via the `qwik` export condition.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "peerDependencies": {
+    "@qwik.dev/core": ">=2.0.0-rc.4"
+  },
+  "dependencies": {
+    "@angular-community/qwik-cdk": "workspace:*",
+    "@angular-community/qwik-material": "workspace:*"
+  },
+  "devDependencies": {
+    "@qwik.dev/core": "2.0.0-rc.4",
+    "typescript": "*",
+    "vite": "^8.3.5"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    "./autocomplete/example": "./autocomplete/example/index.tsx",
+    "./badge/example": "./badge/example/index.tsx",
+    "./bottom-sheet/example": "./bottom-sheet/example/index.tsx",
+    "./button-toggle/example": "./button-toggle/example/index.tsx",
+    "./button/example": "./button/example/index.tsx",
+    "./card/example": "./card/example/index.tsx",
+    "./checkbox/example": "./checkbox/example/index.tsx",
+    "./chips/example": "./chips/example/index.tsx",
+    "./datepicker/example": "./datepicker/example/index.tsx",
+    "./dialog/example": "./dialog/example/index.tsx",
+    "./divider/example": "./divider/example/index.tsx",
+    "./expansion/example": "./expansion/example/index.tsx",
+    "./form-field/example": "./form-field/example/index.tsx",
+    "./form-field/example-input": "./form-field/example-input/index.tsx",
+    "./grid-list/example": "./grid-list/example/index.tsx",
+    "./icon/example": "./icon/example/index.tsx",
+    "./list/example": "./list/example/index.tsx",
+    "./menu/example": "./menu/example/index.tsx",
+    "./paginator/example": "./paginator/example/index.tsx",
+    "./progress-bar/example": "./progress-bar/example/index.tsx",
+    "./progress-spinner/example": "./progress-spinner/example/index.tsx",
+    "./radio/example": "./radio/example/index.tsx",
+    "./select/example": "./select/example/index.tsx",
+    "./sidenav/example": "./sidenav/example/index.tsx",
+    "./slide-toggle/example": "./slide-toggle/example/index.tsx",
+    "./slider/example": "./slider/example/index.tsx",
+    "./snack-bar/example": "./snack-bar/example/index.tsx",
+    "./sort/example": "./sort/example/index.tsx",
+    "./stepper/example": "./stepper/example/index.tsx",
+    "./table/example": "./table/example/index.tsx",
+    "./tabs/example": "./tabs/example/index.tsx",
+    "./timepicker/example": "./timepicker/example/index.tsx",
+    "./toolbar/example": "./toolbar/example/index.tsx",
+    "./tooltip/example": "./tooltip/example/index.tsx",
+    "./tree/example": "./tree/example/index.tsx"
+  }
+}

@@ -1,30 +1,11 @@
-import {$, component$} from '@qwik.dev/core';
-import {MatButton} from '@angular-community/qwik-material/button';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {useMatBottomSheet} from '@angular-community/qwik-material/bottom-sheet';
-import BottomSheetOverviewExampleSheet from './sheet';
+import {component$} from '@qwik.dev/core';
+import Example from '@angular-community/qwik-material-examples/bottom-sheet/example';
 
-/**
- * Port of material.angular.dev's `bottom-sheet-overview` docs example
- * (src/components-examples/material/bottom-sheet/bottom-sheet-overview/).
- */
-export default component$(() => {
-  const bottomSheet = useMatBottomSheet();
-  const openBottomSheet$ = $(async () => {
-    await bottomSheet.open$(BottomSheetOverviewExampleSheet);
-  });
-
-  return (
-    <QwikMaterialProvider>
-      <div data-parity-root>
-        <bottom-sheet-overview-example>
-          <p>You have received a file called "cat-picture.jpeg".</p>
-          <MatButton appearance="elevated" onClick$={openBottomSheet$}>
-            Open file
-          </MatButton>
-        </bottom-sheet-overview-example>
-      </div>
-      <main data-scenario-ready>ready</main>
-    </QwikMaterialProvider>
-  );
-});
+export default component$(() => (
+  <>
+    <div data-parity-root>
+      <Example />
+    </div>
+    <main data-scenario-ready>ready</main>
+  </>
+));

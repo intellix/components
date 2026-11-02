@@ -3,6 +3,8 @@ packages:
   - src/qwik-cdk
   - src/qwik-cdk-dev-app
   - src/qwik-cdk-parity-tests
+  - src/qwik-material-examples
+  - src/qwik-material-docs
   - docs
   - integration
   - src/aria
