@@ -1,0 +1,24 @@
+// Prebuilt Material Radio CSS entry.
+//
+// Emits: structural styles from radio.scss. Every `--mat-radio-*` custom
+// property it references already carries a real M3 fallback to
+// `--mat-sys-*` baked in at Sass-compile time via token-utils.slot() (e.g.
+// `var(--mat-radio-selected-icon-color, var(--mat-sys-primary))`), the same
+// mechanism upstream itself uses — so no `:root` override block is needed.
+// The one default theme's `--mat-sys-*` (core/default-theme.scss, shipped
+// via core-prebuilt.css) is all that's required. Consumers import via
+// `@angular-community/qwik-material/radio-prebuilt.css`. For full custom
+// theming, consumers should instead @use the radio-theme mixin from
+// `@angular-community/qwik-material/scss/radio/_radio-theme.scss` once the
+// qwik-material/core theming DSL lands.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 8 `--mat-sys-*` literals and ~20 `--mat-radio-*` literals (duplicating
+// values already baked into the fallback chain above, including
+// `--mat-radio-disabled-label-color`'s `color-mix()` expression, which
+// radio.scss's own compiled CSS produces via the identical fallback).
+// Removed 2026-10-30 (see core/SYNC.md "Default theme" and radio/SYNC.md):
+// those literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
+@use './radio';

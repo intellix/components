@@ -1,0 +1,111 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/tokens/token-utils.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+
+@use 'sass:list';
+@use 'sass:map';
+@use 'sass:string';
+@use '../style/sass-utils';
+
+// Returns the token slot value as a CSS variable with optional fallback.
+@function slot($token, $fallbacks, $fallback: null) {
+  // Flatten the grouped tokens map into a single map.
+  $fallbacks-flattened: ();
+  @each $tokens in map.values($fallbacks) {
+    @each $t, $value in $tokens {
+      $fallbacks-flattened: map.set($fallbacks-flattened, $t, $value);
+    }
+  }
+
+  $sys-fallback: map.get($fallbacks-flattened, $token);
+  @if (sass-utils.is-css-var-name($sys-fallback)) {
+    @if $fallback != null {
+      $sys-fallback: var(#{$sys-fallback}, $fallback);
+    } @else {
+      $sys-fallback: var(#{$sys-fallback});
+    }
+  } @else if $fallback != null and $sys-fallback == null {
+    $sys-fallback: $fallback;
+  }
+
+  @if $sys-fallback != null {
+    @return var(--mat-#{$token}, #{$sys-fallback});
+  } @else {
+    @return var(--mat-#{$token});
+  }
+}
+
+// Outputs a map of token values as CSS variable definitions.
+@mixin values($tokens) {
+  @include sass-utils.current-selector-or-root() {
+    @each $key, $value in $tokens {
+      @if $value != null {
+        --mat-#{$key}: #{$value};
+      }
+    }
+  }
+}
+
+// Removes a prefix from each component token in the provided map.
+@function remove-token-prefixes($prefixed-tokens: (), $prefix) {
+  $tokens: ();
+  @each $prefixed-token, $value in $prefixed-tokens {
+    $token: string.slice($prefixed-token, string.length($prefix) + 2);
+    $tokens: map.set($tokens, $token, $value);
+  }
+  @return $tokens;
+}
+
+// Returns a list of overrides for the given get-tokens result and prefix.
+@function get-overrides($tokens, $prefix) {
+  $base: remove-token-prefixes(map.get($tokens, base), $prefix);
+  $color: remove-token-prefixes(map.get($tokens, color), $prefix);
+  $typography: remove-token-prefixes(map.get($tokens, typography), $prefix);
+  $density: remove-token-prefixes(map.get($tokens, density), $prefix);
+  $all: ();
+  @each $m in ($base, $color, $typography, $density) {
+    $all: map.merge($all, $m);
+  }
+  @return (
+    all: $all,
+    base: $base,
+    color: $color,
+    typography: $typography,
+    density: $density,
+  );
+}
+
+@mixin batch-create-token-values($overrides: (), $namespace-configs) {
+  @include sass-utils.current-selector-or-root() {
+    $prefixed-name-data: ();
+    $all-names: ();
+
+    @each $config in $namespace-configs {
+      $namespace: map.get($config, namespace);
+      $tokens: map.get(map.get($config, tokens), all);
+      $prefix: '';
+
+      @if (map.has-key($config, prefix)) {
+        $prefix: map.get($config, prefix);
+      }
+
+      @each $name, $value in $tokens {
+        $prefixed-name: $prefix + $name;
+        $all-names: list.append($all-names, $prefixed-name, $separator: comma);
+        $prefixed-name-data: map.set($prefixed-name-data, $prefixed-name, ($namespace, $name));
+      }
+    }
+
+    @each $name, $value in $overrides {
+      @if map.has-key($prefixed-name-data, $name) {
+        $data: map.get($prefixed-name-data, $name);
+        $namespace: list.nth($data, 1);
+        $name: list.nth($data, 2);
+        $prefixed-name: $namespace + '-' + $name;
+        @include values(($prefixed-name: $value));
+      } @else {
+        @error #{'Invalid token name `'}#{$name}#{'`. '}#{'Valid tokens are: '}#{$all-names};
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+// Dialog prebuilt CSS. Wraps the port's dialog.scss. Every `--mat-dialog-*`
+// custom property dialog.scss reads already carries a real fallback baked
+// in at Sass-compile time (down to a literal, e.g.
+// `var(--mat-dialog-container-color, var(--mat-sys-surface, white))`,
+// `var(--mat-dialog-container-elevation-shadow, none)`) — so no `:root`
+// override block is needed; the one default theme's `--mat-sys-*`
+// (core/default-theme.scss, shipped via core-prebuilt.css) is all that's
+// required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 13 bare `--mat-sys-*` literals plus 2 `--mat-dialog-*` literals (elevation
+// 3 surface, 28px corner radius, 150ms enter animation — an old M3
+// baseline). Removed 2026-10-30 (see core/SYNC.md "Default theme") — those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read. For full custom theming, consumers should instead @use the
+// dialog-theme mixin from
+// `@angular-community/qwik-material/scss/dialog/_dialog-theme.scss` once
+// the qwik-material/core theming DSL lands.
+
+@use './dialog';

@@ -1,5 +1,8 @@
 packages:
   - .
+  - src/qwik-cdk
+  - src/qwik-cdk-dev-app
+  - src/qwik-cdk-parity-tests
   - docs
   - integration
   - src/aria
@@ -16,6 +19,7 @@ packages:
   - src/material-moment-adapter
   - src/universal-app
   - src/youtube-player
+  - src/qwik-material
 
 catalog:
   '@angular-devkit/build-angular': 21.2.9

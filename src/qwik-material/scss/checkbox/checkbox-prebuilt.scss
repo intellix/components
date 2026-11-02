@@ -1,0 +1,18 @@
+// Checkbox prebuilt CSS entry. Wraps the port's checkbox.scss (now a
+// byte-for-byte sync of upstream src/material/checkbox/checkbox.scss +
+// _checkbox-common.scss — see checkbox/SYNC.md). Every `--mat-checkbox-*`
+// custom property it references already carries a real M3 fallback baked
+// in via token-utils.slot(), e.g.
+// `var(--mat-checkbox-selected-icon-color, var(--mat-sys-primary))` — so the
+// one default theme (`core/default-theme.scss`'s `--mat-sys-*`, shipped via
+// `core-prebuilt.css`) is all that's needed here; no `:root` override block.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 13 bare `--mat-sys-*` literals (color roles, state-layer opacities, and
+// body-medium typography — the inner fallback names checkbox.scss's
+// `--mat-checkbox-*` tokens resolve to) with no `--mat-checkbox-*` names of
+// its own. Removed 2026-10-30 (see core/SYNC.md "Default theme" and
+// checkbox/SYNC.md): those literals always won over a consumer's real
+// theme, since a custom property's `var()` resolves where it's *declared*
+// (`:root`), not where it's read.
+@use './checkbox';

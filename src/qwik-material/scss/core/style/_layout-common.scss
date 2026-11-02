@@ -1,0 +1,13 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/style/layout-common.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+// (Button-specific additions are logged in src/qwik-material/button/SYNC.md — Task 16.)
+
+// Makes the element span to fill the nearest ancestor with defined positioning.
+@mixin fill {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  position: absolute;
+}

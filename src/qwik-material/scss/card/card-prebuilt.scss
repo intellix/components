@@ -1,0 +1,23 @@
+// Card prebuilt CSS. Wraps the port's card.scss. Every `--mat-card-*`
+// custom property card.scss reads already carries a real M3 fallback baked
+// in at Sass-compile time via token-utils.slot() (e.g.
+// `var(--mat-card-elevated-container-color,
+// var(--mat-sys-surface-container-low))`) — so no `:root` override block is
+// needed; the one default theme's `--mat-sys-*` (core/default-theme.scss,
+// shipped via core-prebuilt.css) is all that's required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 16 `--mat-card-*` literals (an old M3 baseline). Removed 2026-10-30 (see
+// core/SYNC.md "Default theme") — those literals always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared* (`:root`), not where it's read. One of the removed names,
+// `--mat-card-title-text-color`, was never actually dead weight to begin
+// with: card.scss's `.mat-mdc-card-title` rule never reads a `color`
+// property at all (title text just inherits the container's `color`,
+// matching upstream's own compiled M3 output), so that particular default
+// was already unused. For full custom theming, consumers should instead
+// @use the *-theme mixins from
+// `@angular-community/qwik-material/scss/card/_card-theme.scss` once the
+// qwik-material/core theming DSL lands.
+
+@use './card';

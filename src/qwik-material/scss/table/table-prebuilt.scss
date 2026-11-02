@@ -1,0 +1,18 @@
+// Table prebuilt CSS. Wraps the port's upstream-synced table.scss (which
+// `@use`s `./table-flex-styles` for the flex `<mat-table>` layout rules).
+// Every `--mat-table-*` token it reads already carries a real M3 fallback
+// baked in via token-utils.slot() against m3-table's $fallbacks map (e.g.
+// `var(--mat-table-background-color, var(--mat-sys-surface))`), the same
+// mechanism upstream itself uses — so no `:root` override block is needed;
+// the one default theme's `--mat-sys-*` (core/default-theme.scss, shipped
+// via `core-prebuilt.css`) is all that's required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// all 23 `--mat-table-*` tokens above AND the `--mat-sys-*` names they fall
+// back to (surface/on-surface/outline/body-medium-*/title-small-*). Removed
+// 2026-10-30 (see core/SYNC.md "Default theme" and table/SYNC.md): those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
+
+@use './table';

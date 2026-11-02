@@ -1,0 +1,32 @@
+// Button toggle prebuilt CSS. Wraps the port's (upstream-synced)
+// button-toggle.scss. Every `--mat-button-toggle-*` token in the *standard*
+// appearance (the default — see button-toggle.ts's `appearance` default)
+// already carries a real M3 fallback baked in via token-utils.slot(), e.g.
+// `var(--mat-button-toggle-text-color, var(--mat-sys-on-surface))` — so the
+// one default theme (`core/default-theme.scss`'s `--mat-sys-*`, shipped via
+// `core-prebuilt.css`) is all that's needed here; no `:root` override block.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// both the `--mat-button-toggle-*`/`--mat-sys-*` names above AND every
+// `--mat-button-toggle-legacy-*` token (the base rule on
+// `.mat-button-toggle-standalone`/`.mat-button-toggle-group`, overridden by
+// the higher-specificity/later `-appearance-standard` rule for the default
+// appearance). Removed 2026-10-30 (see core/SYNC.md "Default theme" and
+// button-toggle/SYNC.md): those literals always won over a consumer's real
+// theme (a custom property's `var()` resolves where it's *declared*, i.e.
+// `:root`, never where it's read), and upstream's own structural CSS ships
+// the exact same bare, fallback-less `--mat-button-toggle-legacy-*`
+// references — upstream relies entirely on `mat.button-toggle-theme()`/
+// `all-component-themes()` for those, which this port doesn't run. Matching
+// upstream means matching that gap too: a button toggle explicitly given
+// `appearance="legacy"` renders unstyled (inherited) text/background here,
+// same as real Angular Material with no component theme mixin included.
+//
+// Consumers that also render <MatPseudoCheckbox> need
+// `@angular-community/qwik-material/core-prebuilt.css` too; button-toggle's
+// own `.mat-button-toggle-appearance-standard .mat-pseudo-checkbox { --mat-
+// pseudo-checkbox-minimal-selected-checkmark-color: ... }` override means
+// core's pseudo-checkbox default for that variable is never the one
+// actually used inside a button-toggle.
+
+@use './button-toggle';

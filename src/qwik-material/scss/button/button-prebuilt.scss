@@ -1,0 +1,29 @@
+// Prebuilt Material Button CSS entry.
+//
+// Emits: structural styles from button.scss + fab.scss + icon-button.scss +
+// button-high-contrast.scss. Every `--mat-button-*`/`--mat-sys-*` custom
+// property these reference already carries a real M3 fallback baked in at
+// Sass-compile time via token-utils.slot() (e.g.
+// `var(--mat-button-text-container-shape, var(--mat-sys-corner-full))`), the
+// same mechanism upstream itself uses — so no `:root` override block is
+// needed here. The one default theme for `--mat-sys-*` ships from
+// `@angular-community/qwik-material/core-prebuilt.css`
+// (scss/core/default-theme.scss) and is expected to already be loaded (the
+// dev-app's root.tsx imports it before any component's own prebuilt CSS).
+//
+// Historical note: this file previously also shipped a `:root` block
+// defining `--mdc-text-button-*`/`--mdc-filled-button-*`/etc. custom
+// properties. Those names are dead: button.scss's actual structural CSS
+// reads `--mat-button-*` (M3 naming), never `--mdc-*`, so that block
+// resolved nothing and was removed along with the token-defaults-at-:root
+// bug it shared with every other qwik-material prebuilt file (see
+// core/SYNC.md "Default theme" and button/SYNC.md).
+// Consumers import via `@angular-community/qwik-material/button-prebuilt.css`.
+// For full custom theming, consumers should instead @use the *-theme mixins
+// from `@angular-community/qwik-material/scss/button/_*-theme.scss` once the
+// qwik-material/core theming DSL lands.
+
+@use './button';
+@use './fab';
+@use './icon-button';
+@use './button-high-contrast';

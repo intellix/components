@@ -1,0 +1,11 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/typography/typography.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+//
+// The dialog-prebuilt.scss entry only @use's dialog.scss (structural styles),
+// not _dialog-theme.scss. This stub exists to allow _dialog-theme.scss to be
+// parsed without errors if it is ever included.
+
+@mixin typography-hierarchy($theme, $selector: '.mat-typography', $back-compat: false) {
+  // no-op stub
+}

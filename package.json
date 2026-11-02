@@ -29,6 +29,8 @@
     "test-firefox": "pnpm -s test --firefox",
     "test-tsec": "pnpm bazelisk test //... --build_tag_filters=tsec --test_tag_filters=tsec",
     "lint": "pnpm -s tslint && pnpm -s stylelint && pnpm -s ng-dev format changed --check",
+    "test:qwik-cdk": "pnpm -C src/qwik-cdk build && pnpm -C src/qwik-cdk test && pnpm -C src/qwik-cdk lint:no-ssr-leaks && pnpm -C src/qwik-cdk test:css-parity && pnpm -C src/qwik-cdk-parity-tests test",
+    "test:qwik-material": "pnpm -C src/qwik-material build && pnpm -C src/qwik-material test && pnpm -C src/qwik-material lint:no-ssr-leaks && pnpm -C src/qwik-material typecheck",
     "e2e": "bazel test //src/... --build_tag_filters=e2e --test_tag_filters=e2e --build_tests_only",
     "deploy-dev-app": "node ./scripts/deploy-dev-app.js",
     "breaking-changes": "node --no-warnings=ExperimentalWarning --loader ts-node/esm/transpile-only scripts/breaking-changes.mts",
@@ -153,10 +155,16 @@
   },
   "pnpm": {
     "overrides": {
-      "typescript": "5.9.2"
+      "typescript": "5.9.2",
+      "vitest": "4.1.9"
     },
     "onlyBuiltDependencies": [],
     "packageExtensions": {
+      "@qwik.dev/optimizer": {
+        "peerDependencies": {
+          "vite": ">=8 <9"
+        }
+      },
       "dgeni-packages": {
         "dependencies": {
           "clonedeep": "*"

@@ -1,0 +1,18 @@
+// Expansion prebuilt CSS. Wraps the port's upstream-synced
+// expansion-panel.scss / expansion-panel-header.scss. Every
+// `--mat-expansion-*` custom property they read already carries a real M3
+// fallback baked in at Sass-compile time via token-utils.slot() (e.g.
+// `var(--mat-expansion-container-background-color, var(--mat-sys-surface))`)
+// — so no `:root` override block is needed; the one default theme's
+// `--mat-sys-*` (core/default-theme.scss, shipped via core-prebuilt.css) is
+// all that's required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 21 `--mat-expansion-*` literals plus 16 bare `--mat-sys-*` literals (an
+// old M3 baseline). Removed 2026-10-30 (see core/SYNC.md "Default theme")
+// — those literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
+
+@use './expansion-panel';
+@use './expansion-panel-header';

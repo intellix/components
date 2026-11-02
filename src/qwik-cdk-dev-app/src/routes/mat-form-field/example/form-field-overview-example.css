@@ -1,0 +1,14 @@
+/*
+ * Copied from src/components-examples/material/form-field/form-field-overview/
+ * form-field-overview-example.css, with one mechanical substitution: Angular's `:host` (which
+ * targets the example's own custom-element host, `<form-field-overview-example>`, via emulated
+ * encapsulation) has no meaning as a plain unscoped rule — there is no shadow root for it to
+ * select. Rewritten to the literal host tag name so the computed-style parity gate (which checks
+ * `display`/`flex-direction` on every compared element) sees the same layout on both sides. No
+ * declaration values were changed.
+ */
+form-field-overview-example {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}

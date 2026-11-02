@@ -1,0 +1,20 @@
+// Prebuilt Material Tooltip CSS entry. Wraps the port's (upstream-synced)
+// tooltip.scss. Every `--mat-tooltip-*` custom property it references
+// already carries a real M3 fallback baked in via token-utils.slot(), e.g.
+// `var(--mat-tooltip-container-color, var(--mat-sys-inverse-surface))` — so
+// the one default theme (`core/default-theme.scss`'s `--mat-sys-*`, shipped
+// via `core-prebuilt.css`) is all that's needed here; no `:root` override
+// block. For full custom theming, consumers should instead @use the
+// tooltip-theme mixin from
+// `@angular-community/qwik-material/scss/tooltip/_tooltip-theme.scss` once
+// the qwik-material/core theming DSL lands.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 8 bare `--mat-sys-*` literals (the tooltip's "inverse" M3 surface roles +
+// body-small typescale) with no `--mat-tooltip-*` names at all. Removed
+// 2026-10-30 (see core/SYNC.md "Default theme" and tooltip/SYNC.md): those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
+
+@use './tooltip';

@@ -1,0 +1,25 @@
+// Grid-list prebuilt CSS. Wraps the synced grid-list.scss. Layout itself
+// (position/top/left/width/height) is inline style computed by
+// <MatGridList> at render time (tile-coordinator.ts / tile-styler.ts), not
+// CSS — nothing to default here for that part, with or without a `:root`
+// block.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// the 4 `--mat-grid-list-tile-header-*`/`-footer-*` typography variables
+// grid-list.scss emits. Removed 2026-10-30 (see core/SYNC.md "Default
+// theme" and grid-list/SYNC.md): a custom property's `var()` resolves
+// where it's *declared* (`:root`), not where it's read, so those literals
+// always won over a consumer's real theme. Unlike most other components,
+// these 4 tokens carry NO fallback at all in grid-list.scss's own compiled
+// output (bare `var(--mat-grid-list-tile-header-primary-text-size)`,
+// nothing else) — matching upstream's own gap, which relies entirely on a
+// `mat.grid-list-theme()` component theme mixin this port doesn't run (same
+// situation as button-toggle's legacy-appearance tokens). No
+// <MatGridTileHeader>/<MatGridTileFooter> scenario exercises this yet (see
+// grid-list/SYNC.md), so the removal is a no-op in practice today.
+//
+// Consumers that also want `--mat-sys-*` resolved for other components
+// need `@angular-community/qwik-material/core-prebuilt.css` too (ships the
+// one default theme, core/default-theme.scss).
+
+@use './grid-list';

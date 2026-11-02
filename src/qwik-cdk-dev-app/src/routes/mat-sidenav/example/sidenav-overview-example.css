@@ -1,0 +1,12 @@
+/* Copied from src/components-examples/material/sidenav/sidenav-overview/sidenav-overview-example.css.
+   Selector prefixed with this route's own host tag — see table-basic-example.css's comment for
+   why a plain Qwik CSS import needs this (Angular's ViewEncapsulation scopes the equivalent rule
+   per-component already; a plain import does not). */
+sidenav-overview-example .example-container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #eee;
+}

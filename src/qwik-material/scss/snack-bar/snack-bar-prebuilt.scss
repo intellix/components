@@ -1,0 +1,26 @@
+// Prebuilt Material Snack Bar CSS entry. Wraps the port's upstream-synced
+// snack-bar.scss + simple-snack-bar.scss. Every `--mat-snack-bar-*` token
+// they read already carries a real M3 fallback baked in via
+// token-utils.slot() against m3-snack-bar's $fallbacks map (e.g.
+// `var(--mat-snack-bar-container-color, var(--mat-sys-inverse-surface))`),
+// the same mechanism upstream itself uses — so no `:root` override block is
+// needed; the one default theme's `--mat-sys-*` (core/default-theme.scss,
+// shipped via `core-prebuilt.css`) is all that's required, including the
+// M3 "inverse" surface roles (the snack bar deliberately inverts
+// light/dark relative to the rest of the page) and body-medium typescale.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// the `--mat-sys-inverse-surface`/`-inverse-on-surface`/`-inverse-primary`/
+// `-corner-extra-small`/`-body-medium-*` names above (M3 light-theme
+// literals). Removed 2026-10-30 (see core/SYNC.md "Default theme") — those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
+//
+// Consumers import via `@angular-community/qwik-material/snack-bar-prebuilt.css`.
+// For full custom theming, consumers should instead @use the snack-bar-theme mixin from
+// `@angular-community/qwik-material/scss/snack-bar/_snack-bar-theme.scss`
+// once the qwik-material/core theming DSL lands.
+
+@use './snack-bar';
+@use './simple-snack-bar';

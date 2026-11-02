@@ -1,0 +1,15 @@
+import {component$} from '@qwik.dev/core';
+import {MatDivider} from '@angular-community/qwik-material/divider';
+
+export default component$(() => (
+  <>
+    <div data-parity-root>
+      <div style={{display: 'flex', alignItems: 'stretch', height: '80px'}}>
+        <span>Left</span>
+        <MatDivider vertical />
+        <span>Right</span>
+      </div>
+    </div>
+    <main data-scenario-ready>ready</main>
+  </>
+));

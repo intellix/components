@@ -1,0 +1,11 @@
+// Option/optgroup prebuilt CSS. Both option.scss's and optgroup.scss's
+// token-utils.slot(...) calls already carry real fallback values baked in
+// from m3-option.get-tokens()/m3-optgroup.get-tokens() — both byte-for-byte
+// synced upstream files, which resolve the default M3 system theme
+// (core/tokens/m3/_theme.scss's $sys-theme) to concrete values at Sass
+// compile time. Same "no :root overrides needed" situation as
+// list-prebuilt.scss's majority case (see its own comment) — every
+// `--mat-option-*`/`--mat-optgroup-*` variable already has a real fallback,
+// so there is nothing dangling to patch here.
+@use './option';
+@use './optgroup';

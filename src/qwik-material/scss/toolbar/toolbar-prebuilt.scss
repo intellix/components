@@ -1,0 +1,16 @@
+// Prebuilt Material Toolbar CSS entry. Wraps the port's (upstream-synced)
+// toolbar.scss. Every `--mat-toolbar-*` custom property it references already
+// carries a real M3 fallback baked in via token-utils.slot(), e.g.
+// `var(--mat-toolbar-container-background-color, var(--mat-sys-surface))` —
+// so the one default theme (`core/default-theme.scss`'s `--mat-sys-*`,
+// shipped via `core-prebuilt.css`) is all that's needed here; no `:root`
+// override block.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// the `--mat-toolbar-*` names above (an M3 baseline, with
+// `--mat-toolbar-title-text-font` as a bare literal with no theme hook at
+// all). Removed 2026-10-30 (see core/SYNC.md "Default theme" and
+// toolbar/SYNC.md): those literals always won over a consumer's real theme,
+// since a custom property's `var()` resolves where it's *declared* (`:root`),
+// not where it's read.
+@use './toolbar';

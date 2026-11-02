@@ -1,0 +1,28 @@
+// Prebuilt Material Menu CSS entry.
+//
+// Most of menu.scss's `token-utils.slot(...)` calls ARE fully self-contained
+// (fed `$fallbacks: m3-menu.get-tokens()`, computed locally with a literal
+// fallback baked into each `var(--mat-menu-x, <fallback>)` chain) — EXCEPT
+// the `color` and `typography` sections of `m3-menu.get-tokens()`, whose
+// values come from `m3-utils.get-system($theme)` as FURTHER `var(--mat-sys-
+// x)` references (not literal values) — e.g. `menu-item-label-text-color:
+// map.get($system, on-surface)` compiles to `var(--mat-sys-on-surface)`, and
+// `menu-item-label-text-font` likewise to `var(--mat-sys-label-large-font)`.
+// Those `--mat-sys-*` names are supplied once, app-wide, by the one default
+// theme (`core/default-theme.scss`, shipped via `core-prebuilt.css`) — no
+// per-component override is needed; no `:root` block in this file.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 12 `--mat-sys-*` literals (an old M3 baseline, distinct from
+// core/default-theme.scss's azure-palette-derived values) — added because
+// without them defined anywhere, the fallback chain's outer AND inner
+// `var()` both failed to resolve, so e.g. `font-family` on
+// `.mat-mdc-menu-item-text` fell through to inheriting the surrounding
+// `<button>`'s own (UA-default, non-Roboto) font, which shifted a
+// submenu's computed position in the `nested` parity scenario. Removed
+// 2026-10-30 (see core/SYNC.md "Default theme" and menu/SYNC.md): that
+// `:root` scope always won over a consumer's real theme regardless (a
+// custom property's `var()` resolves where it's *declared*, not where
+// it's read) — the one default theme now supplies every one of these same
+// `--mat-sys-*` names instead.
+@use './menu';

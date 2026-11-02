@@ -1,0 +1,21 @@
+// Stepper prebuilt CSS. Wraps the port's upstream-synced stepper.scss /
+// step-header.scss. Every `--mat-stepper-*` / `--mat-step-header-*` token
+// they read already carries a real M3 fallback baked in via
+// token-utils.slot() against m3-stepper's $fallbacks map (e.g.
+// `var(--mat-stepper-header-selected-state-icon-background-color,
+// var(--mat-sys-primary))`, and the hover/focus state-layer colors fall
+// back to a `color-mix()` against `--mat-sys-on-surface`), the same
+// mechanism upstream itself uses — so no `:root` override block is needed;
+// the one default theme's `--mat-sys-*` (core/default-theme.scss, shipped
+// via `core-prebuilt.css`) is all that's required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// every `--mat-stepper-*`/`--mat-step-header-*` name above AND the
+// `--mat-sys-*` names they fall back to (an M3 baseline theme). Removed
+// 2026-10-30 (see core/SYNC.md "Default theme" and stepper/SYNC.md): those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
+
+@use './stepper';
+@use './step-header';

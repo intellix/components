@@ -51,3 +51,4 @@ testem.log
 *.log
 .ng-dev.user*
 .husky/_
+.superpowers/

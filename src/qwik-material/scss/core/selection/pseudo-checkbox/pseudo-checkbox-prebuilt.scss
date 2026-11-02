@@ -1,0 +1,23 @@
+// Pseudo-checkbox prebuilt CSS. Wraps the port's pseudo-checkbox.scss. Every
+// `--mat-pseudo-checkbox-*` custom property it reads already carries a real
+// M3 fallback baked in at Sass-compile time via token-utils.slot() against
+// m3-pseudo-checkbox's $fallbacks map (e.g. `var(--mat-pseudo-checkbox-full-
+// selected-icon-color, var(--mat-sys-primary))`), the same mechanism
+// upstream itself uses — so no `:root` override block is needed; the one
+// default theme's `--mat-sys-*` (core/default-theme.scss, shipped in this
+// same core-prebuilt.css) is all that's required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 8 `--mat-pseudo-checkbox-*` literals (an old M2 "Purple" baseline).
+// Removed 2026-10-30 (see core/SYNC.md "Default theme") — those literals
+// always won over a consumer's real theme, since a custom property's
+// `var()` resolves where it's *declared* (`:root`), not where it's read.
+//
+// Consumers that render <MatPseudoCheckbox> standalone need this file.
+// MatButtonToggle's own prebuilt CSS overrides the two
+// `--mat-pseudo-checkbox-*-selected-checkmark-color` variables with its own
+// selected-state color wherever it's nested inside `.mat-button-toggle`,
+// matching upstream button-toggle.scss — this file's fallback is only used
+// for pseudo-checkboxes rendered outside that context.
+
+@use './pseudo-checkbox';

@@ -1,0 +1,27 @@
+// Slide toggle prebuilt CSS. Wraps the port's upstream-synced
+// slide-toggle.scss. Every `--mat-slide-toggle-*` token it reads already
+// carries a real M3 fallback baked in via token-utils.slot() against
+// m3-slide-toggle's $fallbacks map (e.g. `var(--mat-slide-toggle-
+// selected-track-color, var(--mat-sys-primary))`), the same mechanism
+// upstream itself uses — so no `:root` override block is needed; the one
+// default theme's `--mat-sys-*` (core/default-theme.scss, shipped in this
+// same core-prebuilt.css) is all that's required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// ~80 `--mat-slide-toggle-*` tokens plus 18 `--mat-sys-*` names they fell
+// back to (an M3 baseline "Purple" theme). Removed 2026-10-30 (see
+// core/SYNC.md "Default theme") — those literals always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared* (`:root`), not where it's read.
+//
+// 5 tokens are deliberately left undefined, matching the M3 token function's
+// own `null` entries (`slide-toggle-handle-width`, `-handle-height`,
+// `-handle-surface-color`, `-handle-elevation-shadow`,
+// `-disabled-handle-elevation-shadow`): slot() emits a bare `var(--mat-…)`
+// with no fallback for these (compile and grep-confirm), and the one
+// generic rule that reads each is always overridden by a more specific
+// selector that supplies its own real value (e.g. `.mdc-switch--selected &`
+// sets `width`/`height` directly) — upstream's own M3 output leaves these
+// unresolved too.
+
+@use './slide-toggle';

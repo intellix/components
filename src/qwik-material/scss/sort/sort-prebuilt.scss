@@ -1,0 +1,19 @@
+// Sort prebuilt CSS. Wraps the port's upstream-synced sort-header.scss. Its
+// one component token already carries a real M3 fallback baked in via
+// token-utils.slot() against m3-sort's $fallbacks map — compiled +
+// grep-confirmed (`sass.compile('scss/sort/sort-header.scss')`): the ONLY
+// `var(--mat-…)` the synced file emits is `color: var(--mat-sort-arrow-
+// color, var(--mat-sys-on-surface));` on `.mat-sort-header-arrow`, matching
+// `_m3-sort.scss`'s single token (`sort-arrow-color: map.get($system,
+// on-surface)`) — so no `:root` override block is needed; the one default
+// theme (`core/default-theme.scss`'s `--mat-sys-*`, shipped via
+// `core-prebuilt.css`) is all that's required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// both `--mat-sort-arrow-color` and `--mat-sys-on-surface`. Removed
+// 2026-10-30 (see core/SYNC.md "Default theme" and sort/SYNC.md): those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
+
+@use './sort-header';

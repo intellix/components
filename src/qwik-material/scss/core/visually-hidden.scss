@@ -1,0 +1,5 @@
+// Mirrors src/cdk/private/visually-hidden/visually-hidden.scss, which upstream loads on demand
+// (`_VisuallyHiddenLoader`); here core-prebuilt always includes it.
+@use '../cdk-stub' as a11y;
+
+@include a11y.a11y-visually-hidden();

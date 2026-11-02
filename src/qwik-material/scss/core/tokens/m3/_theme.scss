@@ -1,0 +1,42 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/tokens/m3/theme.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+//
+// Builds $sys-theme — a map (_mat-system: <token-to-css-var map>) that
+// m3-utils.get-system() unpacks. Matches the structure the original
+// _theme.scss produces.
+
+@use './md-sys-color';
+@use './md-sys-elevation';
+@use './md-sys-motion';
+@use './md-sys-shape';
+@use './md-sys-state';
+@use './md-sys-typescale';
+@use 'sass:map';
+
+@function _create-system-app-vars-map($map) {
+  $new-map: ();
+  @each $key, $value in $map {
+    $new-map: map.set($new-map, $key, --mat-sys-#{$key});
+  }
+  @return $new-map;
+}
+
+$_sys-maps: (
+  md-sys-color.md-sys-color-values-light(),
+  md-sys-typescale.md-sys-typescale-values(),
+  md-sys-elevation.md-sys-elevation-values(),
+  md-sys-state.md-sys-state-values(),
+  md-sys-shape.md-sys-shape-values(),
+  (
+    neutral10: '',
+    neutral-variant20: '',
+  ),
+);
+
+$_system: (density-scale: 0);
+@each $sys-map in $_sys-maps {
+  $_system: map.merge($_system, _create-system-app-vars-map($sys-map));
+}
+
+$sys-theme: (_mat-system: $_system);

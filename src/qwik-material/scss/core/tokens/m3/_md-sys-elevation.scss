@@ -1,0 +1,15 @@
+// STUB: this file is a compile-time stand-in for
+// @angular/material/core/tokens/m3/md-sys-elevation.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+
+@function md-sys-elevation-values() {
+  @return (
+    level0: 0,
+    level1: 1,
+    level2: 2,
+    level3: 3,
+    level4: 4,
+    level5: 5,
+  );
+}

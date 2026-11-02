@@ -1,0 +1,28 @@
+// Chips prebuilt CSS. Wraps the port's (upstream-synced) chip.scss /
+// chip-set.scss. Every `--mat-chip-*` custom property chip.scss reads
+// already carries a real M3 fallback baked in at Sass-compile time via
+// token-utils.slot() against _m3-chip.scss's get-tokens() map (e.g.
+// `var(--mat-chip-label-text-color, var(--mat-sys-on-surface-variant))`) —
+// so no `:root` override block is needed; the one default theme's
+// `--mat-sys-*` (core/default-theme.scss, shipped via core-prebuilt.css) is
+// all that's required. chip-set.scss has no token-utils usage at all — it's
+// included only so consumers get its structural rules alongside chip.scss's.
+//
+// --mat-chip-elevated-disabled-container-color is deliberately left with no
+// fallback: upstream _m3-chip.scss sets it to `null` (MDC has no token for
+// a disabled-but-not-selected elevated chip background), so
+// token-utils.values skips emitting it and chip.scss's own
+// `token-utils.slot(chip-elevated-disabled-container-color, $fallbacks)`
+// call compiles to a bare `var(--mat-chip-elevated-disabled-container-
+// color)` with no fallback at all — same as upstream's own M3 output, not a
+// missed token (and not something this removal touches).
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 36 `--mat-chip-*` literals plus 12 bare `--mat-sys-*` literals (an old M3
+// baseline). Removed 2026-10-30 (see core/SYNC.md "Default theme") — those
+// literals always won over a consumer's real theme, since a custom
+// property's `var()` resolves where it's *declared* (`:root`), not where
+// it's read.
+
+@use './chip';
+@use './chip-set';

@@ -1,0 +1,15 @@
+/* Copy of src/components-examples/material/badge/badge-overview/badge-overview-example.css,
+   applied unscoped (see route's header comment) — `:host` rewritten to the
+   literal `badge-overview-example` host tag this route renders (the
+   selector Angular's emulated encapsulation rewrites it to, e.g.
+   `[_nghost-ng-c0]`, only ever matches that SAME host element; unscoped
+   `:host` outside a shadow root matches nothing). Properties unchanged. */
+badge-overview-example {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.demo-section + .demo-section {
+  margin-top: 16px;
+}

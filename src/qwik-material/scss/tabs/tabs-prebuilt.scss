@@ -1,0 +1,26 @@
+// Prebuilt Material Tabs CSS entry. Wraps the port's (upstream-synced)
+// tab-group.scss, tab-header.scss, tab-body.scss, tab-nav-bar/tab-nav-bar.scss,
+// and tab-nav-bar/tab-link.scss. Every `--mat-tab-*` custom property these
+// files reference already carries a real M3 fallback baked in via
+// token-utils.slot(), e.g.
+// `var(--mat-tab-active-indicator-color, var(--mat-sys-primary))` — so the
+// one default theme (`core/default-theme.scss`'s `--mat-sys-*`, shipped via
+// `core-prebuilt.css`) is all that's needed here; no `:root` override block.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// both the `--mat-tab-*` names above AND a handful of `--mat-sys-*` literals
+// (an M3 "Purple" baseline). Removed 2026-10-30 (see core/SYNC.md "Default
+// theme" and tabs/SYNC.md): those literals always won over a consumer's real
+// theme, since a custom property's `var()` resolves where it's *declared*
+// (`:root`), not where it's read.
+//
+// `--mat-tab-background-color` / `--mat-tab-foreground-color` are still
+// deliberately left unresolved, matching the M3 token function's own `null`
+// entries — only relevant to the (never-exercised-by-any-parity-scenario)
+// `mat-tabs-with-background` class.
+
+@use './tab-group';
+@use './tab-header';
+@use './tab-body';
+@use './tab-nav-bar/tab-nav-bar';
+@use './tab-nav-bar/tab-link';

@@ -1,0 +1,16 @@
+// Badge prebuilt CSS. Wraps the port's badge.scss. Every `--mat-badge-*`
+// custom property badge.scss reads already carries a real M3 fallback baked
+// in at Sass-compile time via token-utils.slot() against _m3-badge.scss's
+// get-tokens() map (e.g. `var(--mat-badge-background-color,
+// var(--mat-sys-error))`) — so no `:root` override block is needed; the one
+// default theme's `--mat-sys-*` (core/default-theme.scss, shipped via
+// core-prebuilt.css) is all that's required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// 28 `--mat-badge-*` literals (an old M3 baseline, including bare
+// `--mat-sys-error`/`--mat-sys-on-error`/`--mat-sys-corner-full` literals
+// nested inside the `--mat-badge-*` values). Removed 2026-10-30 (see
+// core/SYNC.md "Default theme") — those literals always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared* (`:root`), not where it's read.
+@use './badge';

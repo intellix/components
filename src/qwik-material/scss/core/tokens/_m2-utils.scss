@@ -1,0 +1,22 @@
+// STUB: this file is a compile-time stand-in for @angular/material/core/tokens/m2-utils.
+// See src/qwik-material/dialog/SYNC.md for the stubbing rationale and
+// remove-when-ported checklist.
+
+@use 'sass:map';
+@use 'sass:meta';
+
+// Gets the theme's system values as a flat map.
+@function get-system($theme) {
+  @if meta.type-of($theme) == map {
+    $system: map.get($theme, _mat-system);
+    @if $system {
+      @return $system;
+    }
+  }
+
+  @if meta.type-of($theme) == 'number' or $theme == minimum or $theme == maximum {
+    @return (density-scale: $theme);
+  }
+
+  @return ();
+}

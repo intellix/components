@@ -1,0 +1,116 @@
+{
+  "name": "@angular-community/qwik-cdk",
+  "version": "0.0.0",
+  "description": "Qwik port of @angular/cdk (foundation primitives + Dialog).",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint:no-ssr-leaks": "node ./scripts/lint-no-ssr-leaks.mjs",
+    "test:css-parity": "node ./scripts/diff-prebuilt-css.mjs"
+  },
+  "peerDependencies": {
+    "@qwik.dev/core": ">=2.0.0-rc.4"
+  },
+  "devDependencies": {
+    "@qwik.dev/core": "2.0.0-rc.4",
+    "@types/node": "*",
+    "happy-dom": "*",
+    "sass": "*",
+    "typescript": "*",
+    "vite": "^8.3.5",
+    "vite-plugin-dts": "*",
+    "vitest": "*"
+  },
+  "exports": {
+    ".": {
+      "qwik": "./index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./dialog": {
+      "qwik": "./dialog/index.ts",
+      "types": "./dist/dialog/index.d.ts",
+      "import": "./dist/dialog/index.js"
+    },
+    "./overlay": {
+      "qwik": "./overlay/index.ts",
+      "types": "./dist/overlay/index.d.ts",
+      "import": "./dist/overlay/index.js"
+    },
+    "./portal": {
+      "qwik": "./portal/index.ts",
+      "types": "./dist/portal/index.d.ts",
+      "import": "./dist/portal/index.js"
+    },
+    "./a11y": {
+      "qwik": "./a11y/index.ts",
+      "types": "./dist/a11y/index.d.ts",
+      "import": "./dist/a11y/index.js"
+    },
+    "./accordion": {
+      "qwik": "./accordion/index.ts",
+      "types": "./dist/accordion/index.d.ts",
+      "import": "./dist/accordion/index.js"
+    },
+    "./stepper": {
+      "qwik": "./stepper/index.ts",
+      "types": "./dist/stepper/index.d.ts",
+      "import": "./dist/stepper/index.js"
+    },
+    "./platform": {
+      "qwik": "./platform/index.ts",
+      "types": "./dist/platform/index.d.ts",
+      "import": "./dist/platform/index.js"
+    },
+    "./bidi": {
+      "qwik": "./bidi/index.ts",
+      "types": "./dist/bidi/index.d.ts",
+      "import": "./dist/bidi/index.js"
+    },
+    "./coercion": {
+      "qwik": "./coercion/index.ts",
+      "types": "./dist/coercion/index.d.ts",
+      "import": "./dist/coercion/index.js"
+    },
+    "./keycodes": {
+      "qwik": "./keycodes/index.ts",
+      "types": "./dist/keycodes/index.d.ts",
+      "import": "./dist/keycodes/index.js"
+    },
+    "./layout": {
+      "qwik": "./layout/index.ts",
+      "types": "./dist/layout/index.d.ts",
+      "import": "./dist/layout/index.js"
+    },
+    "./table": {
+      "qwik": "./table/index.ts",
+      "types": "./dist/table/index.d.ts",
+      "import": "./dist/table/index.js"
+    },
+    "./tree": {
+      "qwik": "./tree/index.ts",
+      "types": "./dist/tree/index.d.ts",
+      "import": "./dist/tree/index.js"
+    },
+    "./overlay-prebuilt.css": "./dist/overlay-prebuilt.css",
+    "./a11y-prebuilt.css": "./dist/a11y-prebuilt.css",
+    "./scss/*": "./scss/*"
+  },
+  "files": [
+    "dist",
+    "scss",
+    "*.ts",
+    "*.tsx",
+    "**/*.ts",
+    "**/*.tsx",
+    "!**/*.spec.ts",
+    "!**/*.spec.tsx",
+    "!scripts"
+  ]
+}

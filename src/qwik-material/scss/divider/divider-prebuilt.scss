@@ -1,0 +1,17 @@
+// Divider prebuilt CSS. Wraps the port's divider.scss. Every
+// `--mat-divider-*` custom property divider.scss reads already carries a
+// real M3 fallback baked in at Sass-compile time via token-utils.slot()
+// against _m3-divider.scss's get-tokens() map (e.g.
+// `var(--mat-divider-color, var(--mat-sys-outline-variant))`) — so no
+// `:root` override block is needed; the one default theme's `--mat-sys-*`
+// (core/default-theme.scss, shipped via core-prebuilt.css) is all that's
+// required.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// `--mat-divider-width`/`--mat-divider-color` plus a bare `--mat-sys-
+// outline-variant` literal (an old M3 baseline). Removed 2026-10-30 (see
+// core/SYNC.md "Default theme") — those literals always won over a
+// consumer's real theme, since a custom property's `var()` resolves where
+// it's *declared* (`:root`), not where it's read.
+
+@use './divider';

@@ -78,6 +78,7 @@ ng_project(
         "//src/dev-app/portal",
         "//src/dev-app/progress-bar",
         "//src/dev-app/progress-spinner",
+        "//src/dev-app/qwik-parity",
         "//src/dev-app/radio",
         "//src/dev-app/ripple",
         "//src/dev-app/screen-type",

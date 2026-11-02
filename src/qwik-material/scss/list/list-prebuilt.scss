@@ -1,0 +1,22 @@
+// List prebuilt CSS. Wraps the port's list.scss (now a byte-for-byte sync
+// of upstream src/material/list/list.scss — see list/SYNC.md).
+//
+// list.scss's token-utils.slot(...) calls now use the SAME key names as
+// _m3-list.scss's get-tokens() map (both are upstream-synced), so almost
+// every --mat-list-* variable already gets a real fallback baked into its
+// var() chain, ultimately resolving through the one default theme
+// (core/default-theme.scss's --mat-sys-*, shipped via core-prebuilt.css) —
+// so no `:root` override block is needed.
+//
+// Historical note: this file previously shipped a `:root` block hardcoding
+// `--mat-list-subheader-text-size: 0.875rem;`. Removed 2026-10-30 (see
+// core/SYNC.md "Default theme" and list/SYNC.md): that token has no M3
+// token at all (upstream _list-theme.scss notes "MDC does not have tokens
+// for the subheader") and isn't actually read via `var()` anywhere in
+// list.scss's compiled structural CSS (the `.mdc-list-group__subheader`
+// rule only sets `margin`) — so the override resolved nothing in practice,
+// and shared the same :root-always-wins risk as every other removed block
+// (a custom property's `var()` resolves where it's *declared*, never where
+// it's read).
+
+@use './list';
