@@ -281,3 +281,19 @@ creates it in a capture-phase `mousedown` listener, before the click. `useRipple
 records initialization synchronously (`sync$` expando, read via `wasRippleInitialized`), and the
 freeze honors it, so real event order decides regardless of QRL resolution order. (Supersedes the
 "known gap" note above.)
+
+## Docs Phase 2 (2026-11-02): overview added; `paginator-configurable` considered, not ported
+
+Added `src/qwik-material-docs/src/content/overviews/paginator.md` (adapted from
+`src/material/paginator/paginator.md`, registered for the `paginator` component id) — no library
+changes needed; `paginator-overview` was already ported (Phase 1 headline example).
+
+Checked `src/components-examples/material/paginator/paginator-configurable/` for an easy second
+port (per the docs task's "port cheap wins" guidance) — not cheap, so left unported. Its template
+rebinds `[pageIndex]`/`[length]`/`[pageSize]` LIVE from number inputs the user types into AFTER the
+paginator has mounted, which this port's `<MatPaginator>` deliberately doesn't support (`pageIndex`/
+`pageSize` are read once, then owned internally — see `mat-paginator.tsx`'s own module doc comment
+and this file's "read ONCE" section above) — and it calls `paginator.getNumberOfPages()`
+imperatively via a template ref, which this port's plain `component$` has no equivalent for.
+Porting it faithfully would need new, speculative API surface (external page-index reassignment +
+an imperative handle) with no other consumer need yet; left unported rather than approximating it.

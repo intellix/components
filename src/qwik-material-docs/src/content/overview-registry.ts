@@ -39,6 +39,8 @@ import sliderMd from './overviews/slider.md?raw';
 import slideToggleMd from './overviews/slide-toggle.md?raw';
 import snackBarMd from './overviews/snack-bar.md?raw';
 import tooltipMd from './overviews/tooltip.md?raw';
+import treeMd from './overviews/tree.md?raw';
+import paginatorMd from './overviews/paginator.md?raw';
 
 export const OVERVIEW_MARKDOWN: Record<string, string> = {
   badge: badgeMd,
@@ -74,4 +76,6 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   'slide-toggle': slideToggleMd,
   'snack-bar': snackBarMd,
   tooltip: tooltipMd,
+  tree: treeMd,
+  paginator: paginatorMd,
 };
