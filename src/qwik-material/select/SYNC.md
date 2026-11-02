@@ -181,6 +181,18 @@ come from the select's own interactions, which already flow correctly
 through `onValueChange$` back out to the consumer). A consumer needing to
 imperatively reset the value from outside after mount is not supported yet.
 
+**Update (2026-11-02):** now supported — see `mat-select.tsx`'s own comment on the `useTask$`
+right after the `value` signal. A form library needing to put a value back into the select from
+outside after mount (first real consumer: Formisch — see `qwik-material/README.md`'s "Using
+with Formisch") is exactly this case. Fixed with the SAME pattern `MatInput`'s own `value`-sync
+`useTask$` already uses (`input/mat-input.tsx`) — `track(() => props.value)` subscribes to the
+actual signal regardless of nesting depth, unlike `MatFormField`'s unrelated *static*
+`readControlProps()` one-time read (a completely different mechanism — the two are easy to
+conflate, see the long comment this update left in place for why they aren't the same
+limitation). Zero effect on every scenario in this file: none of them ever reassign `value` from
+outside after mount, so the new task only ever reconfirms a value the select's own
+`onValueChange$` round-trip already produced.
+
 ### `controlType="mat-select"` must be passed explicitly
 
 Unlike `MatInput` (which can omit `controlType` entirely, because

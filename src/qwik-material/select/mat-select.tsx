@@ -3,6 +3,7 @@ import {
   component$,
   useContext,
   useSignal,
+  useTask$,
   type JSXOutput,
   type NoSerialize,
   type QRL,
@@ -228,10 +229,30 @@ export const MatSelect = component$<MatSelectProps>(props => {
   const panelId = `${id}-panel`;
 
   // Internal selection state — see the module doc comment's "why value is
-  // not a live prop". Seeded ONCE.
+  // not a live prop" for why this is seeded (not read live as a plain JSX
+  // expression) rather than `value.value` tracking `props.value` directly.
   const value = useSignal<unknown>(() =>
     multiple ? (Array.isArray(props.value) ? [...(props.value as unknown[])] : []) : props.value,
   );
+  // Re-syncs from an EXTERNAL, post-mount reassignment of `props.value` — e.g. a form library's
+  // `reset()`/`setInput()` (see `qwik-material/README.md`'s "Using with Formisch"), which needs
+  // to imperatively put a value back into the select from OUTSIDE after mount, the one case the
+  // module doc comment's "why value is not a live prop" explicitly flagged as "not supported by
+  // this port yet". Safe and correct regardless of nesting depth (`<MatFormField control={
+  // <MatSelect value={x}/>}>`, same as every scenario here): unlike `MatFormField`'s own
+  // *static* `readControlProps()` introspection of a control's props (a ONE-TIME plain property
+  // read, by design — see `core/mat-form-field-control.ts`'s big doc comment), a `useTask$`'s
+  // `track(() => props.value)` subscribes to the ACTUAL signal behind this prop and correctly
+  // re-fires on every later change no matter how many component boundaries it crosses — already
+  // proven by `MatInput`'s own identical `value`-sync `useTask$` (`input/mat-input.tsx`), nested
+  // inside `<MatFormField control={...}>` the exact same way, and exercised live by the
+  // `error-state` scenario's typed input. A no-op for every PRE-EXISTING scenario here (none
+  // ever reassigns `value` from outside after mount, so this only ever re-confirms the same
+  // value the selection's own `onValueChange$` round-trip already produced).
+  useTask$(({track}) => {
+    const next = track(() => props.value);
+    value.value = multiple ? (Array.isArray(next) ? [...(next as unknown[])] : []) : next;
+  });
 
   const panelOpen = useSignal(false);
   const activeIndex = useSignal(-1);
