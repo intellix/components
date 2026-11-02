@@ -23,6 +23,7 @@ import {
   MAT_FORM_FIELD_CONTROL_STATE,
   type MatFormFieldControlProps,
 } from '../core/mat-form-field-control';
+import {composeRef, type HostRef} from '../core/host-props';
 import {MAT_AUTOCOMPLETE_CONFIG, type MatAutocompleteConfig} from './autocomplete-config';
 import {
   resolveAutocompleteOptions,
@@ -239,6 +240,10 @@ export interface MatAutocompleteProps extends Omit<MatFormFieldControlProps, 'va
   tabIndex?: number;
   class?: string | ReadonlyArray<string>;
   style?: string | Record<string, string | number>;
+  /** An external ref, composed with this component's own internal `inputRef` — see
+   *  `MatInputProps.ref`'s doc comment (`input/mat-input.tsx`) for the rationale (a form
+   *  library's field-registration ref, e.g. Formisch's `field.props.ref`). */
+  ref?: HostRef<HTMLInputElement>;
 }
 
 export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
@@ -485,7 +490,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   return (
     <>
       <input
-        ref={inputRef}
+        ref={composeRef([inputRef, props.ref])}
         id={id}
         class={classes}
         style={props.style}

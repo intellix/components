@@ -57,9 +57,11 @@ export {MAT_DATE_ADAPTER, useDateAdapter, useDateFormats} from './datetime/use-d
 export {
   MAT_FORM,
   MatForm,
+  MatFormSubmittedProvider,
   useMatFormSubmitted,
   type MatFormProps,
   type MatFormState,
+  type MatFormSubmittedProviderProps,
 } from './mat-form';
 
 // Directive-hook composition infrastructure ("Composing directives" in
@@ -70,6 +72,7 @@ export {
   mergeHostProps,
   callHostHandler,
   extraHostAttrs,
+  composeRef,
   type HostProps,
   type HostRef,
   type HostHandler,

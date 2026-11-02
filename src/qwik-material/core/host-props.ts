@@ -167,19 +167,33 @@ function toHandlerArray(value: HostHandler | undefined): QRL<(e: Event, el: Elem
   return [value];
 }
 
-function composeRef(refs: Array<HostRef | undefined>): HostRef | undefined {
-  const defined = refs.filter((r): r is HostRef => r != null);
+/**
+ * Composes zero or more `ref`s (Qwik's `Signal<Element | undefined>` or `(el) => void`
+ * callback shape — see {@link HostRef}) into one, so a host component that already needs its
+ * OWN internal ref on an element (e.g. `MatInput`'s `inputRef`, read by its focus/blur/input
+ * handlers) can ALSO forward the live element to a ref the CONSUMER passed in (e.g. a form
+ * library's `field.props.ref`, used to register the native element for `focus()`/
+ * `reset()`-style programmatic access — see `qwik-material/README.md`'s "Using with Formisch").
+ * Exported (not just used internally by {@link mergeHostProps}) specifically for this
+ * single-ref-plus-one-external-ref case, which every native-element control's own `ref` prop
+ * uses directly (`ref={composeRef([inputRef, props.ref])}`) rather than building a whole
+ * `HostProps` bag for a single prop.
+ */
+export function composeRef<EL extends Element = Element>(
+  refs: Array<HostRef<EL> | undefined>,
+): HostRef<EL> | undefined {
+  const defined = refs.filter((r): r is HostRef<EL> => r != null);
   if (defined.length === 0) return undefined;
   if (defined.length === 1) return defined[0];
   // Plain function, not `$()` — see this module's doc comment for why that's
   // safe: it runs synchronously when the element mounts, in the same live
   // call stack `mergeHostProps()` ran in, never serialized/resumed later.
-  return (el: Element) => {
+  return (el: EL) => {
     for (const ref of defined) {
       if (typeof ref === 'function') {
-        (ref as (el: Element) => void)(el);
+        (ref as (el: EL) => void)(el);
       } else {
-        (ref as Signal<Element | undefined>).value = el;
+        (ref as Signal<EL | undefined>).value = el;
       }
     }
   };

@@ -505,3 +505,12 @@ v2 pass) still fails.
    static-introspection props every usage must duplicate, and the "touched/
    dirty" section for why there's no `MatTimepickerInput.onTouched$`/
    `onDirty$` prop (the picker tracks both internally instead).
+
+## `ref` prop — composed with `picker._inputRef` (2026-11-02)
+
+`MatTimepickerInputProps.ref` (new): an external ref, merged via `composeRef()` with
+`picker._inputRef`. Same rationale as `qwik-material/input`'s and `qwik-material/datepicker`'s
+identical addition (a form library's field-registration ref, e.g. Formisch's `field.props.ref`)
+— see `qwik-material/README.md`'s "Using with Formisch". Not exercised by this port's own example
+(the Formisch spike example uses input/select/radio/slide-toggle/checkbox/datepicker), added for
+consistency since the same gap applies identically here.

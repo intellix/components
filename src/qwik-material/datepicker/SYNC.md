@@ -363,3 +363,14 @@ the `[formControl]`-bound shape (`formBound` prop on `MatDatepickerInput`, `pick
   - `specs/material-select` + `specs/material-dialog`: 37/37 pass.
 - Preview server: left running on port 4181 for any immediate follow-up verification; kill via
   `kill $(lsof -tiTCP:4181 -sTCP:LISTEN)` before finishing if not needed further.
+
+## `ref` prop — composed with `picker._elementRef` (2026-11-02)
+
+`MatDatepickerInputProps.ref` (new): an external ref, merged via `composeRef()` with
+`picker._elementRef` (previously the sole `ref` on the rendered `<input>`, internal to this
+package). Same rationale and zero-effect-when-omitted guarantee as `qwik-material/input`'s
+identical addition — see that package's SYNC.md and `qwik-material/README.md`'s "Using with
+Formisch". For a datepicker, the recommended Formisch wiring syncs `picker.value`
+(this port's typed `D | null`) to the field's input via `useMatDatepicker()`'s existing
+`onValueChange$` (fires uniformly whether the user typed or picked a date — no new API needed
+for that half); `ref` is only needed so Formisch's `focus()` can find the native element.

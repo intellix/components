@@ -15,6 +15,7 @@ import {
 } from './timepicker-runtime';
 import type {MatTimepickerHandle} from './use-mat-timepicker';
 import {useMatFormSubmitted} from '../core/mat-form';
+import {composeRef, type HostRef} from '../core/host-props';
 
 type NativeInputElement = HTMLInputElement;
 
@@ -110,6 +111,11 @@ export interface MatTimepickerInputProps<D = unknown> extends Omit<
    *  unknown` (a `component$` can't be generic per call site); passing a concrete
    *  `MatTimepickerHandle<Date>` here still type-checks structurally. */
   picker: MatTimepickerHandle<D>;
+  /** An external ref, composed with this component's own `picker._inputRef` — see
+   *  `MatInputProps.ref`'s doc comment (`input/mat-input.tsx`) for the rationale (a form
+   *  library's field-registration ref; needed for `focus()`-style programmatic focus support
+   *  since `picker._inputRef` is internal to this package). */
+  ref?: HostRef<NativeInputElement>;
   /** Mirrors `[matTimepickerOpenOnClick]`. Default `true`. */
   openOnClick?: boolean;
   name?: string;
@@ -239,7 +245,7 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
   return (
     <>
       <input
-        ref={picker._inputRef}
+        ref={composeRef([picker._inputRef, props.ref])}
         role="combobox"
         type="text"
         id={id}

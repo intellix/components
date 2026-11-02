@@ -6,6 +6,7 @@ import {
 } from '../core/mat-form-field-control';
 import {MAT_INPUT_CONFIG, MAT_INPUT_CONFIG_DEFAULTS} from './input-config';
 import {useMatFormSubmitted} from '../core/mat-form';
+import {composeRef, type HostRef} from '../core/host-props';
 
 type NativeControlElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -30,6 +31,16 @@ type NativeControlElement = HTMLInputElement | HTMLTextAreaElement;
 export interface MatInputProps extends MatFormFieldControlProps {
   /** Which native element to render. Default `'input'`. */
   as?: 'input' | 'textarea';
+  /**
+   * An external ref, composed (via {@link composeRef}) with this component's own internal
+   * `inputRef` — so a consumer-owned mechanism that needs the live native element (a form
+   * library's field-registration ref, e.g. Formisch's `field.props.ref`, used for `focus()`/
+   * programmatic reset — see `qwik-material/README.md`'s "Using with Formisch") can get it
+   * without this component giving up its OWN ref (still needed for `handleFocus$`/
+   * `handleBlur$`/`handleInput$`/the value-sync `useTask$` above). Both refs receive the SAME
+   * element; neither one's absence affects the other.
+   */
+  ref?: HostRef<NativeControlElement>;
   /** Input type (ignored for `as="textarea"`, which has none). Default `'text'`. */
   type?: string;
   name?: string;
@@ -243,7 +254,7 @@ export const MatInput = component$<MatInputProps>(props => {
   const ariaDisabled: 'true' | undefined = disabled && disabledInteractive ? 'true' : undefined;
 
   const sharedProps = {
-    ref: inputRef,
+    ref: composeRef([inputRef, props.ref]),
     id,
     class: classes,
     disabled: (disabled && !disabledInteractive) || undefined,

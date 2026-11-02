@@ -417,3 +417,11 @@ NOT before `onTouched$`/`empty`/`shouldLabelFloat` — an earlier, broader versi
 should fire on a genuine blur regardless of how fast focus bounces back (confirmed live:
 Angular shows `ng-touched` through this exact click-then-immediately-refocus sequence), breaking
 `ng-touched` parity on exactly these 3 scenarios.
+
+## `ref` prop — composed with the internal `inputRef` (2026-11-02)
+
+`MatAutocompleteProps.ref` (new): an external ref, merged via `composeRef()` with this
+component's own `inputRef` signal. Same rationale as `qwik-material/input`'s identical addition
+— see `qwik-material/README.md`'s "Using with Formisch". Not exercised by this port's own
+Formisch example; added for consistency since the same gap (no way to hand out the live native
+element) applies identically here.

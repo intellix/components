@@ -15,6 +15,7 @@ import {
 } from './datepicker-runtime';
 import type {MatDatepickerHandle} from './use-mat-datepicker';
 import {useMatFormSubmitted} from '../core/mat-form';
+import {composeRef, type HostRef} from '../core/host-props';
 
 type NativeInputElement = HTMLInputElement;
 
@@ -55,6 +56,11 @@ export interface MatDatepickerInputProps<D = unknown> extends Omit<
   /** The shared handle from `useMatDatepicker()`. Declared generic for documentation purposes
    *  only — see `MatTimepickerInputProps<D>`'s identical doc comment for why. */
   picker: MatDatepickerHandle<D>;
+  /** An external ref, composed with this component's own `picker._elementRef` — see
+   *  `MatInputProps.ref`'s doc comment (`input/mat-input.tsx`) for the rationale; same use case
+   *  (a form library's field-registration ref). Needed for `focus()`-style programmatic focus
+   *  support, since `picker._elementRef` alone is internal to this package. */
+  ref?: HostRef<NativeInputElement>;
   name?: string;
   class?: string | ReadonlyArray<string>;
   onInput$?: QRL<(event: Event, el: NativeInputElement) => void>;
@@ -180,7 +186,7 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
     // `<input matInput [matDatepicker]="picker">` never binds `[type]`, so Angular never writes
     // the attribute at all (confirmed live; see `mat-input.tsx`'s identical comment).
     <input
-      ref={picker._elementRef}
+      ref={composeRef([picker._elementRef, props.ref])}
       id={id}
       class={classes}
       disabled={picker.disabled.value || undefined}

@@ -440,3 +440,27 @@ of Angular's `FormGroupDirective`/`NgForm` that Material reads — `submitted` f
 `invalid && (touched || form.submitted)`. Wired into MatFormField, MatInput, MatSelect,
 MatAutocomplete, MatDatepickerInput and MatTimepickerInput. Needed by the stepper-overview docs
 example (`matStepperNext` is `type="submit"`).
+
+## `MatFormSubmittedProvider` — submitted state for form libraries that own their own `<form>` (2026-11-02)
+
+A form library (first consumer: Formisch — `@formisch/qwik`, see `qwik-material/README.md`'s
+"Using with Formisch") renders its OWN `<form>` element (its `<Form>` component), so `<MatForm>`
+can't wrap it — two nested `<form>`s isn't valid HTML, and the form library, not this port, owns
+submission. `MatFormSubmittedProvider` (`core/mat-form.tsx`) provides the SAME `MAT_FORM` context
+`<MatForm>` does, live-synced from an externally-owned `submitted` boolean prop, but renders
+nothing but `<Slot/>` — no element of its own. `ng-submitted` still needs to land on the real
+`<form>` the OTHER library renders; that goes through whatever mechanism it exposes for its own
+host element's `class` (Formisch's `<Form>` forwards an ordinary `class` prop) — not a qwik-
+material concern, since this provider never renders that element itself.
+
+## `composeRef` — forwarding a consumer ref alongside a control's own internal ref (2026-11-02)
+
+`core/host-props.ts`'s `composeRef()` (already used internally by `mergeHostProps()` for directive-
+hook composition) is now also exported standalone and used directly by `MatInput`, `MatDatepickerInput`,
+`MatTimepickerInput` and `MatAutocomplete`'s own `ref` props: each of those already needs ITS OWN
+ref on the native element it renders (for focus/blur/input handling), so a plain `ref={props.ref}`
+forward (the pattern `MatButton`/`MatIconButton`/`MatIcon` already use, having no internal ref of
+their own) would have meant picking one or the other. `composeRef([internalRef, props.ref])` gives
+the live element to both. Driving use case: a form library's field-registration ref (Formisch's
+`field.props.ref`), needed for `focus()`-on-invalid-submit and similar programmatic-focus features
+— see `qwik-material/README.md`'s "Using with Formisch".

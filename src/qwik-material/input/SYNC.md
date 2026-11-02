@@ -137,3 +137,13 @@ lint:no-ssr-leaks && typecheck` for the whole qwik-material package,
 covering dialog + button + card + toolbar + badge + icon + progress-bar +
 progress-spinner + divider + grid-list + list + button-toggle + slide-toggle
 + expansion + radio + checkbox + form-field + input + core.
+
+## `ref` prop — composed with the internal `inputRef` (2026-11-02)
+
+`MatInputProps.ref` (new): an external ref, merged via `core/host-props.ts`'s `composeRef()` with
+this component's own `inputRef` signal (still needed internally for `handleFocus$`/`handleBlur$`/
+`handleInput$`/the value-sync `useTask$`). Closes the gap found porting Formisch integration (see
+`qwik-material/README.md`'s "Using with Formisch"): Formisch's `field.props.ref` needs the live
+native element to register it for `focus()`/programmatic access, and `MatInput` previously had no
+way to hand that out at all. Zero effect on any existing consumer — `props.ref` is `undefined`
+unless explicitly passed, and `composeRef()` with one defined ref returns that ref unchanged.
