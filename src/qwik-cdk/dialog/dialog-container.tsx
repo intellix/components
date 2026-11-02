@@ -1,7 +1,6 @@
 import {component$, Slot, useSignal} from '@qwik.dev/core';
 import {useFocusTrap} from '../a11y/focus-trap/use-focus-trap';
 import type {DialogConfig} from './dialog-config';
-// @ts-expect-error - side-effect scss import; bundled by Vite
 import './../scss/dialog/dialog-container.scss';
 
 export const CdkDialogContainer = component$<{config: DialogConfig}>(({config}) => {

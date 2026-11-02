@@ -9,7 +9,6 @@ import {
   type MatBottomSheetRef,
 } from './mat-bottom-sheet-ref';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-// @ts-expect-error - side-effect scss import; bundled by Vite
 import './../scss/bottom-sheet/bottom-sheet-container.scss';
 
 /** Keyframe names declared in bottom-sheet-container.scss — matched against real `animation*` events. */
