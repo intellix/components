@@ -42,6 +42,7 @@ import Ex_slider_example from '@angular-community/qwik-material-examples/slider/
 import Ex_slider_range from '@angular-community/qwik-material-examples/slider/slider-range';
 import Ex_slider_formatting from '@angular-community/qwik-material-examples/slider/slider-formatting';
 import Ex_snack_bar_example from '@angular-community/qwik-material-examples/snack-bar/example';
+import Ex_snack_bar_annotated_component from '@angular-community/qwik-material-examples/snack-bar/snack-bar-annotated-component';
 import Ex_sort_example from '@angular-community/qwik-material-examples/sort/example';
 import Ex_stepper_example from '@angular-community/qwik-material-examples/stepper/example';
 import Ex_table_example from '@angular-community/qwik-material-examples/table/example';
@@ -135,6 +136,7 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'slider/slider-range': Ex_slider_range,
   'slider/slider-formatting': Ex_slider_formatting,
   'snack-bar/example': Ex_snack_bar_example,
+  'snack-bar/snack-bar-annotated-component': Ex_snack_bar_annotated_component,
   'sort/example': Ex_sort_example,
   'stepper/example': Ex_stepper_example,
   'table/example': Ex_table_example,

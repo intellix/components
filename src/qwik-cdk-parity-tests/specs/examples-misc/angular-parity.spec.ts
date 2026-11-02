@@ -1,5 +1,7 @@
-import {test} from '@playwright/test';
-import {expectMaterialParity} from '../../lib/material-parity.js';
+import {test, type Page} from '@playwright/test';
+import {expectMaterialParity, type ParityStep} from '../../lib/material-parity.js';
+
+const overlayRoot = '.cdk-overlay-container';
 
 /**
  * Phase 2 ("docs site batch C") guide-embedded examples that AREN'T a component's headline
@@ -26,7 +28,39 @@ const EXAMPLE_IDS = [
   'button-toggle-appearance',
   'slider-range',
   'slider-formatting',
+  'snack-bar-annotated-component',
 ];
+
+/**
+ * Clicks the `snack-bar-annotated-component` example's "Pizza party" trigger, opening the
+ * annotated custom snack bar. Mirrors `specs/examples/angular-parity.spec.ts`'s own
+ * `openSnackBar` (same button-role wait + settle pattern). The button's accessible name is its
+ * `aria-label` ("Show an example snack-bar"), not its "Pizza party" text content — `aria-label`
+ * always wins accessible-name computation when present.
+ */
+const openPizzaPartySnackBar: ParityStep = {
+  name: 'click "Pizza party"',
+  run: async (page: Page) => {
+    await page
+      .locator('[data-parity-root]')
+      .getByRole('button', {name: 'Show an example snack-bar', exact: true})
+      .click();
+    await page.waitForTimeout(50);
+    await page.waitForFunction(
+      () => {
+        const containers = document.querySelectorAll('.mat-mdc-snack-bar-container');
+        return containers.length === 1 && !containers[0].querySelector('[aria-hidden]');
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
+/** Interactions per example, added alongside each new port as needed. */
+const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
+  'snack-bar-annotated-component': [{steps: [openPizzaPartySnackBar], rootSelector: overlayRoot}],
+};
 
 /**
  * Per-example `ignoreAttrs` (see `ParityScenario.ignoreAttrs`'s doc comment, and
@@ -79,5 +113,16 @@ test.describe('qwik-material-examples (non-headline) — Angular DOM parity', ()
         ignoreAttrs: EXAMPLE_IGNORE_ATTRS[exampleId],
       });
     });
+    for (const [i, extra] of (EXAMPLE_STEPS[exampleId] ?? []).entries()) {
+      test(`${exampleId} (interaction ${i + 1})`, ({browser}) =>
+        expectMaterialParity(browser, {
+          pinRoot: true,
+          route: 'examples',
+          scenario: exampleId,
+          steps: extra.steps,
+          rootSelector: extra.rootSelector,
+          ignoreAttrs: EXAMPLE_IGNORE_ATTRS[exampleId],
+        }));
+    }
   }
 });

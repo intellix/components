@@ -22,6 +22,7 @@ import radioMd from './overviews/radio.md?raw';
 import selectMd from './overviews/select.md?raw';
 import sliderMd from './overviews/slider.md?raw';
 import slideToggleMd from './overviews/slide-toggle.md?raw';
+import snackBarMd from './overviews/snack-bar.md?raw';
 
 export const OVERVIEW_MARKDOWN: Record<string, string> = {
   badge: badgeMd,
@@ -40,4 +41,5 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   select: selectMd,
   slider: sliderMd,
   'slide-toggle': slideToggleMd,
+  'snack-bar': snackBarMd,
 };
