@@ -22,7 +22,7 @@ export interface MatTabNavProps {
   disableRipple?: boolean;
   /** Normalized to ms if numeric. Deliberately has NO config/default
    *  fallback — see angular-parity.spec.ts note 10: `MatTabNav` never sets
-   *  `--mat-tab-header-animation-duration` unless this prop is explicitly
+   *  `--mat-tab-animation-duration` unless this prop is explicitly
    *  provided. */
   animationDuration?: string | number;
   class?: string | ReadonlyArray<string>;
@@ -143,7 +143,7 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
 
   const hostStyle = [
     props.style,
-    navAnimationDuration && `--mat-tab-header-animation-duration: ${navAnimationDuration}`,
+    navAnimationDuration && `--mat-tab-animation-duration: ${navAnimationDuration}`,
   ]
     .filter(Boolean)
     .join('; ');

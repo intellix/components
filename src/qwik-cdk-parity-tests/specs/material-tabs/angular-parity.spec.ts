@@ -25,8 +25,7 @@ const route = 'mat-tabs';
  *                         [mat-mdc-tab-group-dynamic-height] [mat-mdc-tab-group-inverted-header]
  *                         [mat-mdc-tab-group-stretch-tabs]"
  *                  [mat-align-tabs]="start|center|end"   (attr, only when alignTabs is set — see below)
- *                  style="width: …px; --mat-tab-body-animation-duration: 500ms;
- *                         --mat-tab-header-animation-duration: 500ms;">
+ *                  style="width: …px; --mat-tab-animation-duration: 500ms;">
  *     <mat-tab-header class="mat-mdc-tab-header [mat-mdc-tab-header-pagination-controls-enabled]">
  *       <div class="mat-ripple mat-mdc-tab-header-pagination mat-mdc-tab-header-pagination-before
  *                   [mat-mdc-tab-header-pagination-disabled]" mat-ripple>
@@ -166,7 +165,7 @@ const route = 'mat-tabs';
  *   <nav mat-tab-nav-bar role="tablist"             (role="tablist" only because [tabPanel] is set)
  *        class="mat-mdc-tab-nav-bar mat-mdc-tab-header mat-mdc-tab-nav-bar-stretch-tabs
  *               mat-primary [mat-mdc-tab-header-pagination-controls-enabled]"
- *        style="width: …px;">                      (NO --mat-tab-header-animation-duration — see note 10)
+ *        style="width: …px;">                      (NO --mat-tab-animation-duration — see note 10)
  *     …pagination-before chevron, same markup as tab-group…
  *     <div class="mat-mdc-tab-link-container">
  *       <div class="mat-mdc-tab-list" style="transform: translateX(Npx);">
@@ -193,8 +192,8 @@ const route = 'mat-tabs';
  *     …projected content…
  *   </mat-tab-nav-panel>
  *
- * 10. **`MatTabNav` never sets `--mat-tab-header-animation-duration`** (unlike `MatTabGroup`,
- *     which always sets both custom properties — see the shared tab-group structure above).
+ * 10. **`MatTabNav` never sets `--mat-tab-animation-duration`** (unlike `MatTabGroup`,
+ *     which always sets the custom property — see the shared tab-group structure above).
  *     `MatTabNav`'s constructor only defaults `disablePagination`/`fitInkBarToContent`/
  *     `stretchTabs` from `MAT_TABS_CONFIG`; `animationDuration` is left genuinely `undefined`
  *     unless a config explicitly provides one, and Angular's `[style.prop]` binding omits the
@@ -305,7 +304,7 @@ const route = 'mat-tabs';
  *   link`, click sets `activeLink`) plus a fourth `[disabled]="true"` link ("Disabled", always
  *   `active=false`), followed by `<mat-tab-nav-panel #tabPanel>` containing `<p>Panel content
  *   for {{ activeLink }}</p>`, then a top-level `<p>Selected: {{ activeLink }}</p>`. "First"
- *   starts active. No `--mat-tab-header-animation-duration` custom property (note 10). Steps:
+ *   starts active. No `--mat-tab-animation-duration` custom property (note 10). Steps:
  *   click link 1 ("Second") → `active`/`aria-selected`/`mdc-tab--active`/ink-bar move to it,
  *   it gains `cdk-focused cdk-mouse-focused` (note 13), panel's `aria-labelledby` + projected
  *   text + "Selected: Second" all update; Tab in from a sentinel (focus → link 1, already

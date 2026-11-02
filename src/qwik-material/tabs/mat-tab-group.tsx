@@ -261,11 +261,7 @@ export const MatTabGroup = component$<MatTabGroupProps>(props => {
   const hostAttrs: Record<string, string> = {};
   if (props.alignTabs != null) hostAttrs['mat-align-tabs'] = props.alignTabs;
 
-  const hostStyle = [
-    props.style,
-    `--mat-tab-body-animation-duration: ${animationDuration}`,
-    `--mat-tab-header-animation-duration: ${animationDuration}`,
-  ]
+  const hostStyle = [props.style, `--mat-tab-animation-duration: ${animationDuration}`]
     .filter(Boolean)
     .join('; ');
 

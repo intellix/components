@@ -115,5 +115,5 @@ describe.skip('MatTabs DOM-rendered scenarios — verified via Playwright', () =
   it('Tab-body content attaches the first time a tab centers (immediate for the initially-selected tab) and detaches on leaving unless preserveContent — the same for plain content and for a matTabContent-equivalent prop, which this port does not distinguish (see mat-tab-body.tsx)', () => {});
   it('Pagination: clicking the "after" chevron scrolls the tab list by a third of the viewport, enabling the "before" chevron and updating translateX bit-for-bit against Angular given synced CSS', () => {});
   it('mat-align-tabs is reflected as a literal host attribute only when alignTabs is set; mat-stretch-tabs never appears as an attribute, only as a class', () => {});
-  it('MatTabNav + MatTabLink + MatTabNavPanel: active is driven purely by the `active` prop, not focus; Enter/Space on a focused non-active link synthesizes a real click when a tabPanel is bound; MatTabNav never sets --mat-tab-header-animation-duration unless animationDuration is explicitly provided', () => {});
+  it('MatTabNav + MatTabLink + MatTabNavPanel: active is driven purely by the `active` prop, not focus; Enter/Space on a focused non-active link synthesizes a real click when a tabPanel is bound; MatTabNav never sets --mat-tab-animation-duration unless animationDuration is explicitly provided', () => {});
 });
