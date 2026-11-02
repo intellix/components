@@ -64,7 +64,7 @@ export default component$(() => {
                       value={firstCtrl.value}
                       touched={firstCtrl.touched}
                       dirty={firstCtrl.dirty}
-                      onInput$={$((_: Event, el: HTMLInputElement) => firstCtrl.setValue$(el.value))}
+                      onInput$={(_, el) => firstCtrl.setValue$(el.value)}
                       onBlur$={$(() => firstCtrl.markAsTouched$())}
                     />
                   }
@@ -88,7 +88,7 @@ export default component$(() => {
                       value={secondCtrl.value}
                       touched={secondCtrl.touched}
                       dirty={secondCtrl.dirty}
-                      onInput$={$((_: Event, el: HTMLInputElement) => secondCtrl.setValue$(el.value))}
+                      onInput$={(_, el) => secondCtrl.setValue$(el.value)}
                       onBlur$={$(() => secondCtrl.markAsTouched$())}
                     />
                   }

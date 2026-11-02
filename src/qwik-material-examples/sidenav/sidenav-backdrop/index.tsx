@@ -44,9 +44,9 @@ export default component$(() => {
               <MatSelect
                 controlType="mat-select"
                 value={mode.value}
-                onValueChange$={$((v: MatDrawerMode) => {
-                  mode.value = v;
-                })}
+                onValueChange$={v => {
+                  mode.value = v as MatDrawerMode;
+                }}
                 options={[
                   {value: 'side', label: 'Side', echoValueAttr: false},
                   {value: 'over', label: 'Over', echoValueAttr: false},
@@ -61,9 +61,9 @@ export default component$(() => {
               <MatSelect
                 controlType="mat-select"
                 value={hasBackdrop.value}
-                onValueChange$={$((v: boolean | undefined) => {
-                  hasBackdrop.value = v;
-                })}
+                onValueChange$={v => {
+                  hasBackdrop.value = v as boolean | undefined;
+                }}
                 options={[
                   {label: 'Unset'},
                   {value: true, label: 'True', echoValueAttr: false},

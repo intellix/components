@@ -67,9 +67,9 @@ export default component$(() => {
           <MatInput
             placeholder="Ex. ium"
             value={filterValue.value}
-            onInput$={$((_: Event, el: HTMLInputElement) => {
+            onInput$={(_, el) => {
               filterValue.value = el.value;
-            })}
+            }}
           />
         }
       />
