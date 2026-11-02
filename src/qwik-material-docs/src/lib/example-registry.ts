@@ -80,9 +80,31 @@ import Ex_slider_example from '@angular-community/qwik-material-examples/slider/
 import Ex_snack_bar_example from '@angular-community/qwik-material-examples/snack-bar/example';
 import Ex_sort_example from '@angular-community/qwik-material-examples/sort/example';
 import Ex_stepper_example from '@angular-community/qwik-material-examples/stepper/example';
+import Ex_stepper_vertical from '@angular-community/qwik-material-examples/stepper/stepper-vertical';
+import Ex_stepper_label_position_bottom from '@angular-community/qwik-material-examples/stepper/stepper-label-position-bottom';
+import Ex_stepper_header_position from '@angular-community/qwik-material-examples/stepper/stepper-header-position';
+import Ex_stepper_animations from '@angular-community/qwik-material-examples/stepper/stepper-animations';
+import Ex_stepper_lazy_content from '@angular-community/qwik-material-examples/stepper/stepper-lazy-content';
+import Ex_stepper_optional from '@angular-community/qwik-material-examples/stepper/stepper-optional';
+import Ex_stepper_editable from '@angular-community/qwik-material-examples/stepper/stepper-editable';
 import Ex_table_example from '@angular-community/qwik-material-examples/table/example';
+import Ex_table_column_styling from '@angular-community/qwik-material-examples/table/table-column-styling';
+import Ex_table_pagination from '@angular-community/qwik-material-examples/table/table-pagination';
+import Ex_table_filtering from '@angular-community/qwik-material-examples/table/table-filtering';
+import Ex_table_selection from '@angular-community/qwik-material-examples/table/table-selection';
+import Ex_table_footer_row from '@angular-community/qwik-material-examples/table/table-footer-row';
+import Ex_table_sticky_header from '@angular-community/qwik-material-examples/table/table-sticky-header';
+import Ex_table_sticky_footer from '@angular-community/qwik-material-examples/table/table-sticky-footer';
+import Ex_table_sticky_columns from '@angular-community/qwik-material-examples/table/table-sticky-columns';
 import Ex_table_sorting from '@angular-community/qwik-material-examples/table/table-sorting';
 import Ex_tabs_example from '@angular-community/qwik-material-examples/tabs/example';
+import Ex_tab_group_custom_label from '@angular-community/qwik-material-examples/tabs/tab-group-custom-label';
+import Ex_tab_group_dynamic_height from '@angular-community/qwik-material-examples/tabs/tab-group-dynamic-height';
+import Ex_tab_nav_bar_basic from '@angular-community/qwik-material-examples/tabs/tab-nav-bar-basic';
+import Ex_tab_group_lazy_loaded from '@angular-community/qwik-material-examples/tabs/tab-group-lazy-loaded';
+import Ex_tab_group_align from '@angular-community/qwik-material-examples/tabs/tab-group-align';
+import Ex_tab_group_animations from '@angular-community/qwik-material-examples/tabs/tab-group-animations';
+import Ex_tab_group_preserve_content from '@angular-community/qwik-material-examples/tabs/tab-group-preserve-content';
 import Ex_timepicker_example from '@angular-community/qwik-material-examples/timepicker/example';
 import Ex_timepicker_forms from '@angular-community/qwik-material-examples/timepicker/timepicker-forms';
 import Ex_timepicker_datepicker_integration from '@angular-community/qwik-material-examples/timepicker/timepicker-datepicker-integration';
@@ -217,9 +239,31 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'snack-bar/example': Ex_snack_bar_example,
   'sort/example': Ex_sort_example,
   'stepper/example': Ex_stepper_example,
+  'stepper/stepper-vertical': Ex_stepper_vertical,
+  'stepper/stepper-label-position-bottom': Ex_stepper_label_position_bottom,
+  'stepper/stepper-header-position': Ex_stepper_header_position,
+  'stepper/stepper-animations': Ex_stepper_animations,
+  'stepper/stepper-lazy-content': Ex_stepper_lazy_content,
+  'stepper/stepper-optional': Ex_stepper_optional,
+  'stepper/stepper-editable': Ex_stepper_editable,
   'table/example': Ex_table_example,
+  'table/table-column-styling': Ex_table_column_styling,
+  'table/table-pagination': Ex_table_pagination,
+  'table/table-filtering': Ex_table_filtering,
+  'table/table-selection': Ex_table_selection,
+  'table/table-footer-row': Ex_table_footer_row,
+  'table/table-sticky-header': Ex_table_sticky_header,
+  'table/table-sticky-footer': Ex_table_sticky_footer,
+  'table/table-sticky-columns': Ex_table_sticky_columns,
   'table/table-sorting': Ex_table_sorting,
   'tabs/example': Ex_tabs_example,
+  'tabs/tab-group-custom-label': Ex_tab_group_custom_label,
+  'tabs/tab-group-dynamic-height': Ex_tab_group_dynamic_height,
+  'tabs/tab-nav-bar-basic': Ex_tab_nav_bar_basic,
+  'tabs/tab-group-lazy-loaded': Ex_tab_group_lazy_loaded,
+  'tabs/tab-group-align': Ex_tab_group_align,
+  'tabs/tab-group-animations': Ex_tab_group_animations,
+  'tabs/tab-group-preserve-content': Ex_tab_group_preserve_content,
   'timepicker/example': Ex_timepicker_example,
   'timepicker/timepicker-forms': Ex_timepicker_forms,
   'timepicker/timepicker-datepicker-integration': Ex_timepicker_datepicker_integration,

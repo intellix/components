@@ -165,3 +165,24 @@ align/stretch, header position, dynamic height, nav-bar Enter-synthesizes-
 click) already cover every behavior this port implements against the real
 Angular DOM — the strongest test available. `pagination-math.spec.ts` and
 `tab-group-keyboard.spec.ts` cover the pure logic beneath it.
+
+## `MatTabLabelItem`'s `labelTemplate` needed `cloneJsxForReuse` too (2026-11-02, Phase 2 docs examples)
+
+Found porting material.angular.dev's `tab-group-custom-label` docs example (a real `JSXOutput`
+`labelTemplate` with a `<mat-icon>`, not plain text). Confirmed live: switching tabs left EVERY
+tab's icon text empty (`'thumb_up'` -> `undefined`), not just the ones whose selected state
+changed — the same "re-rendered twice within the same mount corrupts a reused JSXOutput" Qwik v2
+issue already documented and fixed in `qwik-material/menu` (`menu-panel.tsx`'s `props.content`,
+`mat-menu-item.tsx`'s `props.icon`): `MatTabLabelItem` re-renders on its own
+selected/focus/ripple-state signals, and rendering the SAME static `props.labelTemplate` object
+again on that re-render corrupts it for every label, not just the directly-affected one (plausibly
+because all labels share one parent re-render pass).
+
+Fix: `mat-tab-label.tsx` renders `{cloneJsxForReuse(props.labelTemplate)}` instead of
+`{props.labelTemplate}` (falling back to plain `props.label` text when no template is given) —
+same one-line pattern as every other site using this helper. Purely additive; no existing
+scenario in this port's own `specs/material-tabs/` passes a JSXOutput `labelTemplate`, so this is
+a no-op for all of them (confirmed: 12/12 unaffected).
+
+Verified: `specs/examples-data-nav/angular-parity.spec.ts`'s tabs scenarios (10 cases) pass, run
+3x as part of the full 33-case suite.

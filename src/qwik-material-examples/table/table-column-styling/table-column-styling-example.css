@@ -1,0 +1,23 @@
+/* Copied from src/components-examples/material/table/table-column-styling/
+   table-column-styling-example.css, prefixed with this route's own host tag. */
+table-column-styling-example .demo-table {
+  width: 100%;
+}
+table-column-styling-example .mat-column-demo-position {
+  width: 32px;
+  border-right: 1px solid currentColor;
+  padding-right: 24px;
+  text-align: center;
+}
+table-column-styling-example .mat-column-demo-name {
+  padding-left: 16px;
+  font-size: 20px;
+}
+table-column-styling-example .mat-column-demo-weight {
+  font-style: italic;
+}
+table-column-styling-example .mat-column-demo-symbol {
+  width: 32px;
+  text-align: center;
+  font-weight: bold;
+}

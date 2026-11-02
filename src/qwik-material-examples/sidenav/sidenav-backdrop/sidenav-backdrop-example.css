@@ -1,0 +1,19 @@
+/* Copied from src/components-examples/material/sidenav/sidenav-backdrop/sidenav-backdrop-example.css,
+   prefixed with this route's own host tag. */
+sidenav-backdrop-example .example-container {
+  width: 400px;
+  height: 200px;
+  margin: 12px;
+  border: 1px solid #555;
+}
+sidenav-backdrop-example .mat-drawer-content {
+  /* Targets the CLASS, not the bare `mat-drawer-content` tag -- qwik-material's own compiled
+     theme CSS already sets `display: block` on `.mat-drawer-content` (class selector,
+     specificity 0,1,0); a bare-tag selector here (0,0,2 combined with the host tag) loses to
+     it regardless of source order, so this override never took effect (confirmed live: it
+     computed as 'block', not 'flex', until this fix). */
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}

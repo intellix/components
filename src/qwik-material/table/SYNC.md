@@ -143,3 +143,22 @@ into `<MatTable>`'s props) is what this port uses throughout.
    accordingly: they carry no functional meaning (no CSS in this port's
    synced stylesheets selects on them either — only the flex form's TAG
    NAMES, which this port DOES render, since those aren't filtered).
+
+## Cell/header/footer content needed `cloneJsxForReuse` too (2026-11-02, Phase 2 docs examples)
+
+Found porting material.angular.dev's `table-sticky-columns` docs example (a real `<mat-icon>`
+JSXOutput cell value, not plain text/numbers like every prior scenario). Confirmed live: EVERY
+row's icon text went empty (`'more_vert'` -> `undefined`) on first render — the same
+"re-rendered twice within the same mount corrupts a reused JSXOutput" Qwik v2 issue already
+documented and fixed in `qwik-material/menu` and `qwik-material/tabs`. `MatTable` re-renders at
+least once after mount (sticky-position measurement via `StickyStyler`), and embedding the SAME
+`row.cells[name]`/`col.header`/`col.footer`/`noData.content` object again on that re-render
+corrupts it.
+
+Fix: `mat-table.tsx` wraps every one of those four embedding sites in `cloneJsxForReuse(...)` —
+same one-line-per-site pattern as every other site using this helper. Purely additive; every
+prior scenario only ever passes plain strings/numbers (which `cloneJsxForReuse` passes through
+unchanged), so this is a no-op for all of them.
+
+Verified: `specs/examples-data-nav/angular-parity.spec.ts`'s table scenarios (10 cases) pass, run
+3x as part of the full 48-case suite. `specs/material-table` 12/12 unaffected.

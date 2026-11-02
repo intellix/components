@@ -19,6 +19,9 @@ import autocompleteMd from './overviews/autocomplete.md?raw';
 import timepickerMd from './overviews/timepicker.md?raw';
 import datepickerMd from './overviews/datepicker.md?raw';
 import sidenavMd from './overviews/sidenav.md?raw';
+import tabsMd from './overviews/tabs.md?raw';
+import stepperMd from './overviews/stepper.md?raw';
+import tableMd from './overviews/table.md?raw';
 
 export const OVERVIEW_MARKDOWN: Record<string, string> = {
   button: buttonMd,
@@ -34,4 +37,7 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   timepicker: timepickerMd,
   datepicker: datepickerMd,
   sidenav: sidenavMd,
+  tabs: tabsMd,
+  stepper: stepperMd,
+  table: tableMd,
 };

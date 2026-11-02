@@ -1,0 +1,10 @@
+/* Copied from src/components-examples/material/sidenav/sidenav-drawer-overview/
+   sidenav-drawer-overview-example.css, prefixed with this route's own host tag — see
+   table/example/table-basic-example.css's header comment for why. */
+sidenav-drawer-overview-example .example-container {
+  width: auto;
+  height: 200px;
+  margin: 10px;
+  border: 1px solid #555;
+  background: #eee;
+}
