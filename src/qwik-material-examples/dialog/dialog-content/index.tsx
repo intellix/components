@@ -13,7 +13,7 @@ export default component$(() => {
   const dialog = useMatDialog();
 
   const openDialog$ = $(async () => {
-    const ref = dialog.open$(DialogContentDialog);
+    const ref = await dialog.open$(DialogContentDialog);
     if (ref) {
       const result = await ref.afterClosed;
       console.log(`Dialog result: ${result}`);

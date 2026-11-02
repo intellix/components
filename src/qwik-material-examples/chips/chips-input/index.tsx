@@ -13,7 +13,7 @@ const INITIAL_FRUITS: readonly Fruit[] = [{name: 'Lemon'}, {name: 'Lime'}, {name
 
 function rowsForFruits(fruits: readonly Fruit[], fruitsSignal: Signal<readonly Fruit[]>): MatChipRowDef[] {
   return fruits.map(fruit => ({
-    key: fruit,
+    key: fruit.name,
     content: fruit.name,
     removeButton: {
       content: <MatIcon>cancel</MatIcon>,

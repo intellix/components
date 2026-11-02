@@ -42,7 +42,7 @@ export default component$(() => {
             touched={showFc.touched}
             dirty={showFc.dirty}
             invalid={false}
-            value={showDelay.value}
+            value={String(showDelay.value)}
             aria-label="Adds a delay between hovering over the button and displaying the tooltip"
             onInput$={(_, el) => {
               showFc.markAsDirty$();
@@ -67,7 +67,7 @@ export default component$(() => {
             touched={hideFc.touched}
             dirty={hideFc.dirty}
             invalid={false}
-            value={hideDelay.value}
+            value={String(hideDelay.value)}
             aria-label="Adds a delay between hovering away from the button and hiding the tooltip"
             onInput$={(_, el) => {
               hideFc.markAsDirty$();

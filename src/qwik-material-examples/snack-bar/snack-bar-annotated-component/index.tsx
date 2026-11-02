@@ -39,7 +39,7 @@ export default component$(() => {
               touched={fc.touched}
               dirty={fc.dirty}
               invalid={false}
-              value={durationInSeconds.value}
+              value={String(durationInSeconds.value)}
               onInput$={(_, el) => {
                 fc.markAsDirty$();
                 durationInSeconds.value = Number(el.value);
