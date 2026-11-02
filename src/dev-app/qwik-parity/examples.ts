@@ -53,7 +53,10 @@ export const MAIN_EXAMPLES: Record<string, Record<string, string>> = {
   'mat-tree': {'example': 'tree-flat-child-accessor-overview'},
 };
 
-/** Renders the docs example named by the route's `exampleId` inside `[data-parity-root]`. */
+/**
+ * Renders the docs example named by the route's `exampleId` (route data, or the `:exampleId` param
+ * of the generic `examples/:exampleId` route) inside `[data-parity-root]`.
+ */
 @Component({
   template: `<div data-parity-root><ng-container #outlet /></div>`,
 })
@@ -64,7 +67,9 @@ export class ExampleScenario implements OnInit {
   private _changeDetectorRef = inject(ChangeDetectorRef);
 
   async ngOnInit() {
-    const example = await loadExample(this._route.snapshot.data['exampleId'], this._injector);
+    const snapshot = this._route.snapshot;
+    const id = snapshot.data['exampleId'] ?? snapshot.paramMap.get('exampleId');
+    const example = await loadExample(id, this._injector);
     this.outlet.createComponent(example.component, {injector: example.injector});
     this._changeDetectorRef.markForCheck();
   }
@@ -78,3 +83,10 @@ export const EXAMPLE_ROUTES: Routes = Object.entries(MAIN_EXAMPLES).flatMap(
       data: {exampleId},
     })),
 );
+
+/**
+ * Any material.angular.dev example by id, unmodified: `/qwik-parity/examples/<example-id>` (e.g.
+ * `examples/select-multiple`). Lets new Qwik example ports get a parity counterpart without an
+ * Angular change per example.
+ */
+EXAMPLE_ROUTES.push({path: 'examples/:exampleId', component: ExampleScenario});
