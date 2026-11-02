@@ -1,0 +1,10 @@
+/*
+ * Adapted from src/components-examples/material/slider/slider-formatting/
+ * slider-formatting-example.css (`mat-slider { width: 300px; }`, unchanged declaration). See
+ * ../example/slider-overview-example.css's header comment for why the selector is widened to
+ * `mat-slider.mat-mdc-slider` (specificity parity with Angular's own `.mat-mdc-slider { width:
+ * auto; }` component style, which a bare type selector loses to).
+ */
+mat-slider.mat-mdc-slider {
+  width: 300px;
+}

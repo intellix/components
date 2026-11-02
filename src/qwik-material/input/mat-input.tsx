@@ -303,6 +303,7 @@ export const MatInput = component$<MatInputProps>(props => {
     'aria-invalid': ariaInvalid,
     'aria-required': ariaRequired,
     'aria-describedby': ariaDescribedBy,
+    'aria-label': props['aria-label'],
     onFocus$: handleFocus$,
     onBlur$: handleBlur$,
     onInput$: handleInput$,

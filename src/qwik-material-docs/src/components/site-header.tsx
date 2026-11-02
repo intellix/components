@@ -1,7 +1,8 @@
-import {component$} from '@qwik.dev/core';
+import {component$, useSignal} from '@qwik.dev/core';
 import {useLocation} from '@qwik.dev/router';
 import {MatToolbar} from '@angular-community/qwik-material/toolbar';
 import {MatIcon} from '@angular-community/qwik-material/icon';
+import {MatIconButton} from '@angular-community/qwik-material/button';
 
 const NAV_LINKS = [
   {href: '/components/', label: 'Components'},
@@ -10,13 +11,17 @@ const NAV_LINKS = [
 ];
 
 /**
- * Site-wide top bar, dogfooding `<MatToolbar>`. Only four short nav links ever appear here, so —
- * unlike the per-section component/CDK sidenav (`ComponentNav`) — this never needs a hamburger
- * collapse; it just wraps on very narrow viewports via the global stylesheet.
+ * Site-wide top bar, dogfooding `<MatToolbar>`. Below `900px` (the global stylesheet's
+ * `.docs-header-nav` breakpoint) the inline nav links hide and this hamburger toggle takes
+ * over, expanding the same links into a dropdown panel anchored under the header — found live
+ * (2026-11-02 mobile-width polish pass) that the CSS for `.docs-header-menu-toggle` already
+ * existed but nothing ever rendered the toggle itself, leaving narrow viewports with literally
+ * no way to reach Components/CDK/Guides from the header.
  */
 export default component$(() => {
   const loc = useLocation();
   const path = loc.url.pathname;
+  const menuOpen = useSignal(false);
 
   return (
     <header class="docs-header">
@@ -49,7 +54,28 @@ export default component$(() => {
         >
           <MatIcon>code</MatIcon>
         </a>
+        <MatIconButton
+          class="docs-header-menu-toggle"
+          ariaLabel={menuOpen.value ? 'Close menu' : 'Open menu'}
+          onClick$={() => (menuOpen.value = !menuOpen.value)}
+        >
+          <MatIcon>{menuOpen.value ? 'close' : 'menu'}</MatIcon>
+        </MatIconButton>
       </MatToolbar>
+      {menuOpen.value && (
+        <nav class="docs-header-mobile-nav" aria-label="Main">
+          {NAV_LINKS.map(link => (
+            <a
+              key={link.href}
+              href={link.href}
+              aria-current={path.startsWith(link.href) ? 'page' : undefined}
+              onClick$={() => (menuOpen.value = false)}
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      )}
     </header>
   );
 });

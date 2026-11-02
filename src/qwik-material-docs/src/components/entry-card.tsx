@@ -1,5 +1,6 @@
 import {component$} from '@qwik.dev/core';
 import {MatCard, MatCardTitle, MatCardSubtitle} from '@angular-community/qwik-material/card';
+import {renderInlineMarkdown} from '../lib/inline-markdown';
 
 export interface EntryCardProps {
   href: string;
@@ -12,7 +13,7 @@ export default component$<EntryCardProps>(({href, name, summary}) => (
   <a href={href} class="docs-card-link">
     <MatCard appearance="outlined" class="docs-entry-card">
       <MatCardTitle>{name}</MatCardTitle>
-      <MatCardSubtitle>{summary}</MatCardSubtitle>
+      <MatCardSubtitle>{renderInlineMarkdown(summary)}</MatCardSubtitle>
     </MatCard>
   </a>
 ));

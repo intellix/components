@@ -149,6 +149,17 @@ export interface MatFormFieldControlProps {
   controlType?: string;
   'aria-describedby'?: string;
   /**
+   * Explicit `aria-label`, forwarded verbatim onto the rendered native control. Upstream never
+   * needs a dedicated `@Input` for this — `aria-label` is a plain global HTML attribute, so
+   * Angular's compiler attaches it to the native `<input matInput>`/`<mat-select>` element for
+   * free, no directive involvement at all. A Qwik component has no such "any native attribute
+   * passes through" behavior — every forwarded attribute needs an explicit prop — so this is
+   * declared here once for every form-field control. Added for `tooltip-delay`'s docs example
+   * (src/components-examples/material/tooltip/tooltip-delay/), the first ported scenario to
+   * exercise it on `MatInput`.
+   */
+  'aria-label'?: string;
+  /**
    * Mirrors upstream `MatFormFieldControl.disableAutomaticLabeling` —
    * `true` for `MatSelect` only (set "to avoid issues like #27241" — see
    * `select.ts`). When true, `MatFormField`'s floating `<label>` never gets

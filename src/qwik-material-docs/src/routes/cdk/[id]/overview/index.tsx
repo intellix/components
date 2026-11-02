@@ -1,6 +1,7 @@
 import {component$} from '@qwik.dev/core';
 import {useLocation, type StaticGenerateHandler} from '@qwik.dev/router';
 import {CDK_ENTRIES} from '../../../../data/cdk';
+import {renderInlineMarkdown} from '../../../../lib/inline-markdown';
 
 export default component$(() => {
   const loc = useLocation();
@@ -9,7 +10,7 @@ export default component$(() => {
 
   return (
     <div class="docs-prose">
-      <p>{entry.summary}</p>
+      <p>{renderInlineMarkdown(entry.summary)}</p>
       <p>
         See the <a href={`/cdk/${entry.id}/api/`}>API reference</a> for every exported hook,
         function, and type in <code>@angular-community/qwik-cdk/{entry.id}</code>.

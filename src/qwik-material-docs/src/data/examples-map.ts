@@ -42,11 +42,34 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   ],
   'mat-badge': [{route: 'example', upstreamId: 'badge-overview', pkg: 'badge'}],
   'mat-bottom-sheet': [{route: 'example', upstreamId: 'bottom-sheet-overview', pkg: 'bottom-sheet'}],
-  'mat-button': [{route: 'example', upstreamId: 'button-overview', pkg: 'button'}],
-  'mat-button-toggle': [{route: 'example', upstreamId: 'button-toggle-overview', pkg: 'button-toggle'}],
+  'mat-button': [
+    {route: 'example', upstreamId: 'button-overview', pkg: 'button'},
+    {
+      route: 'button-disabled-interactive',
+      upstreamId: 'button-disabled-interactive',
+      pkg: 'button',
+    },
+  ],
+  'mat-button-toggle': [
+    {route: 'example', upstreamId: 'button-toggle-overview', pkg: 'button-toggle'},
+    {route: 'button-toggle-mode', upstreamId: 'button-toggle-mode', pkg: 'button-toggle'},
+    {
+      route: 'button-toggle-appearance',
+      upstreamId: 'button-toggle-appearance',
+      pkg: 'button-toggle',
+    },
+  ],
   'mat-card': [{route: 'example', upstreamId: 'card-overview', pkg: 'card'}],
   'mat-checkbox': [{route: 'example', upstreamId: 'checkbox-overview', pkg: 'checkbox'}],
-  'mat-chips': [{route: 'example', upstreamId: 'chips-overview', pkg: 'chips'}],
+  'mat-chips': [
+    {route: 'example', upstreamId: 'chips-overview', pkg: 'chips'},
+    {route: 'chips-input', upstreamId: 'chips-input', pkg: 'chips'},
+    {route: 'chips-template-form', upstreamId: 'chips-template-form', pkg: 'chips'},
+    {route: 'chips-reactive-form', upstreamId: 'chips-reactive-form', pkg: 'chips'},
+    {route: 'chips-autocomplete', upstreamId: 'chips-autocomplete', pkg: 'chips'},
+    {route: 'chips-avatar', upstreamId: 'chips-avatar', pkg: 'chips'},
+    {route: 'chips-stacked', upstreamId: 'chips-stacked', pkg: 'chips'},
+  ],
   'mat-datepicker': [
     {route: 'example', upstreamId: 'datepicker-overview', pkg: 'datepicker'},
     {route: 'datepicker-custom-icon', upstreamId: 'datepicker-custom-icon', pkg: 'datepicker'},
@@ -70,7 +93,12 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
       pkg: 'datepicker',
     },
   ],
-  'mat-dialog': [{route: 'example', upstreamId: 'dialog-overview', pkg: 'dialog'}],
+  'mat-dialog': [
+    {route: 'example', upstreamId: 'dialog-overview', pkg: 'dialog'},
+    {route: 'dialog-data', upstreamId: 'dialog-data', pkg: 'dialog'},
+    {route: 'dialog-content', upstreamId: 'dialog-content', pkg: 'dialog'},
+    {route: 'dialog-animations', upstreamId: 'dialog-animations', pkg: 'dialog'},
+  ],
   'mat-divider': [{route: 'example', upstreamId: 'divider-overview', pkg: 'divider'}],
   'mat-expansion': [{route: 'example', upstreamId: 'expansion-overview', pkg: 'expansion'}],
   'mat-form-field': [
@@ -92,7 +120,16 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
     {route: 'menu-nested', upstreamId: 'menu-nested', pkg: 'menu'},
   ],
   'mat-paginator': [{route: 'example', upstreamId: 'paginator-overview', pkg: 'paginator'}],
-  'mat-progress-bar': [{route: 'example', upstreamId: 'progress-bar-determinate', pkg: 'progress-bar'}],
+  'mat-progress-bar': [
+    {route: 'example', upstreamId: 'progress-bar-determinate', pkg: 'progress-bar'},
+    {
+      route: 'progress-bar-indeterminate',
+      upstreamId: 'progress-bar-indeterminate',
+      pkg: 'progress-bar',
+    },
+    {route: 'progress-bar-buffer', upstreamId: 'progress-bar-buffer', pkg: 'progress-bar'},
+    {route: 'progress-bar-query', upstreamId: 'progress-bar-query', pkg: 'progress-bar'},
+  ],
   'mat-progress-spinner': [
     {route: 'example', upstreamId: 'progress-spinner-overview', pkg: 'progress-spinner'},
   ],
@@ -122,8 +159,19 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
     {route: 'sidenav-responsive', upstreamId: 'sidenav-responsive', pkg: 'sidenav'},
   ],
   'mat-slide-toggle': [{route: 'example', upstreamId: 'slide-toggle-overview', pkg: 'slide-toggle'}],
-  'mat-slider': [{route: 'example', upstreamId: 'slider-overview', pkg: 'slider'}],
-  'mat-snack-bar': [{route: 'example', upstreamId: 'snack-bar-overview', pkg: 'snack-bar'}],
+  'mat-slider': [
+    {route: 'example', upstreamId: 'slider-overview', pkg: 'slider'},
+    {route: 'slider-range', upstreamId: 'slider-range', pkg: 'slider'},
+    {route: 'slider-formatting', upstreamId: 'slider-formatting', pkg: 'slider'},
+  ],
+  'mat-snack-bar': [
+    {route: 'example', upstreamId: 'snack-bar-overview', pkg: 'snack-bar'},
+    {
+      route: 'snack-bar-annotated-component',
+      upstreamId: 'snack-bar-annotated-component',
+      pkg: 'snack-bar',
+    },
+  ],
   'mat-sort': [
     {route: 'example', upstreamId: 'sort-overview', pkg: 'sort'},
     {route: 'table-sorting', upstreamId: 'table-sorting', pkg: 'table'},
@@ -177,7 +225,17 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
     {route: 'toolbar-simple', upstreamId: 'toolbar-simple', pkg: 'toolbar'},
     {route: 'toolbar-multirow', upstreamId: 'toolbar-multirow', pkg: 'toolbar'},
   ],
-  'mat-tooltip': [{route: 'example', upstreamId: 'tooltip-overview', pkg: 'tooltip'}],
+  'mat-tooltip': [
+    {route: 'example', upstreamId: 'tooltip-overview', pkg: 'tooltip'},
+    {route: 'tooltip-position', upstreamId: 'tooltip-position', pkg: 'tooltip'},
+    {route: 'tooltip-delay', upstreamId: 'tooltip-delay', pkg: 'tooltip'},
+    {
+      route: 'tooltip-modified-defaults',
+      upstreamId: 'tooltip-modified-defaults',
+      pkg: 'tooltip',
+    },
+    {route: 'tooltip-manual', upstreamId: 'tooltip-manual', pkg: 'tooltip'},
+  ],
   'mat-tree': [
     {route: 'example', upstreamId: 'tree-flat-child-accessor-overview', pkg: 'tree'},
   ],

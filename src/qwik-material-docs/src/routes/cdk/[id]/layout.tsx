@@ -2,6 +2,7 @@ import {component$, Slot} from '@qwik.dev/core';
 import {useLocation, type StaticGenerateHandler} from '@qwik.dev/router';
 import SectionTabs from '../../../components/section-tabs';
 import {CDK_ENTRIES} from '../../../data/cdk';
+import {renderInlineMarkdown} from '../../../lib/inline-markdown';
 
 const TABS = [
   {id: 'overview', label: 'Overview'},
@@ -25,7 +26,7 @@ export default component$(() => {
     <div>
       <header class="docs-page-header">
         <h1>{entry.name}</h1>
-        <p class="docs-page-summary">{entry.summary}</p>
+        <p class="docs-page-summary">{renderInlineMarkdown(entry.summary)}</p>
         <SectionTabs basePath={`/cdk/${entry.id}`} tabs={TABS} />
       </header>
       <div class="docs-shell-main">

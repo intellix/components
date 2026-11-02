@@ -149,6 +149,10 @@ h4 {
   display: none;
 }
 
+.docs-header-mobile-nav {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .docs-header-nav {
     display: none;
@@ -156,6 +160,28 @@ h4 {
 
   .docs-header-menu-toggle {
     display: inline-flex;
+  }
+
+  .docs-header-mobile-nav {
+    display: flex;
+    flex-direction: column;
+    background: var(--mat-sys-primary);
+    border-top: 1px solid color-mix(in srgb, var(--mat-sys-on-primary) 24%, transparent);
+    padding: 4px var(--docs-gutter) 8px;
+  }
+
+  .docs-header-mobile-nav a {
+    color: var(--mat-sys-on-primary);
+    padding: 12px 4px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 4px;
+  }
+
+  .docs-header-mobile-nav a:hover,
+  .docs-header-mobile-nav a[aria-current='page'] {
+    background: color-mix(in srgb, var(--mat-sys-on-primary) 16%, transparent);
+    text-decoration: none;
   }
 }
 
@@ -266,6 +292,7 @@ h4 {
 
 .docs-entry-card {
   height: 100%;
+  padding: 16px;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
@@ -273,14 +300,25 @@ h4 {
   box-shadow: var(--mat-sys-level2);
 }
 
-.docs-entry-card h3 {
-  margin: 0 0 4px;
+/* `<MatCardTitle>`/`<MatCardSubtitle>` as direct `<MatCard>` children (no `<MatCardHeader>`
+   wrapper) get none of MatCardHeader's own padding — MatCard itself never adds any either (by
+   design, see the Card overview's "Card padding" section), so this card supplies its own.
+   Both render custom elements (`<mat-card-title>`/`<mat-card-subtitle>`), not `<h3>`/`<p>` — the
+   previous `h3`/`p` selectors here never matched anything. */
+.docs-entry-card mat-card-title {
+  display: block;
+  margin: 0 0 6px;
   font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--mat-sys-on-surface);
 }
 
-.docs-entry-card p {
+.docs-entry-card mat-card-subtitle {
+  display: block;
   margin: 0;
   font-size: 14px;
+  line-height: 1.45;
   color: var(--mat-sys-on-surface-variant);
 }
 
@@ -503,6 +541,14 @@ pre.docs-code {
 
 .docs-api-member-body {
   padding: 4px 16px 12px;
+  /* The props table's intrinsic content width (long `QRL<(value: T) => void>`-shaped type
+     signatures especially) routinely exceeds narrow viewports. The outer `.docs-api-member`
+     needs `overflow: hidden` for its own rounded corners, which would otherwise silently CLIP
+     the overflow instead of allowing it to scroll — found live, mobile-width polish pass
+     (2026-11-02): the whole Description column (the actual docs) was invisible on a 390px
+     viewport, with no indication there was more content at all. Scrolling at this inner level
+     keeps the rounded-corner clipping intact while making the overflow reachable. */
+  overflow-x: auto;
 }
 
 .docs-api-member-summary {

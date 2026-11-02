@@ -184,3 +184,16 @@ control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConn
 `Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
 porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
 change for every existing (always form-field-nested) scenario.
+
+## `aria-label` prop added (2026-11-02, docs-example port)
+
+`tooltip-delay`'s docs example (src/components-examples/material/tooltip/tooltip-delay/,
+ported to `src/qwik-cdk-dev-app/src/routes/examples/tooltip-delay/`) writes a plain
+`aria-label="..."` attribute directly on `<input matInput>`. Upstream needs no dedicated
+`@Input` for this — `aria-label` is a global HTML attribute, so Angular's compiler attaches it
+to the native element for free, no directive involvement. `MatInputProps` had no equivalent
+passthrough (every forwarded attribute needs an explicit prop in a Qwik component — there is no
+"any native attribute passes through" behavior). Added `'aria-label'?: string` to the shared
+`MatFormFieldControlProps` (`core/mat-form-field-control.ts`), forwarded verbatim in
+`mat-input.tsx`'s `sharedProps`. First real consumer; `MatSelect` gets the same prop for free
+from the shared interface, unused so far.

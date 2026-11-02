@@ -17,10 +17,19 @@ import Ex_autocomplete_optgroup from '@angular-community/qwik-material-examples/
 import Ex_badge_example from '@angular-community/qwik-material-examples/badge/example';
 import Ex_bottom_sheet_example from '@angular-community/qwik-material-examples/bottom-sheet/example';
 import Ex_button_example from '@angular-community/qwik-material-examples/button/example';
+import Ex_button_button_disabled_interactive from '@angular-community/qwik-material-examples/button/button-disabled-interactive';
 import Ex_button_toggle_example from '@angular-community/qwik-material-examples/button-toggle/example';
+import Ex_button_toggle_mode from '@angular-community/qwik-material-examples/button-toggle/button-toggle-mode';
+import Ex_button_toggle_appearance from '@angular-community/qwik-material-examples/button-toggle/button-toggle-appearance';
 import Ex_card_example from '@angular-community/qwik-material-examples/card/example';
 import Ex_checkbox_example from '@angular-community/qwik-material-examples/checkbox/example';
 import Ex_chips_example from '@angular-community/qwik-material-examples/chips/example';
+import Ex_chips_input from '@angular-community/qwik-material-examples/chips/chips-input';
+import Ex_chips_template_form from '@angular-community/qwik-material-examples/chips/chips-template-form';
+import Ex_chips_reactive_form from '@angular-community/qwik-material-examples/chips/chips-reactive-form';
+import Ex_chips_autocomplete from '@angular-community/qwik-material-examples/chips/chips-autocomplete';
+import Ex_chips_avatar from '@angular-community/qwik-material-examples/chips/chips-avatar';
+import Ex_chips_stacked from '@angular-community/qwik-material-examples/chips/chips-stacked';
 import Ex_datepicker_example from '@angular-community/qwik-material-examples/datepicker/example';
 import Ex_datepicker_custom_icon from '@angular-community/qwik-material-examples/datepicker/datepicker-custom-icon';
 import Ex_date_range_picker_overview from '@angular-community/qwik-material-examples/datepicker/date-range-picker-overview';
@@ -35,6 +44,9 @@ import Ex_datepicker_actions from '@angular-community/qwik-material-examples/dat
 import Ex_datepicker_touch from '@angular-community/qwik-material-examples/datepicker/datepicker-touch';
 import Ex_datepicker_inline_calendar from '@angular-community/qwik-material-examples/datepicker/datepicker-inline-calendar';
 import Ex_dialog_example from '@angular-community/qwik-material-examples/dialog/example';
+import Ex_dialog_data from '@angular-community/qwik-material-examples/dialog/dialog-data';
+import Ex_dialog_content from '@angular-community/qwik-material-examples/dialog/dialog-content';
+import Ex_dialog_animations from '@angular-community/qwik-material-examples/dialog/dialog-animations';
 import Ex_divider_example from '@angular-community/qwik-material-examples/divider/example';
 import Ex_expansion_example from '@angular-community/qwik-material-examples/expansion/example';
 import Ex_form_field_example from '@angular-community/qwik-material-examples/form-field/example';
@@ -53,6 +65,9 @@ import Ex_menu_position from '@angular-community/qwik-material-examples/menu/men
 import Ex_menu_nested from '@angular-community/qwik-material-examples/menu/menu-nested';
 import Ex_paginator_example from '@angular-community/qwik-material-examples/paginator/example';
 import Ex_progress_bar_example from '@angular-community/qwik-material-examples/progress-bar/example';
+import Ex_progress_bar_indeterminate from '@angular-community/qwik-material-examples/progress-bar/progress-bar-indeterminate';
+import Ex_progress_bar_buffer from '@angular-community/qwik-material-examples/progress-bar/progress-bar-buffer';
+import Ex_progress_bar_query from '@angular-community/qwik-material-examples/progress-bar/progress-bar-query';
 import Ex_progress_spinner_example from '@angular-community/qwik-material-examples/progress-spinner/example';
 import Ex_radio_example from '@angular-community/qwik-material-examples/radio/example';
 import Ex_select_example from '@angular-community/qwik-material-examples/select/example';
@@ -77,7 +92,10 @@ import Ex_sidenav_fixed from '@angular-community/qwik-material-examples/sidenav/
 import Ex_sidenav_responsive from '@angular-community/qwik-material-examples/sidenav/sidenav-responsive';
 import Ex_slide_toggle_example from '@angular-community/qwik-material-examples/slide-toggle/example';
 import Ex_slider_example from '@angular-community/qwik-material-examples/slider/example';
+import Ex_slider_range from '@angular-community/qwik-material-examples/slider/slider-range';
+import Ex_slider_formatting from '@angular-community/qwik-material-examples/slider/slider-formatting';
 import Ex_snack_bar_example from '@angular-community/qwik-material-examples/snack-bar/example';
+import Ex_snack_bar_annotated_component from '@angular-community/qwik-material-examples/snack-bar/snack-bar-annotated-component';
 import Ex_sort_example from '@angular-community/qwik-material-examples/sort/example';
 import Ex_stepper_example from '@angular-community/qwik-material-examples/stepper/example';
 import Ex_stepper_vertical from '@angular-community/qwik-material-examples/stepper/stepper-vertical';
@@ -115,6 +133,10 @@ import Ex_toolbar_example from '@angular-community/qwik-material-examples/toolba
 import Ex_toolbar_simple from '@angular-community/qwik-material-examples/toolbar/toolbar-simple';
 import Ex_toolbar_multirow from '@angular-community/qwik-material-examples/toolbar/toolbar-multirow';
 import Ex_tooltip_example from '@angular-community/qwik-material-examples/tooltip/example';
+import Ex_tooltip_position from '@angular-community/qwik-material-examples/tooltip/tooltip-position';
+import Ex_tooltip_delay from '@angular-community/qwik-material-examples/tooltip/tooltip-delay';
+import Ex_tooltip_modified_defaults from '@angular-community/qwik-material-examples/tooltip/tooltip-modified-defaults';
+import Ex_tooltip_manual from '@angular-community/qwik-material-examples/tooltip/tooltip-manual';
 import Ex_tree_example from '@angular-community/qwik-material-examples/tree/example';
 
 // ---------------------------------------------------------------------------------------------
@@ -176,10 +198,19 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'badge/example': Ex_badge_example,
   'bottom-sheet/example': Ex_bottom_sheet_example,
   'button/example': Ex_button_example,
+  'button/button-disabled-interactive': Ex_button_button_disabled_interactive,
   'button-toggle/example': Ex_button_toggle_example,
+  'button-toggle/button-toggle-mode': Ex_button_toggle_mode,
+  'button-toggle/button-toggle-appearance': Ex_button_toggle_appearance,
   'card/example': Ex_card_example,
   'checkbox/example': Ex_checkbox_example,
   'chips/example': Ex_chips_example,
+  'chips/chips-input': Ex_chips_input,
+  'chips/chips-template-form': Ex_chips_template_form,
+  'chips/chips-reactive-form': Ex_chips_reactive_form,
+  'chips/chips-autocomplete': Ex_chips_autocomplete,
+  'chips/chips-avatar': Ex_chips_avatar,
+  'chips/chips-stacked': Ex_chips_stacked,
   'datepicker/example': Ex_datepicker_example,
   'datepicker/datepicker-custom-icon': Ex_datepicker_custom_icon,
   'datepicker/date-range-picker-overview': Ex_date_range_picker_overview,
@@ -194,6 +225,9 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'datepicker/datepicker-touch': Ex_datepicker_touch,
   'datepicker/datepicker-inline-calendar': Ex_datepicker_inline_calendar,
   'dialog/example': Ex_dialog_example,
+  'dialog/dialog-data': Ex_dialog_data,
+  'dialog/dialog-content': Ex_dialog_content,
+  'dialog/dialog-animations': Ex_dialog_animations,
   'divider/example': Ex_divider_example,
   'expansion/example': Ex_expansion_example,
   'form-field/example': Ex_form_field_example,
@@ -212,6 +246,9 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'menu/menu-nested': Ex_menu_nested,
   'paginator/example': Ex_paginator_example,
   'progress-bar/example': Ex_progress_bar_example,
+  'progress-bar/progress-bar-indeterminate': Ex_progress_bar_indeterminate,
+  'progress-bar/progress-bar-buffer': Ex_progress_bar_buffer,
+  'progress-bar/progress-bar-query': Ex_progress_bar_query,
   'progress-spinner/example': Ex_progress_spinner_example,
   'radio/example': Ex_radio_example,
   'select/example': Ex_select_example,
@@ -236,7 +273,10 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'sidenav/sidenav-responsive': Ex_sidenav_responsive,
   'slide-toggle/example': Ex_slide_toggle_example,
   'slider/example': Ex_slider_example,
+  'slider/slider-range': Ex_slider_range,
+  'slider/slider-formatting': Ex_slider_formatting,
   'snack-bar/example': Ex_snack_bar_example,
+  'snack-bar/snack-bar-annotated-component': Ex_snack_bar_annotated_component,
   'sort/example': Ex_sort_example,
   'stepper/example': Ex_stepper_example,
   'stepper/stepper-vertical': Ex_stepper_vertical,
@@ -274,6 +314,10 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'toolbar/toolbar-simple': Ex_toolbar_simple,
   'toolbar/toolbar-multirow': Ex_toolbar_multirow,
   'tooltip/example': Ex_tooltip_example,
+  'tooltip/tooltip-position': Ex_tooltip_position,
+  'tooltip/tooltip-delay': Ex_tooltip_delay,
+  'tooltip/tooltip-modified-defaults': Ex_tooltip_modified_defaults,
+  'tooltip/tooltip-manual': Ex_tooltip_manual,
   'tree/example': Ex_tree_example,
 };
 
