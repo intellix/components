@@ -39,6 +39,8 @@ import Ex_select_example from '@angular-community/qwik-material-examples/select/
 import Ex_sidenav_example from '@angular-community/qwik-material-examples/sidenav/example';
 import Ex_slide_toggle_example from '@angular-community/qwik-material-examples/slide-toggle/example';
 import Ex_slider_example from '@angular-community/qwik-material-examples/slider/example';
+import Ex_slider_range from '@angular-community/qwik-material-examples/slider/slider-range';
+import Ex_slider_formatting from '@angular-community/qwik-material-examples/slider/slider-formatting';
 import Ex_snack_bar_example from '@angular-community/qwik-material-examples/snack-bar/example';
 import Ex_sort_example from '@angular-community/qwik-material-examples/sort/example';
 import Ex_stepper_example from '@angular-community/qwik-material-examples/stepper/example';
@@ -130,6 +132,8 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'sidenav/example': Ex_sidenav_example,
   'slide-toggle/example': Ex_slide_toggle_example,
   'slider/example': Ex_slider_example,
+  'slider/slider-range': Ex_slider_range,
+  'slider/slider-formatting': Ex_slider_formatting,
   'snack-bar/example': Ex_snack_bar_example,
   'sort/example': Ex_sort_example,
   'stepper/example': Ex_stepper_example,

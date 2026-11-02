@@ -20,6 +20,7 @@ import progressBarMd from './overviews/progress-bar.md?raw';
 import progressSpinnerMd from './overviews/progress-spinner.md?raw';
 import radioMd from './overviews/radio.md?raw';
 import selectMd from './overviews/select.md?raw';
+import sliderMd from './overviews/slider.md?raw';
 import slideToggleMd from './overviews/slide-toggle.md?raw';
 
 export const OVERVIEW_MARKDOWN: Record<string, string> = {
@@ -37,5 +38,6 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   'progress-spinner': progressSpinnerMd,
   radio: radioMd,
   select: selectMd,
+  slider: sliderMd,
   'slide-toggle': slideToggleMd,
 };

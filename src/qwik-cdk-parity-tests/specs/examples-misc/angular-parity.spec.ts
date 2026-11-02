@@ -24,6 +24,8 @@ const EXAMPLE_IDS = [
   'progress-bar-query',
   'button-toggle-mode',
   'button-toggle-appearance',
+  'slider-range',
+  'slider-formatting',
 ];
 
 /**
@@ -39,11 +41,16 @@ const EXAMPLE_IDS = [
  *   and each `<mat-button-toggle value="...">` echo `name`/`value` (same genericity concern as
  *   `specs/examples`'s own `mat-button-toggle/example` entry). `button-toggle-mode`'s multi-select
  *   group also writes bare `multiple`, echoing `multiple`.
+ * - `slider-range`: `<mat-slider min="200" max="500">` echoes `min`/`max`.
+ * - `slider-formatting`: `<mat-slider min="0" max="100000" step="1000" showTickMarks discrete>`
+ *   echoes `min`/`max`/`step`/`showtickmarks`/`discrete`.
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'button-disabled-interactive': ['disabledinteractive'],
   'button-toggle-mode': ['name', 'value', 'multiple'],
   'button-toggle-appearance': ['name', 'value'],
+  'slider-range': ['min', 'max'],
+  'slider-formatting': ['min', 'max', 'step', 'showtickmarks', 'discrete'],
 };
 
 /**

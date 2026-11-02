@@ -72,7 +72,11 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-select': [{route: 'example', upstreamId: 'select-overview', pkg: 'select'}],
   'mat-sidenav': [{route: 'example', upstreamId: 'sidenav-overview', pkg: 'sidenav'}],
   'mat-slide-toggle': [{route: 'example', upstreamId: 'slide-toggle-overview', pkg: 'slide-toggle'}],
-  'mat-slider': [{route: 'example', upstreamId: 'slider-overview', pkg: 'slider'}],
+  'mat-slider': [
+    {route: 'example', upstreamId: 'slider-overview', pkg: 'slider'},
+    {route: 'slider-range', upstreamId: 'slider-range', pkg: 'slider'},
+    {route: 'slider-formatting', upstreamId: 'slider-formatting', pkg: 'slider'},
+  ],
   'mat-snack-bar': [{route: 'example', upstreamId: 'snack-bar-overview', pkg: 'snack-bar'}],
   'mat-sort': [{route: 'example', upstreamId: 'sort-overview', pkg: 'sort'}],
   'mat-stepper': [{route: 'example', upstreamId: 'stepper-overview', pkg: 'stepper'}],

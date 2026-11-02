@@ -51,6 +51,8 @@
     "./sidenav/example": "./sidenav/example/index.tsx",
     "./slide-toggle/example": "./slide-toggle/example/index.tsx",
     "./slider/example": "./slider/example/index.tsx",
+    "./slider/slider-range": "./slider/slider-range/index.tsx",
+    "./slider/slider-formatting": "./slider/slider-formatting/index.tsx",
     "./snack-bar/example": "./snack-bar/example/index.tsx",
     "./sort/example": "./sort/example/index.tsx",
     "./stepper/example": "./stepper/example/index.tsx",
