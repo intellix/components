@@ -374,3 +374,14 @@ Formisch". For a datepicker, the recommended Formisch wiring syncs `picker.value
 (this port's typed `D | null`) to the field's input via `useMatDatepicker()`'s existing
 `onValueChange$` (fires uniformly whether the user typed or picked a date — no new API needed
 for that half); `ref` is only needed so Formisch's `focus()` can find the native element.
+
+## `useMatDatepicker({value})` — live-resync, not seed-once (2026-11-02)
+
+Same fix, same rationale, as `qwik-material/select`'s 2026-11-02 update (see that package's
+SYNC.md): `value` was read exactly once to seed the handle's internal signal, with no later
+resync — "not supported" for a consumer needing to imperatively put a value back into the
+picker from outside after mount. First real consumer: Formisch's `reset()`/`setInput()` (see
+`qwik-material/README.md`'s "Using with Formisch"). Fixed in `use-mat-datepicker.ts`'s
+`useMatDatepicker()` with a `useTask$` tracking `options.value`. Deliberately NOT applied to
+`useMatDateRangePicker()` in this pass (no consumer needs it yet; same fix would apply
+identically if one does).
