@@ -78,6 +78,23 @@ import type {AccountSchema} from './account-schema';
  * compared state is post-blur/post-submit/post-fill), so it has no observed effect here. A real
  * app that cares about this exact instant could track its own "has blurred" signal per field
  * instead of reading `field.isTouched` directly; not done here, to keep this binding file small.
+ *
+ * ## `focus()`-on-invalid-submit needs a field to have resumed at least once — a Qwik
+ * resumability quirk, not a Formisch or wiring bug
+ *
+ * Confirmed live (`specs/formisch/functional.spec.ts`'s own "invalid submit... focuses the
+ * first invalid field" test): on a COMPLETELY untouched page, submitting straight away — no
+ * matter how long the test waited first — left focus on the SUBMIT BUTTON itself, not the first
+ * invalid field, even though `<Form>`'s `handleSubmit` always calls `validateFormInput(form,
+ * {shouldFocus: true})`. A single prior click into (and back out of) ANY field made it work
+ * reliably afterward. Reason: `field.props.ref` (which registers a field's native element into
+ * Formisch's own internal list, so `focusFieldElement` has something to find) is a Qwik `ref`
+ * callback — it fires once that field's component has actually RESUMED on the client, which
+ * doesn't necessarily happen just because the element exists in the SSR'd DOM. A real user
+ * reaches this page, looks at it, and typically interacts with at least one field before ever
+ * clicking Submit — by which point the relevant component(s) have resumed — so this is a
+ * non-issue in practice; it only bites an AUTOMATED TEST driving a fresh page straight to a
+ * submit click with zero interaction first.
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -259,6 +276,19 @@ export function matSlideToggleBindings(field: AnyField): {
 // — this spike's own test caught it (typed "7/14/1992", the picker displayed "7/13/1992" after
 // round-tripping through Formisch). These two tiny LOCAL-TIME-based helpers avoid the mismatch
 // by never touching UTC at all, matching the datepicker's own convention throughout.
+//
+// Residual gap, NOT fixed by this (a pre-existing `NativeDateAdapter` inconsistency, not
+// something this wiring introduced): `parse()` itself (`native-date-adapter.ts`, used when
+// `MatDatepickerInput` parses whatever the user TYPED) hands off to a bare `Date.parse()` —
+// which the ECMAScript spec defines as UTC for a plain `YYYY-MM-DD` string but LOCAL for
+// anything else (including the adapter's own `M/D/YYYY` display format). So typing the DISPLAY
+// format (what a real user types/sees, and what `format()`/`toIso8601()` both already treat
+// consistently — local and UTC respectively, matching these two helpers) round-trips correctly;
+// typing an ISO-SHAPED string directly (an edge case `qwik-material/datepicker`'s own
+// `typed-date-blur` scenario exercises, NOT how this page's own functional spec types a date)
+// can be off by one calendar day outside UTC. Fixing `NativeDateAdapter.parse()` itself to be
+// internally consistent is out of scope for this spike (it affects every consumer of the
+// datepicker, not just Formisch's).
 export function isoToDate(iso: string | undefined): Date | null {
   if (!iso) return null;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
