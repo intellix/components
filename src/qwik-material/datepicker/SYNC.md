@@ -375,13 +375,33 @@ Formisch". For a datepicker, the recommended Formisch wiring syncs `picker.value
 `onValueChange$` (fires uniformly whether the user typed or picked a date — no new API needed
 for that half); `ref` is only needed so Formisch's `focus()` can find the native element.
 
-## `useMatDatepicker({value})` — live-resync, not seed-once (2026-11-02)
+## `useMatDatepicker({value})` external resets — `setMatDatepickerValue`, not a `useTask$` on the option (2026-11-02)
 
-Same fix, same rationale, as `qwik-material/select`'s 2026-11-02 update (see that package's
-SYNC.md): `value` was read exactly once to seed the handle's internal signal, with no later
-resync — "not supported" for a consumer needing to imperatively put a value back into the
-picker from outside after mount. First real consumer: Formisch's `reset()`/`setInput()` (see
-`qwik-material/README.md`'s "Using with Formisch"). Fixed in `use-mat-datepicker.ts`'s
-`useMatDatepicker()` with a `useTask$` tracking `options.value`. Deliberately NOT applied to
-`useMatDateRangePicker()` in this pass (no consumer needs it yet; same fix would apply
-identically if one does).
+Same NEED as `qwik-material/select`'s 2026-11-02 `value` fix (a consumer needing to
+imperatively put a value back into the picker from outside after mount — first real consumer:
+Formisch's `reset()`/`setInput()`, see `qwik-material/README.md`'s "Using with Formisch") — but
+NOT the same fix. First tried the identical `useTask$(({track}) => value.value = track(() =>
+options.value))` pattern that fixed `MatSelect`. **Confirmed live it does NOT work**: built a
+throwaway debug route calling both `<MatSelect value={sig.value}/>` (a JSX prop) and
+`useMatDatepicker({value: sig.value})` (a plain hook-call argument) side by side, with a button
+reassigning `sig.value` for each — the select's displayed value updated after the click, the
+datepicker's did not (confirmed via Playwright reading both elements' text/value before and
+after). Root cause: Qwik's live per-prop tracking (the thing that lets `track(() =>
+props.value)` inside a CHILD's own `useTask$` observe a change made several components away) is
+specifically a property of `component$` PROPS — Qwik's runtime keeps a component's `props`
+object genuinely live/subscribable across re-renders. A plain function argument (`options`,
+here) has no such mechanism: by the time `useMatDatepicker(options)` runs, `options.value` is
+already a fully-resolved plain `D | null`, with no signal left behind to subscribe to, so a
+`track()` call against it only ever runs once (at mount) and never again — no amount of the
+ROUTE itself re-rendering changes that, since `useTask$`'s re-invocation is driven purely by
+what it tracked, not by its owning hook being "called again".
+
+Fixed instead with an explicit, exported imperative setter — `setMatDatepickerValue(picker,
+value)` (`datepicker-runtime.ts`), doing exactly what every INTERNAL selection path already does
+(`picker.value.value = value` + the same `writeFormattedValue` DOM-property write
+`handleDatepickerUserSelect`/`applyDatepickerSelection`/`handleDatepickerInput` use). The
+CONSUMER calls this from their OWN component's `useTask$` tracking whatever live signal they
+actually have (Formisch's `field.input.value`, in the Formisch example) — which genuinely works,
+because that task lives in a REAL component, not inside this hook. See `use-mat-datepicker.ts`'s
+`UseMatDatepickerOptions.value` doc comment. Not applied to `useMatDateRangePicker()`/range
+selections in this pass (no consumer needs it yet; same fix shape would apply).

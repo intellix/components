@@ -192,6 +192,24 @@ export function formatDateForDisplay<D>(value: D | null): string {
   return adapter.format(value, formats.display.dateInput) as string;
 }
 
+/**
+ * Imperatively sets `picker.value` from OUTSIDE the picker's own input/calendar handlers,
+ * keeping the rendered native input's displayed text in sync — the SAME `writeFormattedValue`
+ * call every INTERNAL selection path (`handleDatepickerUserSelect`/`applyDatepickerSelection`/
+ * `handleDatepickerInput`) already makes, just reachable by a consumer. See
+ * `use-mat-datepicker.ts`'s `UseMatDatepickerOptions.value` doc comment for why this exists (a
+ * form library's `reset()`/`setInput()`, e.g. Formisch — see `qwik-material/README.md`'s "Using
+ * with Formisch" — needs to put a date back into the picker after mount, which the hook's own
+ * `value` OPTION can't do: a plain hook-call argument, unlike a `component$` prop, has no live
+ * tracking to hook a resync into). Call from your OWN component's `useTask$`/event handler,
+ * never from render (a signal write during render is the Qwik v2 pitfall this whole project's
+ * SYNC.md files warn about repeatedly).
+ */
+export function setMatDatepickerValue<D>(picker: MatDatepickerHandle<D>, value: D | null): void {
+  picker.value.value = value;
+  writeFormattedValue(picker._elementRef.value as HTMLInputElement | undefined, value);
+}
+
 function buildOverlayAndDispatch<D>(
   core: MatDatepickerCore<D> & {touched: Signal<boolean>},
   ctx: QwikCdkInternals,

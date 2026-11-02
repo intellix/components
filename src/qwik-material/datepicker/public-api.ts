@@ -39,6 +39,7 @@ export {
 export {MatDatepickerContent, type MatDatepickerContentProps} from './mat-datepicker-content';
 export {
   formatDateForDisplay,
+  setMatDatepickerValue,
   openDatepickerPanel,
   openDateRangePickerPanel,
   closeDatepickerPanel,

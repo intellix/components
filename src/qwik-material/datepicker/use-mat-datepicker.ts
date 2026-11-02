@@ -22,14 +22,7 @@
  * the open/select logic (which needs to know the value shape to resolve `startAt`'s
  * fallback-to-current-value and to compare/assign dates) is duplicated per hook.
  */
-import {
-  useSignal,
-  useTask$,
-  type JSXOutput,
-  type NoSerialize,
-  type QRL,
-  type Signal,
-} from '@qwik.dev/core';
+import {useSignal, type JSXOutput, type NoSerialize, type QRL, type Signal} from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
@@ -120,12 +113,17 @@ export interface MatDatepickerCore<D> {
  *  `MatDatepickerInput` inputs this port's architecture lifts onto the shared handle — see this
  *  module's doc comment. */
 export interface UseMatDatepickerOptions<D> {
-  /** Seed value, ALSO live-resynced on every later change (same pattern as `MatSelect`'s own
-   *  `value` — see `select/mat-select.tsx`'s `useTask$` and its SYNC.md's 2026-11-02 update):
-   *  needed so a consumer can imperatively put a value back into the picker from OUTSIDE after
-   *  mount (a form library's `reset()`/`setInput()` — see `qwik-material/README.md`'s "Using
-   *  with Formisch"). A no-op for every scenario that never reassigns this after mount (every
-   *  one of this port's own `/qwik-parity/mat-datepicker/*` scenarios). */
+  /** Seed value. Read ONCE (mirrors `MatSelect`'s pre-2026-11-02 `value`, before that fix — see
+   *  `core/mat-form-field-control.ts`) — UNLIKE `MatSelect`'s own prop, this one genuinely can't
+   *  be made live the same way: it's a plain hook-call ARGUMENT, not a JSX prop on a
+   *  `component$` (Qwik's live per-prop tracking is specifically a property of component props;
+   *  a plain function argument has no such mechanism to hook into — confirmed empirically, see
+   *  `datepicker/SYNC.md`'s 2026-11-02 entry for the full writeup of why the obvious `useTask$`
+   *  fix that worked for `MatSelect` does NOT work here). For a consumer that needs to
+   *  imperatively put a value back into the picker from OUTSIDE after mount (a form library's
+   *  `reset()`/`setInput()` — see `qwik-material/README.md`'s "Using with Formisch"), call
+   *  {@link setMatDatepickerValue} instead, from your OWN component's `useTask$` (which — unlike
+   *  this hook — genuinely is reactive to whatever live signal you're tracking). */
   value?: D | null;
   /** The date to open the calendar to initially — LIVE (falls back to the current `value` at open
    *  time when omitted, mirroring `startAt`'s own upstream getter; see `datepicker-runtime.ts`). */
@@ -314,14 +312,6 @@ export function useMatDatepicker<D>(
   const touched = useSignal(false);
   const dirty = useSignal(false);
   const parseError = useSignal(false);
-
-  // Live-resync from an external, post-mount reassignment of `options.value` — see this
-  // interface field's own doc comment above. `track()` subscribes to the actual signal behind
-  // this option regardless of how many component boundaries it crosses (same mechanism, same
-  // proof, as `MatSelect`'s identical fix).
-  useTask$(({track}) => {
-    value.value = track(() => options.value) ?? null;
-  });
 
   return {
     ...core,
