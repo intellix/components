@@ -29,6 +29,10 @@ const EXAMPLE_IDS = [
   'slider-range',
   'slider-formatting',
   'snack-bar-annotated-component',
+  'tooltip-position',
+  'tooltip-delay',
+  'tooltip-modified-defaults',
+  'tooltip-manual',
 ];
 
 /**
@@ -57,9 +61,48 @@ const openPizzaPartySnackBar: ParityStep = {
   },
 };
 
-/** Interactions per example, added alongside each new port as needed. */
-const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
+/**
+ * Hovers the `tooltip-position`/`tooltip-delay`/`tooltip-modified-defaults` example's "Action"
+ * trigger and waits for exactly one shown pane. Mirrors `specs/examples/angular-parity.spec.ts`'s
+ * own `hoverTooltip`.
+ */
+const hoverActionButton: ParityStep = {
+  name: 'hover trigger (show)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] button').first().hover();
+    await page.waitForFunction(
+      () => {
+        const panes = document.querySelectorAll('.cdk-overlay-pane.mat-mdc-tooltip-panel');
+        return panes.length === 1 && !!panes[0].querySelector('.mat-mdc-tooltip-show');
+      },
+      undefined,
+      {timeout: 5000},
+    );
+  },
+};
+
+/**
+ * NOT exercised with an interaction step: `tooltip-manual`'s whole premise is upstream's
+ * imperative `show()`/`hide()`/`toggle()` template-ref API, which this port's `useMatTooltip()`
+ * doesn't expose at all (only `hostProps` — hover/focus/touch-driven). Clicking the example's
+ * "show"/"hide"/"toggle" buttons is a documented no-op here (see tooltip-manual/index.tsx's own
+ * header comment) vs. a real overlay open on Angular — an asymmetric overlay-container
+ * presence/absence that this harness's generic retry-then-compare loop isn't a good fit for
+ * (it polls expecting eventual convergence, not a stable, permanent count mismatch). The base,
+ * no-interaction render below already covers everything this port CAN demonstrate; the gap
+ * itself is documented in code and in the Tooltip overview's "Angular → Qwik notes".
+ */
+const EXAMPLE_STEPS: Record<
+  string,
+  {steps: ParityStep[]; rootSelector?: string; expectedFailure?: string}[]
+> = {
   'snack-bar-annotated-component': [{steps: [openPizzaPartySnackBar], rootSelector: overlayRoot}],
+  'tooltip-position': [{steps: [hoverActionButton]}, {steps: [hoverActionButton], rootSelector: overlayRoot}],
+  'tooltip-delay': [{steps: [hoverActionButton]}, {steps: [hoverActionButton], rootSelector: overlayRoot}],
+  'tooltip-modified-defaults': [
+    {steps: [hoverActionButton]},
+    {steps: [hoverActionButton], rootSelector: overlayRoot},
+  ],
 };
 
 /**
@@ -78,6 +121,8 @@ const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}
  * - `slider-range`: `<mat-slider min="200" max="500">` echoes `min`/`max`.
  * - `slider-formatting`: `<mat-slider min="0" max="100000" step="1000" showTickMarks discrete>`
  *   echoes `min`/`max`/`step`/`showtickmarks`/`discrete`.
+ * - `tooltip-manual`: `<button matButton="elevated" matTooltipPosition="right" ...>` writes
+ *   `matTooltipPosition` bare.
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'button-disabled-interactive': ['disabledinteractive'],
@@ -85,6 +130,7 @@ const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'button-toggle-appearance': ['name', 'value'],
   'slider-range': ['min', 'max'],
   'slider-formatting': ['min', 'max', 'step', 'showtickmarks', 'discrete'],
+  'tooltip-manual': ['mattooltipposition'],
 };
 
 /**
@@ -114,15 +160,17 @@ test.describe('qwik-material-examples (non-headline) — Angular DOM parity', ()
       });
     });
     for (const [i, extra] of (EXAMPLE_STEPS[exampleId] ?? []).entries()) {
-      test(`${exampleId} (interaction ${i + 1})`, ({browser}) =>
-        expectMaterialParity(browser, {
+      test(`${exampleId} (interaction ${i + 1})`, ({browser}) => {
+        test.fail(extra.expectedFailure !== undefined, extra.expectedFailure);
+        return expectMaterialParity(browser, {
           pinRoot: true,
           route: 'examples',
           scenario: exampleId,
           steps: extra.steps,
           rootSelector: extra.rootSelector,
           ignoreAttrs: EXAMPLE_IGNORE_ATTRS[exampleId],
-        }));
+        });
+      });
     }
   }
 });

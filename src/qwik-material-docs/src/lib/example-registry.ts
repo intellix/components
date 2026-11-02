@@ -50,6 +50,10 @@ import Ex_tabs_example from '@angular-community/qwik-material-examples/tabs/exam
 import Ex_timepicker_example from '@angular-community/qwik-material-examples/timepicker/example';
 import Ex_toolbar_example from '@angular-community/qwik-material-examples/toolbar/example';
 import Ex_tooltip_example from '@angular-community/qwik-material-examples/tooltip/example';
+import Ex_tooltip_position from '@angular-community/qwik-material-examples/tooltip/tooltip-position';
+import Ex_tooltip_delay from '@angular-community/qwik-material-examples/tooltip/tooltip-delay';
+import Ex_tooltip_modified_defaults from '@angular-community/qwik-material-examples/tooltip/tooltip-modified-defaults';
+import Ex_tooltip_manual from '@angular-community/qwik-material-examples/tooltip/tooltip-manual';
 import Ex_tree_example from '@angular-community/qwik-material-examples/tree/example';
 
 // ---------------------------------------------------------------------------------------------
@@ -144,6 +148,10 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'timepicker/example': Ex_timepicker_example,
   'toolbar/example': Ex_toolbar_example,
   'tooltip/example': Ex_tooltip_example,
+  'tooltip/tooltip-position': Ex_tooltip_position,
+  'tooltip/tooltip-delay': Ex_tooltip_delay,
+  'tooltip/tooltip-modified-defaults': Ex_tooltip_modified_defaults,
+  'tooltip/tooltip-manual': Ex_tooltip_manual,
   'tree/example': Ex_tree_example,
 };
 

@@ -91,7 +91,17 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-tabs': [{route: 'example', upstreamId: 'tab-group-basic', pkg: 'tabs'}],
   'mat-timepicker': [{route: 'example', upstreamId: 'timepicker-overview', pkg: 'timepicker'}],
   'mat-toolbar': [{route: 'example', upstreamId: 'toolbar-overview', pkg: 'toolbar'}],
-  'mat-tooltip': [{route: 'example', upstreamId: 'tooltip-overview', pkg: 'tooltip'}],
+  'mat-tooltip': [
+    {route: 'example', upstreamId: 'tooltip-overview', pkg: 'tooltip'},
+    {route: 'tooltip-position', upstreamId: 'tooltip-position', pkg: 'tooltip'},
+    {route: 'tooltip-delay', upstreamId: 'tooltip-delay', pkg: 'tooltip'},
+    {
+      route: 'tooltip-modified-defaults',
+      upstreamId: 'tooltip-modified-defaults',
+      pkg: 'tooltip',
+    },
+    {route: 'tooltip-manual', upstreamId: 'tooltip-manual', pkg: 'tooltip'},
+  ],
   'mat-tree': [
     {route: 'example', upstreamId: 'tree-flat-child-accessor-overview', pkg: 'tree'},
   ],

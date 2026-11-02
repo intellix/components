@@ -62,6 +62,10 @@
     "./timepicker/example": "./timepicker/example/index.tsx",
     "./toolbar/example": "./toolbar/example/index.tsx",
     "./tooltip/example": "./tooltip/example/index.tsx",
+    "./tooltip/tooltip-position": "./tooltip/tooltip-position/index.tsx",
+    "./tooltip/tooltip-delay": "./tooltip/tooltip-delay/index.tsx",
+    "./tooltip/tooltip-modified-defaults": "./tooltip/tooltip-modified-defaults/index.tsx",
+    "./tooltip/tooltip-manual": "./tooltip/tooltip-manual/index.tsx",
     "./tree/example": "./tree/example/index.tsx"
   }
 }
