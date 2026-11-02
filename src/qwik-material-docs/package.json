@@ -12,7 +12,7 @@
     "build.preview": "vite build --ssr src/entry.preview.tsx",
     "prerender": "node scripts/prerender.mjs",
     "build": "pnpm run generate && pnpm run build.client && pnpm run build.ssr && pnpm run build.preview && pnpm run prerender",
-    "preview": "vite preview --port 4195 --strictPort",
+    "preview": "vite preview --config vite.preview.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
