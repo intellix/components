@@ -47,7 +47,16 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-list': [{route: 'example', upstreamId: 'list-overview', pkg: 'list'}],
   'mat-menu': [{route: 'example', upstreamId: 'menu-overview', pkg: 'menu'}],
   'mat-paginator': [{route: 'example', upstreamId: 'paginator-overview', pkg: 'paginator'}],
-  'mat-progress-bar': [{route: 'example', upstreamId: 'progress-bar-determinate', pkg: 'progress-bar'}],
+  'mat-progress-bar': [
+    {route: 'example', upstreamId: 'progress-bar-determinate', pkg: 'progress-bar'},
+    {
+      route: 'progress-bar-indeterminate',
+      upstreamId: 'progress-bar-indeterminate',
+      pkg: 'progress-bar',
+    },
+    {route: 'progress-bar-buffer', upstreamId: 'progress-bar-buffer', pkg: 'progress-bar'},
+    {route: 'progress-bar-query', upstreamId: 'progress-bar-query', pkg: 'progress-bar'},
+  ],
   'mat-progress-spinner': [
     {route: 'example', upstreamId: 'progress-spinner-overview', pkg: 'progress-spinner'},
   ],

@@ -15,6 +15,7 @@ import dividerMd from './overviews/divider.md?raw';
 import formFieldMd from './overviews/form-field.md?raw';
 import gridListMd from './overviews/grid-list.md?raw';
 import iconMd from './overviews/icon.md?raw';
+import progressBarMd from './overviews/progress-bar.md?raw';
 import progressSpinnerMd from './overviews/progress-spinner.md?raw';
 import radioMd from './overviews/radio.md?raw';
 import selectMd from './overviews/select.md?raw';
@@ -30,6 +31,7 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   'form-field': formFieldMd,
   'grid-list': gridListMd,
   icon: iconMd,
+  'progress-bar': progressBarMd,
   'progress-spinner': progressSpinnerMd,
   radio: radioMd,
   select: selectMd,

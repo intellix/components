@@ -19,6 +19,9 @@ import {expectMaterialParity} from '../../lib/material-parity.js';
  */
 const EXAMPLE_IDS = [
   'button-disabled-interactive',
+  'progress-bar-indeterminate',
+  'progress-bar-buffer',
+  'progress-bar-query',
 ];
 
 /**

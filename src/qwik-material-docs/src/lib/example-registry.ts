@@ -28,6 +28,9 @@ import Ex_list_example from '@angular-community/qwik-material-examples/list/exam
 import Ex_menu_example from '@angular-community/qwik-material-examples/menu/example';
 import Ex_paginator_example from '@angular-community/qwik-material-examples/paginator/example';
 import Ex_progress_bar_example from '@angular-community/qwik-material-examples/progress-bar/example';
+import Ex_progress_bar_indeterminate from '@angular-community/qwik-material-examples/progress-bar/progress-bar-indeterminate';
+import Ex_progress_bar_buffer from '@angular-community/qwik-material-examples/progress-bar/progress-bar-buffer';
+import Ex_progress_bar_query from '@angular-community/qwik-material-examples/progress-bar/progress-bar-query';
 import Ex_progress_spinner_example from '@angular-community/qwik-material-examples/progress-spinner/example';
 import Ex_radio_example from '@angular-community/qwik-material-examples/radio/example';
 import Ex_select_example from '@angular-community/qwik-material-examples/select/example';
@@ -114,6 +117,9 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'menu/example': Ex_menu_example,
   'paginator/example': Ex_paginator_example,
   'progress-bar/example': Ex_progress_bar_example,
+  'progress-bar/progress-bar-indeterminate': Ex_progress_bar_indeterminate,
+  'progress-bar/progress-bar-buffer': Ex_progress_bar_buffer,
+  'progress-bar/progress-bar-query': Ex_progress_bar_query,
   'progress-spinner/example': Ex_progress_spinner_example,
   'radio/example': Ex_radio_example,
   'select/example': Ex_select_example,
