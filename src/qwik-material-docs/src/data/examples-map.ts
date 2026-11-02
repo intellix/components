@@ -43,7 +43,12 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-checkbox': [{route: 'example', upstreamId: 'checkbox-overview', pkg: 'checkbox'}],
   'mat-chips': [{route: 'example', upstreamId: 'chips-overview', pkg: 'chips'}],
   'mat-datepicker': [{route: 'example', upstreamId: 'datepicker-overview', pkg: 'datepicker'}],
-  'mat-dialog': [{route: 'example', upstreamId: 'dialog-overview', pkg: 'dialog'}],
+  'mat-dialog': [
+    {route: 'example', upstreamId: 'dialog-overview', pkg: 'dialog'},
+    {route: 'dialog-data', upstreamId: 'dialog-data', pkg: 'dialog'},
+    {route: 'dialog-content', upstreamId: 'dialog-content', pkg: 'dialog'},
+    {route: 'dialog-animations', upstreamId: 'dialog-animations', pkg: 'dialog'},
+  ],
   'mat-divider': [{route: 'example', upstreamId: 'divider-overview', pkg: 'divider'}],
   'mat-expansion': [{route: 'example', upstreamId: 'expansion-overview', pkg: 'expansion'}],
   'mat-form-field': [

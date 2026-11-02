@@ -33,6 +33,9 @@ const EXAMPLE_IDS = [
   'tooltip-delay',
   'tooltip-modified-defaults',
   'tooltip-manual',
+  'dialog-data',
+  'dialog-content',
+  'dialog-animations',
 ];
 
 /**
@@ -92,6 +95,34 @@ const hoverActionButton: ParityStep = {
  * no-interaction render below already covers everything this port CAN demonstrate; the gap
  * itself is documented in code and in the Tooltip overview's "Angular → Qwik notes".
  */
+/**
+ * Clicks a named trigger button and waits for the dialog to settle open. Mirrors
+ * `specs/examples/angular-parity.spec.ts`'s own `openDialog` (generalized to a button name,
+ * since `dialog-animations` has two distinct triggers).
+ */
+const openDialogByButton = (name: string): ParityStep => ({
+  name: `click "${name}" (open)`,
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root]').getByRole('button', {name, exact: true}).click();
+    await page.waitForSelector('mat-dialog-container', {state: 'attached', timeout: 10_000});
+    await page
+      .waitForFunction(
+        () => {
+          const el = document.querySelector('mat-dialog-container');
+          return (
+            !!el &&
+            el.classList.contains('mdc-dialog--open') &&
+            !el.classList.contains('mdc-dialog--opening')
+          );
+        },
+        undefined,
+        {timeout: 10_000},
+      )
+      .catch(() => {});
+  },
+});
+
+/** Interactions per example, added alongside each new port as needed. */
 const EXAMPLE_STEPS: Record<
   string,
   {steps: ParityStep[]; rootSelector?: string; expectedFailure?: string}[]
@@ -102,6 +133,14 @@ const EXAMPLE_STEPS: Record<
   'tooltip-modified-defaults': [
     {steps: [hoverActionButton]},
     {steps: [hoverActionButton], rootSelector: overlayRoot},
+  ],
+  'dialog-data': [{steps: [openDialogByButton('Open dialog')], rootSelector: overlayRoot}],
+  'dialog-content': [{steps: [openDialogByButton('Open dialog')], rootSelector: overlayRoot}],
+  'dialog-animations': [
+    {
+      steps: [openDialogByButton('Open dialog without animation')],
+      rootSelector: overlayRoot,
+    },
   ],
 };
 
@@ -123,6 +162,7 @@ const EXAMPLE_STEPS: Record<
  *   echoes `min`/`max`/`step`/`showtickmarks`/`discrete`.
  * - `tooltip-manual`: `<button matButton="elevated" matTooltipPosition="right" ...>` writes
  *   `matTooltipPosition` bare.
+ * - `dialog-content`: `<mat-dialog-actions align="end">` echoes `align`.
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'button-disabled-interactive': ['disabledinteractive'],
@@ -131,6 +171,7 @@ const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'slider-range': ['min', 'max'],
   'slider-formatting': ['min', 'max', 'step', 'showtickmarks', 'discrete'],
   'tooltip-manual': ['mattooltipposition'],
+  'dialog-content': ['align'],
 };
 
 /**

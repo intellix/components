@@ -12,6 +12,7 @@ import buttonMd from './overviews/button.md?raw';
 import buttonToggleMd from './overviews/button-toggle.md?raw';
 import cardMd from './overviews/card.md?raw';
 import checkboxMd from './overviews/checkbox.md?raw';
+import dialogMd from './overviews/dialog.md?raw';
 import dividerMd from './overviews/divider.md?raw';
 import formFieldMd from './overviews/form-field.md?raw';
 import gridListMd from './overviews/grid-list.md?raw';
@@ -32,6 +33,7 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   'button-toggle': buttonToggleMd,
   card: cardMd,
   checkbox: checkboxMd,
+  dialog: dialogMd,
   divider: dividerMd,
   'form-field': formFieldMd,
   'grid-list': gridListMd,

@@ -20,6 +20,9 @@ import Ex_checkbox_example from '@angular-community/qwik-material-examples/check
 import Ex_chips_example from '@angular-community/qwik-material-examples/chips/example';
 import Ex_datepicker_example from '@angular-community/qwik-material-examples/datepicker/example';
 import Ex_dialog_example from '@angular-community/qwik-material-examples/dialog/example';
+import Ex_dialog_data from '@angular-community/qwik-material-examples/dialog/dialog-data';
+import Ex_dialog_content from '@angular-community/qwik-material-examples/dialog/dialog-content';
+import Ex_dialog_animations from '@angular-community/qwik-material-examples/dialog/dialog-animations';
 import Ex_divider_example from '@angular-community/qwik-material-examples/divider/example';
 import Ex_expansion_example from '@angular-community/qwik-material-examples/expansion/example';
 import Ex_form_field_example from '@angular-community/qwik-material-examples/form-field/example';
@@ -118,6 +121,9 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'chips/example': Ex_chips_example,
   'datepicker/example': Ex_datepicker_example,
   'dialog/example': Ex_dialog_example,
+  'dialog/dialog-data': Ex_dialog_data,
+  'dialog/dialog-content': Ex_dialog_content,
+  'dialog/dialog-animations': Ex_dialog_animations,
   'divider/example': Ex_divider_example,
   'expansion/example': Ex_expansion_example,
   'form-field/example': Ex_form_field_example,

@@ -213,3 +213,33 @@ The following stubs were added by the button port SCSS copy step (Task 2). They 
 | `scss/core/focus-indicators/_private.scss`             | `@angular/material/core/focus-indicators/private`                     |
 | `scss/core/theming/_theming.scss`                      | `@angular/material/core/theming/theming`                              |
 | `scss/progress-spinner/_progress-spinner-theme.scss`   | `@angular/material/progress-spinner/progress-spinner-theme`           |
+
+## `MatDialogContent` gains a `class` prop (2026-11-02, docs-example port)
+
+`dialog-content`'s docs example (src/components-examples/material/dialog/dialog-content/,
+ported to `src/qwik-cdk-dev-app/src/routes/examples/dialog-content/`) writes
+`<mat-dialog-content class="mat-typography">` — a common Material pattern for enabling
+typography styles within a dialog body. `MatDialogContent` took no props at all, so any `class`
+written on it was silently dropped (no component in this file read it). Added an optional
+`class?: string | ReadonlyArray<string>` prop, merged onto the host alongside the two structural
+classes. Upstream needs no dedicated `@Input` for this either — it's just Angular's normal
+`[class]`/static-attribute merging on any host element, which a Qwik component has no equivalent
+of without an explicit prop (same category as `MatInput`'s `aria-label` gap found porting
+`tooltip-delay`, see `qwik-material/input/SYNC.md`).
+
+## Real bug fixed: `enterAnimationDuration`/`exitAnimationDuration: '0ms'` race (2026-11-02, docs-example port)
+
+Found porting `dialog-animations`'s docs example (src/components-examples/material/dialog/
+dialog-animations/) — its "without animation" trigger sets `enterAnimationDuration:
+exitAnimationDuration: '0ms'`, the first scenario in this port to exercise a literal zero
+duration. `mat-dialog-container.tsx`'s open/close animation state machine scheduled the
+class-set (`requestAnimationFrame`) and the class-clear (`setTimeout(..., enterMs/exitMs)`) as
+two INDEPENDENT, parallel timers. With a 0ms duration, the `setTimeout` (a macrotask) could fire
+before the `requestAnimationFrame` callback ever ran (rAF runs at the next repaint, which has no
+guaranteed ordering against a 0ms timeout either way) — clearing `openingClass`/`closingClass`
+before the rAF's `= true` write, which then had nothing left to clear it. Net effect: live in
+the browser, `mdc-dialog--opening` stayed on the container FOREVER for a 0ms-duration dialog
+(confirmed via the `examples/dialog-animations` parity scenario, caught by
+`specs/examples-misc/angular-parity.spec.ts`'s `dialog-animations (interaction 1)`). Fixed by
+nesting each `setTimeout` INSIDE its corresponding `requestAnimationFrame` callback, guaranteeing
+the clear always runs after the set, for any duration including 0.

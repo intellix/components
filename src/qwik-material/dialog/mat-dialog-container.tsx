@@ -127,13 +127,19 @@ export const MatDialogContainer = component$<MatDialogContainerProps>(({config, 
       frames.push(
         requestAnimationFrame(() => {
           closingClass.value = true;
+          // Scheduled from INSIDE the rAF callback, not in parallel with it (see the matching
+          // comment on the open side below) — with `exitMs === 0`, a `setTimeout` queued
+          // alongside `requestAnimationFrame` can fire before the rAF callback runs at all
+          // (macrotask vs. next-frame ordering is not guaranteed either way), clearing
+          // `closingClass` before it was ever set and leaving nothing to clear the LATER write.
+          // Nesting guarantees `closingClass.value = false` always runs after `= true`.
+          timers.push(
+            setTimeout(() => {
+              closingClass.value = false; // _clearAnimationClasses()
+              matDialogRef[MARK_CLOSED]();
+            }, exitMs),
+          );
         }),
-      );
-      timers.push(
-        setTimeout(() => {
-          closingClass.value = false; // _clearAnimationClasses()
-          matDialogRef[MARK_CLOSED]();
-        }, exitMs),
       );
     });
 
@@ -147,13 +153,22 @@ export const MatDialogContainer = component$<MatDialogContainerProps>(({config, 
       requestAnimationFrame(() => {
         openingClass.value = true;
         openClass.value = true;
+        // Scheduled from INSIDE the rAF callback (found live, 2026-11-02, porting the
+        // `dialog-animations` docs example's `enterAnimationDuration: '0ms'` variant): a
+        // `setTimeout(fn, 0)` queued in parallel with this `requestAnimationFrame` is a
+        // macrotask that can run BEFORE the rAF callback fires (rAF runs at the next repaint,
+        // which is not guaranteed to be ordered before a 0ms timeout) — when it does,
+        // `openingClass.value = false` clears a class that `= true` hasn't been written yet,
+        // and the rAF's LATER `= true` write then has nothing left to ever clear it, leaving
+        // `mdc-dialog--opening` stuck forever. Nesting the timer inside the rAF callback
+        // guarantees the open write always happens first, for any `enterMs` including 0.
+        timers.push(
+          setTimeout(() => {
+            openingClass.value = false; // _clearAnimationClasses()
+            matDialogRef?.[MARK_OPENED]();
+          }, enterMs),
+        );
       }),
-    );
-    timers.push(
-      setTimeout(() => {
-        openingClass.value = false; // _clearAnimationClasses()
-        matDialogRef?.[MARK_OPENED]();
-      }, enterMs),
     );
 
     cleanup(() => {
