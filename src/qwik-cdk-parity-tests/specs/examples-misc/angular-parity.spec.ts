@@ -22,6 +22,8 @@ const EXAMPLE_IDS = [
   'progress-bar-indeterminate',
   'progress-bar-buffer',
   'progress-bar-query',
+  'button-toggle-mode',
+  'button-toggle-appearance',
 ];
 
 /**
@@ -33,19 +35,42 @@ const EXAMPLE_IDS = [
  * initialize the input. A Qwik component's JSX prop has no such distinction to replicate it from.
  * - `button-disabled-interactive`: `<button matButton="elevated" disabled disabledInteractive
  *   matTooltip="...">` writes `disabledInteractive` bare.
+ * - `button-toggle-mode`/`button-toggle-appearance`: `<mat-button-toggle-group name="...">`
+ *   and each `<mat-button-toggle value="...">` echo `name`/`value` (same genericity concern as
+ *   `specs/examples`'s own `mat-button-toggle/example` entry). `button-toggle-mode`'s multi-select
+ *   group also writes bare `multiple`, echoing `multiple`.
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'button-disabled-interactive': ['disabledinteractive'],
+  'button-toggle-mode': ['name', 'value', 'multiple'],
+  'button-toggle-appearance': ['name', 'value'],
+};
+
+/**
+ * Known, documented gaps — run as expected failures so the suite stays green but flags them if
+ * they start passing (mirrors `specs/examples/angular-parity.spec.ts`'s own `EXPECTED_FAILURES`).
+ */
+const EXPECTED_FAILURES: Record<string, string> = {
+  'button-toggle-appearance':
+    "this port's MatButtonToggleGroup/MatButtonToggle have no appearance prop at all (only the " +
+    "modern 'standard' appearance is implemented — see qwik-material/button-toggle/SYNC.md's " +
+    "'Deviations from upstream' §6); the example's second ('Legacy appearance') section can only " +
+    'render with the standard appearance, which never matches upstream\'s distinctly-templated ' +
+    "legacy group (no mat-pseudo-checkbox, different ripple-trigger wiring, a separate CSS class " +
+    'ladder) — a real, large unported feature, not a fixable bug.',
 };
 
 test.describe('qwik-material-examples (non-headline) — Angular DOM parity', () => {
   for (const exampleId of EXAMPLE_IDS) {
-    test(exampleId, ({browser}) =>
-      expectMaterialParity(browser, {
+    test(exampleId, ({browser}) => {
+      const gap = EXPECTED_FAILURES[exampleId];
+      test.fail(gap !== undefined, gap);
+      return expectMaterialParity(browser, {
         pinRoot: true,
         route: 'examples',
         scenario: exampleId,
         ignoreAttrs: EXAMPLE_IGNORE_ATTRS[exampleId],
-      }));
+      });
+    });
   }
 });

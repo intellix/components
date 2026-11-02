@@ -13,6 +13,8 @@ import Ex_bottom_sheet_example from '@angular-community/qwik-material-examples/b
 import Ex_button_example from '@angular-community/qwik-material-examples/button/example';
 import Ex_button_button_disabled_interactive from '@angular-community/qwik-material-examples/button/button-disabled-interactive';
 import Ex_button_toggle_example from '@angular-community/qwik-material-examples/button-toggle/example';
+import Ex_button_toggle_mode from '@angular-community/qwik-material-examples/button-toggle/button-toggle-mode';
+import Ex_button_toggle_appearance from '@angular-community/qwik-material-examples/button-toggle/button-toggle-appearance';
 import Ex_card_example from '@angular-community/qwik-material-examples/card/example';
 import Ex_checkbox_example from '@angular-community/qwik-material-examples/checkbox/example';
 import Ex_chips_example from '@angular-community/qwik-material-examples/chips/example';
@@ -102,6 +104,8 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'button/example': Ex_button_example,
   'button/button-disabled-interactive': Ex_button_button_disabled_interactive,
   'button-toggle/example': Ex_button_toggle_example,
+  'button-toggle/button-toggle-mode': Ex_button_toggle_mode,
+  'button-toggle/button-toggle-appearance': Ex_button_toggle_appearance,
   'card/example': Ex_card_example,
   'checkbox/example': Ex_checkbox_example,
   'chips/example': Ex_chips_example,

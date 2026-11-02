@@ -23,6 +23,8 @@
     "./badge/example": "./badge/example/index.tsx",
     "./bottom-sheet/example": "./bottom-sheet/example/index.tsx",
     "./button-toggle/example": "./button-toggle/example/index.tsx",
+    "./button-toggle/button-toggle-mode": "./button-toggle/button-toggle-mode/index.tsx",
+    "./button-toggle/button-toggle-appearance": "./button-toggle/button-toggle-appearance/index.tsx",
     "./button/example": "./button/example/index.tsx",
     "./button/button-disabled-interactive": "./button/button-disabled-interactive/index.tsx",
     "./card/example": "./card/example/index.tsx",

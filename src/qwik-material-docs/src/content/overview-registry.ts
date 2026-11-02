@@ -9,6 +9,7 @@
 import badgeMd from './overviews/badge.md?raw';
 import bottomSheetMd from './overviews/bottom-sheet.md?raw';
 import buttonMd from './overviews/button.md?raw';
+import buttonToggleMd from './overviews/button-toggle.md?raw';
 import cardMd from './overviews/card.md?raw';
 import checkboxMd from './overviews/checkbox.md?raw';
 import dividerMd from './overviews/divider.md?raw';
@@ -25,6 +26,7 @@ export const OVERVIEW_MARKDOWN: Record<string, string> = {
   badge: badgeMd,
   'bottom-sheet': bottomSheetMd,
   button: buttonMd,
+  'button-toggle': buttonToggleMd,
   card: cardMd,
   checkbox: checkboxMd,
   divider: dividerMd,

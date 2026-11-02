@@ -30,7 +30,15 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
       pkg: 'button',
     },
   ],
-  'mat-button-toggle': [{route: 'example', upstreamId: 'button-toggle-overview', pkg: 'button-toggle'}],
+  'mat-button-toggle': [
+    {route: 'example', upstreamId: 'button-toggle-overview', pkg: 'button-toggle'},
+    {route: 'button-toggle-mode', upstreamId: 'button-toggle-mode', pkg: 'button-toggle'},
+    {
+      route: 'button-toggle-appearance',
+      upstreamId: 'button-toggle-appearance',
+      pkg: 'button-toggle',
+    },
+  ],
   'mat-card': [{route: 'example', upstreamId: 'card-overview', pkg: 'card'}],
   'mat-checkbox': [{route: 'example', upstreamId: 'checkbox-overview', pkg: 'checkbox'}],
   'mat-chips': [{route: 'example', upstreamId: 'chips-overview', pkg: 'chips'}],
