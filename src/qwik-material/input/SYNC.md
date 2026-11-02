@@ -147,3 +147,30 @@ this component's own `inputRef` signal (still needed internally for `handleFocus
 native element to register it for `focus()`/programmatic access, and `MatInput` previously had no
 way to hand that out at all. Zero effect on any existing consumer — `props.ref` is `undefined`
 unless explicitly passed, and `composeRef()` with one defined ref returns that ref unchanged.
+
+## `value` live-resync for an external reassignment, and the "named attribute, never spread" constraint (2026-11-02)
+
+The value-sync `useTask$` (`track(() => props.value)`, already existed for a typed keystroke
+round-tripped back through a consumer's own reactive state — see the `error-state` scenario) now
+ALSO re-derives `empty`/`shouldLabelFloat` (previously only updated by `handleInput$`/
+`handleBlur$`, i.e. only for a REAL user interaction) — needed so a form library's `reset()`/
+`setInput()` (first real consumer: Formisch, see `qwik-material/README.md`'s "Using with
+Formisch") visually updates the floated label too, not just the DOM `.value` property. Confirmed
+live (a Formisch "Fill example data" button + Playwright, before/after): without this, the input
+showed the new value but the label stayed un-floated, overlapping the text.
+
+Confirming this fix works surfaced a SEPARATE, more general finding, worth documenting here since
+it applies to any consumer wiring a value into `<MatInput value={...}>` (nested inside
+`<MatFormField control={<MatInput .../>}>`, which freezes its OWN `control` prop's value on
+first render — see `core/mat-form-field-control.ts`'s doc comment): an externally-reassigned
+value is picked up live ONLY when `value={...}`'s expression is a DIRECT signal `.value` read,
+written inline — `value={field.input.value}`. Neither a spread (`{...{value: field.input.value,
+...}}`) nor a value returned from a helper FUNCTION (`value={getValue(field)}`, the function
+reading the signal internally) works — both leave the input frozen at whatever value was present
+at first mount. Qwik's optimizer gives a literal `attr={signal.value}` JSX expression its own
+live binding at the attribute level (independent of the enclosing, frozen vnode's identity), but
+can only do that for an expression shape it recognizes at compile time — it can't see "through" a
+spread or a function call to know the value came from a signal. See
+`src/qwik-cdk-dev-app/src/routes/formisch/account/formisch-bindings.ts`'s module doc comment for
+the full write-up (three confirmed attempts) and `qwik-material/README.md`'s "Using with
+Formisch" gotchas list.

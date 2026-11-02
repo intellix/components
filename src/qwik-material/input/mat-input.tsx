@@ -101,19 +101,22 @@ export const MatInput = component$<MatInputProps>(props => {
   // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
   const formSubmitted = useMatFormSubmitted();
   const errorState = formBound && invalid && (touched || formSubmitted);
-  // Live "is this control empty" — seeded from `props.value` (correct at
-  // first paint) but NEVER re-read from it afterward: like `touched`/
-  // `dirty`/`invalid` above, `props.value` is nested inside the SAME
-  // frozen-after-first-render `<MatInput .../>` JSX descriptor (see
-  // core/mat-form-field-control.ts's doc comment), so it would otherwise
-  // never reflect what's actually been typed. Unlike touched/dirty/
-  // invalid, `empty` doesn't need a round-trip through `MatFormField`'s
-  // context store — `handleInput$` already has direct access to the live
-  // DOM element via `inputRef`, so it updates this signal itself,
-  // entirely within this one component (confirmed needed: `aria-invalid`
-  // reads this on every render, and a render can now happen BEFORE blur
-  // too — e.g. when `invalid` flips as soon as a validator starts/stops
-  // failing while typing, before `touched` ever becomes true).
+  // Live "is this control empty" — seeded from `props.value` for first paint. Kept live
+  // thereafter two ways: (1) `handleInput$` below has direct access to the live DOM element via
+  // `inputRef` and updates this signal itself on every real keystroke — entirely within this
+  // one component, no round-trip through `MatFormField`'s context store needed (confirmed
+  // needed: `aria-invalid` reads this on every render, and a render can now happen BEFORE blur
+  // too — e.g. when `invalid` flips as soon as a validator starts/stops failing while typing,
+  // before `touched` ever becomes true); (2) the value-sync `useTask$` below ALSO re-derives it
+  // from `props.value` on every change — needed for an EXTERNAL, non-typed reassignment (a form
+  // library's `reset()`/`setInput()`, e.g. Formisch — see `qwik-material/README.md`'s "Using
+  // with Formisch"), which `handleInput$` never fires for at all. `props.value` itself must be
+  // passed as a literal, NAMED `value={...}` JSX attribute for (2) to work — nested two levels
+  // deep inside `<MatFormField control={<MatInput value={...} />}>`'s frozen `control` prop
+  // (see core/mat-form-field-control.ts's doc comment), only a literal attribute expression
+  // gets Qwik's live per-attribute tracking; a `{...spreadProps}`-sourced `value` is flattened
+  // to a plain, dead value at spread time and never updates — confirmed live, see
+  // `input/SYNC.md`'s 2026-11-02 entry.
   const emptySignal = useSignal(() => !props.value);
 
   // Fallback id for standalone usage (`matNativeControl` outside a form
@@ -175,6 +178,20 @@ export const MatInput = component$<MatInputProps>(props => {
     const el = inputRef.value as NativeControlElement | undefined;
     if (el && value !== undefined && el.value !== value) {
       el.value = value;
+    }
+    // Re-derive `empty`/`shouldLabelFloat` for an EXTERNAL value reassignment — see
+    // `emptySignal`'s own doc comment above. A real typed keystroke already updates these via
+    // `handleInput$` (which runs first, synchronously, on the native `input` event — this task
+    // merely re-confirms the same value moments later); this is the path that fires for a
+    // reassignment `handleInput$` never sees at all.
+    if (value !== undefined) {
+      const liveEmpty = !value;
+      if (emptySignal.value !== liveEmpty) emptySignal.value = liveEmpty;
+      if (formField) {
+        if (formField.empty !== liveEmpty) formField.empty = liveEmpty;
+        const shouldFloat = formField.focused || !liveEmpty;
+        if (formField.shouldLabelFloat !== shouldFloat) formField.shouldLabelFloat = shouldFloat;
+      }
     }
   });
 
