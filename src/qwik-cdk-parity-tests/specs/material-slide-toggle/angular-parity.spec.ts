@@ -61,7 +61,6 @@ import {expectMaterialParity, type ParityStep} from '../../lib/material-parity.j
  *   re-pointed) — see 'no-label'.
  * - `hideIcon=true` OMITS the whole `<span class="mdc-switch__icons">` subtree (both svgs) —
  *   not hidden via CSS, not rendered at all.
- * - `fullWidth=true` adds `mat-slide-toggle-full-width` to the outer host only.
  * - keyboard/programmatic focus (CDK FocusMonitor) adds `mat-mdc-slide-toggle-focused` to the
  *   outer host; it is absent in every scenario's initial/click-only state.
  *
@@ -90,8 +89,6 @@ import {expectMaterialParity, type ParityStep} from '../../lib/material-parity.j
  * - label-before: `[labelPosition]="'before'"`, unchecked, "Label before". Only DOM
  *   difference from basic: the wrapping div gains `mdc-form-field--align-end`. Step: click
  *   (toggles normally).
- * - full-width: `[fullWidth]="true"`, unchecked, "Full width toggle". Outer host gains
- *   `mat-slide-toggle-full-width`. Step: click (toggles normally).
  * - no-label: `[aria-label]="'Airplane mode'"`, no projected content at all (written as a
  *   self-closing `<mat-slide-toggle ... />`), unchecked. The button carries
  *   `aria-label="Airplane mode"` and NO `aria-labelledby` (suppressed because aria-label is
@@ -172,9 +169,6 @@ test.describe('mat-slide-toggle — Angular DOM parity', () => {
 
   test('label-before', ({browser}) =>
     expectMaterialParity(browser, {route, scenario: 'label-before', steps: [click]}));
-
-  test('full-width', ({browser}) =>
-    expectMaterialParity(browser, {route, scenario: 'full-width', steps: [click]}));
 
   test('no-label', ({browser}) =>
     expectMaterialParity(browser, {route, scenario: 'no-label', steps: [click]}));

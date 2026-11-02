@@ -122,21 +122,6 @@ export class SlideToggleLabelBefore {
 @Component({
   template: `
     <div data-parity-root>
-      <mat-slide-toggle [fullWidth]="true" [checked]="checked" (change)="checked = $event.checked">
-        Full width toggle
-      </mat-slide-toggle>
-      <p>Checked: {{ checked }}</p>
-    </div>
-  `,
-  imports: [MatSlideToggleModule],
-})
-export class SlideToggleFullWidth {
-  checked = false;
-}
-
-@Component({
-  template: `
-    <div data-parity-root>
       <mat-slide-toggle
         [aria-label]="'Airplane mode'"
         [checked]="checked"
@@ -197,7 +182,6 @@ export const SLIDE_TOGGLE_SCENARIOS: Record<string, Type<unknown>> = {
   'disabled-interactive': SlideToggleDisabledInteractive,
   'hide-icon': SlideToggleHideIcon,
   'label-before': SlideToggleLabelBefore,
-  'full-width': SlideToggleFullWidth,
   'no-label': SlideToggleNoLabel,
   'required-in-form': SlideToggleRequiredInForm,
   'color-primary': SlideToggleColorPrimary,

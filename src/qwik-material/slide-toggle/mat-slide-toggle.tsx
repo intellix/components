@@ -33,8 +33,6 @@ export interface MatSlideToggleProps {
   required?: boolean;
   /** Whether to hide the icon inside of the slide toggle. Falls back to config, then false. */
   hideIcon?: boolean;
-  /** Whether the slide toggle should be full width. */
-  fullWidth?: boolean;
   /** Whether the label should appear after or before the slide-toggle. Default 'after'. */
   labelPosition?: 'before' | 'after';
   /**
@@ -116,7 +114,6 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
   const required = props.required ?? false;
   const hideIcon = props.hideIcon ?? config.hideIcon ?? false;
-  const fullWidth = props.fullWidth ?? false;
   const labelPosition = props.labelPosition ?? 'after';
   const color = props.color ?? config.color ?? 'accent';
   const tabIndexValue = props.tabIndex ?? 0;
@@ -135,7 +132,6 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
     'mat-mdc-slide-toggle',
     focused && 'mat-mdc-slide-toggle-focused',
     checked && 'mat-mdc-slide-toggle-checked',
-    fullWidth && 'mat-slide-toggle-full-width',
     animationsDisabled.value && '_mat-animation-noopable',
     // `[class]="color ? 'mat-' + color : ''"` — color always resolves
     // truthy here (see `color` above), so this is unconditional in practice.

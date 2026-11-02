@@ -18,7 +18,7 @@
  *     labelledby-falls-back-to-the-label-id case), `for`/`id` pairing,
  *     required → aria-required, labelPosition → mdc-form-field--align-end,
  *     ripple/focus-indicator container, hideIcon, disabledInteractive
- *     (native disabled vs aria-disabled+tabindex+class), fullWidth, static
+ *     (native disabled vs aria-disabled+tabindex+class), static
  *     `tabindex`/`aria-label`/`aria-labelledby`/`name` attributes being
  *     stripped from the HOST (never echoed — only the Angular-specific
  *     `[attr.x]="null"` host bindings upstream uses to defeat static
@@ -76,7 +76,6 @@ describe('MatSlideToggle surface — sanity', () => {
       disableRipple: false,
       required: true,
       hideIcon: false,
-      fullWidth: false,
       labelPosition: 'before',
       color: 'primary',
       name: 'terms',
@@ -110,7 +109,6 @@ describe.skip('MatSlideToggle DOM-rendered scenarios — verified via Playwright
   it('renders the static mat-ripple/mat-mdc-slide-toggle-ripple/mat-focus-indicator ripple span unconditionally (no click-driven ripple animation ported — out of scope per design doc rule 6)', () => {});
   it('hideIcon omits the whole mdc-switch__icons subtree (both svgs) — not hidden via CSS, not rendered at all', () => {});
   it('disabledInteractive (with disabled): no native disabled attribute, tabindex stays "0", adds mat-mdc-slide-toggle-disabled-interactive to the button, adds aria-disabled="true"; click handler still no-ops because it guards on `disabled` alone', () => {});
-  it('fullWidth adds mat-slide-toggle-full-width to the outer host only', () => {});
   it('a consumer-written static tabindex/aria-label/aria-labelledby/name attribute on the host element itself never survives — the outer `<mat-slide-toggle>` never renders these (upstream`[attr.x]="null"` host bindings; this port simply never writes them there to begin with)', () => {});
   it('MAT_SLIDE_TOGGLE_CONFIG.disableToggleValue=true: click still fires onToggleChange$ but never onChange$/flips rendered state', () => {});
   it('MAT_SLIDE_TOGGLE_CONFIG.color sets the default color class when no per-instance color prop is given', () => {});
