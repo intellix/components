@@ -542,3 +542,19 @@ live, so it reflected the control's current value: selecting a value in an outli
 hook appear mid-lifetime and shifted every later hook (`animationsEnabled` read the wrong slot,
 dropping `mat-form-field-animations-enabled` for good — `material-select/outline-basic`). The
 condition is now evaluated once in a `useSignal` initializer.
+
+## `MatIdScope` needed `cloneJsxForReuse` too, not just `{props.content}` (2026-11-02)
+
+The 2026-11-01 fix above (`{props.content}` instead of `<Slot/>`) fixed ONE Qwik v2 regression but
+not a second, independent one: `MatFormField` passes `hintStartSnapshot.value`/`hintEndSnapshot.value`
+(frozen `useSignal(() => props.hintStart/.hintEnd)` snapshots — the SAME object reference on every
+one of `MatFormField`'s own re-renders) into `<MatIdScope content={...}>`. A caller whose hint is a
+STATIC expression (`hintStart={<MatHint>MM/DD/YYYY</MatHint>}`, never recomputed) hands the exact
+same `JSXOutput` object to `MatIdScope` every time `MatFormField` re-renders for ANY reason
+(focus/blur, the control's own state changes, ...) — confirmed live building the Formisch
+integration spike (`qwik-cdk-dev-app/src/routes/formisch/account/`): a datepicker field whose value
+changed repeatedly (going through many submit/fill/reset cycles) rendered its hint with completely
+empty text once enough unrelated re-renders had landed. Same root cause, same fix, as
+`menu/menu-panel.tsx`'s and `select/mat-select-panel.tsx`'s existing `cloneJsxForReuse()` calls
+("rendering the exact same `JSXOutput` object a SECOND time corrupts it" — `core/jsx-reuse.ts`) —
+`MatIdScope` now returns `cloneJsxForReuse(props.content)` instead of `props.content` directly.
