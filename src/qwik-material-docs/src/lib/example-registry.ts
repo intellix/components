@@ -21,6 +21,11 @@ import Ex_divider_example from '@angular-community/qwik-material-examples/divide
 import Ex_expansion_example from '@angular-community/qwik-material-examples/expansion/example';
 import Ex_form_field_example from '@angular-community/qwik-material-examples/form-field/example';
 import Ex_form_field_example_input from '@angular-community/qwik-material-examples/form-field/example-input';
+import Ex_form_field_appearance from '@angular-community/qwik-material-examples/form-field/form-field-appearance';
+import Ex_form_field_label from '@angular-community/qwik-material-examples/form-field/form-field-label';
+import Ex_form_field_hint from '@angular-community/qwik-material-examples/form-field/form-field-hint';
+import Ex_form_field_error from '@angular-community/qwik-material-examples/form-field/form-field-error';
+import Ex_form_field_prefix_suffix from '@angular-community/qwik-material-examples/form-field/form-field-prefix-suffix';
 import Ex_grid_list_example from '@angular-community/qwik-material-examples/grid-list/example';
 import Ex_icon_example from '@angular-community/qwik-material-examples/icon/example';
 import Ex_list_example from '@angular-community/qwik-material-examples/list/example';
@@ -46,6 +51,7 @@ import Ex_snack_bar_example from '@angular-community/qwik-material-examples/snac
 import Ex_sort_example from '@angular-community/qwik-material-examples/sort/example';
 import Ex_stepper_example from '@angular-community/qwik-material-examples/stepper/example';
 import Ex_table_example from '@angular-community/qwik-material-examples/table/example';
+import Ex_table_sorting from '@angular-community/qwik-material-examples/table/table-sorting';
 import Ex_tabs_example from '@angular-community/qwik-material-examples/tabs/example';
 import Ex_timepicker_example from '@angular-community/qwik-material-examples/timepicker/example';
 import Ex_toolbar_example from '@angular-community/qwik-material-examples/toolbar/example';
@@ -117,6 +123,11 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'expansion/example': Ex_expansion_example,
   'form-field/example': Ex_form_field_example,
   'form-field/example-input': Ex_form_field_example_input,
+  'form-field/form-field-appearance': Ex_form_field_appearance,
+  'form-field/form-field-label': Ex_form_field_label,
+  'form-field/form-field-hint': Ex_form_field_hint,
+  'form-field/form-field-error': Ex_form_field_error,
+  'form-field/form-field-prefix-suffix': Ex_form_field_prefix_suffix,
   'grid-list/example': Ex_grid_list_example,
   'icon/example': Ex_icon_example,
   'list/example': Ex_list_example,
@@ -142,6 +153,7 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'sort/example': Ex_sort_example,
   'stepper/example': Ex_stepper_example,
   'table/example': Ex_table_example,
+  'table/table-sorting': Ex_table_sorting,
   'tabs/example': Ex_tabs_example,
   'timepicker/example': Ex_timepicker_example,
   'toolbar/example': Ex_toolbar_example,

@@ -34,6 +34,11 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-form-field': [
     {route: 'example', upstreamId: 'form-field-overview', pkg: 'form-field'},
     {route: 'example-input', upstreamId: 'input-overview', pkg: 'form-field'},
+    {route: 'form-field-appearance', upstreamId: 'form-field-appearance', pkg: 'form-field'},
+    {route: 'form-field-label', upstreamId: 'form-field-label', pkg: 'form-field'},
+    {route: 'form-field-hint', upstreamId: 'form-field-hint', pkg: 'form-field'},
+    {route: 'form-field-error', upstreamId: 'form-field-error', pkg: 'form-field'},
+    {route: 'form-field-prefix-suffix', upstreamId: 'form-field-prefix-suffix', pkg: 'form-field'},
   ],
   'mat-grid-list': [{route: 'example', upstreamId: 'grid-list-overview', pkg: 'grid-list'}],
   'mat-icon': [{route: 'example', upstreamId: 'icon-overview', pkg: 'icon'}],
@@ -61,9 +66,15 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-slide-toggle': [{route: 'example', upstreamId: 'slide-toggle-overview', pkg: 'slide-toggle'}],
   'mat-slider': [{route: 'example', upstreamId: 'slider-overview', pkg: 'slider'}],
   'mat-snack-bar': [{route: 'example', upstreamId: 'snack-bar-overview', pkg: 'snack-bar'}],
-  'mat-sort': [{route: 'example', upstreamId: 'sort-overview', pkg: 'sort'}],
+  'mat-sort': [
+    {route: 'example', upstreamId: 'sort-overview', pkg: 'sort'},
+    {route: 'table-sorting', upstreamId: 'table-sorting', pkg: 'table'},
+  ],
   'mat-stepper': [{route: 'example', upstreamId: 'stepper-overview', pkg: 'stepper'}],
-  'mat-table': [{route: 'example', upstreamId: 'table-basic', pkg: 'table'}],
+  'mat-table': [
+    {route: 'example', upstreamId: 'table-basic', pkg: 'table'},
+    {route: 'table-sorting', upstreamId: 'table-sorting', pkg: 'table'},
+  ],
   'mat-tabs': [{route: 'example', upstreamId: 'tab-group-basic', pkg: 'tabs'}],
   'mat-timepicker': [{route: 'example', upstreamId: 'timepicker-overview', pkg: 'timepicker'}],
   'mat-toolbar': [

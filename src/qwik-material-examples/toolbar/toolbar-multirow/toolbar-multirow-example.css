@@ -1,0 +1,10 @@
+/* Copied from src/components-examples/material/toolbar/toolbar-multirow/toolbar-multirow-example.css,
+   prefixed with this route's own host tag — see table/example/table-basic-example.css's header
+   comment for why a plain CSS import needs this (no scoping of its own, unlike Angular's
+   ViewEncapsulation). */
+toolbar-multirow-example .example-icon {
+  padding: 0 14px;
+}
+toolbar-multirow-example .example-spacer {
+  flex: 1 1 auto;
+}

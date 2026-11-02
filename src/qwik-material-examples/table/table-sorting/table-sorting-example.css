@@ -1,0 +1,9 @@
+/* Copied from src/components-examples/material/table/table-sorting/table-sorting-example.css,
+   prefixed with this route's own host tag — see table/example/table-basic-example.css's header
+   comment for why a plain CSS import needs this. */
+table-sorting-example table {
+  width: 100%;
+}
+table-sorting-example th.mat-sort-header-sorted {
+  color: black;
+}
