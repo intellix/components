@@ -29,11 +29,16 @@ const route = 'mat-sidenav';
  *       </div>
  *     </mat-drawer>
  *     [<div class="cdk-visually-hidden cdk-focus-trap-anchor" aria-hidden="true" [tabindex="0"]></div>]
- *     <mat-drawer-content class="mat-drawer-content" [inert="true"]
+ *     <mat-drawer-content class="mat-drawer-content"
  *                          [style="margin-left: Npx"] [style="margin-right: Npx"]>
  *       …projected content…
  *     </mat-drawer-content>
  *   </mat-drawer-container>
+ *
+ * At v21.2.14, `<mat-drawer-content>`/`<mat-sidenav-content>` never carries an `inert` attribute
+ * — that's a newer-than-21.2.14 upstream feature (`MatDrawerContent._drawerToggled`'s
+ * `delay(50)`-gated `setAttribute('inert', 'true')`), removed from the Qwik port during the
+ * v21.2.14 rebaseline (see sidenav/SYNC.md).
  *
  * Each `<mat-drawer>`/`<mat-sidenav>` is always flanked by its own pair of CDK focus-trap anchor
  * `<div>`s (`FocusTrapFactory.create` in `ngAfterViewInit`, before paint — never racy), inserted
@@ -62,13 +67,6 @@ const route = 'mat-sidenav';
  *     `mode !== 'side'` (`MatDrawerContainer._watchDrawerToggle`) — it's independent of whether a
  *     backdrop is actually showing, so it's present on `has-backdrop-false` while open even
  *     though that scenario never shows (or even renders) a backdrop.
- *   - `inert="true"` on `<mat-drawer-content>`/`<mat-sidenav-content>` is ONLY ever applied while
- *     a backdrop is genuinely showing (`_isShowingBackdrop()` — same condition as the anchors'
- *     `tabindex`), landing ~50ms after the drawer's open transition's `transitionend`
- *     (`delay(50)` in `MatDrawerContent._drawerToggled`); on close it's removed immediately,
- *     synchronously, no delay. So `mode-side` never gets it, `has-backdrop-false` never gets it
- *     (open or closed), but `mode-push` DOES get it while open (push has a backdrop by default,
- *     same as over).
  *
  * Timing (every scenario's spec steps below account for this via the shared `settle`/
  * `waitSettled` helpers — see their doc comments):
@@ -82,9 +80,8 @@ const route = 'mat-sidenav';
  *     `(opened)`/`(closed)` output, e.g. the `<p>Opened: …</p>` scenarios) only fires once that
  *     transition's `transitionend` lands — content margins, however, update essentially
  *     immediately on click (before the transition finishes), since they're driven by
- *     `_animationStarted`, not `_animationEnd`. Waiting for `.mat-drawer-animating` to clear (plus
- *     a little extra buffer for the 50ms `inert` delay above) safely covers all of it, exactly
- *     like mat-checkbox's `mdc-checkbox--anim-*` wait.
+ *     `_animationStarted`, not `_animationEnd`. Waiting for `.mat-drawer-animating` to clear
+ *     safely covers all of it, exactly like mat-checkbox's `mdc-checkbox--anim-*` wait.
  *   - A drawer that starts `[opened]="true"` (no user interaction) never gets the
  *     `mat-drawer-animating` class at all and its margin/opened-output updates land on the very
  *     next tick (well under the 200ms above) — `initially-opened` and `two-drawers` confirm this
@@ -115,7 +112,7 @@ const route = 'mat-sidenav';
  *   `(opened)`/`(closed)`. Backdrop div present (over ⇒ `hasBackdrop` true by default), not shown
  *   while closed. The most exhaustively-exercised scenario — steps: (1) click "Toggle" → opens:
  *   backdrop becomes `mat-drawer-shown`, drawer gains `mat-drawer-opened`, container gains
- *   `mat-drawer-container-has-open`, content gains `inert="true"`, both focus-trap anchors gain
+ *   `mat-drawer-container-has-open`, both focus-trap anchors gain
  *   `tabindex="0"`, focus lands on "Close" (first tabbable in the drawer), text becomes "Opened:
  *   true"; (2) click "Close" (inside the drawer) → closes, all of the above reverts, focus
  *   restores to "Toggle"; (3) click "Toggle" → opens again; (4) press `Escape` (focus is on
@@ -125,7 +122,7 @@ const route = 'mat-sidenav';
  * - **mode-push**: one `[mode]="'push'" style="width: 200px"` drawer (just `<p>Push drawer</p>`,
  *   no close button) + content with "Toggle" + `<p>Opened: …</p>`. Backdrop present (push also
  *   defaults `hasBackdrop` true — easy to assume otherwise). Steps: (1) click "Toggle" → opens:
- *   same backdrop/open/has-open/inert/anchor changes as `mode-over`, PLUS `<mat-drawer-content>`
+ *   same backdrop/open/has-open/anchor changes as `mode-over`, PLUS `<mat-drawer-content>`
  *   gets BOTH `margin-left: 200px` AND `margin-right: -200px` simultaneously (push shifts without
  *   resizing — it adds to one side and subtracts the same amount from the other;
  *   `MatDrawerContainer.updateContentMargins`); drawer has no focusable content so focus lands on
@@ -139,7 +136,7 @@ const route = 'mat-sidenav';
  *   default). Steps: (1) click "Toggle" → opens: drawer gains `mat-drawer-opened`, content gains
  *   `margin-left: 180px` only (no `margin-right`), container does NOT gain
  *   `mat-drawer-container-has-open` (side mode is explicitly excluded from that subscription),
- *   content is NOT `inert` (no backdrop showing), anchors stay without `tabindex` (no backdrop ⇒
+ *   anchors stay without `tabindex` (no backdrop ⇒
  *   trap never enabled), focus stays on "Toggle" (side mode's `autoFocus` default is `'dialog'`
  *   ⇒ no auto-focus) and `<p>Opened: …</p>` never changes from `false` because this scenario's
  *   `(opened)`/`(closed)` aren't wired to anything (the `<p>` always reads a fixed `opened = false`
@@ -158,7 +155,7 @@ const route = 'mat-sidenav';
  *   trailing focus-trap anchor — the drawer is physically the LAST element child, moved there by
  *   `MatDrawer._updatePositionInParent('end')` in `ngAfterViewInit` (synchronous, before paint —
  *   stable from the very first render, confirmed live over repeated loads). Steps: (1) click
- *   "Toggle" → opens (same backdrop/inert/anchor/focus behavior as `mode-over`); (2) click
+ *   "Toggle" → opens (same backdrop/anchor/focus behavior as `mode-over`); (2) click
  *   "Close" → closes, focus restores to "Toggle".
  * - **two-drawers**: two side-mode drawers, both `[opened]="true"`: `[position]="'start'"
  *   style="width: 150px"` ("Start") and `[position]="'end'" style="width: 120px"` ("End"), plus
@@ -175,14 +172,14 @@ const route = 'mat-sidenav';
  *   "backdrop presence" note above — explicit `false` doesn't add that class). Steps: (1) click
  *   "Toggle" → opens: drawer gains `mat-drawer-opened`, container STILL gains
  *   `mat-drawer-container-has-open` (that class only cares about `mode !== 'side'`, not backdrop),
- *   content stays NOT `inert`, anchors stay without `tabindex`, but focus STILL auto-moves to
+ *   anchors stay without `tabindex`, but focus STILL auto-moves to
  *   "Close" (auto-focus-on-open doesn't check whether the trap is enabled); (2) click "Close" →
  *   closes, focus restores to "Toggle".
  * - **disable-close**: one `[mode]="'over'" [disableClose]="true"` drawer containing only
  *   `<p>Cannot be closed via escape/backdrop</p>` (deliberately no focusable content/buttons) +
  *   content with an "Open" button (`drawer.open()` — there is no toggle, since this scenario
  *   only ever opens). Backdrop div present (over's default). Steps: (1) click "Open" → opens
- *   (backdrop shown, `mat-drawer-opened`, `has-open`, `inert`, anchors `tabindex="0"`); because
+ *   (backdrop shown, `mat-drawer-opened`, `has-open`, anchors `tabindex="0"`); because
  *   the drawer has NO focusable descendant, focus lands on the `<mat-drawer>` HOST element itself
  *   (`FocusTrap.focusInitialElement()` returns false ⇒ `MatDrawer._takeFocus` falls back to
  *   `element.focus()` — this is why `<mat-drawer>` always carries `tabindex="-1"` outside `side`
@@ -199,7 +196,7 @@ const route = 'mat-sidenav';
  *   growth a no-op) so its measured `offsetWidth` genuinely tracks content — confirmed live: at
  *   rest (filler width 0) the drawer's natural content (the "Autosizing drawer" text + button)
  *   already measures 128px, so initial content margins are `margin-left: 128px; margin-right:
- *   -128px` (push), backdrop already shown, already `inert`, already focus-trap-enabled (this
+ *   -128px` (push), backdrop already shown, already focus-trap-enabled (this
  *   drawer starts open). Steps: (1) click "Toggle extra width" → filler grows to 150px wide,
  *   `ngDoCheck`'s 10ms-debounced autosize reflow recalculates: margins become `margin-left:
  *   150px; margin-right: -150px` — no CSS-transition class is involved here (nothing opens or
@@ -226,7 +223,7 @@ const route = 'mat-sidenav';
  * on the container, so the first comparison isn't racing that 200ms timer — this is itself part
  * of the compared DOM (a class on `.mat-drawer-container`), so every scenario needs it before ANY
  * comparison, not just the first. Folds in `waitSettled` so an initially-opened drawer's
- * synchronous-at-load margin/`inert` state (see the timing note above) is also settled.
+ * synchronous-at-load margin state (see the timing note above) is also settled.
  */
 const settle: ParityStep = {
   name: 'settle (post-init: transition-enabled)',
@@ -246,8 +243,7 @@ const settle: ParityStep = {
 /**
  * Waits for upstream's transient `mat-drawer-animating` class (added for the duration of the
  * real 400ms open/close CSS transition, removed on `transitionend` — see the header comment)
- * to clear, then gives a little extra buffer so the `inert`-attribute's further ~50ms delay (see
- * above) has also landed. A no-op wait (resolves immediately) when the preceding action never
+ * to clear. A no-op wait (resolves immediately) when the preceding action never
  * added the class at all — e.g. `autosize`'s filler-width toggle, which doesn't open/close
  * anything. Using a condition wait rather than a fixed sleep means both apps settle on their own
  * schedule before the structural diff runs, so two independently-timed browser contexts can

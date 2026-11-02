@@ -5,8 +5,7 @@ import type {QwikIntrinsicElements} from '@qwik.dev/core';
  * names. Upstream renders these as actual custom elements; external CMS
  * styles may target the tags directly (not just the `.mat-drawer-*`/
  * `.mat-sidenav-*` classes). Typed as `QwikIntrinsicElements['div']` — no
- * custom camelCase attrs need widening (`inert` is passed as a plain string
- * attribute value, already valid on `div`).
+ * custom camelCase attrs need widening.
  */
 declare module '@qwik.dev/core' {
   namespace QwikJSX {

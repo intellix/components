@@ -7,11 +7,7 @@ import {
   type Component,
   type FunctionComponent,
 } from '@qwik.dev/core';
-import {
-  computeContentMargins,
-  isShowingBackdropForInert,
-  MAT_DRAWER_CONTAINER_STATE,
-} from './drawer-state';
+import {computeContentMargins, MAT_DRAWER_CONTAINER_STATE} from './drawer-state';
 
 /**
  * Props for `<MatDrawerContent>`/`<MatSidenavContent>`. Must be rendered
@@ -46,14 +42,14 @@ function createContent(
     // signal read — just a one-time mount-driven assignment, the same justified exception
     // category as the width-measurement task in `mat-drawer.tsx`) reliably does.
     //
-    // ALSO applies the current margins/`inert` to itself here, synchronously in the same
-    // task — relying solely on the (correct, but SSR/resume-only) reactive `style`/`inert`
-    // below left a gap for a drawer that's ALREADY `opened` at mount (e.g. `two-drawers`,
-    // `fixed-in-viewport`): `MatDrawer`'s own task (which applies every SUBSEQUENT margins/
-    // inert update, per the doc comment above) can run BEFORE this one on initial mount,
-    // when `contentHostRef` is still unset, so its very first write has nothing to act on —
-    // confirmed empirically while porting this component. This task running for itself,
-    // using its own just-available `hostRef`, has no such ordering dependency.
+    // ALSO applies the current margins to itself here, synchronously in the same task —
+    // relying solely on the (correct, but SSR/resume-only) reactive `style` below left a gap
+    // for a drawer that's ALREADY `opened` at mount (e.g. `two-drawers`, `fixed-in-viewport`):
+    // `MatDrawer`'s own task (which applies every SUBSEQUENT margins update, per the doc
+    // comment above) can run BEFORE this one on initial mount, when `contentHostRef` is still
+    // unset, so its very first write has nothing to act on — confirmed empirically while
+    // porting this component. This task running for itself, using its own just-available
+    // `hostRef`, has no such ordering dependency.
     useVisibleTask$(() => {
       containerState.contentHostRef.value = hostRef.value;
       const el = hostRef.value;
@@ -61,15 +57,6 @@ function createContent(
       const m = computeContentMargins(containerState.registry.value);
       el.style.marginLeft = m.left != null ? `${m.left}px` : '';
       el.style.marginRight = m.right != null ? `${m.right}px` : '';
-      const shouldBeInert = isShowingBackdropForInert(
-        containerState.registry.value,
-        containerState.backdropOverride.value,
-      );
-      if (shouldBeInert) {
-        el.setAttribute('inert', 'true');
-      } else {
-        el.removeAttribute('inert');
-      }
     });
 
     // Reads the container's shared registry directly (same context both `MatDrawerContainer`
@@ -90,22 +77,6 @@ function createContent(
     const style: Record<string, string> = {};
     if (margins.left != null) style['margin-left'] = `${margins.left}px`;
     if (margins.right != null) style['margin-right'] = `${margins.right}px`;
-
-    // `inert="true"` (a literal string value, matching upstream's `element.setAttribute('inert',
-    // 'true')` — NOT the bare boolean-reflected `inert=""` a plain `true` would otherwise
-    // produce) only while a backdrop is genuinely showing. Applied ONLY imperatively — the mount
-    // task above, plus `MatDrawer`'s own registration task for subsequent updates (see
-    // drawer-state.ts's `contentHostRef` doc comment) — never as a declarative JSX prop:
-    // Qwik v2 added `inert` to its own hard-coded boolean-attribute list (`isBooleanAttr` in its
-    // core — same category it already treats `checked`/`disabled`/`required` as), so a
-    // declarative `inert={someTruthyValue}` prop now unconditionally coerces through
-    // `element.inert = true`'s own IDL reflection, which writes the bare `inert=""` form —
-    // permanently losing the literal `"true"` string this component specifically needs to match
-    // upstream's own imperative `setAttribute('inert', 'true')` call (confirmed live: a
-    // declarative `inert` prop here rendered `inert=""`, not `inert="true"`). This port used to
-    // ALSO derive an `inert` boolean here for exactly such a JSX prop (now removed along with it)
-    // — the reactive, SSR-correct re-derivation this comment used to describe is now entirely
-    // the two imperative tasks' job.
 
     const HostTag = hostTag as unknown as FunctionComponent<Record<string, unknown>>;
 

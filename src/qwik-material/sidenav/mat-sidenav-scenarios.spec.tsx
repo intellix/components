@@ -4,8 +4,8 @@
  *
  * Upstream is almost entirely TestBed component-rendering + fakeAsync
  * timer-flushing (the ~200ms `mat-drawer-transition` delay, the real
- * 400ms open/close CSS transition, the ~50ms `inert` delay) plus real
- * `offsetWidth` measurement and focus-trap/focus-restoration assertions —
+ * 400ms open/close CSS transition) plus real `offsetWidth` measurement and
+ * focus-trap/focus-restoration assertions —
  * this package's vitest can't reliably render/interact with real DOM
  * (`createDOM()` hangs; see `qwik-material/button-toggle`'s own
  * scenario-port comment for the same finding). Restructured:

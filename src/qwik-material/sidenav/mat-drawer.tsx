@@ -17,7 +17,6 @@ import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import {applyDrawerAutoFocus} from './focus-helpers';
 import {
   computeContentMargins,
-  isShowingBackdropForInert,
   MAT_DRAWER_CONTAINER_STATE,
   type MatDrawerMode,
   type MatDrawerPosition,
@@ -116,12 +115,6 @@ function createDrawer(
     // `undefined` means "the animation task hasn't run yet" — distinguishes a drawer that
     // starts `opened` from a later transition INTO opened (see the task below).
     const prevOpened = useSignal<boolean | undefined>(undefined);
-    // Mirrors `inertEligible`'s doc comment in drawer-state.ts — becomes `true` permanently the
-    // first time `opened` ACTUALLY transitions (not merely the first time this task happens to
-    // run again for an unrelated reason, e.g. `widthPx` changing once the initial
-    // `ResizeObserver` measurement lands — confirmed empirically to otherwise incorrectly
-    // flip this on that measurement alone, well before the drawer ever really toggles).
-    const inertEligible = useSignal(false);
 
     const position = props.position === 'end' ? 'end' : 'start';
     const mode = props.mode ?? 'over';
@@ -186,15 +179,9 @@ function createDrawer(
       const trackedDisableClose = track(() => props.disableClose ?? false);
       const trackedWidth = track(() => widthPx.value);
 
-      // Computed BEFORE the registry write below so `inertEligible` can be stored alongside
-      // this drawer's other registry fields — see that field's doc comment in drawer-state.ts.
       const isFirstRun = prevOpened.value === undefined;
       const wasOpen = prevOpened.value;
-      const openedActuallyChanged = !isFirstRun && isOpen !== wasOpen;
       prevOpened.value = isOpen;
-      if (openedActuallyChanged) {
-        inertEligible.value = true;
-      }
 
       // Immutable reassignment, not a mutation — see drawer-state.ts's doc comment on
       // `registry` for why this is required for `MatDrawerContent` (a cross-`<Slot>` consumer)
@@ -205,7 +192,6 @@ function createDrawer(
           position: trackedPosition,
           mode: trackedMode,
           opened: isOpen,
-          inertEligible: inertEligible.value,
           disableClose: trackedDisableClose,
           width: trackedWidth,
           hostRef,
@@ -249,23 +235,14 @@ function createDrawer(
           if (containerEl) containerEl.classList.toggle('mat-drawer-container-has-open', isOpen);
         }
 
-        // Content margins + `inert` — mirrors upstream's `updateContentMargins()` /
-        // `_drawerToggled()`. Recomputed from the FULL registry (already reflecting this
-        // drawer's own just-written entry above), so it stays correct with two drawers too.
+        // Content margins — mirrors upstream's `updateContentMargins()`. Recomputed from the
+        // FULL registry (already reflecting this drawer's own just-written entry above), so it
+        // stays correct with two drawers too.
         const contentEl = containerState.contentHostRef.value;
         if (contentEl) {
           const margins = computeContentMargins(containerState.registry.value);
           contentEl.style.marginLeft = margins.left != null ? `${margins.left}px` : '';
           contentEl.style.marginRight = margins.right != null ? `${margins.right}px` : '';
-          const shouldBeInert = isShowingBackdropForInert(
-            containerState.registry.value,
-            containerState.backdropOverride.value,
-          );
-          if (shouldBeInert) {
-            contentEl.setAttribute('inert', 'true');
-          } else {
-            contentEl.removeAttribute('inert');
-          }
         }
       }
 

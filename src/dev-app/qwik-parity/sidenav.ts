@@ -20,9 +20,10 @@ import {MatSidenavModule} from '@angular/material/sidenav';
 //  - Opening/closing a drawer after that point runs a real 400ms CSS transform transition, during
 //    which the drawer carries a transient `mat-drawer-animating` class; `openedChange` (and thus
 //    any `(opened)`/`(closed)` output) only fires once that transition's `transitionend` event
-//    lands. The content's `inert` attribute (only ever applied while a backdrop is actually
-//    showing) additionally lags that same event by a further ~50ms (`delay(50)` in
-//    `MatDrawerContent._drawerToggled`).
+//    lands.
+//  - At v21.2.14, `MatDrawerContent` never applies an `inert` attribute to itself (that's a
+//    newer-than-21.2.14 upstream feature — removed from the Qwik port during the v21.2.14
+//    rebaseline; see sidenav/SYNC.md).
 
 @Component({
   template: `
