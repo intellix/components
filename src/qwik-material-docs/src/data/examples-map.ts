@@ -22,7 +22,14 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-autocomplete': [{route: 'example', upstreamId: 'autocomplete-simple', pkg: 'autocomplete'}],
   'mat-badge': [{route: 'example', upstreamId: 'badge-overview', pkg: 'badge'}],
   'mat-bottom-sheet': [{route: 'example', upstreamId: 'bottom-sheet-overview', pkg: 'bottom-sheet'}],
-  'mat-button': [{route: 'example', upstreamId: 'button-overview', pkg: 'button'}],
+  'mat-button': [
+    {route: 'example', upstreamId: 'button-overview', pkg: 'button'},
+    {
+      route: 'button-disabled-interactive',
+      upstreamId: 'button-disabled-interactive',
+      pkg: 'button',
+    },
+  ],
   'mat-button-toggle': [{route: 'example', upstreamId: 'button-toggle-overview', pkg: 'button-toggle'}],
   'mat-card': [{route: 'example', upstreamId: 'card-overview', pkg: 'card'}],
   'mat-checkbox': [{route: 'example', upstreamId: 'checkbox-overview', pkg: 'checkbox'}],

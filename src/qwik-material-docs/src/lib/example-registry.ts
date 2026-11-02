@@ -11,6 +11,7 @@ import Ex_autocomplete_example from '@angular-community/qwik-material-examples/a
 import Ex_badge_example from '@angular-community/qwik-material-examples/badge/example';
 import Ex_bottom_sheet_example from '@angular-community/qwik-material-examples/bottom-sheet/example';
 import Ex_button_example from '@angular-community/qwik-material-examples/button/example';
+import Ex_button_button_disabled_interactive from '@angular-community/qwik-material-examples/button/button-disabled-interactive';
 import Ex_button_toggle_example from '@angular-community/qwik-material-examples/button-toggle/example';
 import Ex_card_example from '@angular-community/qwik-material-examples/card/example';
 import Ex_checkbox_example from '@angular-community/qwik-material-examples/checkbox/example';
@@ -96,6 +97,7 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'badge/example': Ex_badge_example,
   'bottom-sheet/example': Ex_bottom_sheet_example,
   'button/example': Ex_button_example,
+  'button/button-disabled-interactive': Ex_button_button_disabled_interactive,
   'button-toggle/example': Ex_button_toggle_example,
   'card/example': Ex_card_example,
   'checkbox/example': Ex_checkbox_example,
