@@ -30,6 +30,15 @@ import Ex_progress_bar_example from '@angular-community/qwik-material-examples/p
 import Ex_progress_spinner_example from '@angular-community/qwik-material-examples/progress-spinner/example';
 import Ex_radio_example from '@angular-community/qwik-material-examples/radio/example';
 import Ex_select_example from '@angular-community/qwik-material-examples/select/example';
+import Ex_select_value_binding from '@angular-community/qwik-material-examples/select/select-value-binding';
+import Ex_select_form from '@angular-community/qwik-material-examples/select/select-form';
+import Ex_select_hint_error from '@angular-community/qwik-material-examples/select/select-hint-error';
+import Ex_select_disabled from '@angular-community/qwik-material-examples/select/select-disabled';
+import Ex_select_reset from '@angular-community/qwik-material-examples/select/select-reset';
+import Ex_select_optgroup from '@angular-community/qwik-material-examples/select/select-optgroup';
+import Ex_select_multiple from '@angular-community/qwik-material-examples/select/select-multiple';
+import Ex_select_custom_trigger from '@angular-community/qwik-material-examples/select/select-custom-trigger';
+import Ex_select_panel_class from '@angular-community/qwik-material-examples/select/select-panel-class';
 import Ex_sidenav_example from '@angular-community/qwik-material-examples/sidenav/example';
 import Ex_slide_toggle_example from '@angular-community/qwik-material-examples/slide-toggle/example';
 import Ex_slider_example from '@angular-community/qwik-material-examples/slider/example';
@@ -40,6 +49,8 @@ import Ex_table_example from '@angular-community/qwik-material-examples/table/ex
 import Ex_tabs_example from '@angular-community/qwik-material-examples/tabs/example';
 import Ex_timepicker_example from '@angular-community/qwik-material-examples/timepicker/example';
 import Ex_toolbar_example from '@angular-community/qwik-material-examples/toolbar/example';
+import Ex_toolbar_simple from '@angular-community/qwik-material-examples/toolbar/toolbar-simple';
+import Ex_toolbar_multirow from '@angular-community/qwik-material-examples/toolbar/toolbar-multirow';
 import Ex_tooltip_example from '@angular-community/qwik-material-examples/tooltip/example';
 import Ex_tree_example from '@angular-community/qwik-material-examples/tree/example';
 
@@ -115,6 +126,15 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'progress-spinner/example': Ex_progress_spinner_example,
   'radio/example': Ex_radio_example,
   'select/example': Ex_select_example,
+  'select/select-value-binding': Ex_select_value_binding,
+  'select/select-form': Ex_select_form,
+  'select/select-hint-error': Ex_select_hint_error,
+  'select/select-disabled': Ex_select_disabled,
+  'select/select-reset': Ex_select_reset,
+  'select/select-optgroup': Ex_select_optgroup,
+  'select/select-multiple': Ex_select_multiple,
+  'select/select-custom-trigger': Ex_select_custom_trigger,
+  'select/select-panel-class': Ex_select_panel_class,
   'sidenav/example': Ex_sidenav_example,
   'slide-toggle/example': Ex_slide_toggle_example,
   'slider/example': Ex_slider_example,
@@ -125,6 +145,8 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'tabs/example': Ex_tabs_example,
   'timepicker/example': Ex_timepicker_example,
   'toolbar/example': Ex_toolbar_example,
+  'toolbar/toolbar-simple': Ex_toolbar_simple,
+  'toolbar/toolbar-multirow': Ex_toolbar_multirow,
   'tooltip/example': Ex_tooltip_example,
   'tree/example': Ex_tree_example,
 };
