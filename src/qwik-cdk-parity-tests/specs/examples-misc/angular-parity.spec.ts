@@ -90,17 +90,16 @@ const hoverActionButton: ParityStep = {
   },
 };
 
-/**
- * NOT exercised with an interaction step: `tooltip-manual`'s whole premise is upstream's
- * imperative `show()`/`hide()`/`toggle()` template-ref API, which this port's `useMatTooltip()`
- * doesn't expose at all (only `hostProps` — hover/focus/touch-driven). Clicking the example's
- * "show"/"hide"/"toggle" buttons is a documented no-op here (see tooltip-manual/index.tsx's own
- * header comment) vs. a real overlay open on Angular — an asymmetric overlay-container
- * presence/absence that this harness's generic retry-then-compare loop isn't a good fit for
- * (it polls expecting eventual convergence, not a stable, permanent count mismatch). The base,
- * no-interaction render below already covers everything this port CAN demonstrate; the gap
- * itself is documented in code and in the Tooltip overview's "Angular → Qwik notes".
- */
+// NOT exercised with an interaction step: `tooltip-manual`'s whole premise is upstream's
+// imperative `show()`/`hide()`/`toggle()` template-ref API, which this port's `useMatTooltip()`
+// doesn't expose at all (only `hostProps` — hover/focus/touch-driven). Clicking the example's
+// "show"/"hide"/"toggle" buttons is a documented no-op here (see tooltip-manual/index.tsx's own
+// header comment) vs. a real overlay open on Angular — an asymmetric overlay-container
+// presence/absence that this harness's generic retry-then-compare loop isn't a good fit for
+// (it polls expecting eventual convergence, not a stable, permanent count mismatch). The base,
+// no-interaction render below already covers everything this port CAN demonstrate; the gap
+// itself is documented in code and in the Tooltip overview's "Angular → Qwik notes".
+
 /**
  * Clicks a named trigger button and waits for the dialog to settle open. Mirrors
  * `specs/examples/angular-parity.spec.ts`'s own `openDialog` (generalized to a button name,
