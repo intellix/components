@@ -131,6 +131,18 @@ const openAutocompleteInRoot: ParityStep = {
   },
 };
 
+/** `autocomplete-optgroup`'s input has a `<mat-label>` but no placeholder, so the resting
+ *  floating label covers the input and Playwright's actionability check sees it intercept the
+ *  click (in Angular too). A real click there lands on the label, whose `for=` focuses the input,
+ *  and focus opens the panel — `force` clicks the same point without the topmost-element check. */
+const openAutocompleteUnderRestingLabel: ParityStep = {
+  name: 'click input under resting label (open)',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] input').click({force: true});
+    await page.waitForTimeout(150);
+  },
+};
+
 const EXAMPLE_STEPS: Record<
   string,
   {steps: ParityStep[]; rootSelector?: string; clockDate?: Date | number | string}[]
@@ -146,7 +158,7 @@ const EXAMPLE_STEPS: Record<
   'autocomplete-require-selection': [{steps: [openAutocompleteInRoot]}],
   'autocomplete-auto-active-first-option': [{steps: [openAutocompleteInRoot]}],
   'autocomplete-plain-input': [{steps: [openAutocompleteInRoot]}],
-  'autocomplete-optgroup': [{steps: [openAutocompleteInRoot]}],
+  'autocomplete-optgroup': [{steps: [openAutocompleteUnderRestingLabel]}],
   // form-field-error: no extra interaction — a typed-then-blurred field needing to wait out the
   // fill appearance's line-ripple transition (`specs/material-form-field/angular-parity.spec.ts`'s
   // own `waitForLineRippleSettled` pattern) was tried but consistently timed out waiting for the

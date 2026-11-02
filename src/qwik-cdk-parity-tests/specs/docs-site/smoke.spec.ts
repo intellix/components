@@ -33,7 +33,18 @@ const REFERENCE_COMPONENTS_WITH_LIVE_OVERVIEW_EXAMPLE = ['button', 'form-field',
 async function expectNoConsoleErrors(page: Page, url: string) {
   const errors: string[] = [];
   page.on('console', msg => {
-    if (msg.type() === 'error') errors.push(msg.text());
+    if (msg.type() !== 'error') return;
+    // Third-party subresources aren't the site's errors: tab-group-preserve-content's YouTube
+    // embed loads doubleclick ad scripts, which ad-filtering networks fail with a cert error.
+    const source = msg.location().url;
+    if (
+      msg.text().startsWith('Failed to load resource') &&
+      source &&
+      new URL(source).origin !== new URL(BASE_URL).origin
+    ) {
+      return;
+    }
+    errors.push(msg.text());
   });
   page.on('pageerror', err => errors.push(String(err)));
 
