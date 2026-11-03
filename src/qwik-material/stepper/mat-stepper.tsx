@@ -45,11 +45,11 @@ import {MAT_STEPPER_ACTIONS} from './stepper-actions';
  *
  * `content` is ALWAYS rendered, every step, regardless of selection — unlike
  * `MatTabDef.content`, which attaches/detaches lazily. Angular's own
- * stepper never detaches step content either (angular-parity.spec.ts note
+ * stepper never detaches `content` either (angular-parity.spec.ts note
  * 5: "Step content is never detached... only `[inert]` toggles" — there is
- * no `preserveContent`-style distinction for plain content), so there is
- * deliberately no lazy-attach gate here at all, and no `matStepContent`
- * equivalent (not exercised by any parity scenario; see SYNC.md).
+ * no `preserveContent`-style distinction for plain content). `lazyContent`
+ * is the one genuinely deferred slot — see its own doc comment below for
+ * `matStepContent`'s semantics.
  */
 export interface MatStepDef {
   /** `CdkStep.label` — a plain string label (`_stringLabel()` branch). */
@@ -58,8 +58,33 @@ export interface MatStepDef {
    *  branch) — takes priority over `label` when both are set, same as
    *  upstream's `step.stepLabel || step.label` binding. */
   labelTemplate?: JSXOutput;
-  /** The step's body content (`ng-content`). Required — every step has one. */
-  content: JSXOutput;
+  /** The step's EAGER body content (plain `ng-content` — everything a
+   *  `<mat-step>` consumer places directly as children, NOT wrapped in an
+   *  `<ng-template matStepContent>`). Always rendered, every step,
+   *  regardless of selection (see this interface's doc comment). Optional:
+   *  a step whose entire body is lazy (`lazyContent` only, no eager
+   *  children — e.g. upstream's `stepper-lazy-content` docs example, steps
+   *  1-2) renders nothing here. */
+  content?: JSXOutput;
+  /**
+   * `<ng-template matStepContent>` content (`MatStepContent`/
+   * `CdkStep._lazyContent`) — rendered ONLY once this step is first
+   * selected (`step.ts`'s `ngAfterContentInit`: `if (isSelected &&
+   * this._lazyContent && !this._portal) { this._portal = new
+   * TemplatePortal(...) }`), then KEPT forever — there is no matching
+   * detach when the step is later deselected; the attached `TemplatePortal`
+   * is never torn down (upstream has no `ngOnDestroy` cleanup for it
+   * either). Rendered immediately on the step that starts out selected
+   * (mirrors the subscription's own `startWith(this._stepper.selected ===
+   * this)`), not just on a later interactive selection. Appears AFTER
+   * `content` in the same content container — matches `step.html`'s
+   * `<ng-content/>` followed by `<ng-template [cdkPortalOutlet]="_portal">`.
+   * Rendered through the same `StepContent` reference-equality wrapper as
+   * `content` (see that component's doc comment) — safe without
+   * `cloneJsxForReuse` for the identical reason: each step's `lazyContent`
+   * object is ever embedded by exactly ONE `StepContent` instance, never
+   * twice. */
+  lazyContent?: JSXOutput;
   /** `CdkStep.stepControl` — a duck-typed `AbstractControl` snapshot. See
    *  `step-control.ts` for a small convenience hook that produces one. */
   stepControl?: StepControl;
@@ -111,6 +136,33 @@ export interface MatStepperProps {
   /** `MatStepper.disableRipple`. Threaded to every step header's
    *  `[matRippleDisabled]` (`mat-step-header.tsx`). */
   disableRipple?: boolean;
+  /**
+   * Overrides for the header icons (`<ng-template matStepperIcon="...">`,
+   * `MatStepperIcon`/`_iconOverrides`), keyed by `StepState` ('number' |
+   * 'edit' | 'done' | 'error' | a custom `step.state` string). When a key
+   * matches a step's resolved indicator state, its content REPLACES the
+   * default icon markup (the number span / done-or-edit visually-hidden
+   * label + `<MatIcon>`) entirely inside `.mat-step-icon-content` — see
+   * `mat-step-header.tsx`'s `iconOverride` prop.
+   *
+   * Upstream passes each override a `MatStepperIconContext` (`{index,
+   * active, optional}`) via `ngTemplateOutletContext` — a FRESH evaluation
+   * per step that reaches that state, since any number of steps can share
+   * one override. This port's `content`/`labelTemplate`/cell-style
+   * "data-array API" (see this module's and `qwik-material/table`'s own
+   * doc comments) has no synchronous way to re-invoke a per-occurrence
+   * render callback inside `MatStepper`'s own render (calling a
+   * `QRL<Function>` is always async — the same finding that rules out a
+   * per-row cell-render callback in `qwik-material/table`). So an override
+   * here is a single, STATIC `JSXOutput`, shared (cloned via
+   * `cloneJsxForReuse` at each embedding site, since more than one step can
+   * resolve to the same state in one render) across every step with that
+   * state — sufficient for every real-world use seen (material.angular.dev's
+   * own `stepper-states` example's overrides are both static `<mat-icon>`
+   * content, never referencing the context). No scenario needs `index`/
+   * `active`/`optional` inside an override; see SYNC.md for the full
+   * rationale and this port's resulting scope cut. */
+  stepperIcon?: Partial<Record<StepState, JSXOutput>>;
   /** M2-only theme color for every step, overridable per-step. Default 'primary'. */
   color?: 'primary' | 'accent' | 'warn';
   /** `MatStepper.animationDuration` (string|number, normalized to ms). */
@@ -205,6 +257,20 @@ export const MatStepper = component$<MatStepperProps>(props => {
     if (linear && selectedIndex > 0) {
       for (let i = 0; i < selectedIndex; i++) arr[i] = true;
     }
+    return arr;
+  });
+
+  // Mirrors `MatStep.ngAfterContentInit`'s lazy-content attach gate:
+  // `isSelected && this._lazyContent && !this._portal` — a one-way latch
+  // per step, flipped the first time it becomes selected (INCLUDING the
+  // very first render, if it starts out selected — mirrors the
+  // subscription's own `startWith(this._stepper.selected === this)`), never
+  // reset on later deselection. Only steps with `lazyContent` ever consult
+  // this (see `renderHeader`'s content-rendering sites below); harmless to
+  // seed for every step regardless.
+  const everSelectedStore = useStore<boolean[]>(() => {
+    const arr = new Array(stepCount).fill(false);
+    if (selectedIndex >= 0 && selectedIndex < stepCount) arr[selectedIndex] = true;
     return arr;
   });
 
@@ -403,6 +469,10 @@ export const MatStepper = component$<MatStepperProps>(props => {
     });
     if (!canMove) return;
 
+    // Latch this step's lazy content on, one-way, forever — see
+    // `everSelectedStore`'s doc comment above.
+    everSelectedStore[targetIndex] = true;
+
     focusIndexSig.value = targetIndex;
 
     // Toggle the transient animating class SYNCHRONOUSLY, in the same tick
@@ -574,6 +644,7 @@ export const MatStepper = component$<MatStepperProps>(props => {
         ariaLabel={s.ariaLabel}
         ariaLabelledby={s.ariaLabelledby}
         disableRipple={props.disableRipple ?? false}
+        iconOverride={props.stepperIcon?.[indicatorType]}
         onHeaderClick$={onHeaderClick$}
       />
     );
@@ -620,7 +691,10 @@ export const MatStepper = component$<MatStepperProps>(props => {
                   aria-labelledby={`${groupId.value}-label-${i}`}
                 >
                   <div class="mat-vertical-content">
-                    <StepContent content={s.content} />
+                    {s.content !== undefined && <StepContent content={s.content} />}
+                    {everSelectedStore[i] && s.lazyContent !== undefined && (
+                      <StepContent content={s.lazyContent} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -661,7 +735,10 @@ export const MatStepper = component$<MatStepperProps>(props => {
               ].join(' ')}
               inert={selectedIndex !== i || undefined}
             >
-              <StepContent content={s.content} />
+              {s.content !== undefined && <StepContent content={s.content} />}
+              {everSelectedStore[i] && s.lazyContent !== undefined && (
+                <StepContent content={s.lazyContent} />
+              )}
             </div>
           ))}
         </div>
