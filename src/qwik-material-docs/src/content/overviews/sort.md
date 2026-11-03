@@ -25,6 +25,19 @@ To prevent the user from clearing the sort state from an already sorted column, 
 `disableClear` on `<MatSort>` to affect all headers, or set `disableClear` on a specific
 `<MatSortHeader>`.
 
+#### Controlling the sort state programmatically
+
+`<MatSort>`'s `active`/`direction` props are LIVE: pass a signal-driven value and later changes
+update the headers' `aria-sort`/arrow classes immediately, matching upstream's `MatSortActive`/
+`MatSortDirection` input bindings. A programmatic change like this does NOT fire `onSortChange$`
+— mirrors upstream exactly (an Angular template rebind only runs change detection, never emits
+`sortChange`; only a user interacting with a header, via `MatSort.sort(sortable)` internally,
+does). To replicate upstream's `sort(sortable)` instance method (activate a column, or advance
+its cycle if already active, AND emit a change) from your own code, use the pure
+`computeNextSort(current, sortable, start, disableClear)` helper (re-exported from
+`@angular-community/qwik-material/sort`) to compute the next state, assign it to the signal
+feeding `active`/`direction`, and fire whatever change-notification you need yourself.
+
 #### Disabling sorting
 
 If you want to prevent the user from changing the sorting order of any column, pass `disabled`
