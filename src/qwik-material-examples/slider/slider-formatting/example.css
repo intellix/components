@@ -5,6 +5,6 @@
  * `mat-slider.mat-mdc-slider` (specificity parity with Angular's own `.mat-mdc-slider { width:
  * auto; }` component style, which a bare type selector loses to).
  */
-mat-slider.mat-mdc-slider {
+slider-formatting-example mat-slider.mat-mdc-slider {
   width: 300px;
 }

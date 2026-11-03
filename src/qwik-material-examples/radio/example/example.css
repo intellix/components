@@ -1,5 +1,5 @@
 /* Verbatim copy of
    src/components-examples/material/radio/radio-overview/radio-overview-example.css */
-.mat-mdc-radio-button ~ .mat-mdc-radio-button {
+radio-overview-example .mat-mdc-radio-button ~ .mat-mdc-radio-button {
   margin-left: 16px;
 }

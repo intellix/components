@@ -13,6 +13,6 @@
  * measures its native CSS-default (content-driven) width instead of 300px, which changes the
  * minimum-visible-fill `scaleX(...)` on the active track — a real, observable parity diff.
  */
-mat-slider.mat-mdc-slider {
+slider-overview-example mat-slider.mat-mdc-slider {
   width: 300px;
 }

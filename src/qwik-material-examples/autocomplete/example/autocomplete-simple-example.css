@@ -2,12 +2,12 @@
  * Copied verbatim from src/components-examples/material/autocomplete/autocomplete-simple/
  * autocomplete-simple-example.css.
  */
-.example-form {
+autocomplete-simple-example .example-form {
   min-width: 150px;
   max-width: 500px;
   width: 100%;
 }
 
-.example-full-width {
+autocomplete-simple-example .example-full-width {
   width: 100%;
 }

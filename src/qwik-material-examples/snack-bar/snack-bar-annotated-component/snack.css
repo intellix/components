@@ -2,6 +2,6 @@ snack-bar-annotated-component-example-snack {
   display: flex;
 }
 
-.example-pizza-party {
+snack-bar-annotated-component-example-snack .example-pizza-party {
   color: hotpink;
 }

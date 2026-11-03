@@ -1,10 +1,10 @@
 /* Verbatim copy of
    src/components-examples/material/card/card-overview/card-overview-example.css */
-.example-card {
+card-overview-example .example-card {
   max-width: 400px;
 }
 
-.example-header-image {
+card-overview-example .example-header-image {
   background-image: url('https://material.angular.dev/assets/img/examples/shiba1.jpg');
   background-size: cover;
 }

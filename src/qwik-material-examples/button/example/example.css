@@ -1,25 +1,25 @@
 /* Verbatim copy of
    src/components-examples/material/button/button-overview/button-overview-example.css */
-section {
+button-overview-example section {
   display: flex;
   align-items: center;
 }
 
-.example-label {
+button-overview-example .example-label {
   font-size: 14px;
   margin: 0 16px 0 8px;
   min-width: 120px;
 }
 
-.example-button-row {
+button-overview-example .example-button-row {
   max-width: 600px;
 }
 
-.example-button-row .mat-mdc-button-base {
+button-overview-example .example-button-row .mat-mdc-button-base {
   margin: 8px 8px 8px 0;
 }
 
-.example-flex-container {
+button-overview-example .example-flex-container {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;

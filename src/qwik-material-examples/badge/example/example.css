@@ -10,6 +10,6 @@ badge-overview-example {
   align-items: flex-start;
 }
 
-.demo-section + .demo-section {
+badge-overview-example .demo-section + .demo-section {
   margin-top: 16px;
 }

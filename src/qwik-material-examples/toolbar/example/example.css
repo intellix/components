@@ -1,5 +1,5 @@
 /* Verbatim copy of
    src/components-examples/material/toolbar/toolbar-overview/toolbar-overview-example.css */
-.example-spacer {
+toolbar-overview-example .example-spacer {
   flex: 1 1 auto;
 }

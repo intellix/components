@@ -1,9 +1,9 @@
-.example-form {
+autocomplete-filter-example .example-form {
   min-width: 150px;
   max-width: 500px;
   width: 100%;
 }
 
-.example-full-width {
+autocomplete-filter-example .example-full-width {
   width: 100%;
 }
