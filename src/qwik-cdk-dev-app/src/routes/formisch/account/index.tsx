@@ -39,7 +39,6 @@ import {
   matFieldErrors,
   matFieldState,
   matShouldShowError,
-  ngStatusClasses,
   useSyncDatepickerField,
   isoToDate,
 } from './formisch-bindings';
@@ -201,7 +200,6 @@ export default component$(() => {
                 </span>
                 <MatRadioGroup
                   aria-labelledby="contact-preference-label"
-                  class={ngStatusClasses(contactField)}
                   {...matRadioGroupBindings(contactField)}
                 >
                   {CONTACT_PREFERENCES.map(option => (
@@ -218,20 +216,13 @@ export default component$(() => {
               </div>
 
               <div class="formisch-demo__field">
-                <MatSlideToggle
-                  class={ngStatusClasses(newsletterField)}
-                  {...matSlideToggleBindings(newsletterField)}
-                >
+                <MatSlideToggle {...matSlideToggleBindings(newsletterField)}>
                   Send me the monthly newsletter
                 </MatSlideToggle>
               </div>
 
               <div class="formisch-demo__field">
-                <MatCheckbox
-                  required
-                  class={ngStatusClasses(termsField)}
-                  {...matCheckboxBindings(termsField)}
-                >
+                <MatCheckbox required {...matCheckboxBindings(termsField)}>
                   I agree to the terms and conditions
                 </MatCheckbox>
                 {matShouldShowError(termsField, form) && (

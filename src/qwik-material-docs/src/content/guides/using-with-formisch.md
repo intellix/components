@@ -46,9 +46,17 @@ different wiring:
   Formisch's `field.props` wants to register. Spread `field.props`, adapted to this port's
   slightly different handler signatures (an extra live-element argument; Formisch's own
   `onFocus$` / `onBlur$` take none, which is harmless since the extra argument is simply ignored).
-- **Custom controls** (`MatSelect`, `MatRadioGroup`, `MatCheckbox`, `MatSlideToggle` — none of
-  which expose a native element to register) drive Formisch via `field.onInput(value)` instead —
-  Formisch's own documented pattern for a custom control.
+- **Custom controls** (`MatSelect`, `MatRadioGroup`, `MatCheckbox`, `MatSlideToggle`,
+  `MatButtonToggleGroup` — none of which expose a native element to register) drive Formisch via
+  `field.onInput(value)` instead — Formisch's own documented pattern for a custom control. All
+  five also accept `formBound` / `touched` / `dirty` / `invalid` (the exact same contract
+  `MatInput`/`MatSelect` use) and an `onTouched$` callback — wire those too, the same way the
+  worked example below does for `MatInput`, so the host picks up `ng-touched`/`ng-untouched`,
+  `ng-pristine`/`ng-dirty`, `ng-valid`/`ng-invalid` and a form library finds out when the control
+  is blurred (or, for `MatButtonToggleGroup` specifically, when a click actually changes the
+  selection — see that control's own overview page for the exact, click-driven, not blur-driven,
+  timing). Call `field.props.onFocus$()` for `onTouched$` (Formisch's own "just mark touched"
+  primitive — there is no dedicated "mark touched without changing the value" method).
 
 ```tsx
 import {useForm$, useField, Form} from '@formisch/qwik';
