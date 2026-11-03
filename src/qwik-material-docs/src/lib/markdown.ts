@@ -53,9 +53,36 @@ export async function highlightCode(code: string, lang: string): Promise<string>
   });
 }
 
-async function renderMarkdownChunk(markdown: string): Promise<string> {
+/** `## Angular → Qwik notes` -> `angular-qwik-notes`: the fragment the overviews link to. */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .trim()
+    .replace(/[\s-]+/g, '-');
+}
+
+/** Gives every heading an `id` so `#fragment` links (and links shared from outside) land on it.
+ *  `usedIds` spans the whole document, since it's rendered in chunks split on example markers. */
+function addHeadingIds(md: MarkdownIt, usedIds: Set<string>) {
+  md.core.ruler.push('heading_ids', state => {
+    const tokens = state.tokens;
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].type !== 'heading_open' || tokens[i].attrGet('id')) continue;
+      const base = slugify(tokens[i + 1].children?.map(t => t.content).join('') ?? '');
+      if (!base) continue;
+      let id = base;
+      for (let n = 1; usedIds.has(id); n++) id = `${base}-${n}`;
+      usedIds.add(id);
+      tokens[i].attrSet('id', id);
+    }
+  });
+}
+
+async function renderMarkdownChunk(markdown: string, usedIds: Set<string>): Promise<string> {
   const highlighter = await getHighlighter();
   const md = new MarkdownIt({html: true, linkify: true, typographer: false});
+  addHeadingIds(md, usedIds);
   md.options.highlight = (code: string, lang: string) => {
     const resolved = LANG_ALIASES[lang] ?? lang;
     const loaded = highlighter.getLoadedLanguages();
@@ -75,11 +102,12 @@ export async function renderContent(markdown: string): Promise<ContentSegment[]>
   const parts = markdown.split(EXAMPLE_MARKER);
   // String.split with a capturing global regex returns [text, captured, text, captured, ..., text].
   const segments: ContentSegment[] = [];
+  const usedIds = new Set<string>();
   for (let i = 0; i < parts.length; i++) {
     if (i % 2 === 0) {
       const chunk = parts[i];
       if (chunk.trim().length === 0) continue;
-      segments.push({type: 'html', html: await renderMarkdownChunk(chunk)});
+      segments.push({type: 'html', html: await renderMarkdownChunk(chunk, usedIds)});
     } else {
       segments.push({type: 'example', id: parts[i]});
     }

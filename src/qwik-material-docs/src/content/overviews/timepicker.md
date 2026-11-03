@@ -112,7 +112,7 @@ containing `<MatFormField>` by default; outside one, set `ariaLabel`/`ariaLabell
   the usage is form-bound: `formBound` (literal `true`), `value`
   (`formatTimeForDisplay(picker.value.value) || undefined`), and `disabled` must all be passed so
   `<MatFormField>`'s *static* introspection of the control's props sees the right values at first
-  render — see [Form Field → Angular → Qwik notes](/components/form-field/overview/#angular--qwik-notes).
+  render — see [Form Field → Angular → Qwik notes](/components/form-field/overview/#angular-qwik-notes).
 - **No `onTouched$`/`onDirty$` props on `<MatTimepickerInput>`** — the picker tracks
   `touched`/`dirty` internally (`picker.touched`/`picker.dirty`), read directly rather than via a
   callback.

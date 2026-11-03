@@ -98,7 +98,7 @@ calendar navigation past them — for example, to allow only weekdays.
 
 Read `picker.parseError`/`minError`/`maxError`/`filterError` signals directly to decide what to
 show — there's no bundled `ErrorStateMatcher`/validator-object equivalent (see
-[Angular → Qwik notes](#angular--qwik-notes)).
+[Angular → Qwik notes](#angular-qwik-notes)).
 
 ### Input and change events
 

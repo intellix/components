@@ -17,7 +17,7 @@ Most native `<input>`/`<textarea>` attributes are available as plain props on `<
 itself accepts works (`color`, `date`, `datetime-local`, `email`, `month`, `number`, `password`,
 `search`, `tel`, `text`, `time`, `url`, `week`, …). Unlike upstream, this port does no dev-mode
 validation of `type` (no equivalent of `getMatInputUnsupportedTypeError` — see
-[Angular → Qwik notes](#angular--qwik-notes)), so there's no restricted list to consult.
+[Angular → Qwik notes](#angular-qwik-notes)), so there's no restricted list to consult.
 
 ### Form field features
 

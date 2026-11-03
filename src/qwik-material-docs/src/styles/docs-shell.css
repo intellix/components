@@ -432,6 +432,24 @@ pre.docs-code {
   line-height: 1.5;
 }
 
+/* Keep `#fragment` targets clear of the sticky header. */
+.docs-prose :is(h1, h2, h3, h4, h5, h6)[id] {
+  scroll-margin-top: calc(var(--docs-toolbar-height) + 16px);
+}
+
+/* Shiki renders with `defaultColor: false`, so it only emits `--shiki-light`/`--shiki-dark`
+   variables — apply them per color scheme. The block sits on a surface container rather than
+   the themes' own near-white/near-black backgrounds so it reads as a panel against the page. */
+pre.shiki {
+  background-color: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+}
+
+pre.shiki,
+pre.shiki span {
+  color: light-dark(var(--shiki-light), var(--shiki-dark));
+}
+
 /* ---------- Example embed ---------- */
 
 .docs-example {
@@ -490,6 +508,7 @@ pre.docs-code {
 
 .docs-example-source pre {
   margin: 0;
+  border: 0;
   border-radius: 0;
   max-height: 480px;
 }

@@ -8,7 +8,7 @@ The autocomplete is a normal text input enhanced by a panel of suggested options
 prop — but, unlike `<MatSelect>`, `options` **must be a `Signal`** (`options={filteredFruits}`,
 never `options={filteredFruits.value}`), because the option list genuinely needs to change after
 mount (re-filtered on every keystroke) while `<MatFormField>` only ever reads its `control` prop
-once — see [Angular → Qwik notes](#angular--qwik-notes).
+once — see [Angular → Qwik notes](#angular-qwik-notes).
 
 ```tsx
 const value = useSignal('');
@@ -108,7 +108,7 @@ hides it, at the cost of making selected items harder to identify visually.
 ## Angular → Qwik notes
 
 - **Options are data, not projected content** — same deviation as
-  [`<MatSelect>`](/components/select/overview/#angular--qwik-notes), via its own
+  [`<MatSelect>`](/components/select/overview/#angular-qwik-notes), via its own
   `MatAutocompleteOptionDef`/`MatAutocompleteGroupDef` shapes.
 - **`options` must be the `Signal` itself, not `.value`.** Unlike `<MatSelect>`'s `options` (read
   once), this one has to stay reactive after mount — every example here refilters on every
