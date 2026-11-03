@@ -28,6 +28,7 @@
 import {describe, it, expect} from 'vitest';
 import {
   MAT_BUTTON_TOGGLE_CONFIG,
+  MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS,
   MAT_BUTTON_TOGGLE_GROUP_STATE,
   MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS,
   MatButtonToggleGroup,
@@ -50,7 +51,14 @@ describe('MatButtonToggle surface — sanity', () => {
     expect(cfg).toBeDefined();
   });
 
-  it('MAT_BUTTON_TOGGLE_GROUP_STATE carries expected id + DEFAULTS has all 9 fields', () => {
+  it('MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS mirrors upstream MAT_BUTTON_TOGGLE_DEFAULT_OPTIONS (both indicators shown by default)', () => {
+    expect(MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS).toEqual({
+      hideSingleSelectionIndicator: false,
+      hideMultipleSelectionIndicator: false,
+    });
+  });
+
+  it('MAT_BUTTON_TOGGLE_GROUP_STATE carries expected id + DEFAULTS has all 11 fields', () => {
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE.id).toBe('qwik-material/button-toggle-group-state');
     expect(MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS).toEqual({
       mode: 'single',
@@ -58,6 +66,8 @@ describe('MatButtonToggle surface — sanity', () => {
       values: [],
       disabled: false,
       disableRipple: false,
+      hideSingleSelectionIndicator: false,
+      hideMultipleSelectionIndicator: false,
       name: '',
       onToggle: MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle,
       standalone: true,
@@ -93,9 +103,11 @@ describe('MatButtonToggle surface — sanity', () => {
       'aria-describedby': 'style-desc',
       class: 'my-group',
       id: 'style-group',
+      hideSingleSelectionIndicator: true,
     };
     expect(props.value).toBe('bold');
     expect(props.multiple).toBe(false);
+    expect(props.hideSingleSelectionIndicator).toBe(true);
   });
 
   it('MatButtonToggleGroupProps accepts multi-mode surface + MatButtonToggleProps accepts full surface', () => {
@@ -105,6 +117,7 @@ describe('MatButtonToggle surface — sanity', () => {
       onValuesChange$: MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS.onToggle as any,
       disabled: true,
       name: 'perms',
+      hideMultipleSelectionIndicator: true,
     };
     const toggleProps: MatButtonToggleProps = {
       value: 'bold',
@@ -132,6 +145,7 @@ describe.skip('MatButtonToggle DOM-rendered scenarios — verified via Playwrigh
   it("name on group: single-select mode mirrors group.name (auto-generated via the id generator when omitted) onto every inner <button>'s `name` attribute; multi-select/standalone use the toggle's own `name` prop or omit it. No hidden <input> is ever rendered — upstream has none", () => {});
   it('FocusMonitor: focusing a toggle via Tab sets cdk-focused + cdk-keyboard-focused on the outer host; mouse-driven focus sets cdk-mouse-focused instead; blur clears all of them', () => {});
   it('Grouped toggles (single AND multi mode) render a .mat-button-toggle-checkbox-wrapper > <mat-pseudo-checkbox appearance="minimal" state="checked"> (state is always "checked" — visibility is CSS-driven by the ancestor .mat-button-toggle-checked, not the pseudo-checkbox\'s own state); standalone toggles render neither', () => {});
+  it('hideSingleSelectionIndicator (single-mode group) / hideMultipleSelectionIndicator (multi-mode group) suppress the .mat-button-toggle-checkbox-wrapper entirely; a single-mode group only reads hideSingleSelectionIndicator (hideMultipleSelectionIndicator is ignored) and vice versa — see hide-selection-indicator.spec.ts', () => {});
   it('Every toggle renders a .mat-button-toggle-focus-overlay span and a matripple .mat-ripple.mat-button-toggle-ripple span as the last two host children', () => {});
 });
 

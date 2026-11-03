@@ -9,7 +9,11 @@ import {
   type QRL,
 } from '@qwik.dev/core';
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
-import {MAT_BUTTON_TOGGLE_CONFIG, type MatButtonToggleConfig} from './button-toggle-config';
+import {
+  MAT_BUTTON_TOGGLE_CONFIG,
+  MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS,
+  type MatButtonToggleConfig,
+} from './button-toggle-config';
 import {
   MAT_BUTTON_TOGGLE_GROUP_STATE,
   type MatButtonToggleGroupMode,
@@ -44,6 +48,14 @@ export interface MatButtonToggleGroupProps {
   disabled?: boolean;
   /** Disables ripples for every child; OR'd with the child's own `disableRipple`. */
   disableRipple?: boolean;
+  /** Mirrors `[hideSingleSelectionIndicator]`. Falls back to
+   *  `MAT_BUTTON_TOGGLE_CONFIG.hideSingleSelectionIndicator`, then upstream's own
+   *  `false` default. Only meaningful when `multiple` is falsy. */
+  hideSingleSelectionIndicator?: boolean;
+  /** Mirrors `[hideMultipleSelectionIndicator]`. Falls back to
+   *  `MAT_BUTTON_TOGGLE_CONFIG.hideMultipleSelectionIndicator`, then upstream's own
+   *  `false` default. Only meaningful when `multiple` is truthy. */
+  hideMultipleSelectionIndicator?: boolean;
   /**
    * Form-control name — mirrored onto the inner `<button>` of every
    * single-select child (upstream always has *some* name here; when omitted,
@@ -84,11 +96,9 @@ function findNextEnabledIndex(
 }
 
 export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props => {
-  // Read config for family-shape consistency, even though it currently has
-  // no fields to resolve. DEFAULTS fallback is REQUIRED (Progress Bar /
-  // Progress Spinner post-mortem — bare useContext throws Code 13 when
-  // rendered outside <QwikMaterialProvider>).
-  useContext(MAT_BUTTON_TOGGLE_CONFIG, CONFIG_DEFAULTS);
+  // DEFAULTS fallback is REQUIRED (Progress Bar / Progress Spinner post-mortem —
+  // bare useContext throws Code 13 when rendered outside <QwikMaterialProvider>).
+  const config = useContext(MAT_BUTTON_TOGGLE_CONFIG, CONFIG_DEFAULTS);
 
   const idGen = useIdGenerator();
   // Computed once, lazily — mirrors upstream's `_name = inject(_IdGenerator)
@@ -104,6 +114,14 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
   const name = props.name ?? autoName.value;
   const groupDisabled = props.disabled ?? false;
   const groupDisableRipple = props.disableRipple ?? false;
+  const hideSingleSelectionIndicator =
+    props.hideSingleSelectionIndicator ??
+    config.hideSingleSelectionIndicator ??
+    MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS.hideSingleSelectionIndicator;
+  const hideMultipleSelectionIndicator =
+    props.hideMultipleSelectionIndicator ??
+    config.hideMultipleSelectionIndicator ??
+    MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS.hideMultipleSelectionIndicator;
 
   // Multi-select selection this group last emitted but the consumer has not
   // yet fed back as `values`. Toggles fired before that round-trip re-renders
@@ -232,6 +250,8 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
     values: mode === 'multi' ? (propValues ?? []) : [],
     disabled: groupDisabled,
     disableRipple: groupDisableRipple,
+    hideSingleSelectionIndicator,
+    hideMultipleSelectionIndicator,
     name,
     onToggle,
     standalone: false,
