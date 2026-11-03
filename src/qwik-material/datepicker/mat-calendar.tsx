@@ -77,11 +77,17 @@ import {
 } from '@qwik.dev/core';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
+import {useDateLocale} from '../core/datetime/use-date-adapter';
 import {MatCalendarHeader} from './mat-calendar-header';
 import {MatMonthView} from './mat-month-view';
 import {MatYearView} from './mat-year-view';
 import {MatMultiYearView} from './mat-multi-year-view';
-import {periodDelta, type CalendarView, type SelectionValue} from './calendar-math';
+import {
+  periodDelta,
+  type CalendarView,
+  type MatCalendarCellClassFunction,
+  type SelectionValue,
+} from './calendar-math';
 
 /** This component's own focus-move origins — a NARROWER type than qwik-cdk's own `FocusOrigin`
  *  (`'mouse' | 'touch' | 'keyboard' | 'program' | null`): every focus move this component itself
@@ -97,6 +103,22 @@ export interface MatCalendarProps<D = unknown> {
   minDate?: D | null;
   maxDate?: D | null;
   dateFilter?: QRL<(date: D) => boolean>;
+  /** Mirrors `[dateClass]` — see `mat-month-view.tsx`'s identical prop doc comment. Forwarded
+   *  as-is to whichever of month/year/multi-year view is current. */
+  dateClass?: QRL<MatCalendarCellClassFunction<D>>;
+  /** Overrides the `MAT_DATE_LOCALE` context — needed because this calendar, when opened from
+   *  a popup (`<MatDatepicker>`/`<MatDateRangePicker>`), is rendered inside an OVERLAY whose
+   *  Qwik component tree is NOT a descendant of wherever the owning `<input matDatepicker>`'s
+   *  own `<QwikMaterialProvider>` sits (confirmed live: `MatCalendar`'s own `useDateLocale()`
+   *  context read, with no override, resolved the WRONG — app-root-level or default — locale
+   *  for a popup opened from a per-subtree provider). `datepicker-runtime.ts` passes
+   *  `picker._locale.value` here (resolved correctly, at `useMatDatepicker()`'s own hook-call
+   *  site, which — unlike the popup's eventual overlay content — genuinely IS a descendant of
+   *  whatever provider wraps the consumer). Omitted/`undefined` for the `inline-calendar`
+   *  scenario's bare `<mat-calendar>` (no picker, no popup): THAT usage is a plain descendant
+   *  of the app's own provider tree, so this component's own `useDateLocale()` fallback below
+   *  is correct for it. See `datepicker/SYNC.md`. */
+  locale?: string;
   isRtl?: boolean;
   /** Range-only — supplied by the range runtime; `null`/omitted for a single-date calendar. */
   previewStart?: number | null;
@@ -138,6 +160,17 @@ const CalendarContent = component$<{focusOrigin: Signal<CalendarFocusOrigin>}>(p
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 
 export const MatCalendar = component$<MatCalendarProps>(props => {
+  // `props.locale` (set by `datepicker-runtime.ts` for the popup case — see this prop's own doc
+  // comment for why that case can't rely on THIS component's own `useDateLocale()` call) takes
+  // priority; otherwise resolved here directly (render-legal; correct for the standalone
+  // `inline-calendar` case, a plain descendant of the app's own provider tree) — app-wide or per
+  // subtree (`QwikMaterialProvider`'s `matDateLocale` prop / `MAT_DATE_LOCALE` context), reactive
+  // to a runtime locale switch for THAT case (see `datepicker/SYNC.md`). Only LABEL computation
+  // (month/weekday/year names, the header's period text) needs this — arithmetic
+  // (today()/addCalendarDays/etc.) stays on the hardcoded `DEFAULT_DATE_ADAPTER` singleton
+  // below, since locale never affects it.
+  const contextLocale = useDateLocale();
+  const locale = props.locale ?? contextLocale.value;
   const activeDate = useSignal<unknown>(() => props.startAt ?? adapter.today());
   const currentView = useSignal<CalendarView>(() => props.startView ?? 'month');
   const calendarRef = useSignal<HTMLElement>();
@@ -260,6 +293,7 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
         activeDate={activeDate.value}
         minDate={minDate}
         maxDate={maxDate}
+        locale={locale}
         onPeriodClick$={onPeriodClick$}
         onPrevious$={onPrevious$}
         onNext$={onNext$}
@@ -272,6 +306,8 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
             minDate={minDate}
             maxDate={maxDate}
             dateFilter={props.dateFilter}
+            dateClass={props.dateClass}
+            locale={locale}
             previewStart={props.previewStart ?? null}
             previewEnd={props.previewEnd ?? null}
             startDateAccessibleName={props.startDateAccessibleName}
@@ -289,6 +325,8 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
             minDate={minDate}
             maxDate={maxDate}
             dateFilter={props.dateFilter}
+            dateClass={props.dateClass}
+            locale={locale}
             isRtl={props.isRtl}
             onActiveDateChange$={onActiveDateChange$}
             onMonthSelected$={onMonthSelectedInYearView$}
@@ -301,6 +339,8 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
             minDate={minDate}
             maxDate={maxDate}
             dateFilter={props.dateFilter}
+            dateClass={props.dateClass}
+            locale={locale}
             isRtl={props.isRtl}
             onActiveDateChange$={onActiveDateChange$}
             onYearSelected$={onYearSelectedInMultiYearView$}

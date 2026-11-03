@@ -12,11 +12,17 @@
  * two components' own `$()` handlers are the only real QRL boundaries — they just call these
  * plain functions directly.
  *
- * Interactive/runtime date handling always uses `DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS`
- * directly (plain module-level imports, never a `useContext()`-based hook) — see
- * `core/datetime/use-date-adapter.ts`'s doc comment for why a hook can't be called from inside a
- * `$()` handler, and why a plain singleton sidesteps it cleanly for the one locale/format bag
- * this project ever needs.
+ * Interactive/runtime date handling that doesn't need a CONFIGURABLE adapter (building the
+ * option list, the cache key, keyboard navigation math — all arithmetic/formatting that no
+ * scenario ever needs a non-default locale or a custom adapter for) still uses
+ * `DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS` directly (plain module-level imports, never a
+ * `useContext()`-based hook — hooks can't be called from inside a `$()` handler). Parsing/
+ * formatting the connected input's TEXT (`handleTimepickerInput`/`handleTimepickerBlur`/
+ * `selectTimepickerOption`'s reformat) — the one place an app-supplied custom adapter actually
+ * matters for a timepicker — goes through `resolveAdapterForTimepicker()` instead, which
+ * resolves whatever `DateAdapter`/`MatDateFormats` the owning `useMatTimepicker()` handle was
+ * configured with (app-wide or per subtree — see `use-mat-timepicker.ts` and
+ * `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE / dateClass" section).
  */
 import {noSerialize, type Signal} from '@qwik.dev/core';
 import {isBrowser} from '@qwik.dev/core/build';
@@ -39,8 +45,10 @@ import {
 } from '@angular-community/qwik-cdk/overlay';
 import {createListKeyManager, type ListKeyManager} from '@angular-community/qwik-cdk/a11y';
 import type {DateAdapter} from '../core/datetime/date-adapter';
+import type {MatDateFormats} from '../core/datetime/date-formats';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';
+import {resolveDateAdapter} from '../core/datetime/use-date-adapter';
 import {generateOptions, type MatTimepickerOption} from './timepicker-util';
 import {MatTimepickerPanel} from './mat-timepicker-panel';
 import type {
@@ -317,16 +325,38 @@ export function closeTimepickerPanel<D>(
   picker.onOpenedChange$?.(false);
 }
 
+/** Resolves the `DateAdapter`/`MatDateFormats` a timepicker handle was configured with
+ *  (app-wide or per subtree — see `use-mat-timepicker.ts`'s `_dateAdapterFactory`/`_dateFormats`/
+ *  `_locale` doc comments) into a live adapter instance, fresh, every call — mirrors
+ *  `datepicker-runtime.ts`'s identical `resolveAdapterForPicker()`; never cache the result past
+ *  the current async call. */
+async function resolveAdapterForTimepicker<D>(
+  picker: MatTimepickerHandle<D>,
+): Promise<{adapter: DateAdapter<D>; formats: MatDateFormats}> {
+  const a = await resolveDateAdapter(picker._dateAdapterFactory, picker._locale.value);
+  return {adapter: a, formats: picker._dateFormats};
+}
+
+/** Formats `value` for display with the GIVEN adapter/formats — shared by every custom-adapter-
+ *  aware call site below, and exported so `mat-timepicker-input.tsx` can compute its own
+ *  SSR-correct, ADAPTER-AWARE initial `.value` snapshot (mirrors `datepicker-runtime.ts`'s
+ *  identically-shaped `formatDateWithAdapter()`, and its own usage in `mat-datepicker-input.tsx`). */
+export function formatTimeWithAdapter<D>(a: DateAdapter<D>, f: MatDateFormats, value: D | null): string {
+  const valid = value != null && a.isValid(value) ? value : null;
+  return valid == null ? '' : a.format(valid, f.display.timeInput);
+}
+
 /** Writes the formatted display string for `value` directly onto the connected `<input>`'s DOM
  *  `.value` property — mirrors `MatTimepickerInput._formatValue()`. A direct ref write, not a
  *  reactive JSX prop, matching `qwik-material/input`'s own established "value via ref" pattern
- *  (see `mat-input.tsx`'s doc comment on its `value` prop). */
-function formatInputValue<D>(picker: MatTimepickerHandle<D>, value: D | null): void {
+ *  (see `mat-input.tsx`'s doc comment on its `value` prop). Async: goes through whichever
+ *  `DateAdapter`/`MatDateFormats` this picker was configured with — see
+ *  `resolveAdapterForTimepicker()`. */
+async function formatInputValue<D>(picker: MatTimepickerHandle<D>, value: D | null): Promise<void> {
   const el = picker._inputRef.value;
   if (!el) return;
-  const a = adapter as unknown as DateAdapter<D>;
-  const valid = value != null && a.isValid(value) ? value : null;
-  el.value = valid == null ? '' : a.format(valid, formats.display.timeInput);
+  const resolved = await resolveAdapterForTimepicker(picker);
+  el.value = formatTimeWithAdapter(resolved.adapter, resolved.formats, value);
 }
 
 /** Mirrors `_isValid()`. */
@@ -378,25 +408,35 @@ function assignUserSelection<D>(picker: MatTimepickerHandle<D>, selection: D | n
   picker.onValueChange$?.(toAssign);
 }
 
-/** Mirrors `MatTimepicker._selectValue()` + `MatTimepickerInput.timepickerValueAssigned()`. */
-export function selectTimepickerOption<D>(
+/** Mirrors `MatTimepicker._selectValue()` + `MatTimepickerInput.timepickerValueAssigned()`.
+ *  Async — see `formatInputValue()`'s doc comment. */
+export async function selectTimepickerOption<D>(
   picker: MatTimepickerHandle<D>,
   option: MatTimepickerRenderOption<D>,
   animationsDisabled: boolean,
-): void {
+): Promise<void> {
   closeTimepickerPanel(picker, animationsDisabled);
   assignUserSelection(picker, option.value);
-  formatInputValue(picker, option.value);
+  await formatInputValue(picker, option.value);
   picker._inputRef.value?.focus();
 }
 
-/** Mirrors `MatTimepickerInput._handleInput()`. */
-export function handleTimepickerInput<D>(event: Event, picker: MatTimepickerHandle<D>): void {
-  const a = adapter as unknown as DateAdapter<D>;
+/** Mirrors `MatTimepickerInput._handleInput()`. Async — `parseTime()` goes through whichever
+ *  `DateAdapter`/`MatDateFormats` this picker was configured with (an app-supplied custom
+ *  adapter's whole point), resolved fresh via `resolveAdapterForTimepicker()` — a `QRL` factory,
+ *  never a stored live instance, so this resolves correctly even on the FIRST invocation after
+ *  a real SSR→resume. `sameTime` (arithmetic only, never locale/format-dependent) stays on the
+ *  hardcoded module singleton. */
+export async function handleTimepickerInput<D>(
+  event: Event,
+  picker: MatTimepickerHandle<D>,
+): Promise<void> {
+  const arithmetic = adapter as unknown as DateAdapter<D>;
   const text = (event.target as HTMLInputElement).value;
-  const date = a.parseTime(text, formats.parse.timeInput);
+  const {adapter: a, formats: f} = await resolveAdapterForTimepicker(picker);
+  const date = a.parseTime(text, f.parse.timeInput);
   const currentValue = picker.value.value;
-  const hasChanged = !a.sameTime(date, currentValue);
+  const hasChanged = !arithmetic.sameTime(date, currentValue);
 
   if (!date || hasChanged || (text && currentValue == null)) {
     assignUserSelection(picker, date);
@@ -408,12 +448,13 @@ export function handleTimepickerInput<D>(event: Event, picker: MatTimepickerHand
 /** Mirrors `MatTimepickerInput._handleBlur()`: reformats a valid value on blur, and — matching
  *  `if (!this.timepicker().isOpen()) this._onTouched?.();` — marks the implicit control touched
  *  when blurring while the panel was never opened (the "closed by selecting/Escape/outside
- *  click" path already marks it via `closeTimepickerPanel`). */
-export function handleTimepickerBlur<D>(picker: MatTimepickerHandle<D>): void {
+ *  click" path already marks it via `closeTimepickerPanel`). Async — see `formatInputValue()`'s
+ *  doc comment. */
+export async function handleTimepickerBlur<D>(picker: MatTimepickerHandle<D>): Promise<void> {
   const a = adapter as unknown as DateAdapter<D>;
   const value = picker.value.value;
   if (value != null && a.isValid(value)) {
-    formatInputValue(picker, value);
+    await formatInputValue(picker, value);
   }
   if (!picker.isOpen.value) {
     picker.touched.value = true;

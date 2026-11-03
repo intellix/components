@@ -6,14 +6,44 @@
  * `mat-month-view.tsx`/`mat-year-view.tsx`/`mat-multi-year-view.tsx`/`mat-calendar-body.tsx`.
  *
  * Scope cuts vs. upstream (documented in SYNC.md): no comparison-range cells/bridges, no
- * drag-to-select, no per-date custom CSS classes (`dateClass`) — none of this port's 13
- * scenarios exercise them.
+ * drag-to-select — none of this port's scenarios exercise them. `dateClass` (per-date custom
+ * CSS classes) WAS a scope cut but is now ported (2026-11-03) — see `normalizeCellCssClasses()`
+ * below and `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE /
+ * dateClass" section.
  */
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import type {MatDateFormats} from '../core/datetime/date-formats';
 import type {DateRange} from './date-range-selection';
 
 const DAYS_PER_WEEK = 7;
+
+/** Mirrors upstream `MatCalendarCellCssClasses` — what a `dateClass` callback may return. */
+export type MatCalendarCellCssClasses = string | string[] | Set<string> | Record<string, unknown>;
+
+/** Mirrors upstream `MatCalendarCellClassFunction<D>` (`calendar-body.ts`) — the `[dateClass]`
+ *  input's shape: given a cell's date and which view it belongs to, returns extra CSS class(es)
+ *  for that cell's `<button class="mat-calendar-body-cell">` element. */
+export type MatCalendarCellClassFunction<D> = (
+  date: D,
+  view: 'month' | 'year' | 'multi-year',
+) => MatCalendarCellCssClasses;
+
+/** Normalizes any of the four `MatCalendarCellCssClasses` shapes into a plain class-name array
+ *  (or `undefined` for "no extra classes") — mirrors how Angular's `[class]` binding accepts a
+ *  string/array/Set/truthy-keyed-record uniformly. */
+export function normalizeCellCssClasses(
+  value: MatCalendarCellCssClasses | undefined,
+): string[] | undefined {
+  if (value == null) return undefined;
+  if (typeof value === 'string') {
+    const classes = value.trim().split(/\s+/).filter(Boolean);
+    return classes.length ? classes : undefined;
+  }
+  if (Array.isArray(value)) return value.length ? value : undefined;
+  if (value instanceof Set) return value.size ? Array.from(value) : undefined;
+  const keys = Object.keys(value).filter(key => !!(value as Record<string, unknown>)[key]);
+  return keys.length ? keys : undefined;
+}
 
 /** A calendar's `selected` prop is either a single date or a range — mirrors upstream
  *  `DateRange<D> | D | null` union accepted by `MatCalendar.selected`/`MatMonthView.selected`. */
@@ -52,6 +82,10 @@ export interface CalendarCell<D> {
    *  mirrors upstream `MatCalendarCell.compareValue`. */
   compareValue: number;
   rawValue: D;
+  /** Extra classes from a `dateClass` callback, already normalized — mirrors upstream
+   *  `MatCalendarCell.cssClasses`. `undefined` when there is no `dateClass` or it returned
+   *  nothing. */
+  cssClasses?: string[];
 }
 
 /** Mirrors `MatMonthView`'s `_getCellCompareValue` — native epoch ms, independent of `D`'s own
@@ -127,6 +161,7 @@ export function buildMonthView<D>(
   minDate: D | null,
   maxDate: D | null,
   dateFilter: ((date: D) => boolean) | null | undefined,
+  dateClassFn?: MatCalendarCellClassFunction<D> | null,
 ): MonthViewData<D> {
   const year = adapter.getYear(activeDate);
   const month = adapter.getMonth(activeDate);
@@ -166,6 +201,7 @@ export function buildMonthView<D>(
       enabled,
       compareValue: getCellCompareValue(adapter, date)!,
       rawValue: date,
+      cssClasses: normalizeCellCssClasses(dateClassFn?.(date, 'month')),
     });
   }
 
@@ -253,6 +289,7 @@ export function buildYearView<D>(
   minDate: D | null,
   maxDate: D | null,
   dateFilter: ((date: D) => boolean) | null | undefined,
+  dateClassFn?: MatCalendarCellClassFunction<D> | null,
 ): YearViewData<D> {
   const year = adapter.getYear(activeDate);
   const yearLabel = adapter.getYearName(activeDate);
@@ -270,6 +307,7 @@ export function buildYearView<D>(
         enabled,
         compareValue: month,
         rawValue: date,
+        cssClasses: normalizeCellCssClasses(dateClassFn?.(date, 'year')),
       };
     }),
   );
@@ -428,6 +466,7 @@ export function buildMultiYearView<D>(
   minDate: D | null,
   maxDate: D | null,
   dateFilter: ((date: D) => boolean) | null | undefined,
+  dateClassFn?: MatCalendarCellClassFunction<D> | null,
 ): MultiYearViewData<D> {
   const activeYear = adapter.getYear(activeDate);
   const offset = getActiveYearOffset(adapter, activeDate, minDate, maxDate);
@@ -438,7 +477,9 @@ export function buildMultiYearView<D>(
   for (let i = 0; i < YEARS_PER_PAGE; i++) {
     row.push(minYearOfPage + i);
     if (row.length === YEARS_PER_ROW) {
-      years.push(row.map(year => createCellForYear(adapter, year, minDate, maxDate, dateFilter)));
+      years.push(
+        row.map(year => createCellForYear(adapter, year, minDate, maxDate, dateFilter, dateClassFn)),
+      );
       row = [];
     }
   }
@@ -454,6 +495,7 @@ function createCellForYear<D>(
   minDate: D | null,
   maxDate: D | null,
   dateFilter: ((date: D) => boolean) | null | undefined,
+  dateClassFn?: MatCalendarCellClassFunction<D> | null,
 ): CalendarCell<D> {
   const date = adapter.createDate(year, 0, 1);
   const yearName = adapter.getYearName(date);
@@ -465,6 +507,7 @@ function createCellForYear<D>(
     enabled,
     compareValue: year,
     rawValue: date,
+    cssClasses: normalizeCellCssClasses(dateClassFn?.(date, 'multi-year')),
   };
 }
 

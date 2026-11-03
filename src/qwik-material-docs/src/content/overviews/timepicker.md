@@ -88,12 +88,19 @@ matTimepickerConfig={{interval: '90 minutes'}}>`.
 
 ### Internationalization
 
-Not ported — this port's `DateAdapter` is fixed to a single process-wide `en-US` native
-implementation (same abstraction [`MatDatepicker`](/components/datepicker/overview/) uses). There's
-no live locale switching, no `MAT_DATE_LOCALE`/`setLocale()`, and no alternate date-library
-adapters (`date-fns`/Luxon/Moment) — only the native `Date`-based adapter upstream's own
-`provideNativeDateAdapter` wires up. `MAT_DATE_FORMATS` likewise isn't configurable: every
-timepicker uses the same built-in native parse/display formats.
+The timepicker uses the same `DateAdapter`/`MAT_DATE_FORMATS`/locale abstraction
+[`MatDatepicker`](/components/datepicker/overview/) does — see that page's own
+"Internationalization" section for the full writeup (locale, choosing/subclassing a
+`DateAdapter`, format settings). `<QwikMaterialProvider matDateAdapterFactory={...}
+matDateFormats={...} matDateLocale="...">` configures `useMatTimepicker()` the same way it
+configures `useMatDatepicker()` — placed once near your app's root, or scoped to a subtree, both
+controls under it resolve the SAME adapter/formats/locale. A custom `DateAdapter` subclass that
+only overrides date `parse()`/`format()` (the common case, e.g. accepting `dd.mm.yyyy`) leaves
+time parsing/formatting unaffected, since those methods are inherited unchanged from
+`NativeDateAdapter`.
+
+Only the native `Date`-based adapter (and your own subclasses of it) is supported — no
+alternate date-library adapters (`date-fns`/Luxon/Moment).
 
 ### Accessibility
 
@@ -116,7 +123,10 @@ containing `<MatFormField>` by default; outside one, set `ariaLabel`/`ariaLabell
 - **No `onTouched$`/`onDirty$` props on `<MatTimepickerInput>`** — the picker tracks
   `touched`/`dirty` internally (`picker.touched`/`picker.dirty`), read directly rather than via a
   callback.
-- **Not ported:** live locale switching, alternate date-library adapters, configurable
-  `MAT_DATE_FORMATS`, and `ngDevMode`-gated constructor validation (mismatched `options`+
-  `interval`, an empty `options` array, a missing `DateAdapter` provider) — see
-  "Internationalization" above and [Migrating from Angular Material](/guide/migrating-from-angular-material/).
+- **Pluggable `DateAdapter`/`MAT_DATE_FORMATS`/locale are ported** (shared with
+  [`MatDatepicker`](/components/datepicker/overview/)'s own `<QwikMaterialProvider>` config) —
+  see "Internationalization" above.
+- **Not ported:** alternate date-library adapters (`date-fns`/Luxon/Moment), and
+  `ngDevMode`-gated constructor validation (mismatched `options`+`interval`, an empty `options`
+  array, a missing `DateAdapter` provider) — see
+  [Migrating from Angular Material](/guide/migrating-from-angular-material/).

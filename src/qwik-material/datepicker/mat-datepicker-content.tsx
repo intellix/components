@@ -53,7 +53,11 @@ import {MatButton} from '../button/mat-button';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MatCalendar} from './mat-calendar';
-import {getCellCompareValue, type CalendarView} from './calendar-math';
+import {
+  getCellCompareValue,
+  type CalendarView,
+  type MatCalendarCellClassFunction,
+} from './calendar-math';
 import {rangeCreatePreview, type DateRange} from './date-range-selection';
 
 // Only used for the (adapter-agnostic) `getCellCompareValue` helper below, which only ever
@@ -69,6 +73,11 @@ export interface MatDatepickerContentProps {
   minDate: unknown;
   maxDate: unknown;
   dateFilter: QRL<(date: unknown) => boolean> | undefined;
+  /** Mirrors `[dateClass]` — see `mat-month-view.tsx`'s own prop doc comment. */
+  dateClass: QRL<MatCalendarCellClassFunction<unknown>> | undefined;
+  /** See `mat-calendar.tsx`'s own `locale` prop doc comment — resolved by the caller
+   *  (`datepicker-runtime.ts`) from `picker._locale.value` at `open()` time. */
+  locale: string;
   isRange: boolean;
   /** The live, ACTIVE model signal — either the picker's pending clone (an actions row is
    *  registered) or its real committed value. See this file's own doc comment. */
@@ -204,6 +213,8 @@ export const MatDatepickerContent = component$<MatDatepickerContentProps>(props 
           minDate={props.minDate}
           maxDate={props.maxDate}
           dateFilter={props.dateFilter as QRL<(date: unknown) => boolean> | undefined}
+          dateClass={props.dateClass as QRL<MatCalendarCellClassFunction<unknown>> | undefined}
+          locale={props.locale}
           previewStart={previewStart}
           previewEnd={previewEnd}
           startDateAccessibleName={props.startDateAccessibleName}

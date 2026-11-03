@@ -1,7 +1,23 @@
-import {component$, noSerialize, Slot, useContextProvider, useSignal} from '@qwik.dev/core';
+import {
+  component$,
+  noSerialize,
+  Slot,
+  useContextProvider,
+  useSignal,
+  type QRL,
+} from '@qwik.dev/core';
 import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import {createBlockScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
+import type {DateAdapter} from '../core/datetime/date-adapter';
+import type {MatDateFormats} from '../core/datetime/date-formats';
+import {
+  DEFAULT_DATE_ADAPTER_FACTORY,
+  MAT_DATE_ADAPTER_FACTORY,
+  MAT_DATE_LOCALE,
+} from '../core/datetime/use-date-adapter';
+import {MAT_DATE_FORMATS} from '../core/datetime/date-formats';
+import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';
 import {
   MAT_ANIMATIONS_DISABLED,
   MAT_DIALOG_DEFAULT_OPTIONS,
@@ -145,6 +161,25 @@ export interface QwikMaterialProviderProps {
   matPaginatorIntl?: MatPaginatorIntl;
   /** Defaults applied to every MatAutocomplete in this subtree. */
   matAutocompleteConfig?: MatAutocompleteConfig;
+  /** Overrides the `DateAdapter` every `MatDatepicker`/`MatDateRangeInput`/`MatTimepicker` in
+   *  this subtree resolves (app-wide if set near the root; per subtree if set deeper — an inner
+   *  `<QwikMaterialProvider>` shadows an outer one for its own descendants, same as every other
+   *  `MAT_*_CONFIG` prop here). A `QRL` FACTORY, not a live instance — e.g.
+   *  `$((locale) => new MyDateAdapter(locale))`, where `MyDateAdapter extends NativeDateAdapter`
+   *  — never a live `DateAdapter` object (a class instance with methods can't survive the
+   *  SSR→resume boundary; see `core/datetime/use-date-adapter.ts`'s own doc comment). Defaults
+   *  to a factory that builds a plain `NativeDateAdapter` for the current locale. */
+  matDateAdapterFactory?: QRL<(locale: string) => DateAdapter<unknown>>;
+  /** Overrides the parse/display format bag (`MAT_DATE_FORMATS`) every date-aware component in
+   *  this subtree reads via `useDateFormats()`. Plain data — defaults to
+   *  `MAT_NATIVE_DATE_FORMATS`. */
+  matDateFormats?: MatDateFormats;
+  /** Overrides the locale (`MAT_DATE_LOCALE`) every date-aware component in this subtree reads
+   *  via `useDateLocale()`/resolves its adapter with. A plain string seed — change it at
+   *  runtime via the `Signal<string>` `useDateLocale()` itself returns (or call `.setLocale()`
+   *  on a live adapter instance) to switch locale reactively; see `datepicker/SYNC.md`. Defaults
+   *  to `'en-US'`. */
+  matDateLocale?: string;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -308,6 +343,28 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // defaults declared in mat-autocomplete.tsx's own prop resolution;
   // providing an empty object here is equivalent to accepting all of them.
   useContextProvider(MAT_AUTOCOMPLETE_CONFIG, props.matAutocompleteConfig ?? {});
+  // `MAT_DATE_ADAPTER_FACTORY`'s value is a QRL (a lazy import reference), never a live
+  // `DateAdapter` instance — QRLs are natively resumable, no `noSerialize()` needed (unlike the
+  // scroll-strategy factories above, which are plain, non-QRL closures). See
+  // `core/datetime/use-date-adapter.ts`'s own doc comment.
+  useContextProvider(MAT_DATE_ADAPTER_FACTORY, props.matDateAdapterFactory ?? DEFAULT_DATE_ADAPTER_FACTORY);
+  // MatDateFormats is plain, serializable data (strings/Intl format-option objects, never a
+  // function) — no noSerialize needed.
+  useContextProvider(MAT_DATE_FORMATS, props.matDateFormats ?? MAT_NATIVE_DATE_FORMATS);
+  // A Signal, not a plain string, so a later runtime locale change (a descendant calling
+  // `useDateLocale()` and writing `.value` directly — the Qwik-native equivalent of upstream
+  // `DateAdapter.setLocale()`) re-renders every consumer tracking it — see
+  // `datepicker/SYNC.md`. `props.matDateLocale` is a ONE-TIME SEED only, deliberately NOT
+  // guarded-resynced on every render the way `animationsDisabled`'s sibling fields above
+  // aren't either for this exact reason: a guard that READS `localeSignal.value` (to compare
+  // against the prop) during THIS component's own render would SUBSCRIBE this provider to its
+  // OWN signal, so the very next time a descendant changed it, this re-render would fire and
+  // immediately overwrite it back to the original prop value — confirmed live (a real bug this
+  // comment replaces the write-up of): the "Dynamically switch to French" docs example
+  // (`datepicker-locale`) silently reverted every click. `useSignal()`'s initializer already
+  // seeds it correctly exactly once; nothing more is needed.
+  const localeSignal = useSignal(props.matDateLocale ?? 'en-US');
+  useContextProvider(MAT_DATE_LOCALE, localeSignal);
 
   return <Slot />;
 });

@@ -25,8 +25,10 @@ export type MatDateFormats = {
 
 /**
  * Context id a provider can use to override the format bag every date-aware component reads via
- * `useDateFormats()` (`use-date-adapter.ts`). No provider is wired by `QwikMaterialProvider` yet
- * — no scenario needs a non-default format bag — so this is the always-available extension
- * point for later, matching upstream's naming for drop-in familiarity.
+ * `useDateFormats()` (`use-date-adapter.ts`). `QwikMaterialProvider`'s `matDateFormats` prop
+ * wires this, app-wide or per subtree (2026-11-03) — see `datepicker/SYNC.md`'s "DateAdapter /
+ * MAT_DATE_FORMATS / MAT_DATE_LOCALE / dateClass" section. Plain, serializable data (strings/
+ * `Intl.DateTimeFormatOptions`-shaped objects — never a function), so it needs no special
+ * resume handling, unlike `MAT_DATE_ADAPTER_FACTORY`.
  */
 export const MAT_DATE_FORMATS = createContextId<MatDateFormats>('qwikMaterial/dateFormats');

@@ -40,8 +40,9 @@ export {
 } from './mat-form-control';
 
 // Date adapter abstraction (upstream `src/material/core/datetime/*`) — shared by
-// `qwik-material/timepicker` today, intended for a future date picker too. See
-// `datetime/date-adapter.ts`'s module doc comment.
+// `qwik-material/timepicker` and `qwik-material/datepicker`. See `datetime/date-adapter.ts`'s
+// module doc comment, and `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS /
+// MAT_DATE_LOCALE / dateClass" section for the pluggable-adapter design.
 export type {DateAdapter} from './datetime/date-adapter';
 export {
   compareDateDefault,
@@ -52,10 +53,20 @@ export {
   getValidDateOrNullDefault,
   deserializeDefault,
 } from './datetime/date-adapter';
-export {createNativeDateAdapter, DEFAULT_DATE_ADAPTER} from './datetime/native-date-adapter';
+export {createNativeDateAdapter, DEFAULT_DATE_ADAPTER, NativeDateAdapter} from './datetime/native-date-adapter';
 export {MAT_DATE_FORMATS, type MatDateFormats} from './datetime/date-formats';
 export {MAT_NATIVE_DATE_FORMATS} from './datetime/native-date-formats';
-export {MAT_DATE_ADAPTER, useDateAdapter, useDateFormats} from './datetime/use-date-adapter';
+export {
+  MAT_DATE_ADAPTER,
+  MAT_DATE_ADAPTER_FACTORY,
+  MAT_DATE_LOCALE,
+  DEFAULT_DATE_ADAPTER_FACTORY,
+  useDateAdapter,
+  useDateAdapterFactory,
+  useDateFormats,
+  useDateLocale,
+  resolveDateAdapter,
+} from './datetime/use-date-adapter';
 export {
   MAT_FORM,
   MatForm,

@@ -279,41 +279,43 @@ scenario.
 
 All additive; `MatInput`'s existing behavior is unchanged.
 
-## Date adapter abstraction — new, added 2026-10-29 for `qwik-material/timepicker`
+## Date adapter abstraction — added 2026-10-29 for `qwik-material/timepicker`; pluggable
+## adapter/formats/locale added 2026-11-03 for `qwik-material/datepicker` + `dateClass`
 
 | File | Upstream path | Sync state | Notes |
 | --- | --- | --- | --- |
-| `core/datetime/date-adapter.ts` | `src/material/core/datetime/date-adapter.ts` | ported | `DateAdapter<D>` is a plain TS **interface**, not an abstract class (Qwik's factory-function convention — see the module doc comment); upstream's CONCRETE base-class methods (`compareDate`/`compareTime`/`sameDate`/`sameTime`/`clampDate`/`getValidDateOrNull`/`deserialize`'s default) are ported as plain exported functions (`compareDateDefault`, etc.) any adapter implementation can delegate to, the same way `NativeDateAdapter extends DateAdapter` reused them upstream. `MAT_DATE_LOCALE`/`setLocale`/`localeChanges` are NOT ported — see below. |
-| `core/datetime/native-date-adapter.ts` | `src/material/core/datetime/native-date-adapter.ts` | ported | `createNativeDateAdapter(locale = 'en-US')` factory, 1:1 port of every method incl. the UTC-stamping DST workaround (`_format` → `formatWithUtcWorkaround`), the lenient `TIME_REGEX` time parser, and the ISO-8601 `deserialize` override. Exports `DEFAULT_DATE_ADAPTER` — a process-wide `en-US` singleton (see below). |
-| `core/datetime/date-formats.ts` | `src/material/core/datetime/date-formats.ts` | ported | `MatDateFormats` type (`unknown` instead of `any` for the per-field format options) + `MAT_DATE_FORMATS` **context id** (not an Angular `InjectionToken` — no provider is wired yet, see below). |
+| `core/datetime/date-adapter.ts` | `src/material/core/datetime/date-adapter.ts` | ported | `DateAdapter<D>` is a plain TS **interface**, not an abstract class (Qwik's factory-function/class-without-inheritance-from-this-interface convention — see the module doc comment); upstream's CONCRETE base-class methods (`compareDate`/`compareTime`/`sameDate`/`sameTime`/`clampDate`/`getValidDateOrNull`/`deserialize`'s default) are ported as plain exported functions (`compareDateDefault`, etc.) any adapter implementation can delegate to, the same way `NativeDateAdapter extends DateAdapter` reused them upstream. `setLocale`/`localeChanges` ARE now ported (2026-11-03) — see `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE / dateClass" section, the canonical write-up for the whole pluggable-adapter design (this table only tracks file-level sync state). |
+| `core/datetime/native-date-adapter.ts` | `src/material/core/datetime/native-date-adapter.ts` | ported | Now a real, exported `class NativeDateAdapter` (2026-11-03, so apps can `extends` it — see `datepicker/SYNC.md`), 1:1 port of every method incl. the UTC-stamping DST workaround (`_format` → `formatWithUtcWorkaround`), the lenient `TIME_REGEX` time parser, and the ISO-8601 `deserialize` override, PLUS `setLocale()`/`localeChanges` (a `Signal<number>` version counter, the Qwik-signal equivalent of upstream's RxJS `Subject`). `createNativeDateAdapter(locale = 'en-US')` remains as a thin `new NativeDateAdapter(locale)` wrapper for every pre-existing call site. Exports `DEFAULT_DATE_ADAPTER` — a process-wide `en-US` singleton (see below); its own `setLocale()` must never be called (process-wide, shared across concurrent SSR requests — see its own doc comment). |
+| `core/datetime/date-formats.ts` | `src/material/core/datetime/date-formats.ts` | ported | `MatDateFormats` type (`unknown` instead of `any` for the per-field format options) + `MAT_DATE_FORMATS` **context id** (not an Angular `InjectionToken`), now wired by `QwikMaterialProvider`'s `matDateFormats` prop (2026-11-03). |
 | `core/datetime/native-date-formats.ts` | `src/material/core/datetime/native-date-formats.ts` | synced | `MAT_NATIVE_DATE_FORMATS` — identical field values. |
-| `core/datetime/use-date-adapter.ts` | n/a | new | `MAT_DATE_ADAPTER` context id + `useDateAdapter()`/`useDateFormats()` hooks, each falling back to the `en-US` native singleton/`MAT_NATIVE_DATE_FORMATS` via `useContext`'s default-value parameter (never `useContextProvider()`) — see the file's own doc comment for why a context's *default* argument needs no `noSerialize()` handling even though the value is a plain object of closures: it's computed identically on server and client, never written into serialized component state. |
+| `core/datetime/use-date-adapter.ts` | n/a | new | `MAT_DATE_ADAPTER` (an INSTANCE context, narrow synchronous escape hatch) + `useDateAdapter()`/`useDateFormats()`, PLUS (2026-11-03) `MAT_DATE_ADAPTER_FACTORY` (a `QRL` **factory** context — never a live instance, see `datepicker/SYNC.md`) + `useDateAdapterFactory()` + `resolveDateAdapter()` + `MAT_DATE_LOCALE` (a `Signal<string>` context) + `useDateLocale()`. All fall back to the `en-US` native singleton/`MAT_NATIVE_DATE_FORMATS`/a fresh `useSignal('en-US')` via `useContext`'s default-value parameter when no `QwikMaterialProvider` is in scope. |
 
 ### Deviations from upstream
 
-- **No live locale switching.** `createNativeDateAdapter(locale)`'s `locale`
-  is fixed at creation; `setLocale()`/`localeChanges` (an RxJS `Subject`
-  upstream) have no port. No scenario in `qwik-material/timepicker`
-  overrides or changes the locale after creation — `MAT_DATE_LOCALE` itself
-  isn't ported either, since nothing reads it. A future consumer needing
-  live switching should add a `Signal`-based mechanism analogous to
-  `qwik-cdk/a11y`'s other reactive primitives, not resurrect RxJS.
-- **No `QwikMaterialProvider` prop wires `MAT_DATE_ADAPTER`/`MAT_DATE_FORMATS`
-  yet.** Both contexts exist (for naming parity with upstream's injection
-  tokens, and as the forward-compatible extension point a later provider
-  prop can use), but nothing calls `useContextProvider()` for either — every
-  consumer gets the `en-US` native default. Would need `noSerialize()`
-  wrapping if added (a `DateAdapter` is a plain object of closures, the same
-  category `qwik-cdk`'s `keyboardDispatcher`/`outsideClickDispatcher`
-  already need it for).
-- **`qwik-material/timepicker`'s own INTERACTIVE runtime code
-  (`timepicker-runtime.ts`) never calls `useDateAdapter()`/`useDateFormats()`**
+- ~~No live locale switching~~ — **ported, 2026-11-03.** See
+  `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE /
+  dateClass" section for the full design (a `Signal`-based mechanism, per
+  this file's own earlier recommendation here — not RxJS).
+- ~~No `QwikMaterialProvider` prop wires `MAT_DATE_ADAPTER`/`MAT_DATE_FORMATS`~~
+  — **ported, 2026-11-03.** `QwikMaterialProvider` (`dialog/qwik-material-provider.tsx`)
+  now has `matDateAdapterFactory`/`matDateFormats`/`matDateLocale` props,
+  wiring `MAT_DATE_ADAPTER_FACTORY`/`MAT_DATE_FORMATS`/`MAT_DATE_LOCALE`.
+  `matDateAdapterFactory` is a `QRL` factory (`noSerialize()` is NOT used
+  for it — unlike the scroll-strategy factories above, QRLs are natively
+  resumable, so wrapping one in `noSerialize()` would be actively wrong,
+  not merely unnecessary).
+- **`qwik-material/timepicker`'s/`qwik-material/datepicker`'s own INTERACTIVE
+  runtime code (`timepicker-runtime.ts`/`datepicker-runtime.ts`) never calls
+  `useDateAdapterFactory()`/`useDateFormats()`/`useDateLocale()` directly**
   — a `$()`-wrapped event handler isn't a component render context, so
-  hooks can't be called from inside one. It imports `DEFAULT_DATE_ADAPTER`/
-  `MAT_NATIVE_DATE_FORMATS` directly as plain module-level constants instead
-  (safe: never placed into Qwik state, nothing to serialize). The two hooks
-  exist for render-time/future use (e.g. a date picker formatting a
-  calendar cell) and are unused by timepicker's own call sites today.
+  hooks can't be called from inside one. Each picker's own `useMatXxx()`
+  hook resolves them ONCE, at hook-creation time (render-legal), and stashes
+  them on the shared handle (`_dateAdapterFactory`/`_dateFormats`/
+  `_locale`); runtime code reads those fields instead — see
+  `datepicker/SYNC.md`'s own section for the full call chain and why a
+  `QRL` factory (resolved fresh via `resolveDateAdapter()`/
+  `resolveAdapterForPicker()`/`resolveAdapterForTimepicker()`), never a
+  stored live instance, is what survives onto the handle.
 - **No `ngDevMode`-gated throws** (`createDate`'s month/date range checks
   and `setTime`'s hour/minute/second range checks ARE ported as plain
   `throw Error(...)` calls, unconditionally — these are real bugs, not dev-

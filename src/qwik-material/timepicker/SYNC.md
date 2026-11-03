@@ -478,18 +478,25 @@ v2 pass) still fails.
 
 ## Deviations from upstream (summary)
 
-1. No `MAT_DATE_LOCALE`/live locale switching — `createNativeDateAdapter`'s
-   `locale` is fixed at creation (`'en-US'` for the process-wide default
-   used by every runtime code path). See `core/SYNC.md`'s datetime section.
-2. `useDateAdapter()`/`useDateFormats()` (context-based, for future
-   render-time/custom-locale use) are **not** used by any of this
-   component's own interactive runtime code — `timepicker-runtime.ts`
-   always uses the plain `DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS`
-   module singletons directly, because a `$()`-wrapped event handler can't
-   call `useContext()` (not a component render context) and a plain
-   module-level constant sidesteps the serialization question entirely.
-   No scenario needs a non-default adapter/locale, so this is an accepted,
-   documented scope line, not a missing feature relative to any test.
+1. ~~No `MAT_DATE_LOCALE`/live locale switching~~ — **ported, 2026-11-03** (pluggable-DateAdapter
+   task — see `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE /
+   dateClass" section, the canonical write-up this file points to). `useMatTimepicker()` now
+   resolves `_dateAdapterFactory`/`_dateFormats`/`_locale` from `QwikMaterialProvider` context
+   (app-wide or per subtree, shared with `qwik-material/datepicker`'s own config) the same way
+   `useMatDatepicker()` does. `DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS` remain the
+   fallback when nothing is provided (unchanged behavior for every pre-existing scenario, none
+   of which provide a custom one).
+2. `timepicker-runtime.ts`'s interactive code that NEEDS a CUSTOM app-supplied adapter
+   (`handleTimepickerInput`/`handleTimepickerBlur`/`selectTimepickerOption`'s reformat) resolves
+   it via `resolveAdapterForTimepicker()` (an async helper calling the `QRL` factory fresh — see
+   `core/datetime/use-date-adapter.ts`'s own doc comment for why a QRL, never a live instance,
+   is required here: a `$()`-wrapped event handler can't call `useContext()`, and a class
+   instance with methods can't be serialized into Qwik's resumable state either way). Building
+   the option LIST (`generateTimeOptions`/the cached time-option labels) and keyboard-navigation
+   math still use the hardcoded `DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS` singletons
+   directly — no scenario needs a non-default locale/adapter for the OPTION LIST specifically,
+   and a `DotDateAdapter`-style subclass that only overrides DATE `parse()`/`format()` wouldn't
+   change the option labels anyway (inherited, unchanged `format()`/time logic).
 3. No `ngDevMode`-gated constructor validation (`options`+`interval`
    mutual-exclusivity throw, empty-`options`-array throw,
    `validateAdapter`'s missing-provider throws) — every scenario here is
@@ -505,6 +512,46 @@ v2 pass) still fails.
    static-introspection props every usage must duplicate, and the "touched/
    dirty" section for why there's no `MatTimepickerInput.onTouched$`/
    `onDirty$` prop (the picker tracks both internally instead).
+
+## Fixed: a pre-seeded `value`'s FIRST paint used the hardcoded default adapter, not the configured one (coordinator follow-up, 2026-11-03)
+
+`<MatTimepickerInput>`'s own `initialDisplay` — the SSR-correct snapshot fed into the native
+`<input>`'s `value` DOM property — was a plain `useSignal(() => formatTimeForDisplay(picker.
+value.value))`, and `formatTimeForDisplay()` (see deviation 2, above, and `datepicker/SYNC.md`'s
+identical gap for `<MatDatepickerInput>`) always formats with the hardcoded `DEFAULT_DATE_ADAPTER`/
+`MAT_NATIVE_DATE_FORMATS` singleton, never whatever `MAT_DATE_ADAPTER_FACTORY`/`MAT_DATE_FORMATS`
+the app configured. Confirmed live: seeding the `custom-adapter` dev-app route's timepicker
+example with a non-null `PRESET_TIME` (14:30) rendered `"2:30 PM"` (the default adapter's 12-hour
+format) instead of `"14:30"` (`DOT_DATE_FORMATS.display.timeInput`'s 24-hour format) on first
+paint, both in the raw SSR response and after resume.
+
+Fixed the same way as `<MatDatepickerInput>`'s identical gap (see `datepicker/SYNC.md`'s own
+write-up for the full rationale): `initialDisplay` is now a `useComputed$`, built from two frozen
+`useSignal`s (`mountValue`/`mountLocale`, snapshotting `picker.value.value`/`picker._locale.value`
+ONCE at mount) and `formatTimeWithAdapter()` (the existing private helper backing
+`resolveAdapterForTimepicker()`'s callers, now also exported for this use):
+
+```ts
+const mountValue = useSignal(() => picker.value.value);
+const mountLocale = useSignal(() => picker._locale.value);
+const initialDisplay = useComputed$(() => {
+  if (mountValue.value == null) return '';
+  return resolveDateAdapter(picker._dateAdapterFactory, mountLocale.value).then(a =>
+    formatTimeWithAdapter(a, picker._dateFormats, mountValue.value),
+  );
+});
+```
+
+Returns a plain, synchronous `''` for the common empty-input case (never even an `async function`
+for it — never enters the async-suspension engine at all); returns a real `Promise<string>` only
+when a non-null seed needs the configured adapter's own `format()`. Reading `.value` on a
+still-pending `ComputedSignal` throws the in-flight promise, which Qwik's renderer catches and
+retries — SSR blocks until resolved, and the client re-suspends the same way on its first read
+after a resume. Same pattern `qwik-material/icon`'s `resolvedSvgIcon` established first (see that
+package's SYNC.md deviation #20) and the same pattern used for `<MatDatepickerInput>`. Verified
+via the new `specs/material-datepicker/functional.spec.ts` `pluggable DateAdapter — pre-seeded
+value, initial paint` tests (covers all three date-aware inputs — datepicker, range, timepicker —
+from the shared `custom-adapter` route).
 
 ## `ref` prop — composed with `picker._inputRef` (2026-11-02)
 

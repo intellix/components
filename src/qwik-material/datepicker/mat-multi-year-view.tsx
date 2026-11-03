@@ -7,7 +7,7 @@
  */
 import {$, component$, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import type {DateAdapter} from '../core/datetime/date-adapter';
-import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
+import {DEFAULT_DATE_ADAPTER, NativeDateAdapter} from '../core/datetime/native-date-adapter';
 import {MatCalendarBody} from './mat-calendar-body';
 import {
   buildMultiYearView,
@@ -15,11 +15,19 @@ import {
   multiYearActiveDateDelta,
   toStartEndCompareValues,
   type CalendarCell,
+  type MatCalendarCellClassFunction,
   type MultiYearViewData,
   type SelectionValue,
 } from './calendar-math';
 
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
+
+/** See `mat-month-view.tsx`'s identical helper doc comment. */
+function resolveLabelAdapter(locale: string | undefined): DateAdapter<unknown> {
+  return locale && locale !== adapter.locale
+    ? (new NativeDateAdapter(locale) as unknown as DateAdapter<unknown>)
+    : adapter;
+}
 
 export interface MatMultiYearViewProps<D = unknown> {
   activeDate: D;
@@ -27,6 +35,10 @@ export interface MatMultiYearViewProps<D = unknown> {
   minDate?: D | null;
   maxDate?: D | null;
   dateFilter?: QRL<(date: D) => boolean>;
+  /** See `mat-month-view.tsx`'s identical `dateClass` doc comment. */
+  dateClass?: QRL<MatCalendarCellClassFunction<D>>;
+  /** See `mat-calendar.tsx`'s own `locale` doc comment. */
+  locale?: string;
   isRtl?: boolean;
   /** See `mat-month-view.tsx`'s identical prop doc comment for the `origin` param. */
   onActiveDateChange$: QRL<(date: D, origin: 'mouse' | 'keyboard') => void>;
@@ -40,7 +52,7 @@ export const MatMultiYearView = component$<MatMultiYearViewProps>(props => {
   const maxDate = (props.maxDate ?? null) as unknown;
 
   const view = useSignal<MultiYearViewData<unknown>>(() =>
-    buildMultiYearView(adapter, props.activeDate, minDate, maxDate, undefined),
+    buildMultiYearView(resolveLabelAdapter(props.locale), props.activeDate, minDate, maxDate, undefined),
   );
   // See mat-month-view.tsx's identical doc comment for why this stays synchronous whenever
   // there's no filter to resolve.
@@ -48,13 +60,21 @@ export const MatMultiYearView = component$<MatMultiYearViewProps>(props => {
     track(() => props.activeDate);
     track(() => props.minDate);
     track(() => props.maxDate);
+    const localeAdapter = resolveLabelAdapter(track(() => props.locale));
     const filterQrl = props.dateFilter as QRL<(date: unknown) => boolean> | undefined;
-    if (filterQrl) {
-      return filterQrl.resolve().then(filterFn => {
-        view.value = buildMultiYearView(adapter, props.activeDate, minDate, maxDate, filterFn);
-      });
+    const classQrl = props.dateClass as
+      | QRL<MatCalendarCellClassFunction<unknown>>
+      | undefined;
+    if (!filterQrl && !classQrl) {
+      view.value = buildMultiYearView(localeAdapter, props.activeDate, minDate, maxDate, undefined);
+      return;
     }
-    view.value = buildMultiYearView(adapter, props.activeDate, minDate, maxDate, undefined);
+    return Promise.all([
+      filterQrl ? filterQrl.resolve() : Promise.resolve(undefined),
+      classQrl ? classQrl.resolve() : Promise.resolve(undefined),
+    ]).then(([filterFn, classFn]) => {
+      view.value = buildMultiYearView(localeAdapter, props.activeDate, minDate, maxDate, filterFn, classFn);
+    });
   });
 
   const {startValue, endValue} = toStartEndCompareValues(adapter, props.selected);

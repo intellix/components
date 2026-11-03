@@ -26,7 +26,10 @@ import {useSignal, type JSXOutput, type NoSerialize, type QRL, type Signal} from
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import type {CalendarView} from './calendar-math';
+import type {DateAdapter} from '../core/datetime/date-adapter';
+import type {MatDateFormats} from '../core/datetime/date-formats';
+import {useDateAdapterFactory, useDateFormats, useDateLocale} from '../core/datetime/use-date-adapter';
+import type {CalendarView, MatCalendarCellClassFunction} from './calendar-math';
 import type {DateRange} from './date-range-selection';
 
 /**
@@ -53,10 +56,27 @@ export interface MatDatepickerCore<D> {
    *  a signal — nothing subscribes to it reactively; see `mat-month-view.tsx`'s own identical
    *  `dateFilter` prop for the same reasoning). */
   dateFilter: QRL<(date: D | null) => boolean> | undefined;
+  /** Mirrors `[dateClass]` — see `mat-month-view.tsx`'s own `dateClass` prop doc comment for
+   *  why this is a QRL, re-read fresh the same way `dateFilter` is. */
+  dateClass: QRL<MatCalendarCellClassFunction<D>> | undefined;
   /** Classes applied to the overlay pane (`.cdk-overlay-pane`) — mirrors `[panelClass]`. Not
    *  exercised by any scenario; kept for API completeness. */
   panelClassList: readonly string[];
   onOpenedChange$: QRL<(open: boolean) => void> | undefined;
+
+  /** @internal The `DateAdapter` factory resolved once, at hook-creation time, from
+   *  `MAT_DATE_ADAPTER_FACTORY` context (app-wide or per subtree — see
+   *  `core/datetime/use-date-adapter.ts`'s own doc comment). A QRL, never a live instance — see
+   *  that same doc comment for why. Every runtime function that needs a live adapter calls
+   *  `resolveDateAdapter(picker._dateAdapterFactory, picker._locale.value)` fresh. */
+  _dateAdapterFactory: QRL<(locale: string) => DateAdapter<D>>;
+  /** @internal The `MatDateFormats` bag resolved once from `MAT_DATE_FORMATS` context — plain
+   *  data, safe to read directly, no resolution needed. */
+  _dateFormats: MatDateFormats;
+  /** @internal The locale resolved from `MAT_DATE_LOCALE` context. A `Signal` (not a plain
+   *  string) so a runtime locale change re-renders locale-sensitive text — see
+   *  `datepicker/SYNC.md`. */
+  _locale: Signal<string>;
 
   /** @internal Set once, read once per `open()` — see `use-animations-disabled.ts`. No scenario
    *  toggles animations mid-session, so a one-time snapshot (unlike every OTHER field here, which
@@ -139,6 +159,9 @@ export interface UseMatDatepickerOptions<D> {
   /** Mirrors `matDatepickerFilter`. Re-read fresh on every render (see
    *  `MatDatepickerCore.dateFilter`'s own doc comment) — pass a stable QRL. */
   dateFilter?: QRL<(date: D | null) => boolean>;
+  /** Mirrors `[dateClass]` — applies extra CSS class(es) per calendar cell. Re-read fresh the
+   *  same way `dateFilter` is. */
+  dateClass?: QRL<MatCalendarCellClassFunction<D>>;
   /** Disables the input, toggle, and the picker itself (collapsing upstream's 3-way
    *  input/toggle/picker `disabled` fallback chain into one flag — no scenario in this port's
    *  contract needs them independent; see SYNC.md). LIVE. */
@@ -214,6 +237,8 @@ export interface UseMatDateRangePickerOptions<D> {
   min?: D | null;
   max?: D | null;
   dateFilter?: QRL<(date: D | null) => boolean>;
+  /** See {@link UseMatDatepickerOptions.dateClass}. */
+  dateClass?: QRL<MatCalendarCellClassFunction<D>>;
   disabled?: boolean;
   panelClass?: string | readonly string[];
   onValueChange$?: QRL<(value: DateRange<D>) => void>;
@@ -242,6 +267,14 @@ function useDatepickerCoreSignals<D>(options: {
   const idGen = useIdGenerator();
   const id = useSignal(() => idGen.getId(options.idPrefix)).value;
   const animationsDisabled = useAnimationsDisabled().value;
+  // Resolved ONCE here, at hook-creation time (render-legal) — see `MatDatepickerCore`'s own
+  // `_dateAdapterFactory`/`_dateFormats`/`_locale` doc comments for why a QRL factory (never a
+  // live instance) is what survives onto the handle, and `resolveDateAdapter()`
+  // (`core/datetime/use-date-adapter.ts`) for how `datepicker-runtime.ts` turns it back into a
+  // live adapter wherever one is actually needed.
+  const dateAdapterFactory = useDateAdapterFactory() as QRL<(locale: string) => DateAdapter<D>>;
+  const dateFormats = useDateFormats();
+  const locale = useDateLocale();
 
   const isOpen = useSignal(false);
   const disabled = useSignal(options.disabled ?? false);
@@ -281,8 +314,12 @@ function useDatepickerCoreSignals<D>(options: {
     min,
     max,
     dateFilter: undefined, // overwritten by each hook below
+    dateClass: undefined, // overwritten by each hook below
     panelClassList: toClassList(options.panelClass),
     onOpenedChange$: undefined, // overwritten by each hook below
+    _dateAdapterFactory: dateAdapterFactory,
+    _dateFormats: dateFormats,
+    _locale: locale,
     _animationsDisabled: animationsDisabled,
     _actionsContent: useSignal<JSXOutput | undefined>(undefined),
     _actionsRippleMemory: useSignal<Record<number, boolean>>({}),
@@ -316,6 +353,7 @@ export function useMatDatepicker<D>(
   return {
     ...core,
     dateFilter: options.dateFilter,
+    dateClass: options.dateClass,
     onOpenedChange$: options.onOpenedChange$,
     value,
     touched,
@@ -346,6 +384,7 @@ export function useMatDateRangePicker<D>(
   return {
     ...core,
     dateFilter: options.dateFilter,
+    dateClass: options.dateClass,
     onOpenedChange$: options.onOpenedChange$,
     value,
     touched,

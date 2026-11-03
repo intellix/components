@@ -25,7 +25,7 @@ import {FocusIndicator} from '../button/internal/focus-indicator';
 import {TouchTarget} from '../button/internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from '../button/internal/ripple-loader';
 import type {DateAdapter} from '../core/datetime/date-adapter';
-import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
+import {DEFAULT_DATE_ADAPTER, NativeDateAdapter} from '../core/datetime/native-date-adapter';
 import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';
 import {
   getActiveYearOffset,
@@ -96,6 +96,10 @@ export interface MatCalendarHeaderProps<D = unknown> {
   activeDate: D;
   minDate?: D | null;
   maxDate?: D | null;
+  /** Locale for the period button's text (month/year names) — see `mat-calendar.tsx`'s own
+   *  `locale` doc comment. Only label text is locale-aware; `minDate`/`maxDate`-driven
+   *  enabled/disabled math below stays on the hardcoded arithmetic-only module adapter. */
+  locale?: string;
   onPeriodClick$: QRL<() => void>;
   onPrevious$: QRL<() => void>;
   onNext$: QRL<() => void>;
@@ -127,6 +131,13 @@ export const MatCalendarHeader = component$<MatCalendarHeaderProps>(props => {
 
   const minDate = props.minDate ?? null;
   const maxDate = props.maxDate ?? null;
+  // LABEL text only (month/year names) — a fresh, hardcoded `NativeDateAdapter` construction is
+  // always resume-safe (no app-supplied factory involved — see `mat-calendar.tsx`'s own `locale`
+  // doc comment), cheap enough to rebuild on every render of this low-frequency component. Falls
+  // back to the plain arithmetic-only module `adapter` when no override locale is given, to
+  // avoid even that trivial allocation on the (overwhelmingly common) default-locale path.
+  const labelAdapter: DateAdapter<unknown> =
+    props.locale && props.locale !== adapter.locale ? new NativeDateAdapter(props.locale) : adapter;
 
   let periodButtonText: string;
   let periodButtonDescription: string;
@@ -136,7 +147,7 @@ export const MatCalendarHeader = component$<MatCalendarHeaderProps>(props => {
 
   if (props.currentView === 'month') {
     const text = (
-      adapter.format(props.activeDate, formats.display.monthYearLabel) as string
+      labelAdapter.format(props.activeDate, formats.display.monthYearLabel) as string
     ).toLocaleUpperCase();
     periodButtonText = text;
     periodButtonDescription = text;
@@ -144,14 +155,19 @@ export const MatCalendarHeader = component$<MatCalendarHeaderProps>(props => {
     prevButtonLabel = DATEPICKER_INTL.prevMonthLabel;
     nextButtonLabel = DATEPICKER_INTL.nextMonthLabel;
   } else if (props.currentView === 'year') {
-    const text = adapter.getYearName(props.activeDate);
+    const text = labelAdapter.getYearName(props.activeDate);
     periodButtonText = text;
     periodButtonDescription = text;
     periodButtonLabel = DATEPICKER_INTL.switchToMonthViewLabel;
     prevButtonLabel = DATEPICKER_INTL.prevYearLabel;
     nextButtonLabel = DATEPICKER_INTL.nextYearLabel;
   } else {
-    const {minLabel, maxLabel} = minAndMaxYearLabels(adapter, props.activeDate, minDate, maxDate);
+    const {minLabel, maxLabel} = minAndMaxYearLabels(
+      labelAdapter,
+      props.activeDate,
+      minDate,
+      maxDate,
+    );
     periodButtonText = formatYearRange(minLabel, maxLabel);
     periodButtonDescription = formatYearRangeLabel(minLabel, maxLabel);
     periodButtonLabel = DATEPICKER_INTL.switchToMonthViewLabel;

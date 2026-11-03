@@ -55,6 +55,8 @@
     "./datepicker/datepicker-actions": "./datepicker/datepicker-actions/index.tsx",
     "./datepicker/datepicker-touch": "./datepicker/datepicker-touch/index.tsx",
     "./datepicker/datepicker-inline-calendar": "./datepicker/datepicker-inline-calendar/index.tsx",
+    "./datepicker/datepicker-date-class": "./datepicker/datepicker-date-class/index.tsx",
+    "./datepicker/datepicker-locale": "./datepicker/datepicker-locale/index.tsx",
     "./dialog/example": "./dialog/example/index.tsx",
     "./dialog/dialog-data": "./dialog/dialog-data/index.tsx",
     "./dialog/dialog-content": "./dialog/dialog-content/index.tsx",

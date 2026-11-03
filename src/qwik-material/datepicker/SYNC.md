@@ -177,17 +177,19 @@ All 13 scenarios are wired up under `src/qwik-cdk-dev-app/src/routes/mat-datepic
 
 ## Deviations from upstream
 
-1. **No comparison-range cells/bridges, no drag-to-select, no custom per-date CSS classes
-   (`dateClass`), no custom calendar header (`ComponentPortal`/`headerComponent`).** None of this
-   port's 13 contract scenarios exercise them. `comparisonDateAccessibleName` text is still
-   hardcoded to `DATEPICKER_INTL.comparisonDateLabel` + the start/end accessible name on every
-   view (matches upstream's own unconditional interpolation).
-2. **`DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS` module singletons used everywhere** — no
-   scenario needs a non-default locale, and the singleton sidesteps a real hazard (storing a
-   *resolved* filter function in a signal needs `noSerialize()` and reads back `undefined` until a
-   later client task — too late for SSR-correct disabled-cell classes). `dateFilter` is resolved
-   inside a `useTask$` per view, never inside the component's own render body, writing the
-   fully-built plain-data grid into a signal.
+1. **No comparison-range cells/bridges, no drag-to-select, no custom calendar header
+   (`ComponentPortal`/`headerComponent`).** None of this port's scenarios exercise them.
+   `comparisonDateAccessibleName` text is still hardcoded to `DATEPICKER_INTL.comparisonDateLabel`
+   + the start/end accessible name on every view (matches upstream's own unconditional
+   interpolation). ~~no custom per-date CSS classes (`dateClass`)~~ — **ported, 2026-11-03**, see
+   "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE / dateClass" below.
+2. ~~`DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS` module singletons used everywhere~~ —
+   **pluggable, 2026-11-03** (app-wide or per subtree, via `QwikMaterialProvider`), see
+   "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE / dateClass" below for the full design.
+   `dateFilter` is STILL resolved inside a `useTask$` per view, never inside the component's own
+   render body, writing the fully-built plain-data grid into a signal — that part of the
+   original design is unchanged, and `dateClass`/the configurable adapter reuse the exact same
+   task.
 3. **No separate `MatDatepickerActions`/`MatDatepickerCancel`/`MatDatepickerApply` components.**
    `MatDatepicker`/`MatDateRangePicker` take a plain `actions` JSX prop (a `<div
    class="mat-datepicker-actions">` containing ordinary `<MatButton>`s calling
@@ -442,3 +444,356 @@ render, so left as a documented gap rather than widening the fix further.
 `JSXOutput` a second time, which Qwik v2 corrupts: the `<mat-icon>` came back empty. Wrapped in
 `cloneJsxForReuse()` (`core/jsx-reuse.ts`), as `MatMenuItem` already does for its `icon`. Guarded by
 `qwik-cdk-parity-tests/specs/examples-rerender/`, which hovers and focuses every example.
+
+## DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE / dateClass (2026-11-03)
+
+Ports upstream's pluggable `DateAdapter` abstraction, `MAT_DATE_FORMATS`, `MAT_DATE_LOCALE`
+(+ runtime `setLocale()`), and `dateClass` (`MatCalendarCellClassFunction`) — previously
+hardcoded to the `en-US` `NativeDateAdapter` everywhere (Deviation 2, above) and entirely unported
+(`dateClass`, Deviation 1). Shared infrastructure lives in `core/datetime/` (see `core/SYNC.md`'s
+own, shorter pointer to this section) and `core/datetime/native-date-adapter.ts`'s
+`NativeDateAdapter` class.
+
+### The core design problem, and why it shapes everything below
+
+A custom `DateAdapter` is, almost by definition, a class with methods (upstream's own
+`DateAdapter` is an abstract class apps subclass). This project's own established rule — repeated
+across many `SYNC.md` files — is that **a class instance with methods can't be put into Qwik's
+serializable resumable state**: reading it back after a real SSR→resume round trip throws
+`Code(Q20)` (`QError_serializeErrorUnknownType`) the moment the container tries to serialize a
+reference to it (confirmed live, the hard way — see "A genuine regression found and fixed" below).
+So the question this whole feature has to answer is: **how is an app-supplied adapter available
+on the server AND on the client after resume, without ever serializing the instance itself?**
+
+The answer, consistently applied everywhere below: **never store a live adapter instance in Qwik
+state. Store a `QRL` *factory* instead (`QRL<(locale: string) => DateAdapter<D>>`), and resolve it
+into a fresh instance wherever one is actually needed, every time, discarding it immediately
+after.** A `QRL` is Qwik's own native "survives serialization" primitive (a lazy chunk reference,
+not a captured live object) — this project already relies on exactly this mechanism for other
+callback-shaped props that must survive resume (see `mat-month-view.tsx`'s own `dateFilter`
+QRL — "a QRL is itself callable, resolving+invoking in one step" — and `autocomplete/mat-
+autocomplete.tsx`'s `displayWith$`). `dateClass` reuses the identical mechanism. Constructing a
+fresh `NativeDateAdapter`-family instance is cheap (no I/O, just a few `Intl.DateTimeFormat`
+objects), so "rebuild it every time" costs nothing observable.
+
+The one place this project still allows a module-level **singleton instance** (`DEFAULT_DATE_ADAPTER`,
+unchanged since the original timepicker port) is for the hardcoded, non-configurable fallback —
+and purely for **arithmetic** (`getYear`/`addCalendarDays`/`sameDate`/etc., which are
+locale/adapter-independent: a subclass in this project's intended use case only ever overrides
+`parse()`/`format()`, never the arithmetic). Locale-sensitive **label** text (month/weekday
+names, the calendar header's period text) and a possibly-custom adapter's `parse()`/`format()`
+are the only things that ever need the *configured* adapter.
+
+### Public API
+
+```tsx
+import {$, component$} from '@qwik.dev/core';
+import {NativeDateAdapter, type MatDateFormats} from '@angular-community/qwik-material/core';
+import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+
+// Apps whose users type dates as dd.mm.yyyy: subclass NativeDateAdapter, overriding only
+// parse()/format() — every other method (arithmetic, comparisons, locale-aware names, time
+// parsing/formatting) is inherited for free, so the SAME subclass works for the datepicker
+// input, the date-range input, AND the timepicker.
+class DotDateAdapter extends NativeDateAdapter {
+  override parse(value: unknown, parseFormat: unknown): Date | null {
+    if (typeof value === 'string') {
+      const match = value.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (match) {
+        const [, dd, mm, yyyy] = match;
+        return this.createDate(Number(yyyy), Number(mm) - 1, Number(dd));
+      }
+    }
+    return super.parse(value, parseFormat);
+  }
+  override format(date: Date, displayFormat: unknown): string {
+    if (displayFormat === 'DD.MM.YYYY') {
+      const dd = String(this.getDate(date)).padStart(2, '0');
+      const mm = String(this.getMonth(date) + 1).padStart(2, '0');
+      return `${dd}.${mm}.${this.getYear(date)}`;
+    }
+    return super.format(date, displayFormat);
+  }
+}
+
+const DOT_DATE_FORMATS: MatDateFormats = {
+  parse: {dateInput: 'DD.MM.YYYY'},
+  display: {
+    dateInput: 'DD.MM.YYYY',
+    monthYearLabel: {year: 'numeric', month: 'short'},
+    dateA11yLabel: {year: 'numeric', month: 'long', day: 'numeric'},
+    monthYearA11yLabel: {year: 'numeric', month: 'long'},
+  },
+};
+
+export default component$(() => (
+  // App-wide if placed near your app's root; scoped to one subtree if placed deeper (an inner
+  // <QwikMaterialProvider> shadows an outer one for its own descendants, like every other
+  // QwikMaterialProvider config prop). ONE provider configures useMatDatepicker(),
+  // useMatDateRangePicker(), AND useMatTimepicker() together.
+  <QwikMaterialProvider
+    matDateAdapterFactory={$((locale: string) => new DotDateAdapter(locale))}
+    matDateFormats={DOT_DATE_FORMATS}
+    matDateLocale="en-GB"
+  >
+    <MyPage />
+  </QwikMaterialProvider>
+));
+```
+
+`matDateAdapterFactory` is a **`QRL` factory**, never a live instance — see "The core design
+problem" above. Omit any of the three props to fall back to `NativeDateAdapter`/
+`MAT_NATIVE_DATE_FORMATS`/`'en-US'` (unchanged behavior for every pre-existing scenario, none of
+which provide any of them).
+
+**Runtime locale changes** (upstream: `DateAdapter.setLocale()`, which notifies subscribed
+views via `localeChanges`) are Qwik-native here: `useDateLocale()` (exported from
+`@angular-community/qwik-material/core`) returns the SAME reactive `Signal<string>` every
+date-aware descendant resolves its locale from. Writing to it directly re-renders every consumer
+tracking it — no `setLocale()` call needed on any particular instance:
+
+```tsx
+import {useDateLocale} from '@angular-community/qwik-material/core';
+
+const locale = useDateLocale();
+// ... locale.value = 'fr';
+```
+
+`DateAdapter.setLocale()`/`.localeChanges` ARE also ported on the interface/`NativeDateAdapter`
+itself (`setLocale(locale)` mutates `this.locale` and bumps `localeChanges: Signal<number>`) for
+API-shape fidelity with upstream and for any code holding a live instance directly — but
+`useDateLocale()`'s context signal is the mechanism every port component actually reads.
+
+`dateClass` (mirrors upstream's `[dateClass]`): pass a `QRL<MatCalendarCellClassFunction<D>>` to
+`useMatDatepicker()`/`useMatDateRangePicker()`:
+
+```tsx
+const picker = useMatDatepicker<Date>({
+  dateClass: $((cellDate: Date, view: 'month' | 'year' | 'multi-year') =>
+    view === 'month' && cellDate.getDate() === 1 ? 'month-start' : '',
+  ),
+});
+```
+
+Resolved the exact same way `dateFilter` already was (same `useTask$`, same `Promise.all`), and
+applied via `calendar-math.ts`'s new `normalizeCellCssClasses()` (accepts a string, string array,
+`Set`, or a record of class name to boolean — same shape as upstream's `ngClass`-compatible
+return value) onto each `CalendarCell.cssClasses`, rendered by `mat-calendar-body.tsx` right after
+the static `mat-calendar-body-cell` class, before every conditional one — mirrors upstream's own
+`[class]="item.cssClasses"` binding order exactly.
+
+### Where each piece is actually read — the full call chain
+
+- **`core/datetime/use-date-adapter.ts`**: `MAT_DATE_ADAPTER_FACTORY` (QRL factory context),
+  `MAT_DATE_FORMATS` (plain-data context, unchanged), `MAT_DATE_LOCALE` (`Signal<string>`
+  context) + `useDateAdapterFactory()`/`useDateFormats()`/`useDateLocale()` +
+  `resolveDateAdapter(factory, locale)` (the one place that actually calls a factory QRL).
+- **`dialog/qwik-material-provider.tsx`**: `matDateAdapterFactory`/`matDateFormats`/
+  `matDateLocale` props, providing the three contexts above. `matDateLocale` seeds a PLAIN
+  `useSignal()` — deliberately NOT guarded-resynced against the prop on every render (see "A
+  genuine regression found and fixed" below for why a guard here is actively wrong, not merely
+  unnecessary).
+- **`use-mat-datepicker.ts`**: `useDatepickerCoreSignals()` (shared by `useMatDatepicker()`/
+  `useMatDateRangePicker()`) calls all three hooks ONCE, at hook-creation time (render-legal —
+  this hook runs inside the CONSUMER's own render body, never nested inside another component's
+  prop), stashing them onto `MatDatepickerCore<D>` as `_dateAdapterFactory`/`_dateFormats`/
+  `_locale`. `dateClass`/`dateFilter` are plain QRL fields, re-read fresh (no signal needed —
+  nothing subscribes to them reactively).
+- **`use-mat-timepicker.ts`**: identical pattern, `MatTimepickerHandle`'s own
+  `_dateAdapterFactory`/`_dateFormats`/`_locale`.
+- **`datepicker-runtime.ts`**: `resolveAdapterForPicker(picker)` (async, calls
+  `resolveDateAdapter(picker._dateAdapterFactory, picker._locale.value)`) is what every
+  parse/format call site goes through: `handleDatepickerInput`/`handleDatepickerBlur`
+  (via the shared `parseAndCommitTypedDate()` — see "A genuine regression found and fixed" for
+  why blur re-parses the native input's own text rather than trusting the model was already
+  updated), `handleDatepickerUserSelect`/`applyDatepickerSelection`/`handleRangePickerUserSelect`/
+  `applyDateRangePickerSelection`/`writeRangeFormattedValues` (all now `async`).
+  `formatDateForDisplay()`/`writeFormattedValue()` (unchanged name/signature, used for the
+  SSR-correct INITIAL display snapshot and `setMatDatepickerValue()`'s existing contract) still
+  use the hardcoded `DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS` singleton — see "Known gaps"
+  below for the one deviation this causes.
+- **`timepicker-runtime.ts`**: `resolveAdapterForTimepicker(picker)`, same shape. Only the
+  connected input's TEXT parse/format (`handleTimepickerInput`/`handleTimepickerBlur`/
+  `selectTimepickerOption`'s reformat, via the shared `formatInputValue()`) goes through it;
+  building the option LIST/labels still uses the hardcoded singleton (see `timepicker/SYNC.md`).
+- **Calendar rendering** (`mat-calendar.tsx`/`mat-calendar-header.tsx`/`mat-month-view.tsx`/
+  `mat-year-view.tsx`/`mat-multi-year-view.tsx`): these do NOT go through the QRL-factory
+  mechanism at all — only LOCALE (a plain string, always safe to construct a hardcoded
+  `new NativeDateAdapter(locale)` from, the same "hardcoded module function" shape
+  `qwik-cdk`'s `ensureCdkDispatchers()` already establishes) is threaded, via a `locale?: string`
+  prop each resolves with a `resolveLabelAdapter(locale)` helper (falls back to the plain
+  `DEFAULT_DATE_ADAPTER` module constant when the locale matches it — skips even that trivial
+  allocation on the overwhelmingly common default-locale path). `MatCalendar` itself resolves
+  `props.locale ?? useDateLocale().value` — see the next section for why the prop exists at all.
+
+### Why the calendar POPUP needs `locale` threaded as a prop (a genuine architecture bug, found and fixed)
+
+`MatCalendar`'s own `useDateLocale()` call is correct for the **standalone** `inline-calendar`
+case (a plain descendant of whatever `<QwikMaterialProvider>` the app renders) but WRONG for the
+**popup** case: `MatDatepickerContent` (and the `MatCalendar` inside it) is created via
+`overlay.create()`, and the resulting Qwik component tree is NOT a descendant of wherever the
+owning `<input matDatepicker>`'s own `<QwikMaterialProvider>` sits in the page — confirmed live
+(the `datepicker-locale` example, nested entirely inside its own `<QwikMaterialProvider
+matDateLocale="ja-JP">`, opened a calendar showing `en-US`-default month names, not `ja-JP`, until
+fixed). Fixed by threading the resolved locale explicitly: `datepicker-runtime.ts`'s
+`openDatepickerPanel`/`openDateRangePickerPanel` read `picker._locale.value` (correctly scoped,
+resolved by `useMatDatepicker()`'s own hook call) and pass it through `MatDatepickerContentProps.
+locale` → `<MatCalendar locale={props.locale}>`, which prefers the prop over its own
+`useDateLocale()` fallback. This is a snapshot taken at `open()` time, not a live binding — a
+reopened popup gets the CURRENT locale (matches this project's own pre-existing "fresh overlay
+per `open()` session" simplification for every other prop too; see Deviation 8, above) but an
+ALREADY-OPEN popup's calendar does not follow a LATER locale change made while it's still open —
+not tested by any scenario (the one functional spec exercising a live locale switch re-opens the
+calendar afterward specifically because of this).
+
+### A genuine regression found and fixed, mid-task: `useContext()`'s function-as-default gotcha
+
+`useDateAdapterFactory()`'s first implementation did `useContext(MAT_DATE_ADAPTER_FACTORY,
+DEFAULT_DATE_ADAPTER_FACTORY)` — passing the default FACTORY QRL directly as `useContext`'s
+default-value argument. This crashed **every** `qwik-material/datepicker`/`timepicker` scenario's
+real SSR (not just new ones) with `Code(Q20)`, confirmed live via the raw preview-server log. Root
+cause: `useContext(ctx, defaultValue)` treats any FUNCTION-typed default as a lazy initializer,
+invoking it immediately (with ZERO arguments) when no provider exists, and persisting the RETURN
+VALUE — and a QRL is itself callable (`typeof someQrl === 'function'`), so it was invoked as
+`DEFAULT_DATE_ADAPTER_FACTORY()` (missing its required `locale` argument), and the resulting
+PENDING PROMISE — not a resolved adapter, not even a correctly-invoked one — is what got persisted
+into the context slot and then failed to serialize. Exactly the same gotcha `mat-dialog.tsx`'s/
+`mat-bottom-sheet.tsx`'s own `useContext(..., null)`-then-substitute pattern already documents
+for a plain (non-QRL) factory default; it turns out to apply to a QRL default too, for the same
+reason (both are `typeof 'function'`). Fixed: `useDateAdapterFactory()` now passes `null` (never a
+function, never `undefined`) as the sentinel default, substituting `DEFAULT_DATE_ADAPTER_FACTORY`
+in plain JS afterward.
+
+A second, independent bug was found fixing the FIRST `datepicker-locale` functional test: an
+earlier version of `QwikMaterialProvider`'s `matDateLocale` wiring read `localeSignal.value` for
+comparison, inside a guard meant to re-sync the signal if the PROP changed (`if
+(props.matDateLocale !== undefined && localeSignal.value !== props.matDateLocale) {
+localeSignal.value = props.matDateLocale; }`). This is SELF-DEFEATING: reading `.value` during
+`QwikMaterialProvider`'s OWN render SUBSCRIBES it to its own signal — so the very next time a
+DESCENDANT changed it (the whole point of `useDateLocale()`), this re-render fired and
+immediately overwrote it back to the stale prop value. Every click of the `datepicker-locale`
+example's "Dynamically switch to French" button silently reverted. Fixed by removing the guard
+entirely: `matDateLocale` is a ONE-TIME SEED only (`useSignal(props.matDateLocale ?? 'en-US')`,
+nothing else) — exactly like `animationsDisabled`'s own, adjacent, unguarded seed in the same
+file. A descendant-mutated `Signal` that a PROVIDER also reads-to-compare-against-its-own-prop is
+a real, reusable lesson: don't.
+
+A third bug, this one test-infrastructure-only (not a port bug): Playwright's `.click({force:
+true})` on an element behind a full-viewport overlay backdrop (the calendar's own transparent
+dismiss-on-outside-click backdrop) still uses coordinate-based synthetic mouse dispatch — `force`
+only skips Playwright's OWN pre-click actionability checks, not the browser's real hit-testing —
+so the click landed on the BACKDROP, not the button underneath it, closing the calendar but never
+firing the button's own handler. Fixed in the test by using `.dispatchEvent('click')` (dispatches
+a real DOM `click` directly at the element, no coordinate hit-testing — still bubbles to the same
+outside-click dispatcher, so the backdrop dismissal still fires too, correctly).
+
+### Known gaps
+
+- ~~A pre-seeded `value`'s FIRST paint uses the hardcoded `en-US` `DEFAULT_DATE_ADAPTER`'s
+  format, not a configured custom adapter's.~~ **FIXED** (coordinator follow-up, same task).
+  `initialDisplay` on `<MatDatepickerInput>` (and `<MatTimepickerInput>` — see
+  `timepicker/SYNC.md`) is now a `useComputed$`, not a plain `useSignal`, following the exact
+  pattern `qwik-material/icon`'s `resolvedSvgIcon` established first (see that package's SYNC.md
+  deviation #20): the compute function returns a plain, synchronous `''` when there's nothing to
+  format (the common empty-input case — never even an `async function` for it, so it never enters
+  the async-suspension engine at all), and a real `Promise<string>` — resolved through
+  `resolveDateAdapter(picker._dateAdapterFactory, mountLocale.value).then(a =>
+  formatDateWithAdapter(a, picker._dateFormats, mountValue.value))` — only when a non-null seed
+  value needs the configured adapter's own `format()`. Reading `.value` on a still-pending
+  `ComputedSignal` THROWS the in-flight promise, which Qwik's own renderer catches and retries —
+  SSR blocks until resolved (confirmed live: the raw SSR response body for `/mat-datepicker/
+  custom-adapter/`, fetched with a plain HTTP GET and no browser JS at all, already contains
+  `"05.12.2024"`/`"14:30"` — the `DotDateAdapter`/`DOT_DATE_FORMATS`-correct text for that route's
+  pre-seeded `PRESET_DATE`/`PRESET_TIME` — never the hardcoded-default `"12/5/2024"`/`"2:30 PM"`
+  it produced before this fix), and the client re-suspends the same way on its own first read
+  after a resume. `mountValue`/`mountLocale` snapshot `picker.value.value`/`picker._locale.value`
+  ONCE, at mount, into separate frozen `useSignal`s BEFORE the `useComputed$` reads them — this
+  preserves the existing "frozen, computed once, never reactively rewritten" invariant the native
+  `value` DOM property write already required (see `mat-input.tsx`'s own `initialValue` doc
+  comment); a `useComputed$` that instead called the (already-existing, private)
+  `resolveAdapterForPicker(picker)` helper directly would auto-track the LIVE `picker._locale`
+  signal (read synchronously, before its first `await`) and could reactively recompute — and
+  rewrite the input's `.value` — while a user is actively typing. `MatDateRangeInput` needed no
+  equivalent fix: its own `formatted` signal was already built with a `useTask$` that resolves the
+  configured adapter (added earlier in this same task), which already blocks SSR the same way.
+  New functional spec added: `specs/material-datepicker/functional.spec.ts`'s `pluggable
+  DateAdapter — pre-seeded value, initial paint` describe block (2 tests: raw SSR HTML via
+  `request.get()`, and the same values still correct after a real-browser resume). The
+  `custom-adapter` route (`src/qwik-cdk-dev-app/src/routes/mat-datepicker/custom-adapter/
+  index.tsx`) now seeds all three examples with a non-null value (`PRESET_DATE`/
+  `PRESET_RANGE_START`/`PRESET_RANGE_END`/`PRESET_TIME`) specifically so a wrong
+  (hardcoded-adapter) render is OBSERVABLY different from a correct one; `DOT_DATE_FORMATS.
+  display.timeInput` was also changed to an explicit 24-hour `{hour: '2-digit', minute: '2-digit',
+  hour12: false}` (was `{hour: 'numeric', minute: 'numeric'}`, which happened to collide with the
+  default adapter's own 12-hour-with-numeric-hour shape for some times) so the SAME
+  observable-difference trick works for the timepicker fixture too.
+- **`<mat-hint>` text bound to a value computed from `useDateLocale()` does not update on a
+  locale change.** Pre-existing, unrelated-to-this-task `MatFormField` limitation: `hintStart`
+  (like `control`/`infixContent`) is captured into a frozen `useSignal(() => props.hintStart)`
+  snapshot at mount (`mat-form-field.tsx`'s own `hintStartSnapshot`) — a later render's new
+  `<MatHint>` JSX element for the same slot is never substituted in. Found porting the
+  `datepicker-locale` example (upstream's own hint text DOES update, via a live Angular
+  `computed()` signal) — the CALENDAR popup's own labels are unaffected (not threaded through any
+  of `MatFormField`'s frozen content props), which is why `specs/material-datepicker/
+  functional.spec.ts`'s `locale switch updates calendar labels` test only asserts the calendar,
+  and why `specs/examples-forms/angular-parity.spec.ts` deliberately has no `datepicker-locale`
+  interaction step (see that file's own comment). **Evaluated for a cheap fix in the coordinator
+  follow-up above and deliberately left as-is**: `mat-form-field.tsx`'s own doc comment (around
+  `controlSnapshot`) documents that EVERY frozen slot signal in that file — not just
+  `hintStart` — exists to guard against a confirmed-live Qwik core bug (a freshly-reconstructed
+  `JSXOutput` prop value swapped in for an unresolved child component's render QRL can be
+  observed disconnected from the DOM mid-replace). Un-freezing `hintStart` alone to fix this one
+  gap would reintroduce that exact class of bug for the hint slot specifically — not a small or
+  safe change, so left documented rather than attempted.
+- ~~`specs/material-datepicker/angular-parity.spec.ts`'s `actions (calendar)` scenario: a 12px
+  horizontal overlay-position difference.~~ **This was a genuine REGRESSION introduced by this
+  task, not pre-existing — found and fixed in the coordinator follow-up.** Proven with a
+  throwaway `git worktree add /tmp/dates-base a684af0357` (the base commit on `qwik-port-21.2`,
+  before any of this task's changes) built and served on `:4197`: `actions (calendar)` passed
+  6/6 there (3 repeats) against the SAME `:4201` Angular reference that failed against this
+  branch's own `:4192` preview. Root cause: `src/qwik-material-examples/datepicker/
+  datepicker-locale/datepicker-locale-example.css` (added by THIS task, for the `datepicker-locale`
+  example) had a bare, unscoped `mat-form-field { margin-right: 12px; }` rule, copied verbatim
+  from upstream's own Angular example — which relies on Angular's automatic per-component View
+  Encapsulation to scope that selector invisibly to just that one component's template. This
+  port's plain CSS import (`import './datepicker-locale-example.css'`, same shape every other
+  example uses) has NO such scoping: it is a GLOBAL side effect the moment that CSS chunk is
+  bundled into the dev-app AT ALL, applying to every `<mat-form-field>` on every route, not just
+  `datepicker-locale`'s own two fields — including the completely unrelated `actions` scenario,
+  which happens to be the only scenario in this suite with two `<mat-form-field>`s side by side
+  (making the leak position-sensitive, and therefore the only place a DOM-parity comparison could
+  actually observe it; `actions (field)`, which compares structure/classes rather than absolute
+  pixel position, never caught it either). Fixed by scoping the selector to the example's own
+  host tag instead: `datepicker-locale-example mat-form-field { margin-right: 12px; }` (the
+  component already renders a `<datepicker-locale-example>` wrapper). Verified: `actions`'s
+  computed `margin` went from `0px 12px 0px 0px` back to `0px`; `datepicker-locale`'s own two
+  fields are unaffected (still `0px 12px 0px 0px`). Two OTHER, pre-existing examples in the same
+  directory have the identical unscoped shape (`timepicker-datepicker-integration-example.css`,
+  `timepicker-validation-example.css`) — left untouched (out of scope for this fix; neither
+  happens to collide with a position-sensitive scenario the way this one did, so they're latent,
+  not regressions).
+
+### Verification
+
+- `pnpm -C src/qwik-material test` (build + vitest + lint:no-ssr-leaks + typecheck): vitest
+  783/783 unchanged; `lint:no-ssr-leaks` shows the same 2 PRE-EXISTING, unrelated leaks
+  (`select/mat-select.tsx:435`, `timepicker/mat-timepicker-input.tsx:201` — confirmed via `git
+  show HEAD:...` that both lines are byte-identical to before this task, untouched); `tsc
+  --noEmit` clean.
+- `src/qwik-material-examples`/`src/qwik-material-docs` both typecheck clean.
+- `pnpm -C src/qwik-material-docs generate` picks up the 2 new examples
+  (`datepicker-date-class`/`datepicker-locale`) automatically.
+- New functional specs (`specs/material-datepicker/functional.spec.ts`, now 7 tests — 5 from the
+  original task plus the 2 pre-seeded-value/SSR ones from the coordinator follow-up): 21/21 across
+  `--repeat-each=3`.
+- New example parity cases (`datepicker-date-class`/`datepicker-locale`, default + the
+  `date-class` interaction): 9/9 across `--repeat-each=3`; the full `specs/examples-forms` suite
+  (50 tests, every batch — re-run clean after the `datepicker-locale-example.css` scoping fix) and
+  `specs/examples`/`specs/examples-rerender` filtered to `date|time` all pass (21/21).
+- `specs/formisch` (12/12, including its own `datepicker round-trips` test exercising the
+  now-async `handleDatepickerBlur`/`setMatDatepickerValue` paths) unaffected.
+- `specs/material-datepicker/angular-parity.spec.ts`: 24/24 — INCLUDING `actions (calendar)`,
+  confirmed stable 10/10 across `--repeat-each=5` after the CSS-scoping fix.
+  `specs/material-timepicker/angular-parity.spec.ts`: 6/7 (the one pre-existing, unrelated
+  `min-max` failure this project's baseline already carries — see `qwik-port-21.2`'s own baseline,
+  578/579).

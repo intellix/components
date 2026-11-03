@@ -154,20 +154,156 @@ focusing/typing into `<MatDatepickerInput>`.
 
 ### Internationalization
 
-Not ported — this port's `DateAdapter` is fixed to a single process-wide `en-US` native
-implementation. There's no live locale switching, no `MAT_DATE_LOCALE`/`setLocale()`, and no
-alternate date-library adapters (`date-fns`/Luxon/Moment) — only the native `Date`-based adapter
-upstream's own `provideNativeDateAdapter` wires up. `MAT_DATE_FORMATS` likewise isn't
-configurable.
+Internationalization of the datepicker is configured via three aspects:
+
+1.  The date locale.
+2.  The date implementation (`DateAdapter`) the datepicker uses to parse/format/compare dates.
+3.  The display and parse formats (`MAT_DATE_FORMATS`) used by the datepicker.
+
+Every piece is provided through `<QwikMaterialProvider>` — app-wide if placed near your app's
+root, or scoped to one subtree if placed deeper (an inner `<QwikMaterialProvider>` shadows an
+outer one for its own descendants, the same way every other `QwikMaterialProvider` config prop
+does). `useMatDatepicker()`/`useMatDateRangePicker()`/`<MatCalendar>`/`<MatTimepickerInput>` all
+read from the SAME provider, so one `<QwikMaterialProvider>` configures the datepicker, the
+date-range input, and the timepicker together.
+
+#### Setting the locale
+
+Pass `matDateLocale` to `<QwikMaterialProvider>`:
+
+```tsx
+<QwikMaterialProvider matDateLocale="en-GB">
+  <MyDatepickerPage />
+</QwikMaterialProvider>
+```
+
+It's also possible to change the locale at runtime: read the same signal any date-aware
+descendant resolves via `useDateLocale()` (exported from `@angular-community/qwik-material/core`)
+and write to it directly — the Qwik-native equivalent of calling `DateAdapter.setLocale()`. Every
+component that renders locale-sensitive text (month/weekday names, the calendar header's period
+label) re-renders automatically, including an open calendar re-opened after the change:
+
+```tsx
+import {useDateLocale} from '@angular-community/qwik-material/core';
+
+export default component$(() => {
+  const locale = useDateLocale();
+  return (
+    <MatButton onClick$={$(() => { locale.value = 'fr'; })}>
+      Switch to French
+    </MatButton>
+  );
+});
+```
+
+<!-- example(datepicker-locale) -->
+
+#### Choosing a date implementation and date format settings
+
+This port ships one `DateAdapter` implementation: `NativeDateAdapter`, backed by the native
+`Date` object and `Intl` for formatting (no Moment/Luxon/date-fns dependency). It's the default
+for every date-aware component — nothing needs to be provided to use it.
+
+```tsx
+import {NativeDateAdapter, MAT_NATIVE_DATE_FORMATS} from '@angular-community/qwik-material/core';
+```
+
+`provideNativeDateAdapter()`'s equivalent here is simply *not providing anything* —
+`<QwikMaterialProvider>` without a `matDateAdapterFactory`/`matDateFormats` prop already resolves
+`NativeDateAdapter`/`MAT_NATIVE_DATE_FORMATS`.
+
+If you need custom parsing/formatting behavior (for example, an app whose users type dates as
+`dd.mm.yyyy`), subclass `NativeDateAdapter` and override `parse()`/`format()` — every other
+method (arithmetic, comparisons, locale-aware names, time parsing/formatting) is inherited for
+free, so the same subclass works for the datepicker input, the date-range input, *and* the
+timepicker:
+
+```tsx
+import {$, component$} from '@qwik.dev/core';
+import {NativeDateAdapter, type MatDateFormats} from '@angular-community/qwik-material/core';
+import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+
+class DotDateAdapter extends NativeDateAdapter {
+  override parse(value: unknown, parseFormat: unknown): Date | null {
+    if (typeof value === 'string') {
+      const match = value.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (match) {
+        const [, dd, mm, yyyy] = match;
+        return this.createDate(Number(yyyy), Number(mm) - 1, Number(dd));
+      }
+    }
+    return super.parse(value, parseFormat);
+  }
+
+  override format(date: Date, displayFormat: unknown): string {
+    if (displayFormat === 'DD.MM.YYYY') {
+      const dd = String(this.getDate(date)).padStart(2, '0');
+      const mm = String(this.getMonth(date) + 1).padStart(2, '0');
+      return `${dd}.${mm}.${this.getYear(date)}`;
+    }
+    return super.format(date, displayFormat);
+  }
+}
+
+const DOT_DATE_FORMATS: MatDateFormats = {
+  parse: {dateInput: 'DD.MM.YYYY'},
+  display: {
+    dateInput: 'DD.MM.YYYY',
+    monthYearLabel: {year: 'numeric', month: 'short'},
+    dateA11yLabel: {year: 'numeric', month: 'long', day: 'numeric'},
+    monthYearA11yLabel: {year: 'numeric', month: 'long'},
+  },
+};
+
+export default component$(() => (
+  <QwikMaterialProvider
+    matDateAdapterFactory={$((locale: string) => new DotDateAdapter(locale))}
+    matDateFormats={DOT_DATE_FORMATS}
+  >
+    <MyDatepickerPage />
+  </QwikMaterialProvider>
+));
+```
+
+`matDateAdapterFactory` takes a **factory** (`QRL<(locale: string) => DateAdapter<D>>`), never a
+live adapter instance — a class instance with methods can't be put into Qwik's serializable
+resumable state, so every date-aware component resolves the factory into a fresh instance
+wherever one is actually needed (parsing typed text, formatting a value to display) rather than
+holding one across a render. This is transparent to you as a consumer; it only matters if you're
+extending the port itself (see `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS /
+MAT_DATE_LOCALE / dateClass" section for the full design).
+
+Not ported: alternate date-library adapters (`date-fns`/Luxon/Moment) — only the native
+`Date`-based adapter (and your own subclasses of it) are supported.
 
 #### Customizing the calendar header
 
 Not ported — no `calendarHeaderComponent` equivalent; the calendar header is always the built-in
 one.
 
+#### Localizing labels and messages
+
+Not ported — `MatDatepickerIntl`'s strings (e.g. the toggle's "Open calendar" label) have no
+live-override mechanism yet.
+
 #### Highlighting specific dates
 
-Not ported — no `dateClass` equivalent (no per-date custom CSS classes).
+If you want to apply one or more CSS classes to some dates in the calendar (e.g. to highlight a
+holiday), pass `dateClass` to `useMatDatepicker()`/`useMatDateRangePicker()`. It accepts a `QRL`
+function called with each date in the calendar (and which view it belongs to); any classes it
+returns (a string, string array, `Set`, or a record of class name to boolean, same as
+upstream's `ngClass`-compatible return value) are applied to that date's cell:
+
+```tsx
+const picker = useMatDatepicker<Date>({
+  dateClass: $((cellDate: Date, view: 'month' | 'year' | 'multi-year') => {
+    if (view === 'month' && cellDate.getDate() === 1) return 'month-start';
+    return '';
+  }),
+});
+```
+
+<!-- example(datepicker-date-class) -->
 
 ### Accessibility
 
@@ -211,10 +347,16 @@ In month view:
   [Using with Formisch](/guide/using-with-formisch/)).
 - **`(dateInput)`/`(dateChange)` collapse into one `onValueChange$`** — see "Input and change
   events" above.
-- **Not ported:** live locale switching, alternate date-library adapters, configurable
-  `MAT_DATE_FORMATS`, `yearSelected`/`monthSelected` outputs, comparison ranges, custom range
-  selection strategies, a custom calendar header component, `dateClass`, and the imperative
-  `open()`/`close()`/`opened` API — see the relevant sections above and
+- **Pluggable `DateAdapter`/`MAT_DATE_FORMATS`/locale, and `dateClass`, are ported** — see
+  "Internationalization"/"Highlighting specific dates" above. `matDateAdapterFactory` is a `QRL`
+  **factory**, not a live adapter instance (a class instance can't be put into Qwik's
+  serializable resumable state); `useDateLocale()` returns a reactive `Signal<string>` in place
+  of upstream's one-shot `MAT_DATE_LOCALE` DI token + imperative `setLocale()` call.
+- **Not ported:** alternate date-library adapters (`date-fns`/Luxon/Moment — only
+  `NativeDateAdapter`/its subclasses), localized `MatDatepickerIntl` strings,
+  `yearSelected`/`monthSelected` outputs, comparison ranges, custom range selection strategies, a
+  custom calendar header component, and the imperative `open()`/`close()`/`opened` API — see the
+  relevant sections above and
   [Migrating from Angular Material](/guide/migrating-from-angular-material/).
 - **No dev-mode throws** — an unsupported combination (e.g. `options`-shaped misuse) doesn't
   throw; it simply produces whatever DOM the data implies.

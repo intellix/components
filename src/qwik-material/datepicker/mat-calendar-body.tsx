@@ -237,6 +237,10 @@ export const MatCalendarBody = component$<MatCalendarBodyProps>(props => {
                   class={
                     [
                       'mat-calendar-body-cell',
+                      // Mirrors upstream's `[class]="item.cssClasses"` binding — placed right
+                      // after the static class, before every conditional `[class.x]` one, same
+                      // order Angular's compiled template applies them in.
+                      ...(cell.cssClasses ?? []),
                       !cell.enabled && 'mat-calendar-body-disabled',
                       active && 'mat-calendar-body-active',
                       rangeStart && 'mat-calendar-body-range-start',
