@@ -14,6 +14,13 @@ import {createContextId} from '@qwik.dev/core';
 export interface MatListBaseState {
   /** `false` for nav-list/action-list items; `true` (default) otherwise. */
   isNonInteractive: boolean;
+  /**
+   * Mirrors upstream `MatListBase.disableRipple` — read by every descendant
+   * `<MatListItem>` and OR'd into its own effective ripple-disabled state
+   * (`MatListItemBase.disableRipple`'s `!!this._listBase?.disableRipple`
+   * term). `false` (default) matches upstream's own unset default.
+   */
+  disableRipple: boolean;
 }
 
 /** Context id used by <MatListItem> to read its container's interactivity. */
@@ -30,4 +37,5 @@ export const MAT_LIST_BASE_STATE = createContextId<MatListBaseState>('qwikMateri
  */
 export const MAT_LIST_BASE_STATE_DEFAULTS: MatListBaseState = {
   isNonInteractive: true,
+  disableRipple: false,
 };

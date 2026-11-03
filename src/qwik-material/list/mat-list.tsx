@@ -19,6 +19,10 @@ export interface MatListProps {
    *  cascades disabled styling to descendant items via
    *  `.mat-mdc-list[aria-disabled='true'] .mat-mdc-list-item`. */
   disabled?: boolean;
+  /** Mirrors upstream `MatListBase.disableRipple` — disables ripples for
+   *  every descendant `<MatListItem>` (see `list-context.ts`'s
+   *  `MatListBaseState.disableRipple`). Default `false`. */
+  disableRipple?: boolean;
   'aria-label'?: string;
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
@@ -63,7 +67,10 @@ export const MatList = component$<MatListProps>(props => {
   // (Progress Bar / Progress Spinner post-mortem).
   useContext(MAT_LIST_CONFIG, CONFIG_DEFAULTS);
   // Plain <mat-list> is non-interactive per upstream MatListBase default.
-  useContextProvider(MAT_LIST_BASE_STATE, {isNonInteractive: true} satisfies MatListBaseState);
+  useContextProvider(MAT_LIST_BASE_STATE, {
+    isNonInteractive: true,
+    disableRipple: props.disableRipple ?? false,
+  } satisfies MatListBaseState);
 
   const classes = ['mat-mdc-list', 'mat-mdc-list-base', 'mdc-list', props.class].filter(
     Boolean,
@@ -89,7 +96,10 @@ export const MatNavList = component$<MatNavListProps>(props => {
   // Nav lists are interactive — items are only reachable via keyboard
   // shortcuts per MDC, so upstream opts every item into the ripple /
   // `mat-mdc-list-item-interactive` treatment. See MatNavList comment.
-  useContextProvider(MAT_LIST_BASE_STATE, {isNonInteractive: false} satisfies MatListBaseState);
+  useContextProvider(MAT_LIST_BASE_STATE, {
+    isNonInteractive: false,
+    disableRipple: props.disableRipple ?? false,
+  } satisfies MatListBaseState);
 
   const classes = ['mat-mdc-nav-list', 'mat-mdc-list-base', 'mdc-list', props.class].filter(
     Boolean,
@@ -112,7 +122,10 @@ export const MatNavList = component$<MatNavListProps>(props => {
 
 export const MatActionList = component$<MatActionListProps>(props => {
   useContext(MAT_LIST_CONFIG, CONFIG_DEFAULTS);
-  useContextProvider(MAT_LIST_BASE_STATE, {isNonInteractive: false} satisfies MatListBaseState);
+  useContextProvider(MAT_LIST_BASE_STATE, {
+    isNonInteractive: false,
+    disableRipple: props.disableRipple ?? false,
+  } satisfies MatListBaseState);
 
   const classes = ['mat-mdc-action-list', 'mat-mdc-list-base', 'mdc-list', props.class].filter(
     Boolean,
