@@ -588,3 +588,54 @@ distinguishes "sentinel came back" from "a real value came back" is unaffected (
 reference works for that; `Symbol` was never required). `pnpm -C src/qwik-material test` still
 783/783 after the change; `pnpm -C src/qwik-material-docs build && pnpm exec playwright test
 specs/docs-site` confirmed the crash gone.
+
+## Typography + elevation classes (2026-11-03)
+
+Upstream's `mat.typography-hierarchy()` (`src/material/core/typography/_typography.scss`) and
+`mat.elevation-classes()` (`src/material/core/_core.scss`) — both previously missing from this
+port's prebuilt CSS entirely. Both are Sass MIXINS a consumer app calls directly (never called by
+`mat.theme()` itself), so neither belongs in the always-loaded `core-prebuilt.css` — each ships as
+its own new, separately opt-in file, generated (never hand-written) the same way
+`scss/core/default-theme.scss` already is:
+
+| File | Upstream | Status | Notes |
+|---|---|---|---|
+| `scripts/generate-typography-elevation-prebuilt.mjs` | n/a (qwik-material-specific) | new | Compiles both mixins against the REAL unmodified upstream Sass (same `@angular/material`-resolving importer `generate-default-theme.mjs` uses) and writes 3 files: the 2 below, plus a plain-CSS copy for the Angular parity mirror (`src/dev-app/qwik-parity/typography-elevation.generated.css`) — same generated text on both sides by construction, not by trusting two independently-written recipes to agree |
+| `scss/core/typography-prebuilt.scss` → `typography-prebuilt.css` | `mat.typography-hierarchy($theme, '.mat-typography', true)` | new | `$theme` built via `mat.define-theme()` with `typography: (plain-family: Roboto, use-system-variables: true)` — `use-system-variables: true` is the part that makes every emitted rule read `font: var(--mat-sys-title-large)` etc. (confirmed: the SAME `--mat-sys-*` custom properties `scss/core/default-theme.scss` already declares) instead of literal, frozen-at-generation-time font values (`use-system-variables` defaults `false` in `mat.define-theme()`). `$back-compat: true` (3rd positional arg) additionally emits every M2-era class alias this port's consumers may use (`.mat-h1`...`.mat-h6`, `.mat-headline-1`...`.mat-headline-6`, `.mat-body`/`.mat-body-strong`/`.mat-body-2`, `.mat-small`/`.mat-caption`, `.mat-subtitle-1`/`.mat-subtitle-2`) alongside the M3 names (`.mat-display-large`, `.mat-headline-large`, `.mat-title-large`, `.mat-body-large`, …) and bare `h1`...`h6`/`p` selectors scoped under `.mat-typography` |
+| `scss/core/elevation-prebuilt.scss` → `elevation-prebuilt.css` | `mat.elevation-classes()` | new | Takes NO theme argument — see "Known upstream quirk" below |
+| `scripts/check-generated-scss.mjs` | n/a (qwik-material-specific) | new | Byte-parity check: re-compiles `default-theme.scss`/`typography-prebuilt.scss`/`elevation-prebuilt.scss` fresh from the real upstream Sass and diffs against the checked-in files — catches drift (a hand-edit, or an un-regenerated upstream source change). `pnpm -C src/qwik-material check-generated-scss` |
+
+**Known upstream quirk, reproduced faithfully (confirmed against a REAL Angular 21.2.14 render,
+not just the compiled Sass text — see below):** `mat.elevation-classes()` computes its
+`box-shadow` fallback once, at Sass-compile-time, from `m3.$sys-theme` — upstream's own hardcoded
+"every value is its own unwrapped CSS variable NAME" default map (`tokens/m3/_theme.scss`'s
+`_create-system-app-vars-map`), completely independent of whatever real theme an app uses (there
+is no theme argument to pass). `elevation.get-box-shadow()`'s internal `_compute-color-opacity()`
+only wraps a shadow color in `rgba(...)` when it's a real Sass `color` value; `m3.$sys-theme`'s
+`shadow` entry is the bare STRING `--mat-sys-shadow` (typeof "string"), so it's emitted completely
+unwrapped inside the fallback — e.g. `box-shadow: var(--mat-app-elevation-shadow-level-4, 0px 2px
+4px -1px --mat-sys-shadow, 0px 4px 5px 0px --mat-sys-shadow, 0px 1px 10px 0px --mat-sys-shadow);`.
+`--mat-sys-shadow` appears BARE (not `var(--mat-sys-shadow)`) — invalid CSS for a `box-shadow`
+color component. **Verified empirically, in a real browser, against the real Angular dev-app
+reference (not assumed from reading Sass):** the whole declared value is therefore invalid, so
+`box-shadow` computes to its initial value, `none` — on BOTH apps identically, for every one of
+`.mat-elevation-z0`...`z24`, unless an app ALSO sets `--mat-app-elevation-shadow-level-N` itself
+for each level it uses (bypassing the broken fallback entirely — upstream has no
+`mat.elevation-overrides()`-style mixin for this; `mat.theme-overrides()` only recognizes
+`--mat-sys-*` names, never `--mat-app-*`). This is a real, reproducible gap in upstream Angular
+Material 21.2.14's `mat.elevation-classes()` when used standalone — not a Qwik-port bug, and not
+something this port invents a fix for (ported behaviour must match upstream, bugs included). See
+the Theming guide for the exact workaround an app needs if it wants visible elevation shadows.
+
+Parity: a bespoke (non-upstream-example) scenario, `mat-core/typography` + `mat-core/elevation` —
+Angular mirror `src/dev-app/qwik-parity/core.ts` (registered under the `mat-core` devAppId in
+`routes.ts`; NOT part of the shared `:4201` reference server — build+run your OWN
+`bazel run //src/dev-app:devserver -- --port=4213` from this worktree, see that file's own header
+comment), Qwik route `src/qwik-cdk-dev-app/src/routes/mat-core/{typography,elevation}/`, parity
+spec `specs/material-core/angular-parity.spec.ts`. Both `typography-prebuilt.css`/
+`elevation-prebuilt.css` are loaded globally in the dev-app's `root.tsx` (same convention every
+other `*-prebuilt.css` already follows there) — confirmed via the full regression suite that this
+introduces no visual change for the handful of PRE-EXISTING examples that already use
+`mat-elevation-z*` classes (`table-*`, `tab-group-dynamic-height`, `ripple-overview`): the newly-
+available rule computes to the same `box-shadow: none` those elements already had with no rule at
+all.

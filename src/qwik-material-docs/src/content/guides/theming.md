@@ -83,3 +83,96 @@ on any ancestor element, not just `:root`:
 
 Every qwik-material component inside `.dark-section` picks up the override automatically, with no
 component-level theming prop to set.
+
+## Typography classes and elevation classes (opt-in)
+
+Two more CSS files exist alongside every component's own `<component>-prebuilt.css` (see
+[Getting started](/guide/getting-started/)), for the same two upstream Sass mixins `mat.theme()`
+itself never calls, so neither one is in `core-prebuilt.css`:
+
+```ts
+import '@angular-community/qwik-material/typography-prebuilt.css';
+import '@angular-community/qwik-material/elevation-prebuilt.css';
+```
+
+**`typography-prebuilt.css`** gives you `mat.typography-hierarchy()`'s classes, token-driven off
+the SAME `--mat-sys-*` typography tokens `core-prebuilt.css` sets (so they follow your overrides
+automatically): `.mat-typography` as the ancestor scope, `.mat-display-large`/`.mat-headline-large`/
+`.mat-title-large`/`.mat-body-large`/`.mat-label-large` (and their `-medium`/`-small` siblings),
+plain `h1`...`h6`/`p` tags *inside* `.mat-typography`, and the M2-era aliases
+(`.mat-h1`...`.mat-h6`, `.mat-headline-1`...`.mat-headline-6`, `.mat-body`/`.mat-body-strong`/
+`.mat-body-2`, `.mat-small`/`.mat-caption`, `.mat-subtitle-1`/`.mat-subtitle-2`) — the bare class
+names work anywhere on the page; the tag selectors need the `.mat-typography` ancestor:
+
+```tsx
+<div class="mat-typography">
+  <h1>Styled like Material's display-large</h1>
+  <p>Styled like Material's body-large, with proper paragraph spacing.</p>
+</div>
+```
+
+**`elevation-prebuilt.css`** gives you `.mat-elevation-z0` through `.mat-elevation-z24` (plus the
+`.mat-mdc-elevation-specific.mat-elevation-zN` combination some component CSS needs internally).
+**Known upstream limitation, reproduced faithfully:** as of Angular Material 21.2.14, these
+classes render **no visible shadow at all** by default (`box-shadow` computes to `none`) — this
+is a real, confirmed gap in upstream's own `mat.elevation-classes()` mixin (verified against a
+real Angular 21.2.14 render, not just reading its Sass source), not something specific to this
+port: the mixin's `box-shadow` fallback is computed once, at Sass-compile-time, from a hardcoded
+map where the shadow *color* is left as an unwrapped, invalid CSS variable reference. If you need
+working elevation shadows, set `--mat-app-elevation-shadow-level-<N>` yourself for each level you
+use, bypassing the broken fallback entirely — there is no `mat.elevation-overrides()`-style mixin
+for this (`mat.theme-overrides()`, below, does not reach it either — it only recognizes
+`--mat-sys-*` names):
+
+```css
+.mat-elevation-z4 {
+  --mat-app-elevation-shadow-level-4: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
+}
+```
+
+## Theming via upstream's own Sass API
+
+If your app already has Angular Material's real `@angular/material` Sass package as a
+dependency (e.g. a CMS/design-system build pipeline that generates theme overrides through it, or
+you're migrating an app that already themes this way), you can keep using it — qwik-material's
+tokens and DOM are byte-for-byte identical to upstream's, so Sass compiled against the real
+`@angular/material` package themes this port exactly the same way it themes Angular Material
+itself. **Verified concretely**, not just asserted: compiling
+
+```scss
+@use '@angular/material' as mat;
+
+:root {
+  @include mat.button-overrides((filled-container-color: red));
+}
+```
+
+produces `:root { --mat-button-filled-container-color: red; }` — the exact CSS variable
+`button-prebuilt.css` already reads (`background-color: var(--mat-button-filled-container-color,
+var(--mat-sys-primary))`) — and applying that one declaration to a live
+`<MatButton appearance="filled">` really does flip its computed background color.
+
+**Use ONLY the token-emitting `*-overrides()` mixins** (`mat.theme-overrides(...)`,
+`mat.button-overrides(...)`, `mat.checkbox-overrides(...)`, one per component, same naming as the
+component itself) — every one of these just emits `--mat-*`/`--mat-sys-*` custom property
+declarations, nothing else, which is exactly what this port's prebuilt CSS already reads.
+
+**Do NOT include**, because they'd duplicate (and can conflict with) the structural CSS your
+`<component>-prebuilt.css` imports already provide:
+
+- `mat.core()` — a no-op as of this Angular Material version anyway, but never needed here.
+- Any full `*-theme()`/`*-color()`/`*-typography()`/`*-density()`/`*-base()` mixin
+  (`mat.button-theme($theme)`, `mat.all-component-themes($theme)`, …) — these emit the component's
+  entire structural ruleset (selectors, layout, every property, not just token values), which this
+  port already ships compiled into `<component>-prebuilt.css`. Running them again produces a
+  second, separate copy of the same rules, which only adds specificity/ordering risk for no benefit.
+- `mat.typography-hierarchy($theme)`/`mat.elevation-classes()` themselves, if you only want the
+  token VALUES to differ — those mixins emit the CLASSES this port already ships as
+  `typography-prebuilt.css`/`elevation-prebuilt.css` (above); override the tokens those files
+  already read instead.
+
+The recommended setup, end to end: keep importing every `*-prebuilt.css` file from
+`@angular-community/qwik-material` as usual (that's your structural CSS), then compile your own
+small Sass entry that calls only `mat.theme-overrides(...)` plus whichever `*-overrides(...)`
+per-component mixins you need, and load the resulting plain CSS output alongside the prebuilt
+files (after them, so your overrides win the cascade).
