@@ -435,3 +435,10 @@ src/qwik-material test` (783/783 unchanged). Does NOT extend to `<MatDatepicker>
 themselves (upstream's `<mat-datepicker disabled="false">` forcing the CALENDAR enabled
 independently of the input) — not needed by any scenario's default (closed, non-interacting)
 render, so left as a documented gap rather than widening the fix further.
+
+## Fixed: custom toggle icon lost on re-render (2026-11-03)
+
+`MatDatepickerToggle`'s `icon` prop was rendered directly, so a re-render of this component (hover/focus state) rendered the same
+`JSXOutput` a second time, which Qwik v2 corrupts: the `<mat-icon>` came back empty. Wrapped in
+`cloneJsxForReuse()` (`core/jsx-reuse.ts`), as `MatMenuItem` already does for its `icon`. Guarded by
+`qwik-cdk-parity-tests/specs/examples-rerender/`, which hovers and focuses every example.

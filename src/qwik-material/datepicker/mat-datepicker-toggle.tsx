@@ -27,6 +27,7 @@ import {disabledAttr} from '../button/internal/disabled-attr';
 import {openDatepickerPanel, openDateRangePickerPanel} from './datepicker-runtime';
 import {DATEPICKER_INTL} from './datepicker-intl';
 import type {MatDatepickerHandle, MatDateRangePickerHandle} from './use-mat-datepicker';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 export type AnyDatepickerHandle<D = unknown> = MatDatepickerHandle<D> | MatDateRangePickerHandle<D>;
 
@@ -135,7 +136,7 @@ export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props =>
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >
         <span class="mat-mdc-button-persistent-ripple mdc-icon-button__ripple" />
-        {props.icon ?? (
+        {cloneJsxForReuse(props.icon) ?? (
           <svg
             class="mat-datepicker-toggle-default-icon"
             viewBox="0 0 24 24"

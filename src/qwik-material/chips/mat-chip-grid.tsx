@@ -16,6 +16,7 @@ import {MAT_FORM_FIELD_CONTROL_STATE} from '../core/mat-form-field-control';
 import {MAT_CHIPS_CONFIG, MAT_CHIPS_CONFIG_DEFAULTS} from './tokens';
 import {MatChipRow} from './mat-chip-row';
 import type {MatChipRemoveButtonDef} from './mat-chip';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /** Descriptor for one `<MatChipRow>` rendered inside `<MatChipGrid rows={[...]}>`. See
  *  `mat-chip-set.tsx`'s module doc comment for why containers take a data array. */
@@ -265,7 +266,7 @@ const ChipGridRows = component$<ChipGridRowsProps>(props => {
             onRemoved$={wrappedRemoved$}
             class={def.class}
           >
-            {def.content}
+            {cloneJsxForReuse(def.content)}
           </MatChipRow>
         );
       })}

@@ -2,6 +2,7 @@ import {$, component$, useOn, useSignal, useTask$, type JSXOutput, type QRL} fro
 import {isBrowser} from '@qwik.dev/core/build';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatChip, type MatChipRemoveButtonDef} from './mat-chip';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /**
  * Descriptor for one `<MatChip>` rendered inside `<MatChipSet chips={[...]}>`.
@@ -209,7 +210,7 @@ export const MatChipSet = component$<MatChipSetProps>(props => {
             onRemoved$={def.onRemoved$}
             class={def.class}
           >
-            {def.content}
+            {cloneJsxForReuse(def.content)}
           </MatChip>
         ))}
       </div>

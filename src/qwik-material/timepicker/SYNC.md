@@ -524,3 +524,10 @@ control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConn
 `Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
 porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
 change for every existing (always form-field-nested) scenario.
+
+## Fixed: custom toggle icon lost on re-render (2026-11-03)
+
+`MatTimepickerToggle`'s `icon` prop was rendered directly, so a re-render of this component (hover/focus state) rendered the same
+`JSXOutput` a second time, which Qwik v2 corrupts: the `<mat-icon>` came back empty. Wrapped in
+`cloneJsxForReuse()` (`core/jsx-reuse.ts`), as `MatMenuItem` already does for its `icon`. Guarded by
+`qwik-cdk-parity-tests/specs/examples-rerender/`, which hovers and focuses every example.

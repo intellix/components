@@ -343,3 +343,10 @@ component's existing test surface; each is tracked as an expected parity-suite f
 Also unported (documented in `chips-input`'s own file, no parity impact beyond the `editable`
 button itself): `editable`/`matChipEdit` inline editing — `MatChipRowProps`/`MatChipRowDef` have
 no `editable`/`onEdited$` fields (see `mat-chip-row.tsx`'s own doc comment).
+
+## Fixed: chip remove-button content lost on re-render (2026-11-03)
+
+`removeButton.content` (`MatChip`/`MatChipRow`/`MatChipOption`) and the containers' `def.content` were rendered directly, so a re-render of this component (hover/focus state) rendered the same
+`JSXOutput` a second time, which Qwik v2 corrupts: the `<mat-icon>` came back empty. Wrapped in
+`cloneJsxForReuse()` (`core/jsx-reuse.ts`), as `MatMenuItem` already does for its `icon`. Guarded by
+`qwik-cdk-parity-tests/specs/examples-rerender/`, which hovers and focuses every example.

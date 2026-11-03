@@ -145,3 +145,10 @@ JSX props on the root. The root also carries `useOn()` listeners for the same ev
 loader, focus origin), and under Qwik v2 those REPLACE a same-named JSX-prop handler on that element
 rather than joining it: `useMatTooltip()`'s `mouseenter` on a `<MatButton>` never ran (button's
 `q-e:mouseenter` held only the ripple loader's entries). `onClick$` is unaffected (no `useOn('click')`).
+
+## Fixed: FAB and mini-FAB icons lost on re-render (2026-11-03)
+
+`MatFabButton`/`MatMiniFabButton`'s `icon` prop was rendered directly, so a re-render of this component (the ripple loader initializing on first hover) rendered the same
+`JSXOutput` a second time, which Qwik v2 corrupts: the `<mat-icon>` came back empty. Wrapped in
+`cloneJsxForReuse()` (`core/jsx-reuse.ts`), as `MatMenuItem` already does for its `icon`. Guarded by
+`qwik-cdk-parity-tests/specs/examples-rerender/`, which hovers and focuses every example.

@@ -4,6 +4,7 @@ import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {MAT_CHIP_LISTBOX_SELECTION} from './internal/listbox-selection';
 import type {MatChipRemoveButtonDef} from './mat-chip';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /**
  * Props for `<MatChipOption>` — upstream `MatChipOption`
@@ -267,7 +268,7 @@ export const MatChipOption = component$<MatChipOptionProps>(props => {
               onClick$={handleRemoveClick$}
               onKeyDown$={handleRemoveKeydown$}
             >
-              {props.removeButton.content}
+              {cloneJsxForReuse(props.removeButton.content)}
             </button>
           )}
         </span>

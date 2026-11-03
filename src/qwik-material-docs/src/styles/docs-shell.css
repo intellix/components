@@ -31,12 +31,14 @@ body {
   line-height: var(--mat-sys-body-large-line-height, 1.5);
 }
 
-a {
+/* Site link styles stay out of live examples: a Material button/tab/list item with `href` renders
+   an `<a>`, and `a:hover` would out-specify its own classes (e.g. underlining a FAB's label). */
+a:where(:not(.docs-example-preview *)) {
   color: var(--mat-sys-primary);
   text-decoration: none;
 }
 
-a:hover {
+a:where(:not(.docs-example-preview *)):hover {
   text-decoration: underline;
 }
 

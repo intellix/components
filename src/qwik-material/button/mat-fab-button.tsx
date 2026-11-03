@@ -14,6 +14,7 @@ import {
   type HostRef,
   useForwardedHostHandlers,
 } from '../core/host-props';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /** See `mat-button.tsx`'s identical constant doc comment. */
 const KNOWN_PROPS = new Set<string>([
@@ -159,7 +160,9 @@ export const MatFabButton = component$<MatFabProps>(props => {
   const children = (
     <>
       <PersistentRipple isFab={true} />
-      {props.icon}
+      {/* The ripple loader re-renders this on first hover; Qwik v2 corrupts a JSXOutput
+          rendered twice (core/jsx-reuse.ts), which emptied the icon. */}
+      {cloneJsxForReuse(props.icon)}
       <span class="mdc-button__label">
         <Slot />
       </span>

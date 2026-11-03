@@ -3,6 +3,7 @@ import {useFocusOrigin, useIdGenerator, type FocusOrigin} from '@angular-communi
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import type {MatChipRemoveButtonDef} from './mat-chip';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /**
  * Props for `<MatChipRow>` — upstream `MatChipRow` (`src/material/chips/chip-row.ts`), the
@@ -204,7 +205,7 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
               onClick$={handleRemoveClick$}
               onKeyDown$={handleRemoveKeydown$}
             >
-              {props.removeButton.content}
+              {cloneJsxForReuse(props.removeButton.content)}
             </button>
           )}
         </span>

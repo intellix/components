@@ -8,6 +8,7 @@ import {rippleLoaderHostAttrs, useRippleLoader} from '../button/internal/ripple-
 import {disabledAttr} from '../button/internal/disabled-attr';
 import {openTimepickerPanel} from './timepicker-runtime';
 import type {MatTimepickerHandle} from './use-mat-timepicker';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 const DEFAULT_ARIA_LABEL = 'Open timepicker options';
 
@@ -121,7 +122,7 @@ export const MatTimepickerToggle = component$<MatTimepickerToggleProps>(props =>
         mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       >
         <span class="mat-mdc-button-persistent-ripple mdc-icon-button__ripple" />
-        {props.icon ?? (
+        {cloneJsxForReuse(props.icon) ?? (
           <svg
             class="mat-timepicker-toggle-default-icon"
             height="24px"

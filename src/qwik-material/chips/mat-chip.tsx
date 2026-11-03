@@ -2,6 +2,7 @@ import {$, component$, Slot, useSignal, type JSXOutput, type QRL} from '@qwik.de
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /** A `matChipRemove` button's content/props — see `MatChipProps.removeButton`. */
 export interface MatChipRemoveButtonDef {
@@ -237,7 +238,7 @@ export const MatChip = component$<MatChipProps>(props => {
               onClick$={handleRemoveClick$}
               onKeyDown$={handleRemoveKeydown$}
             >
-              {props.removeButton.content}
+              {cloneJsxForReuse(props.removeButton.content)}
             </button>
           )}
         </span>

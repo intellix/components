@@ -13,6 +13,7 @@ import {
   MAT_CHIP_LISTBOX_SELECTION,
   type MatChipListboxSelectionState,
 } from './internal/listbox-selection';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /** Descriptor for one `<MatChipOption>` rendered inside `<MatChipListbox options={[...]}>`.
  *  See `mat-chip-set.tsx`'s module doc comment for why containers take a data array. */
@@ -218,7 +219,7 @@ export const MatChipListbox = component$<MatChipListboxProps>(props => {
             )}
             class={def.class}
           >
-            {def.content}
+            {cloneJsxForReuse(def.content)}
           </MatChipOption>
         ))}
       </div>

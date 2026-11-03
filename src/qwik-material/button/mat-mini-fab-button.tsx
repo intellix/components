@@ -8,6 +8,7 @@ import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {callHostHandler, extraHostAttrs, useForwardedHostHandlers} from '../core/host-props';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 // Mini-FAB has no 'extended' prop; everything else matches MatFabProps
 // (via its index-signature-free MatFabOwnProps — see that type's doc
@@ -97,7 +98,9 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
   const children = (
     <>
       <PersistentRipple isFab={true} />
-      {props.icon}
+      {/* The ripple loader re-renders this on first hover; Qwik v2 corrupts a JSXOutput
+          rendered twice (core/jsx-reuse.ts), which emptied the icon. */}
+      {cloneJsxForReuse(props.icon)}
       <span class="mdc-button__label">
         <Slot />
       </span>
