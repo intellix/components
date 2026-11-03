@@ -1,3 +1,16 @@
-mat-form-field {
+/* Scoped to this example's own host tag, NOT a bare `mat-form-field` selector — a plain CSS
+ * import in this build is a GLOBAL side effect (unlike Angular's per-component view
+ * encapsulation, which the real upstream `datepicker-locale-example.css` this is ported from
+ * relies on implicitly), so an unscoped `mat-form-field { margin-right: 12px; }` rule would
+ * apply to every `<mat-form-field>` on every dev-app route once this CSS chunk loads anywhere
+ * in the app, not just this example's own two fields. Confirmed live: this exact mistake was
+ * found regressing `specs/material-datepicker`'s unrelated `actions` scenario (its own two
+ * `<mat-form-field>`s gained an unwanted 12px right margin, shifting the SECOND field's — and
+ * therefore the range picker's own overlay's — horizontal position) — see
+ * `datepicker/SYNC.md`'s own write-up. Other pre-existing examples in this same directory have
+ * the identical unscoped-selector shape (e.g. `timepicker-datepicker-integration-example.css`,
+ * `timepicker-validation-example.css`) — latent, not touched here (out of scope for this fix;
+ * none of them happen to collide with a position-sensitive scenario the way this one did). */
+datepicker-locale-example mat-form-field {
   margin-right: 12px;
 }
