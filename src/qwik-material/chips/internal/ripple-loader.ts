@@ -1,5 +1,6 @@
 import {$, type Signal, useOn, useSignal} from '@qwik.dev/core';
 import {handleRippleEvent, rippleAnimationConfig} from '../../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../../core/ripple/ripple-global-options';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 
 /**
@@ -105,6 +106,7 @@ export function rippleLoaderHostAttrs(config: RippleLoaderConfig): Record<string
 export function useRippleLoader(): Signal<boolean> {
   const initialized = useSignal(false);
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
 
   const handleInteraction$ = $((event: Event, host: Element) => {
     if (event.type === 'focusin' || event.type === 'mouseenter') {
@@ -118,13 +120,18 @@ export function useRippleLoader(): Signal<boolean> {
     const container = host.querySelector<HTMLElement>('.mat-ripple');
     if (!container) return;
 
-    handleRippleEvent(event as MouseEvent | TouchEvent, container, {
-      rippleDisabled: host.hasAttribute('mat-ripple-loader-disabled'),
-      rippleConfig: {
-        centered: host.hasAttribute(CENTERED_ATTR),
-        animation: rippleAnimationConfig(animationsDisabled.value),
+    handleRippleEvent(
+      event as MouseEvent | TouchEvent,
+      container,
+      {
+        rippleDisabled: host.hasAttribute('mat-ripple-loader-disabled'),
+        rippleConfig: {
+          centered: host.hasAttribute(CENTERED_ATTR),
+          animation: rippleAnimationConfig(animationsDisabled.value),
+        },
       },
-    });
+      rippleGlobalOptions,
+    );
   });
 
   // `focusin`, not `focus`: the qualifying focus almost always lands on a DESCENDANT (the

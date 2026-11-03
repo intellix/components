@@ -1,5 +1,6 @@
 import {$, type Signal, sync$, useOn, useSignal} from '@qwik.dev/core';
 import {handleRippleEvent, rippleAnimationConfig} from '../../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../../core/ripple/ripple-global-options';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 
 /**
@@ -152,6 +153,7 @@ export function rippleLoaderHostAttrs(config: RippleLoaderConfig): Record<string
 export function useRippleLoader(): Signal<boolean> {
   const initialized = useSignal(false);
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
 
   const handleInteraction$ = $((event: Event, host: Element) => {
     if (event.type === 'focus' || event.type === 'mouseenter') {
@@ -168,13 +170,18 @@ export function useRippleLoader(): Signal<boolean> {
     // more to do; the signal write above arms every later interaction.
     if (!container) return;
 
-    handleRippleEvent(event as MouseEvent | TouchEvent, container, {
-      rippleDisabled: host.hasAttribute(DISABLED_ATTR),
-      rippleConfig: {
-        centered: host.hasAttribute(CENTERED_ATTR),
-        animation: rippleAnimationConfig(animationsDisabled.value),
+    handleRippleEvent(
+      event as MouseEvent | TouchEvent,
+      container,
+      {
+        rippleDisabled: host.hasAttribute(DISABLED_ATTR),
+        rippleConfig: {
+          centered: host.hasAttribute(CENTERED_ATTR),
+          animation: rippleAnimationConfig(animationsDisabled.value),
+        },
       },
-    });
+      rippleGlobalOptions,
+    );
   });
 
   // Synchronous twin of the bootstrap above: qwikloader runs a `sync$` handler during

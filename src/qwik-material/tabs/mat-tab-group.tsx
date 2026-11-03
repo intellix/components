@@ -10,6 +10,7 @@ import {
 import {focusVia, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_TABS_CONFIG, type MatTabsConfig} from './tab-config';
 import {
   computeNextTabFocusIndex,
@@ -133,6 +134,7 @@ export const MatTabGroup = component$<MatTabGroupProps>(props => {
   const idGen = useIdGenerator();
   const groupId = useSignal(() => idGen.getId('mat-tab-group-'));
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
 
   const tabs = props.tabs;
   const disabledFlags = tabs.map(tab => !!tab.disabled);
@@ -223,16 +225,26 @@ export const MatTabGroup = component$<MatTabGroupProps>(props => {
   // that's required, not just tidy (cross-chunk QRL ordering on a cold
   // chunk).
   const paginationBeforeRippleEvent$ = $((event: MouseEvent | TouchEvent, element: Element) => {
-    handleRippleEvent(event, element, {
-      rippleDisabled: pagination.disableScrollBefore.value || groupDisableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      element,
+      {
+        rippleDisabled: pagination.disableScrollBefore.value || groupDisableRipple,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
   const paginationAfterRippleEvent$ = $((event: MouseEvent | TouchEvent, element: Element) => {
-    handleRippleEvent(event, element, {
-      rippleDisabled: pagination.disableScrollAfter.value || groupDisableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      element,
+      {
+        rippleDisabled: pagination.disableScrollAfter.value || groupDisableRipple,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   const animationDuration = normalizeDuration(

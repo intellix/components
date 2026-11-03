@@ -2,6 +2,7 @@ import {$, component$, Slot, useContext, useSignal, type QRL} from '@qwik.dev/co
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_TAB_NAV_STATE, MAT_TAB_NAV_STATE_DEFAULTS} from './tab-nav-state';
 
 export interface MatTabLinkProps {
@@ -31,6 +32,7 @@ export const MatTabLink = component$<MatTabLinkProps>(props => {
   const elRef = useSignal<HTMLElement>();
   const focusOrigin = useFocusOrigin();
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
   const rippleContainerRef = useSignal<HTMLElement>();
 
   const active = props.active ?? false;
@@ -44,10 +46,15 @@ export const MatTabLink = component$<MatTabLinkProps>(props => {
   // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
   // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
   const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: disabled || (props.disableRipple ?? false) || nav.disableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: disabled || (props.disableRipple ?? false) || nav.disableRipple,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   // Roving tabindex by element identity (see tab-nav-state.ts). Both sides

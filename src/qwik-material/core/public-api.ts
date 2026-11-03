@@ -53,7 +53,11 @@ export {
   getValidDateOrNullDefault,
   deserializeDefault,
 } from './datetime/date-adapter';
-export {createNativeDateAdapter, DEFAULT_DATE_ADAPTER, NativeDateAdapter} from './datetime/native-date-adapter';
+export {
+  createNativeDateAdapter,
+  DEFAULT_DATE_ADAPTER,
+  NativeDateAdapter,
+} from './datetime/native-date-adapter';
 export {MAT_DATE_FORMATS, type MatDateFormats} from './datetime/date-formats';
 export {MAT_NATIVE_DATE_FORMATS} from './datetime/native-date-formats';
 export {
@@ -94,3 +98,15 @@ export {
 // See jsx-reuse.ts's own doc comment: rebuilds a captured `JSXOutput` into fresh node objects
 // before re-rendering it a second (or Nth) time in a new tree — a Qwik v2 regression workaround.
 export {cloneJsxForReuse} from './jsx-reuse';
+
+// Standalone `matRipple` directive (`src/material/core/ripple/ripple.ts`) — see
+// `ripple/use-mat-ripple.ts`'s doc comment and `qwik-material/README.md`'s "Composing directives".
+export {useMatRipple, type UseMatRippleProps, type MatRippleHook} from './ripple/use-mat-ripple';
+export {MatRipple, type MatRippleProps} from './ripple/mat-ripple';
+export {
+  MAT_RIPPLE_GLOBAL_OPTIONS,
+  useRippleGlobalOptions,
+  type RippleGlobalOptions,
+} from './ripple/ripple-global-options';
+export {launchRipple, fadeOutAllRipples, fadeOutAllNonPersistentRipples} from './ripple/ripple-dom';
+export type {RippleConfig, RippleAnimationConfig, RippleRef} from './ripple/ripple-ref';

@@ -92,6 +92,8 @@ import {
   MAT_AUTOCOMPLETE_CONFIG,
   MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
 } from '../autocomplete/autocomplete-config';
+import type {RippleGlobalOptions} from '../core/ripple/ripple-global-options';
+import {MAT_RIPPLE_GLOBAL_OPTIONS} from '../core/ripple/ripple-global-options';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -199,6 +201,11 @@ export interface QwikMaterialProviderProps {
   /** Default `ScrollStrategy` descriptor for MatAutocomplete panels. Defaults to
    *  `{type: 'reposition'}` (pre-existing hard-coded behaviour). */
   matAutocompleteScrollStrategy?: ScrollStrategyDescriptor;
+  /** Qwik-context equivalent of upstream's `MAT_RIPPLE_GLOBAL_OPTIONS` — applies to every ripple
+   *  in this subtree: the standalone `useMatRipple()`/`<MatRipple>` AND every built-in
+   *  component's own internal ripple (buttons, checkboxes, radios, chips, menu items, options,
+   *  slide toggles, tab labels/links — see `core/ripple/ripple-global-options.ts`). */
+  matRippleConfig?: RippleGlobalOptions;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -372,7 +379,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // `DateAdapter` instance — QRLs are natively resumable, no `noSerialize()` needed (the
   // scroll-strategy options above are plain descriptor data for the same reason). See
   // `core/datetime/use-date-adapter.ts`'s own doc comment.
-  useContextProvider(MAT_DATE_ADAPTER_FACTORY, props.matDateAdapterFactory ?? DEFAULT_DATE_ADAPTER_FACTORY);
+  useContextProvider(
+    MAT_DATE_ADAPTER_FACTORY,
+    props.matDateAdapterFactory ?? DEFAULT_DATE_ADAPTER_FACTORY,
+  );
   // MatDateFormats is plain, serializable data (strings/Intl format-option objects, never a
   // function) — no noSerialize needed.
   useContextProvider(MAT_DATE_FORMATS, props.matDateFormats ?? MAT_NATIVE_DATE_FORMATS);
@@ -394,6 +404,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
     MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
     props.matAutocompleteScrollStrategy ?? {type: 'reposition'},
   );
+  // RippleGlobalOptions is a plain object with primitive fields — no noSerialize needed. Ripples
+  // outside a provider get {} (upstream's own un-provided MAT_RIPPLE_GLOBAL_OPTIONS default:
+  // `inject(..., {optional: true}) || {}`), same convention as every other config above.
+  useContextProvider(MAT_RIPPLE_GLOBAL_OPTIONS, props.matRippleConfig ?? {});
 
   return <Slot />;
 });
@@ -443,6 +457,7 @@ const QWIK_MATERIAL_CONTEXT_IDS: readonly ContextId<unknown>[] = [
   MAT_PAGINATOR_INTL,
   MAT_AUTOCOMPLETE_CONFIG,
   MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+  MAT_RIPPLE_GLOBAL_OPTIONS,
 ];
 
 /**

@@ -363,7 +363,7 @@ button-toggle notes above). New, framework-free port of
 | `core/ripple/ripple-renderer.ts` | `src/material/core/ripple/ripple-renderer.ts` | ported | `RippleRenderer` class: `fadeInRipple`/`fadeOutRipple`/`fadeOutAll`/`fadeOutAllNonPersistent`/`handleMouseDown`/`handleTouchStart`/`handlePointerUp`, `defaultRippleAnimationConfig` (225ms enter / 150ms exit), `distanceToFurthestCorner`, inlined `isFakeMousedownFromScreenReader`/`isFakeTouchstartFromScreenReader` (same "inline, no CDK import" convention `qwik-cdk/a11y`'s `input-modality-detector.ts` already uses for these). See file's own module doc comment for the 3 Angular-lifecycle pieces intentionally NOT ported (NgZone, Platform guard, `_MatRippleStylesLoader`) and the 2 Qwik-specific architecture departures (no `RippleEventManager` — superseded by Qwik's own `useOn`/event-prop delegation; no on-demand `addEventListener` for pointer-up — superseded by every caller's own declarative `onMouseUp$`/etc, needed to avoid a cross-chunk QRL-ordering race — see below) |
 | `core/ripple/ripple-registry.ts` | n/a (Qwik-material-specific) | new | `WeakMap<Element, RippleRenderer>` keyed by the ripple CONTAINER element, standing in for upstream's one-`RippleRenderer`-per-directive-instance lifetime (Qwik has no equivalent long-lived instance object across a resume) |
 | `core/ripple/ripple-dom.ts` | n/a (Qwik-material-specific) | new | The Qwik-facing API every component calls from inside its own `$()` handlers: `handleRippleEvent(event, container, target)` (the SOLE entry point, dispatching on `event.type` for all six pointer events), `launchRipple`/`fadeOutAllRipples`/`fadeOutAllNonPersistentRipples` (`MatRipple.launch()`/`fadeOutAll()`/`fadeOutAllNonPersistent()` equivalents — exposed for completeness; no current consumer needs them besides the pointer path, since the slider's own `.launch()` caller keeps its existing purpose-built `slider-ripple.ts`), and `rippleAnimationConfig(animationsDisabled, overrides)` (folds `_animationsDisabled` into a 0/0 duration override, matching `MatRipple.rippleConfig`'s/`MatRippleLoader._createRipple`'s own precedence) |
-| `core/ripple/ripple-renderer.spec.ts` | `src/material/core/ripple/ripple.spec.ts` | ported (partial) | 33 vitest cases porting the meaningful behavioral assertions (sizing/furthest-corner math, centered/radius/color, default+custom animation config, full `RippleState` lifecycle, mousedown/touchstart/multi-touch/screen-reader-fake-event-filtering/synthetic-mouse-after-touch, `fadeOutAll`/`fadeOutAllNonPersistent`, persistent ripples, the registry, `handleRippleEvent`, `rippleAnimationConfig`). Dropped: `MAT_RIPPLE_GLOBAL_OPTIONS` tests (no global-options system here), `fixture.detectChanges()` mechanics, `ngOnDestroy` cleanup (no directive instance — a `WeakMap`-cached entry for a detached container is just GC'd) |
+| `core/ripple/ripple-renderer.spec.ts` | `src/material/core/ripple/ripple.spec.ts` | ported (partial) | 33 vitest cases porting the meaningful behavioral assertions (sizing/furthest-corner math, centered/radius/color, default+custom animation config, full `RippleState` lifecycle, mousedown/touchstart/multi-touch/screen-reader-fake-event-filtering/synthetic-mouse-after-touch, `fadeOutAll`/`fadeOutAllNonPersistent`, persistent ripples, the registry, `handleRippleEvent`, `rippleAnimationConfig`). Dropped at the time this row was written: `MAT_RIPPLE_GLOBAL_OPTIONS` tests (no global-options system existed yet here — see the dedicated "Standalone `matRipple` directive + `MAT_RIPPLE_GLOBAL_OPTIONS`" section below for that, added 2026-11-03), `fixture.detectChanges()` mechanics, `ngOnDestroy` cleanup (no directive instance — a `WeakMap`-cached entry for a detached container is just GC'd) |
 
 ### Why no `RippleEventManager` port
 
@@ -452,6 +452,53 @@ race-free fix needs more investigation than this pass budgeted for. Left as
 a known, documented gap — same treatment as the pre-existing `material-
 timepicker` `min-max` failure (unrelated, not caused by this change).
 No OTHER component's ripple firing, timing, or DOM is affected.
+
+## Standalone `matRipple` directive + `MAT_RIPPLE_GLOBAL_OPTIONS` (2026-11-03)
+
+Upstream `src/material/core/ripple/ripple.ts`'s `MatRipple` directive (attachable to ANY element
+via `[mat-ripple]`/`[matRipple]`) and `MAT_RIPPLE_GLOBAL_OPTIONS` — both previously unported (this
+file used to say so above, in `ripple-renderer.spec.ts`'s row). The internal ripple ANIMATION
+renderer this section already ported (`core/ripple/{ripple-renderer,ripple-dom,ripple-registry,
+ripple-ref}.ts`) needed no changes to its own DOM/geometry logic — only a new Qwik-facing layer on
+top, following this port's established "directive hook" pattern (`qwik-material/README.md`'s
+"Composing directives"):
+
+| File | Upstream | Status | Notes |
+|---|---|---|---|
+| `core/ripple/ripple-global-options.ts` | `ripple.ts`'s `RippleGlobalOptions`/`MAT_RIPPLE_GLOBAL_OPTIONS` | ported | `useRippleGlobalOptions()` reads the Qwik-context equivalent, falling back to `{}` (upstream's own un-provided default). Dropped: `namespace` (an Angular multi-root-injector DI concern with no equivalent here — this port's ripple-loaders are plain per-container `WeakMap` caches, not a namespaced registry) |
+| `core/ripple/use-mat-ripple.ts` | `ripple.ts`'s `MatRipple` | ported | `useMatRipple(props)` — the directive-hook form. `hostProps` carries `.mat-ripple`/`.mat-ripple-unbounded` + (unless `trigger` is set) the six pointer handlers; `launch$`/`fadeOutAll$`/`fadeOutAllNonPersistent$` are QRLs (imperative methods, same convention as `useMatDialog().open$`/`close$` — a plain function closure captured into a DIFFERENT `$()` doesn't survive SSR→resume). `matRippleColor`/`matRippleUnbounded`/`matRippleCentered`/`matRippleRadius`/`matRippleAnimation`/`matRippleDisabled`/`matRippleTrigger` all ported; `rippleConfig`/`rippleDisabled` getters' exact upstream spread/precedence order (global → animations-disabled-forced-zero → local override; `terminateOnPointerUp` ONLY ever from global options, matching upstream having no per-instance input for it either) reproduced in `resolveRippleConfig()`/`resolveRippleDisabled()` |
+| `core/ripple/mat-ripple.tsx` | n/a (qwik-material-specific) | new | `<MatRipple as="div"\|"span"\|"button"\|"a">` — thin wrapper component around `useMatRipple()`, same convention as `<MatTooltip>` around `useMatTooltip()`, for the common case of a ripple surface that doesn't need composing with another directive. `matRippleTrigger` isn't exposed on the component (needs two elements) — call the hook directly for that |
+
+`MAT_RIPPLE_GLOBAL_OPTIONS` ALSO now reaches every built-in component's own internal ripple, via
+one new optional 4th argument on `ripple-dom.ts`'s `handleRippleEvent(event, container, target,
+globalOptions?)` — folding `globalOptions.disabled`/`.animation`/`.terminateOnPointerUp` into the
+call in upstream's exact precedence order (see that function's own doc comment), fully backward
+compatible (every pre-existing call omitting the 4th argument behaves exactly as before). Wired
+into every consumer SAFE to touch from this worktree (reads `useRippleGlobalOptions()` at render
+time, same as each already reads `useAnimationsDisabled()`, and passes it through): `button`/
+`icon-button`/`fab`/`mini-fab`'s shared `internal/ripple-loader.ts`, `chips`' own
+`internal/ripple-loader.ts` copy, `checkbox`, `radio`, core's `MatOption`, `menu-item`,
+`slide-toggle`, and every tab surface (`MatTabGroup`'s per-label ripple + both pagination buttons,
+`MatTabLabelItem`, `MatTabLink`, `MatTabNav`'s pagination buttons). Deliberately NOT touched from
+this worktree (owned by a parallel tier-2 task on a different branch — see this repo's worktree
+map): `button-toggle` (`mat-button-toggle.tsx`) and `stepper` (`mat-step-header.tsx`); both still
+call `handleRippleEvent()` with the pre-2026-11-03 3-argument form, so they're simply unaffected by
+`MAT_RIPPLE_GLOBAL_OPTIONS` until that task (or a follow-up here) adds the same one-line wiring —
+not a regression, a documented gap. `slider` is untouched for the same pre-existing reason the
+section above already documents (`slider-ripple.ts` is its own purpose-built state machine, never
+routed through `handleRippleEvent()` at all). List items have no ripple ported AT ALL yet (see
+"Components wired" above) — nothing to wire for global options either.
+
+Parity: upstream's `ripple-overview` docs example ported verbatim
+(`qwik-material-examples/core/ripple-overview`, dev-app route `examples/ripple-overview`,
+`specs/examples-misc/angular-parity.spec.ts`'s `EXAMPLE_IDS`) — passes except one documented,
+pre-existing, unrelated gap (the example's three `[(ngModel)]`-bound checkboxes; see that spec's
+`EXPECTED_FAILURES['ripple-overview']`). `MAT_RIPPLE_GLOBAL_OPTIONS` itself has no Angular-parity
+counterpart to compare against (it's a DI token, not DOM) — covered instead by a bespoke,
+Qwik-only functional spec (`specs/material-core/ripple-global-options.spec.ts`) against a bespoke
+fixture route (`mat-ripple/global-options`), exercising `disabled` (on both the standalone
+directive AND a built-in `MatButton` under the same provider), `terminateOnPointerUp`, and
+`animation.exitDuration: 0`.
 
 ## `MatForm` — form submission for the default ErrorStateMatcher (2026-10-31)
 

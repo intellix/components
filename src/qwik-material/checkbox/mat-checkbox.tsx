@@ -12,6 +12,7 @@ import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_CHECKBOX_CONFIG, MAT_CHECKBOX_CONFIG_DEFAULTS} from './checkbox-config';
 
 /** Payload passed to `onChange$` — mirrors upstream's `MatCheckboxChange.checked`. */
@@ -130,6 +131,7 @@ function animationClassFor(
 export const MatCheckbox = component$<MatCheckboxProps>(props => {
   const config = useContext(MAT_CHECKBOX_CONFIG, MAT_CHECKBOX_CONFIG_DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
 
   const idGen = useIdGenerator();
   // Computed once, lazily — mirrors upstream's constructor-time
@@ -188,10 +190,15 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
   // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
   // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
   const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: !!(props.disableRipple || props.disabled),
-      rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: !!(props.disableRipple || props.disabled),
+        rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   // `checked`/`indeterminate` are DOM PROPERTIES with no HTML attribute
