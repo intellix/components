@@ -6,21 +6,21 @@ import {
   MatMenuTrigger,
   createMatMenu,
 } from '@angular-community/qwik-material/menu';
-import {createBlockScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 
 /**
  * Demonstrates the `MAT_MENU_SCROLL_STRATEGY` (upstream equivalent) API
  * shape: a menu configured to use the `block` scroll strategy instead of
  * the default `reposition` one, via `<QwikMaterialProvider
- * matMenuScrollStrategyFactory={…}>`.
+ * matMenuScrollStrategy="block">` — a plain, serializable
+ * `ScrollStrategyDescriptor` (see `qwik-cdk/overlay/scroll/
+ * scroll-strategy-descriptor.ts`), not a function factory.
  *
- * KNOWN GAP (see `menu/SYNC.md`'s "scroll-strategy configuration" entry):
- * the custom factory does not actually take effect yet — confirmed via
- * `specs/material-menu/scroll-strategy.spec.ts`'s skipped case. The menu
- * still opens correctly and silently keeps using `reposition` (no
- * regression; just not customizable yet). Kept as a route so the intended
- * API shape is exercised by at least the "still opens" case and ready for
- * whoever fixes the underlying bug.
+ * Fixed (see `menu/SYNC.md`'s "scroll-strategy configuration" entry): the
+ * configured descriptor now survives a real SSR→CSR resume and IS honored
+ * — confirmed via `specs/material-menu/scroll-strategy.spec.ts`'s
+ * previously-skipped, now-passing case (after a real page load + open,
+ * `<html>` gets `cdk-global-scrollblock`, the `block` strategy's marker
+ * class).
  */
 const Scenario = component$(() => {
   const menu = createMatMenu({
@@ -55,7 +55,7 @@ const Scenario = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider matMenuScrollStrategyFactory={() => createBlockScrollStrategy()}>
+  <QwikMaterialProvider matMenuScrollStrategy="block">
     <Scenario />
     <main data-scenario-ready>ready</main>
   </QwikMaterialProvider>

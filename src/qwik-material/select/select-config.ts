@@ -1,5 +1,5 @@
-import {createContextId, type NoSerialize} from '@qwik.dev/core';
-import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import {createContextId} from '@qwik.dev/core';
+import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 
 /**
  * Defaults applied to every `MatSelect` in a subtree that doesn't set its
@@ -39,19 +39,18 @@ export interface MatSelectConfig {
 export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwikMaterial/selectConfig');
 
 /**
- * Factory that returns the default `ScrollStrategy` for a `MatSelect`
- * panel that doesn't specify one — mirrors upstream's
- * `MAT_SELECT_SCROLL_STRATEGY` injection token. Provided by
- * `<QwikMaterialProvider matSelectScrollStrategyFactory={…}>`. Default:
- * `createRepositionScrollStrategy()` (this port's pre-existing,
- * previously hard-coded behaviour).
+ * Default `ScrollStrategy` descriptor for a `MatSelect` panel that doesn't
+ * specify its own — mirrors upstream's `MAT_SELECT_SCROLL_STRATEGY`
+ * injection token. Provided by `<QwikMaterialProvider
+ * matSelectScrollStrategy={…}>`. Default: `{type: 'reposition'}` (this
+ * port's pre-existing, previously hard-coded behaviour).
  *
- * KNOWN GAP — see `select/SYNC.md`'s "scroll-strategy configuration"
- * entry: a CUSTOM factory does not survive a real SSR→CSR resume
- * boundary before `openSelectPanel()` actually reads it, so it's
- * silently ignored on every select opened after a genuine page load. The
- * default (unconfigured) case is unaffected.
+ * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
+ * factory; see `qwik-material/dialog/mat-dialog-tokens.ts`'s
+ * `MAT_DIALOG_SCROLL_STRATEGY` for why that distinction matters (a
+ * factory function doesn't survive a real SSR→CSR resume — this was a
+ * real, confirmed bug here until fixed; see `select/SYNC.md`).
  */
-export const MAT_SELECT_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
+export const MAT_SELECT_SCROLL_STRATEGY = createContextId<ScrollStrategyDescriptor>(
   'qwikMaterial/selectScrollStrategy',
 );

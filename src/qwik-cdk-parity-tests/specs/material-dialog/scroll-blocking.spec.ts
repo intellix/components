@@ -29,4 +29,26 @@ test.describe('Material Dialog — scroll blocking', () => {
     await expect(page.locator('mat-dialog-container.mat-mdc-dialog-container')).toHaveCount(0);
     await expect(page.locator('html')).not.toHaveClass(/cdk-global-scrollblock/);
   });
+
+  // A per-open `MatDialogConfig.scrollStrategy` override (a plain,
+  // serializable `ScrollStrategyDescriptor`, `'noop'` here) must also
+  // survive a real SSR→CSR resume and actually take effect — not just the
+  // context-level default exercised by the case above. See
+  // `qwik-material/dialog/SYNC.md`'s "scroll strategy lost after resume"
+  // entry for why this needed a real `page.goto` + interaction to catch at
+  // all (the underlying bug was specifically about surviving a REAL
+  // resume boundary, not just the module's own synchronous logic).
+  test('a non-default scrollStrategy override ("noop") does NOT block background scroll (after a real page load)', async ({
+    page,
+  }) => {
+    await page.goto(`${QWIK_URL}/mat-dialog/scroll-strategy-noop`);
+    await expect(page.locator('html')).not.toHaveClass(/cdk-global-scrollblock/);
+
+    await page.locator('.open-button').click();
+    await expect(page.locator('mat-dialog-container.mat-mdc-dialog-container')).toBeVisible();
+    await expect(page.locator('html')).not.toHaveClass(/cdk-global-scrollblock/);
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('mat-dialog-container.mat-mdc-dialog-container')).toHaveCount(0);
+  });
 });

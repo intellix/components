@@ -1,16 +1,14 @@
 import {
   component$,
-  noSerialize,
   Slot,
   useContext,
   useContextProvider,
   useSignal,
   type ContextId,
 } from '@qwik.dev/core';
-import type {OverlayContextOverride, ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
-import {
-  createBlockScrollStrategy,
-  createRepositionScrollStrategy,
+import type {
+  OverlayContextOverride,
+  ScrollStrategyDescriptor,
 } from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import {
@@ -88,8 +86,12 @@ import {
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
   matDialogDefaults?: Partial<MatDialogConfig>;
-  /** Factory returning the default ScrollStrategy for MatDialog. Defaults to createBlockScrollStrategy(). */
-  matDialogScrollStrategyFactory?: () => ScrollStrategy;
+  /**
+   * Default `ScrollStrategy` descriptor for MatDialog (`'block'`, `{type:
+   * 'reposition', scrollThrottle: 20}`, a `QRL<() => ScrollStrategy>`, …).
+   * Defaults to `'block'` (upstream's own default).
+   */
+  matDialogScrollStrategy?: ScrollStrategyDescriptor;
   /** Disables all Material animations globally when true. */
   animationsDisabled?: boolean;
   /** Defaults applied to every MatButton / MatIconButton / MatFabButton / MatMiniFabButton in this subtree. */
@@ -130,8 +132,8 @@ export interface QwikMaterialProviderProps {
   matSnackBarDefaults?: Partial<MatSnackBarConfig>;
   /** Defaults merged into every MatBottomSheet open() config. */
   matBottomSheetDefaults?: Partial<MatBottomSheetConfig>;
-  /** Factory returning the default ScrollStrategy for MatBottomSheet. Defaults to createBlockScrollStrategy(). */
-  matBottomSheetScrollStrategyFactory?: () => ScrollStrategy;
+  /** Default `ScrollStrategy` descriptor for MatBottomSheet. Defaults to `'block'`. */
+  matBottomSheetScrollStrategy?: ScrollStrategyDescriptor;
   /** Defaults applied to every MatFormField in this subtree. */
   matFormFieldConfig?: MatFormFieldConfig;
   /** Defaults applied to every MatInput in this subtree. */
@@ -146,14 +148,14 @@ export interface QwikMaterialProviderProps {
   matTooltipDefaults?: MatTooltipDefaultOptions;
   /** Defaults applied to every MatSelect in this subtree. */
   matSelectConfig?: MatSelectConfig;
-  /** Factory returning the default ScrollStrategy for MatSelect panels. Defaults to
-   *  createRepositionScrollStrategy() (this port's pre-existing hard-coded behaviour). */
-  matSelectScrollStrategyFactory?: () => ScrollStrategy;
+  /** Default `ScrollStrategy` descriptor for MatSelect panels. Defaults to
+   *  `{type: 'reposition'}` (this port's pre-existing hard-coded behaviour). */
+  matSelectScrollStrategy?: ScrollStrategyDescriptor;
   /** Defaults merged into every `createMatMenu()`'s resolved config in this subtree. */
   matMenuDefaults?: MatMenuDefaultOptions;
-  /** Factory returning the default ScrollStrategy for menu panels. Defaults to
-   *  createRepositionScrollStrategy({scrollThrottle: 20}) (pre-existing hard-coded behaviour). */
-  matMenuScrollStrategyFactory?: () => ScrollStrategy;
+  /** Default `ScrollStrategy` descriptor for menu panels. Defaults to
+   *  `{type: 'reposition', scrollThrottle: 20}` (pre-existing hard-coded behaviour). */
+  matMenuScrollStrategy?: ScrollStrategyDescriptor;
   /** Defaults applied to every `useMatTimepicker()` / `<MatTimepickerToggle>` in this subtree. */
   matTimepickerConfig?: MatTimepickerConfig;
   /** Defaults applied to every MatPaginator in this subtree (field-by-field fallback, like
@@ -165,22 +167,19 @@ export interface QwikMaterialProviderProps {
   matPaginatorIntl?: MatPaginatorIntl;
   /** Defaults applied to every MatAutocomplete in this subtree. */
   matAutocompleteConfig?: MatAutocompleteConfig;
-  /** Factory returning the default ScrollStrategy for MatAutocomplete panels. Defaults to
-   *  createRepositionScrollStrategy() (pre-existing hard-coded behaviour). */
-  matAutocompleteScrollStrategyFactory?: () => ScrollStrategy;
+  /** Default `ScrollStrategy` descriptor for MatAutocomplete panels. Defaults to
+   *  `{type: 'reposition'}` (pre-existing hard-coded behaviour). */
+  matAutocompleteScrollStrategy?: ScrollStrategyDescriptor;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
   const animationsDisabled = useSignal(props.animationsDisabled ?? false);
 
   useContextProvider(MAT_DIALOG_DEFAULT_OPTIONS, props.matDialogDefaults ?? {});
-  // The scroll-strategy factory is a plain function; wrap in noSerialize so
-  // Qwik doesn't try to serialize it when consumer QRLs (useMatDialog.open$)
-  // capture it via useContext.
-  useContextProvider(
-    MAT_DIALOG_SCROLL_STRATEGY,
-    noSerialize(props.matDialogScrollStrategyFactory ?? (() => createBlockScrollStrategy())),
-  );
+  // A plain, serializable descriptor — no noSerialize needed (unlike the
+  // function factory this replaced; see MAT_DIALOG_SCROLL_STRATEGY's own
+  // doc comment for why that doesn't survive into useMatDialog().open$).
+  useContextProvider(MAT_DIALOG_SCROLL_STRATEGY, props.matDialogScrollStrategy ?? 'block');
   useContextProvider(MAT_ANIMATIONS_DISABLED, animationsDisabled);
   // MatButtonConfig is a plain object with primitive fields — no noSerialize needed.
   // Buttons outside a provider get the DEFAULTS declared in each Mat*Button
@@ -265,12 +264,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // equivalent to accepting all of them, same pattern as every config above.
   useContextProvider(MAT_SNACK_BAR_DEFAULT_OPTIONS, props.matSnackBarDefaults ?? {});
   useContextProvider(MAT_BOTTOM_SHEET_DEFAULT_OPTIONS, props.matBottomSheetDefaults ?? {});
-  // The scroll-strategy factory is a plain function; wrap in noSerialize so
-  // Qwik doesn't try to serialize it when consumer QRLs (useMatBottomSheet().open$)
-  // capture it via useContext.
+  // A plain, serializable descriptor — see MAT_DIALOG_SCROLL_STRATEGY's own
+  // provide call above for why this no longer needs noSerialize.
   useContextProvider(
     MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
-    noSerialize(props.matBottomSheetScrollStrategyFactory ?? (() => createBlockScrollStrategy())),
+    props.matBottomSheetScrollStrategy ?? 'block',
   );
   // MatFormFieldConfig is a plain object with primitive fields — no
   // noSerialize needed. Form fields outside a provider get the
@@ -306,11 +304,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // defaults declared in mat-select.tsx's own prop resolution; providing an
   // empty object here is equivalent to accepting all of them.
   useContextProvider(MAT_SELECT_CONFIG, props.matSelectConfig ?? {});
-  // The scroll-strategy factory is a plain function; wrap in noSerialize
-  // (same reasoning as MAT_DIALOG_SCROLL_STRATEGY above).
+  // A plain, serializable descriptor — see MAT_DIALOG_SCROLL_STRATEGY's own
+  // provide call above for why this no longer needs noSerialize.
   useContextProvider(
     MAT_SELECT_SCROLL_STRATEGY,
-    noSerialize(props.matSelectScrollStrategyFactory ?? (() => createRepositionScrollStrategy())),
+    props.matSelectScrollStrategy ?? {type: 'reposition'},
   );
   // MatMenuDefaultOptions is a plain object with primitive fields — no
   // noSerialize needed. Menus outside a provider get the hardcoded
@@ -320,10 +318,7 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   useContextProvider(MAT_MENU_DEFAULT_OPTIONS, props.matMenuDefaults ?? {});
   useContextProvider(
     MAT_MENU_SCROLL_STRATEGY,
-    noSerialize(
-      props.matMenuScrollStrategyFactory ??
-        (() => createRepositionScrollStrategy({scrollThrottle: 20})),
-    ),
+    props.matMenuScrollStrategy ?? {type: 'reposition', scrollThrottle: 20},
   );
   // MatTimepickerConfig is a plain object with primitive fields — no
   // noSerialize needed. Timepickers outside a provider get the hardcoded
@@ -346,9 +341,7 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   useContextProvider(MAT_AUTOCOMPLETE_CONFIG, props.matAutocompleteConfig ?? {});
   useContextProvider(
     MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
-    noSerialize(
-      props.matAutocompleteScrollStrategyFactory ?? (() => createRepositionScrollStrategy()),
-    ),
+    props.matAutocompleteScrollStrategy ?? {type: 'reposition'},
   );
 
   return <Slot />;

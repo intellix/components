@@ -1,7 +1,7 @@
 import {$, useContext, useSignal, type NoSerialize, type QRL} from '@qwik.dev/core';
 import {isBrowser} from '@qwik.dev/core/build';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
-import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
+import type {OverlayRef, ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import type {FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import type {HostProps} from '../core/host-props';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
@@ -59,9 +59,16 @@ export interface MatMenuTriggerHook {
 export function useMatMenuTrigger(props: UseMatMenuTriggerProps): MatMenuTriggerHook {
   const ctx = useContext(QWIK_CDK);
   const defaults = useContext(MAT_MENU_DEFAULT_OPTIONS, {});
-  // `null` (not a function, not `undefined`) is the safe useContext default
-  // sentinel — see useMatDialog()'s identical pattern.
-  const scrollStrategyFactory = useContext(MAT_MENU_SCROLL_STRATEGY, null as any);
+  // `MAT_MENU_SCROLL_STRATEGY` is a plain, serializable
+  // `ScrollStrategyDescriptor` — see `select-config.ts`'s
+  // `MAT_SELECT_SCROLL_STRATEGY` doc comment for why that's safe as a
+  // plain default here (no `useContext()` function-typed-default pitfall).
+  // `{type: 'reposition', scrollThrottle: 20}` is this port's pre-existing,
+  // previously hard-coded default behaviour.
+  const scrollStrategyDescriptor = useContext(MAT_MENU_SCROLL_STRATEGY, {
+    type: 'reposition',
+    scrollThrottle: 20,
+  } as ScrollStrategyDescriptor);
   const animationsDisabled = useAnimationsDisabled();
 
   const overlayRef = useSignal<NoSerialize<OverlayRef>>();
@@ -77,7 +84,7 @@ export function useMatMenuTrigger(props: UseMatMenuTriggerProps): MatMenuTrigger
     if (!isBrowser || !hostRef.value || isOpen.value) return;
     const itemsJsx = await props.menu.content$();
     if (overlayRef.value || !hostRef.value) return;
-    openMenu(itemsJsx, {
+    await openMenu(itemsJsx, {
       ctx,
       signals,
       menu: props.menu,
@@ -97,7 +104,7 @@ export function useMatMenuTrigger(props: UseMatMenuTriggerProps): MatMenuTrigger
         openedBy.value = null;
         props.onMenuClosed$?.();
       },
-      scrollStrategyFactory: scrollStrategyFactory ?? undefined,
+      scrollStrategyDescriptor,
     });
     props.onMenuOpened$?.();
   });

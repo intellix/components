@@ -16,6 +16,10 @@ import {
 } from './position/overlay-position-builder';
 import type {IdGenerator} from '../a11y/id-generator';
 import {QWIK_CDK} from '../internals/internals';
+import {
+  isScrollStrategyInstance,
+  resolveBuiltinScrollStrategyDescriptor,
+} from './scroll/scroll-strategy-descriptor';
 
 export interface Overlay {
   create<P>(component: Component<P>, props: P, config?: OverlayConfig): OverlayRef;
@@ -175,11 +179,23 @@ export function createOverlayService(
         usePopover,
         direction,
       };
+      // `config.scrollStrategy` may be a real instance (passed through
+      // unchanged) or a `BuiltinScrollStrategyDescriptor` (plain,
+      // serializable data — resolved synchronously here; `create()` stays
+      // synchronous, so the `QRL` form of `ScrollStrategyDescriptor` isn't
+      // accepted at this layer — see `OverlayConfig.scrollStrategy`'s doc
+      // comment).
+      const resolvedScrollStrategy =
+        config.scrollStrategy === undefined
+          ? undefined
+          : isScrollStrategyInstance(config.scrollStrategy)
+            ? config.scrollStrategy
+            : resolveBuiltinScrollStrategyDescriptor(config.scrollStrategy);
       const ref = createOverlayRef({
         registry,
         entry,
         positionStrategy: config.positionStrategy,
-        scrollStrategy: config.scrollStrategy,
+        scrollStrategy: resolvedScrollStrategy,
       });
       // Backref the ref so OverlayHost's useVisibleTask$ can drive lifecycle
       // (attach/detach + position-strategy.apply()). Avoids using a QRL closure

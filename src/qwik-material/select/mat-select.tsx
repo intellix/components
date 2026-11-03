@@ -9,7 +9,7 @@ import {
   type QRL,
 } from '@qwik.dev/core';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
-import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
+import type {OverlayRef, ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import {
   useIdGenerator,
   type ListKeyManager,
@@ -208,10 +208,15 @@ function panelAriaLabelledby(
 
 export const MatSelect = component$<MatSelectProps>(props => {
   const config = useContext(MAT_SELECT_CONFIG, MAT_SELECT_CONFIG_DEFAULTS);
-  // `null` (not a function, not `undefined`) is the safe useContext default
-  // sentinel — see useMatDialog()'s identical pattern for the two Qwik
-  // `useContext()` pitfalls a function-typed default would otherwise hit.
-  const scrollStrategyFactory = useContext(MAT_SELECT_SCROLL_STRATEGY, null as any);
+  // `MAT_SELECT_SCROLL_STRATEGY` is a plain, serializable
+  // `ScrollStrategyDescriptor` (string/object, or a `QRL` escape hatch) —
+  // NOT a function factory, so neither of `useContext()`'s two
+  // function-typed-default pitfalls apply here. `{type: 'reposition'}` is
+  // this port's pre-existing, previously hard-coded default behaviour.
+  const scrollStrategyDescriptor = useContext(
+    MAT_SELECT_SCROLL_STRATEGY,
+    {type: 'reposition'} as ScrollStrategyDescriptor,
+  );
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();
@@ -389,7 +394,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
     onValueChange$: props.onValueChange$,
     onTouched$: props.onTouched$,
     onOpenedChange$: props.onOpenedChange$,
-    scrollStrategyFactory: scrollStrategyFactory ?? undefined,
+    scrollStrategyDescriptor,
   };
 
   // `ctx` is passed to `select-runtime.ts`'s functions as its OWN top-level

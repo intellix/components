@@ -298,7 +298,10 @@ describe('MatDialog scenarios', () => {
 
   it.skip('should be able to attach a custom scroll strategy (Angular-only: ScrollStrategy/Injector)', () => {
     // Reason: provides a custom ScrollStrategy and checks scrollStrategy.enable() was called
-    // via Angular injection; qwik-material exposes scrollStrategyFactory in CDK config layer.
+    // via Angular injection; qwik-material exposes this via MAT_DIALOG_SCROLL_STRATEGY's
+    // ScrollStrategyDescriptor (see mat-dialog-tokens.ts) — this pure createMatDialogService
+    // harness has no useContext() of its own to drive that through, so it's exercised
+    // end-to-end instead, via specs/material-dialog/scroll-blocking.spec.ts.
   });
 
   // describe('passing in data')

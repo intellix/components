@@ -1,5 +1,5 @@
-import {createContextId, type NoSerialize} from '@qwik.dev/core';
-import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import {createContextId} from '@qwik.dev/core';
+import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import type {MenuPositionX, MenuPositionY} from './menu-positions';
 
 /**
@@ -41,19 +41,19 @@ export const MAT_MENU_DEFAULT_OPTIONS = createContextId<MatMenuDefaultOptions>(
 );
 
 /**
- * Factory that returns the default `ScrollStrategy` for a menu panel that
- * doesn't specify one — mirrors upstream's `MAT_MENU_SCROLL_STRATEGY`
+ * Default `ScrollStrategy` descriptor for a menu panel that doesn't
+ * specify its own — mirrors upstream's `MAT_MENU_SCROLL_STRATEGY`
  * injection token. Provided by `<QwikMaterialProvider
- * matMenuScrollStrategyFactory={…}>`. Default:
- * `createRepositionScrollStrategy({scrollThrottle: 20})` (pre-existing,
- * previously hard-coded behaviour).
+ * matMenuScrollStrategy={…}>`. Default: `{type: 'reposition',
+ * scrollThrottle: 20}` (pre-existing, previously hard-coded behaviour).
  *
- * KNOWN GAP — see `menu/SYNC.md`'s "scroll strategy lost after resume"
- * entry: a CUSTOM factory does not survive a real SSR→CSR resume
- * boundary before `openMenu()` actually reads it, so it's silently
- * ignored on every menu opened after a genuine page load. The default
- * (unconfigured) case is unaffected.
+ * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
+ * factory; see `qwik-material/dialog/mat-dialog-tokens.ts`'s
+ * `MAT_DIALOG_SCROLL_STRATEGY` for why that distinction matters (a
+ * factory function doesn't survive a real SSR→CSR resume — this was a
+ * real, confirmed bug here until fixed; see `menu/SYNC.md`'s "scroll
+ * strategy lost after resume" entry).
  */
-export const MAT_MENU_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
+export const MAT_MENU_SCROLL_STRATEGY = createContextId<ScrollStrategyDescriptor>(
   'qwikMaterial/menuScrollStrategy',
 );

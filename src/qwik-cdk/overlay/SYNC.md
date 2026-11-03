@@ -623,3 +623,64 @@ place rather than removed — harmless (an idempotent `useContextProvider` call 
 called a second time with the same value) and a smaller diff; it operates on the WRAPPER's own
 `config` prop (the `DialogConfig`), a different object from the `OverlayConfig` `OverlayHost`
 reads, so the two don't conflict.
+
+## `ScrollStrategyDescriptor` — serializable scroll-strategy configuration (2026-11-03)
+
+New (no direct CDK equivalent needed — upstream configures `MAT_*_SCROLL_STRATEGY` injection
+tokens with a plain factory function because Angular DI has no SSR→CSR resume boundary to cross;
+this port does). Added while closing out a real, confirmed bug found porting
+`qwik-material`'s dialog/bottom-sheet/select/menu/autocomplete scroll-strategy configuration: a
+plain `() => ScrollStrategy` factory function captured from `useContext()` during a
+component's/hook's own render does NOT survive into a `$()`-wrapped QRL defined at that same
+point once the QRL is actually invoked after a real SSR→CSR resume — the function is simply gone
+(reads back `undefined`), and there's no cheap workaround (`useContext()` can't be called again
+from inside the already-invoked QRL — confirmed live, throws `Code(Q10)`). See
+`qwik-material/dialog/SYNC.md`'s "Real bug: scroll strategy lost after resume" entry for the full
+incident write-up.
+
+`scroll/scroll-strategy-descriptor.ts` (new) replaces "capture a function via context" with
+"capture plain, serializable DATA via context, build the real instance fresh inside the QRL at
+open time" — the same category of fix as `ensureCdkDispatchers()` (rebuild fresh from context
+data on every call) but for a value that genuinely IS app-specific configuration, not something
+that can be recreated from nothing:
+
+- `BuiltinScrollStrategyDescriptor` — `'noop' | 'block' | {type: 'noop'} | {type: 'block'} |
+  ({type: 'reposition'} & RepositionScrollStrategyConfig) | ({type: 'close'} &
+  CloseScrollStrategyConfig)` — a plain string or a `{type, ...options}` object, mirroring
+  upstream's own per-strategy options (`RepositionScrollStrategy`'s `scrollThrottle`/`autoClose`,
+  `CloseScrollStrategy`'s `threshold`). Plain string/object data survives a resume with no
+  special handling at all.
+- `ScrollStrategyDescriptor` — the above, OR a `QRL<() => ScrollStrategy>` escape hatch for a
+  fully custom strategy that isn't one of the 4 builtins. A QRL is Qwik's OWN resumable function
+  reference (unlike a plain function) — it's what survives resume. Calling a QRL always returns
+  a `Promise`, even when the underlying function is synchronous.
+- `resolveBuiltinScrollStrategyDescriptor()` — sync, builds one of the 4 concrete strategies
+  (`createNoopScrollStrategy`/`createBlockScrollStrategy`/`createRepositionScrollStrategy`/
+  `createCloseScrollStrategy`) from a `BuiltinScrollStrategyDescriptor`. Kept synchronous
+  deliberately (see below).
+- `resolveScrollStrategyDescriptor()` — always `async` (a QRL call always returns a `Promise`);
+  resolves either form of `ScrollStrategyDescriptor` to a real `ScrollStrategy` instance.
+- `isScrollStrategyInstance()` / `resolveConfiguredScrollStrategy()` — the latter is what a
+  consumer actually calls: given a per-call override (already a built `ScrollStrategy` instance,
+  a descriptor, or absent) and a context-level default descriptor, returns the real instance to
+  use — an already-built instance passes through unchanged (no re-resolution), otherwise the
+  override (if any) or the context default is resolved.
+
+`OverlayConfig.scrollStrategy` (`overlay-config.ts`) accepts `ScrollStrategy |
+BuiltinScrollStrategyDescriptor` — deliberately NOT the `QRL` form, so `createOverlayService().
+create()` stays fully synchronous (`overlay.ts` resolves a builtin descriptor inline via
+`resolveBuiltinScrollStrategyDescriptor()` before calling `createOverlayRef`). A raw `useOverlay()`
+consumer that wants the `QRL` escape hatch resolves it themselves (via
+`resolveScrollStrategyDescriptor()`) before passing the already-built `ScrollStrategy` instance
+into `OverlayConfig.scrollStrategy` — the same shape `qwik-material`'s own `open$`/`openMenu()`/
+`openSelectPanel()`/`openAutocompletePanel()` now use.
+
+Every qwik-material `MAT_*_SCROLL_STRATEGY` context (`dialog`, `bottom-sheet`, `select`, `menu`,
+`autocomplete`) was switched from `ContextId<NoSerialize<() => ScrollStrategy>>` to
+`ContextId<ScrollStrategyDescriptor>`, and each `<QwikMaterialProvider matXScrollStrategy={…}>`
+prop (renamed from `matXScrollStrategyFactory`) now accepts the descriptor directly — see each
+package's own SYNC.md for the per-component write-up. A plain descriptor default (e.g. `'block'`
+or `{type: 'reposition'}`) is also now safe to pass directly as a `useContext()` default — unlike
+a function-typed default, it's never confused with "no default" (the `undefined`-default pitfall)
+and never invoked as a lazy initializer (the function-typed-default pitfall), so several call
+sites dropped the earlier `null`-sentinel workaround entirely.

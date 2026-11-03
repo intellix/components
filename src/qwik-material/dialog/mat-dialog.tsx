@@ -14,9 +14,10 @@ import {ensureCdkDispatchers, QWIK_CDK} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,
   createGlobalPositionStrategy,
-  createBlockScrollStrategy,
+  resolveConfiguredScrollStrategy,
   type OverlayConfig,
   type OverlayRef,
+  type ScrollStrategyDescriptor,
 } from '@angular-community/qwik-cdk/overlay';
 import type {OverlayEntry, OverlayRegistry} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
@@ -61,11 +62,16 @@ const MatDialogWrapper = component$<{
  * outside-click dispatchers.
  */
 export interface MatDialog {
+  // Returns a Promise directly (not just via the usual QRL-call wrapping):
+  // resolving MatDialogConfig.scrollStrategy / MAT_DIALOG_SCROLL_STRATEGY
+  // may need to await a QRL<() => ScrollStrategy> escape-hatch factory —
+  // see resolveConfiguredScrollStrategy. `await`ing the call (as every
+  // consumer already does) flattens this the same either way.
   open$: QRL<
     <C, D = unknown, R = unknown>(
       component: Component<any>,
       config?: MatDialogConfig<D>,
-    ) => NoSerialize<MatDialogRef<R, C>> | null
+    ) => Promise<NoSerialize<MatDialogRef<R, C>> | null>
   >;
   close$: QRL<(id: string, result?: unknown) => void>;
   closeAll$: QRL<() => void>;
@@ -92,24 +98,19 @@ export function useMatDialog(): MatDialog {
   // OverlayConfig.context's doc comment for why the dialog's content,
   // rendered elsewhere under <QwikCdkRoot>, can't see them on its own.
   const inheritedContext = useQwikMaterialContextSnapshot();
-  // Qwik's `useContext(ctx, defaultValue)` has two special cases that make
-  // passing a function as the default UNSAFE: (1) an explicit `undefined`
-  // default is treated the same as no default (throws
-  // `QError_notFoundContext` when no provider exists), and (2) a
-  // FUNCTION-typed default is treated as a lazy initializer and INVOKED
-  // immediately, with the return value (not the function) persisted —
-  // which would try to serialize the resulting `ScrollStrategy` instance
-  // (function properties like `.attach`) during SSR, crashing every route.
-  // See `useMatBottomSheet()`'s identical fix in `mat-bottom-sheet.tsx` for
-  // the full explanation and the scenario that surfaced this (calling the
-  // service hook from a component with no `<QwikMaterialProvider>`
-  // ancestor — not currently exercised by any `useMatDialog()` scenario,
-  // but fixed here too since it's the same latent bug). `null` (not a
-  // function, not `undefined`) is the safe default sentinel; the real
-  // fallback factory is substituted afterward in plain JS.
-  const scrollStrategyFactoryOrNull = useContext(MAT_DIALOG_SCROLL_STRATEGY, null as any);
-  const scrollStrategyFactory =
-    scrollStrategyFactoryOrNull ?? noSerialize(() => createBlockScrollStrategy());
+  // `MAT_DIALOG_SCROLL_STRATEGY` is a plain, serializable
+  // `ScrollStrategyDescriptor` (string/object, or a `QRL` escape hatch) —
+  // NOT a function factory, so neither of `useContext()`'s two
+  // function-typed-default pitfalls apply here (no lazy-initializer
+  // invocation, and a plain string default is never confused with "no
+  // default"). A plain `'block'` fallback covers calling this hook from a
+  // component with no `<QwikMaterialProvider>` ancestor at all (the
+  // `replace-sheet`-style edge case — see `useMatBottomSheet()`'s
+  // identical comment).
+  const scrollStrategyDescriptor = useContext(
+    MAT_DIALOG_SCROLL_STRATEGY,
+    'block' as ScrollStrategyDescriptor,
+  );
 
   const matRefsById = useStore<Record<string, NoSerialize<MatDialogRef>>>({});
   const openDialogs = useSignal<readonly NoSerialize<MatDialogRef>[]>([]);
@@ -121,10 +122,10 @@ export function useMatDialog(): MatDialog {
   const afterAllClosedCallbacks = useSignal<readonly QRL<() => void>[]>([]);
 
   const open$ = $(
-    <C, D, R>(
+    async <C, D, R>(
       component: Component<any>,
       config?: MatDialogConfig<D>,
-    ): NoSerialize<MatDialogRef<R, C>> | null => {
+    ): Promise<NoSerialize<MatDialogRef<R, C>> | null> => {
       const merged: MatDialogConfig<D> = Object.assign(
         {} as MatDialogConfig<D>,
         defaults,
@@ -132,20 +133,19 @@ export function useMatDialog(): MatDialog {
       );
       merged.id = merged.id ?? `mat-mdc-dialog-${idSeq.n++}`;
 
-      // `scrollStrategyFactory` is captured via `useContext()` during this
-      // hook's OWN render; it does NOT reliably survive into this QRL
-      // after a real SSR→CSR resume boundary (confirmed live — Qwik has
-      // no way to re-read context from inside an already-invoked QRL; see
-      // SYNC.md's "scroll strategy lost after resume" entry). Falling back
-      // to a FRESH `createBlockScrollStrategy()` here — rather than ending
-      // up with NO scroll strategy at all — at least restores upstream's
-      // real default behavior (background scroll blocked while the dialog
-      // is open) for the common, unconfigured case. A CUSTOM
-      // `matDialogScrollStrategyFactory` is still silently lost post-resume
-      // — known, documented gap, not fixed by this fallback.
-      if (!merged.scrollStrategy) {
-        merged.scrollStrategy = (scrollStrategyFactory ?? (() => createBlockScrollStrategy()))();
-      }
+      // Resolve the per-open override (already a real instance, a
+      // descriptor, or absent) against the context-level default
+      // descriptor — see `resolveConfiguredScrollStrategy`'s own doc
+      // comment. `scrollStrategyDescriptor` is plain, serializable data,
+      // so — unlike the function-factory this replaced — it survives
+      // having been read via `useContext()` during this hook's OWN
+      // render and then used here, in this QRL, after a real SSR→CSR
+      // resume boundary (see SYNC.md's "scroll strategy lost after
+      // resume" entry for the full incident writeup).
+      merged.scrollStrategy = await resolveConfiguredScrollStrategy(
+        merged.scrollStrategy,
+        scrollStrategyDescriptor,
+      );
 
       // SSR no-op: return a pre-CLOSED ref that resolves all three promises
       // immediately so awaiters never hang on the server.

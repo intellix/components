@@ -30,11 +30,11 @@ import {
 import {
   createOverlayService,
   createFlexibleConnectedPositionStrategy,
-  createRepositionScrollStrategy,
+  resolveScrollStrategyDescriptor,
   type OverlayEntry,
   type OverlayRef,
   type OverlayRegistry,
-  type ScrollStrategy,
+  type ScrollStrategyDescriptor,
 } from '@angular-community/qwik-cdk/overlay';
 import {MenuPanel} from './menu-panel';
 import type {MenuCloseReason} from './menu-close-reason';
@@ -230,9 +230,14 @@ export interface OpenMenuOptions {
   restoreFocusTo: (origin: FocusOrigin) => void;
   /** Called once the overlay has fully detached (after the exit animation). */
   onClosed: (reason: MenuCloseReason | undefined) => void;
-  /** Mirrors upstream `MAT_MENU_SCROLL_STRATEGY`. Falls back to
-   *  `createRepositionScrollStrategy({scrollThrottle: 20})` when absent. */
-  scrollStrategyFactory?: NoSerialize<() => ScrollStrategy>;
+  /**
+   * Mirrors upstream `MAT_MENU_SCROLL_STRATEGY`. A plain, serializable
+   * `ScrollStrategyDescriptor` (string/object, or a `QRL` escape hatch) —
+   * NOT a function factory, see `select-runtime.ts`'s
+   * `SelectRuntimeConfig.scrollStrategyDescriptor` for why that distinction
+   * matters (a factory function doesn't survive a real SSR→CSR resume).
+   */
+  scrollStrategyDescriptor: ScrollStrategyDescriptor;
 }
 
 /**
@@ -254,8 +259,16 @@ export interface OpenMenuOptions {
  * rather than the position strategy's resolved connection pair (every
  * parity scenario's preferred position always fits the viewport, so the
  * two are always equal in practice).
+ *
+ * `async` so the `QRL<() => ScrollStrategy>` escape hatch of a configured
+ * `ScrollStrategyDescriptor` can be awaited (see
+ * `resolveScrollStrategyDescriptor`) - the common, non-`QRL` case resolves
+ * with no actual suspension. Both call sites (`use-mat-menu-trigger.ts`,
+ * `mat-menu-item.tsx`'s `openSubmenu`) already call this from inside an
+ * `async $(...)` and now `await` it, so ordering against their own
+ * following statements (`onMenuOpened$`) is preserved.
  */
-export function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): void {
+export async function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): Promise<void> {
   if (!isBrowser) return;
   if (options.signals.overlayRef.value) return;
 
@@ -312,6 +325,15 @@ export function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): void {
 
   const handlePanelClick = $(() => requestClose('click'));
 
+  // Resolves BEFORE `overlay.create()` so the real `ScrollStrategy`
+  // instance (not a descriptor) lands in its config — see
+  // `resolveScrollStrategyDescriptor`'s own doc comment. Only actually
+  // suspends for the `QRL<() => ScrollStrategy>` escape hatch; the
+  // default/descriptor form resolves synchronously.
+  const resolvedScrollStrategy = await resolveScrollStrategyDescriptor(
+    options.scrollStrategyDescriptor,
+  );
+
   const overlayRef = overlay.create(
     MenuPanel,
     {
@@ -336,12 +358,9 @@ export function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): void {
       direction: options.direction,
       disableAnimations: options.animationsDisabled,
       // Mirrors upstream MAT_MENU_SCROLL_STRATEGY: configurable via
-      // <QwikMaterialProvider matMenuScrollStrategyFactory={...}>, falling
-      // back to the previously hard-coded reposition strategy.
-      scrollStrategy: (
-        options.scrollStrategyFactory ??
-        (() => createRepositionScrollStrategy({scrollThrottle: 20}))
-      )(),
+      // <QwikMaterialProvider matMenuScrollStrategy={...}>, falling back
+      // to the previously hard-coded reposition strategy.
+      scrollStrategy: resolvedScrollStrategy,
     },
   );
 

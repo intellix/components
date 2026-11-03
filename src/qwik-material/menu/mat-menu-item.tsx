@@ -11,7 +11,7 @@ import {
 } from '@qwik.dev/core';
 import {isBrowser} from '@qwik.dev/core/build';
 import {QWIK_CDK, ensureCdkDispatchers} from '@angular-community/qwik-cdk';
-import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
+import type {OverlayRef, ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import {useFocusOrigin, focusVia, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
@@ -68,9 +68,13 @@ export interface MatMenuItemProps {
 export const MatMenuItem = component$<MatMenuItemProps>(props => {
   const ctx = useContext(QWIK_CDK);
   const defaults = useContext(MAT_MENU_DEFAULT_OPTIONS, {});
-  // `null` (not a function, not `undefined`) is the safe useContext default
-  // sentinel — see useMatDialog()'s identical pattern.
-  const scrollStrategyFactory = useContext(MAT_MENU_SCROLL_STRATEGY, null as any);
+  // `MAT_MENU_SCROLL_STRATEGY` is a plain, serializable
+  // `ScrollStrategyDescriptor` — see `use-mat-menu-trigger.ts`'s identical
+  // read for why a plain default is safe here.
+  const scrollStrategyDescriptor = useContext(MAT_MENU_SCROLL_STRATEGY, {
+    type: 'reposition',
+    scrollThrottle: 20,
+  } as ScrollStrategyDescriptor);
   const animationsDisabled = useAnimationsDisabled();
   const focusOrigin = useFocusOrigin();
 
@@ -157,7 +161,7 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
     // hover immediately followed by a click/keydown both racing to open
     // the same submenu before either's `openMenu` call has run.
     if (overlayRef.value || !hostRef.value) return;
-    openMenu(itemsJsx, {
+    await openMenu(itemsJsx, {
       ctx,
       signals,
       menu: menuRef,
@@ -180,7 +184,7 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
       onClosed: () => {
         openedBy.value = null;
       },
-      scrollStrategyFactory: scrollStrategyFactory ?? undefined,
+      scrollStrategyDescriptor,
     });
   });
 

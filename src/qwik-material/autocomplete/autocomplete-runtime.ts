@@ -61,12 +61,12 @@ import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qw
 import {
   createOverlayService,
   createFlexibleConnectedPositionStrategy,
-  createRepositionScrollStrategy,
+  resolveScrollStrategyDescriptor,
   type ConnectedPosition,
   type OverlayEntry,
   type OverlayRef,
   type OverlayRegistry,
-  type ScrollStrategy,
+  type ScrollStrategyDescriptor,
 } from '@angular-community/qwik-cdk/overlay';
 import {
   createListKeyManager,
@@ -185,9 +185,15 @@ export interface AutocompleteRuntimeConfig {
   onValueChange$: QRL<(value: unknown) => void> | undefined;
   onTouched$: QRL<() => void> | undefined;
   onOpenedChange$: QRL<(open: boolean) => void> | undefined;
-  /** Mirrors upstream `MAT_AUTOCOMPLETE_SCROLL_STRATEGY`. Falls back to
-   *  `createRepositionScrollStrategy()` when absent. */
-  scrollStrategyFactory: NoSerialize<() => ScrollStrategy> | undefined;
+  /**
+   * Mirrors upstream `MAT_AUTOCOMPLETE_SCROLL_STRATEGY`. A plain,
+   * serializable `ScrollStrategyDescriptor` (string/object, or a `QRL`
+   * escape hatch) — NOT a function factory, see
+   * `select-runtime.ts`'s `SelectRuntimeConfig.scrollStrategyDescriptor`
+   * for why that distinction matters (a factory function doesn't survive
+   * a real SSR→CSR resume).
+   */
+  scrollStrategyDescriptor: ScrollStrategyDescriptor;
 }
 
 function makeIdGen(ctx: QwikCdkInternals) {
@@ -296,13 +302,13 @@ function detachOverlay(signals: AutocompleteRuntimeSignals): void {
  *  `tree` signal + re-highlights, mirroring upstream's lighter "update
  *  origin/size" branch minus the resize, not an upstream "no-op" — see
  *  SYNC.md's panel-resize-on-refilter deviation). */
-export function openAutocompletePanel(
+export async function openAutocompletePanel(
   flat: readonly ResolvedAutocompleteOption[],
   tree: readonly ResolvedAutocompleteNode[],
   ctx: QwikCdkInternals,
   cfg: AutocompleteRuntimeConfig,
   signals: AutocompleteRuntimeSignals,
-): void {
+): Promise<void> {
   if (!isBrowser) return;
   if (cfg.disabled || cfg.readOnly) return;
   const inputEl = signals.inputRef.value as HTMLInputElement | undefined;
@@ -326,6 +332,15 @@ export function openAutocompletePanel(
 
     signals.treeSignal.value = tree;
 
+    // Resolves BEFORE `overlay.create()` so the real `ScrollStrategy`
+    // instance (not a descriptor) lands in its config — see
+    // `resolveScrollStrategyDescriptor`'s own doc comment. Only actually
+    // suspends for the `QRL<() => ScrollStrategy>` escape hatch; the
+    // default/descriptor form resolves synchronously.
+    const resolvedScrollStrategy = await resolveScrollStrategyDescriptor(
+      cfg.scrollStrategyDescriptor,
+    );
+
     const overlayRef = overlay.create(
       MatAutocompletePanel,
       {
@@ -348,10 +363,9 @@ export function openAutocompletePanel(
         direction: cfg.isRtl ? 'rtl' : 'ltr',
         positionStrategy: strategy,
         // Mirrors upstream MAT_AUTOCOMPLETE_SCROLL_STRATEGY: configurable
-        // via <QwikMaterialProvider matAutocompleteScrollStrategyFactory=
-        // {...}>, falling back to the previously hard-coded reposition
-        // strategy.
-        scrollStrategy: (cfg.scrollStrategyFactory ?? createRepositionScrollStrategy)(),
+        // via <QwikMaterialProvider matAutocompleteScrollStrategy={...}>,
+        // falling back to the previously hard-coded reposition strategy.
+        scrollStrategy: resolvedScrollStrategy,
         hasBackdrop: cfg.hasBackdrop,
         backdropClass: cfg.backdropClass ?? 'cdk-overlay-transparent-backdrop',
         panelClass: cfg.overlayPanelClass,

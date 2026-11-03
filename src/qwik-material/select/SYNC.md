@@ -626,17 +626,19 @@ change for every existing (always form-field-nested) scenario.
 ## Scroll-strategy configuration (2026-11-03)
 
 Added `MAT_SELECT_SCROLL_STRATEGY` (mirrors upstream's `MAT_SELECT_SCROLL_STRATEGY` injection
-token) + `<QwikMaterialProvider matSelectScrollStrategyFactory={…}>`, threaded through
-`SelectRuntimeConfig.scrollStrategyFactory` into `openSelectPanel()`'s overlay config (previously
-hard-coded to `createRepositionScrollStrategy()`).
+token) + `<QwikMaterialProvider matSelectScrollStrategy={…}>`, threaded through
+`SelectRuntimeConfig.scrollStrategyDescriptor` into `openSelectPanel()`'s overlay config
+(previously hard-coded to `createRepositionScrollStrategy()`).
 
-Same "scroll strategy lost after resume" gap as `qwik-material/menu`'s identical addition — see
-that package's SYNC.md entry of the same name for the full root-cause write-up (a value read via
-`useContext()` during `MatSelect`'s render does not survive into the later-invoked `open$`-style
-QRL after a real SSR→CSR resume boundary; confirmed to also pre-exist for
-`qwik-material/dialog`/`bottom-sheet`'s own scroll-strategy factory, now fixed THERE for the
-default case). For select: `openSelectPanel()`'s own inline fallback
-(`cfg.scrollStrategyFactory ?? createRepositionScrollStrategy`) always runs regardless, so the
-default (unconfigured) case is unaffected — no regression; a CUSTOM
-`matSelectScrollStrategyFactory` is silently ignored after a real page load (known, documented
-gap, same fix direction as menu's).
+Uses the serializable `ScrollStrategyDescriptor` from the start (not the function-factory
+pattern that caused the "scroll strategy lost after resume" bug elsewhere — see
+`qwik-material/dialog/SYNC.md`'s entry of that name for the full root-cause write-up, found
+working on `qwik-material/menu`'s identical addition). `MAT_SELECT_SCROLL_STRATEGY` is
+`createContextId<ScrollStrategyDescriptor>(...)`; `MatSelect` reads it with a plain `{type:
+'reposition'}` `useContext()` default (safe — plain descriptor data, not a function, so neither
+`useContext()` default-value pitfall applies); `openSelectPanel()` is `async`, resolving the
+descriptor via `resolveScrollStrategyDescriptor()` (`qwik-cdk/overlay`) immediately before
+`overlay.create()` — only actually suspends for the `QRL<() => ScrollStrategy>` escape hatch,
+so every existing fire-and-forget call site (never `await`ed) keeps working unchanged. A
+non-default `matSelectScrollStrategy="block"` is covered by
+`specs/material-select/scroll-strategy.spec.ts`.

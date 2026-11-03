@@ -198,7 +198,7 @@ constructors are `create*` factories. Verified by:
   listener on the host I render" affordance, so it's an explicit prop instead. Backward
   compatible (optional, no behavior change when omitted).
 - **`qwik-material/dialog`'s `qwik-material-provider.tsx`** gained
-  `matBottomSheetDefaults`/`matBottomSheetScrollStrategyFactory` props, following the exact
+  `matBottomSheetDefaults`/`matBottomSheetScrollStrategy` props, following the exact
   established pattern of every other entry point's config props living there (same file already
   holds `matTabsConfig`, `matSidenavConfig`, etc.).
 
@@ -236,13 +236,21 @@ explicit) list through as `overlayConfig.context`, re-provided generically by `q
 
 ## Real bug: scroll strategy lost after resume (2026-11-03)
 
-Same fix as `qwik-material/dialog`'s entry of the same name (see it for the full root-cause
-write-up): `useMatBottomSheet().open$` now always falls back to a fresh
-`createBlockScrollStrategy()`, created inline, whenever `merged.scrollStrategy` is still unset —
-restoring the real default (background scroll blocked while the sheet is open) for every sheet
-opened after a real page load, not just before a resume boundary. A CUSTOM
-`matBottomSheetScrollStrategyFactory` is still silently lost post-resume (documented gap,
-unchanged). Tested in `specs/material-bottom-sheet/scroll-blocking.spec.ts`.
+Same bug as `qwik-material/dialog`'s entry of the same name (see it for the full root-cause
+write-up) — restored the real default (background scroll blocked while the sheet is open) for
+every sheet opened after a real page load.
+
+### Fix: serializable `ScrollStrategyDescriptor` (2026-11-03, closes the gap below)
+
+Same fix as `qwik-material/dialog`'s entry of the same name: `MAT_BOTTOM_SHEET_SCROLL_STRATEGY`
+is now `createContextId<ScrollStrategyDescriptor>(...)` (was `NoSerialize<() => ScrollStrategy>`);
+`<QwikMaterialProvider matBottomSheetScrollStrategy={…}>` (renamed from
+`matBottomSheetScrollStrategyFactory`) accepts a plain `ScrollStrategyDescriptor` directly;
+`MatBottomSheetConfig.scrollStrategy` accepts `ScrollStrategy | ScrollStrategyDescriptor`;
+`useMatBottomSheet().open$` is now `async`, resolving via `resolveConfiguredScrollStrategy()`
+(`qwik-cdk/overlay`) before building `overlayConfig` — the custom-strategy gap is CLOSED, a
+configured descriptor (including the `QRL<() => ScrollStrategy>` escape hatch) now survives a
+real resume. Tested in `specs/material-bottom-sheet/scroll-blocking.spec.ts`.
 
 ## Pipeline
 

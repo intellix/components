@@ -9,6 +9,7 @@
 import type {PositionStrategy} from './position/position-strategy';
 import type {Direction, Directionality} from '../bidi/directionality';
 import type {ScrollStrategy} from './scroll/scroll-strategy';
+import type {BuiltinScrollStrategyDescriptor} from './scroll/scroll-strategy-descriptor';
 import type {OverlayContextOverride} from './overlay-context';
 
 /** Initial configuration used when creating an overlay. */
@@ -16,8 +17,19 @@ export interface OverlayConfig {
   /** Strategy with which to position the overlay. */
   positionStrategy?: PositionStrategy;
 
-  /** Strategy to be used when handling scroll events while the overlay is open. */
-  scrollStrategy?: ScrollStrategy;
+  /**
+   * Strategy to be used when handling scroll events while the overlay is
+   * open — either an already-built `ScrollStrategy` instance, or a
+   * `BuiltinScrollStrategyDescriptor` (`'block'`, `{type: 'reposition',
+   * scrollThrottle: 20}`, …) resolved synchronously by
+   * `createOverlayService().create()`. The `QRL` escape hatch that
+   * `ScrollStrategyDescriptor` also allows isn't accepted here — this
+   * raw CDK layer's `create()` is intentionally synchronous; the `QRL`
+   * form is only resolved by the (`async`) qwik-material layer services
+   * (`useMatDialog()`, …) that already need an `await` for other reasons.
+   * See `scroll/scroll-strategy-descriptor.ts`'s own doc comment.
+   */
+  scrollStrategy?: ScrollStrategy | BuiltinScrollStrategyDescriptor;
 
   /** Custom class to add to the overlay pane. */
   panelClass?: string | string[];

@@ -53,6 +53,17 @@ export {createCloseScrollStrategy} from './scroll/close-scroll-strategy';
 export type {CloseScrollStrategyConfig} from './scroll/close-scroll-strategy';
 export {createRepositionScrollStrategy} from './scroll/reposition-scroll-strategy';
 export type {RepositionScrollStrategyConfig} from './scroll/reposition-scroll-strategy';
+export type {
+  BuiltinScrollStrategyDescriptor,
+  ScrollStrategyDescriptor,
+} from './scroll/scroll-strategy-descriptor';
+export {
+  isBuiltinScrollStrategyDescriptor,
+  resolveBuiltinScrollStrategyDescriptor,
+  resolveScrollStrategyDescriptor,
+  isScrollStrategyInstance,
+  resolveConfiguredScrollStrategy,
+} from './scroll/scroll-strategy-descriptor';
 export type {ScrollStrategyOptions} from './scroll/scroll-strategy-options';
 export {
   createScrollStrategyOptions,

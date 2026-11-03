@@ -30,12 +30,12 @@ import {ensureCdkDispatchers, type QwikCdkInternals} from '@angular-community/qw
 import {
   createOverlayService,
   createFlexibleConnectedPositionStrategy,
-  createRepositionScrollStrategy,
+  resolveScrollStrategyDescriptor,
   type ConnectedPosition,
   type OverlayEntry,
   type OverlayRef,
   type OverlayRegistry,
-  type ScrollStrategy,
+  type ScrollStrategyDescriptor,
 } from '@angular-community/qwik-cdk/overlay';
 import {
   createListKeyManager,
@@ -176,10 +176,10 @@ export interface SelectRuntimeConfig {
   onValueChange$: QRL<(value: unknown) => void> | undefined;
   onTouched$: QRL<() => void> | undefined;
   onOpenedChange$: QRL<(open: boolean) => void> | undefined;
-  /** Mirrors upstream `MAT_SELECT_SCROLL_STRATEGY`. Falls back to
-   *  `createRepositionScrollStrategy()` when absent — see
-   *  `openSelectPanel()`. */
-  scrollStrategyFactory: NoSerialize<() => ScrollStrategy> | undefined;
+  /** Mirrors upstream `MAT_SELECT_SCROLL_STRATEGY` — a plain, serializable
+   *  descriptor, not a function factory. Defaults to `{type: 'reposition'}`
+   *  (see `openSelectPanel()`). */
+  scrollStrategyDescriptor: ScrollStrategyDescriptor;
 }
 
 function makeIdGen(ctx: QwikCdkInternals) {
@@ -368,14 +368,21 @@ function highlightCorrectOption(
   }
 }
 
-/** Mirrors `MatSelect.open()`. */
-export function openSelectPanel(
+/**
+ * Mirrors `MatSelect.open()`. `async` so the `QRL<() => ScrollStrategy>`
+ * escape hatch of a configured `ScrollStrategyDescriptor` can be awaited
+ * (see `resolveConfiguredScrollStrategy`) — the common, non-`QRL` case
+ * resolves with no actual suspension, so every existing fire-and-forget
+ * call site (never `await`ed; nothing checks the overlay synchronously
+ * right after calling this) keeps working unchanged.
+ */
+export async function openSelectPanel(
   flat: readonly ResolvedSelectOption[],
   tree: readonly ResolvedSelectNode[],
   ctx: QwikCdkInternals,
   cfg: SelectRuntimeConfig,
   signals: SelectRuntimeSignals,
-): void {
+): Promise<void> {
   if (!isBrowser) return;
   if (signals.panelOpen.value || cfg.disabled || flat.length === 0) return;
 
@@ -410,6 +417,15 @@ export function openSelectPanel(
 
   signals.exiting.value = false;
 
+  // Resolves BEFORE `overlay.create()` so the real `ScrollStrategy`
+  // instance (not a descriptor) lands in its config — see
+  // `resolveScrollStrategyDescriptor`'s own doc comment. Only actually
+  // suspends for the `QRL<() => ScrollStrategy>` escape hatch; the
+  // default/descriptor form resolves synchronously.
+  const resolvedScrollStrategy = await resolveScrollStrategyDescriptor(
+    cfg.scrollStrategyDescriptor,
+  );
+
   const overlayRef = overlay.create(
     MatSelectPanel,
     {
@@ -435,9 +451,9 @@ export function openSelectPanel(
       direction: cfg.isRtl ? 'rtl' : 'ltr',
       positionStrategy: strategy,
       // Mirrors upstream MAT_SELECT_SCROLL_STRATEGY: configurable via
-      // <QwikMaterialProvider matSelectScrollStrategyFactory={...}>,
-      // falling back to the previously hard-coded reposition strategy.
-      scrollStrategy: (cfg.scrollStrategyFactory ?? createRepositionScrollStrategy)(),
+      // <QwikMaterialProvider matSelectScrollStrategy={...}>, falling
+      // back to the previously hard-coded reposition strategy.
+      scrollStrategy: resolvedScrollStrategy,
       hasBackdrop: true,
       backdropClass: 'cdk-overlay-transparent-backdrop',
       panelClass: cfg.overlayPanelClass,
