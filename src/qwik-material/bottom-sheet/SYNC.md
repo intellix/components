@@ -102,9 +102,8 @@ near-triviality):
   descendant of `<QwikMaterialProvider>`). No scenario in this port nests multiple
   `<QwikMaterialProvider>`s, so the flattening is unobservable here.
 - `MatBottomSheet.ngOnDestroy()` removed (no service-destroy lifecycle hook in Qwik).
-- `closeOnNavigation` accepted on `MatBottomSheetConfig` for API-surface parity but not wired to
-  any router/location integration (no Angular `Location`/Router equivalent consulted here) —
-  same category of deviation as `MatDialogConfig.closeOnNavigation`.
+- ~~`closeOnNavigation` accepted … but not wired~~ — **fixed 2026-11-03**, see the dedicated
+  entry below (same fix as `MatDialogConfig.closeOnNavigation`).
 - NgModule `MatBottomSheetModule` removed.
 - `MatBottomSheetHarness` deferred.
 - SCSS theming mixin (`mat.bottom-sheet-theme`) not exposed until `qwik-material/core` lands.
@@ -215,6 +214,15 @@ Same fixes as `qwik-material/dialog` (see its SYNC.md entry of the same name) po
   opened component) and `MatBottomSheetRef.setInput(name, value)` (reactive update after open),
   built on `OverlayRef.updateProps()` — see `qwik-cdk/overlay/SYNC.md`. `contentProps` was
   previously hard-coded to `{}`. `MAT_BOTTOM_SHEET_DATA` is unaffected.
+
+## `closeOnNavigation` wired (2026-11-03)
+
+Same fix as `qwik-material/dialog`'s entry of the same name: `useMatBottomSheet().open$` now
+registers every opened sheet with the shared `OverlayNavigationDispatcher`
+(`qwik-cdk/overlay/SYNC.md`) whenever `closeOnNavigation !== false` (the default), dismissing it
+on `popstate`/`hashchange` — not on every link click. Deregistered in the existing
+`afterDismissed.then(...)` cleanup. Tested end-to-end in
+`specs/material-bottom-sheet/close-on-navigation.spec.ts`.
 
 ## Pipeline
 

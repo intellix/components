@@ -4,8 +4,10 @@ import {
   createNoopScrollStrategy,
   createOverlayKeyboardDispatcher,
   createOverlayOutsideClickDispatcher,
+  createOverlayNavigationDispatcher,
   type OverlayKeyboardDispatcher,
   type OverlayOutsideClickDispatcher,
+  type OverlayNavigationDispatcher,
 } from '../overlay/public-api';
 import type {QwikCdkInternals} from './internals';
 
@@ -20,6 +22,7 @@ import type {QwikCdkInternals} from './internals';
 export function ensureCdkDispatchers(internals: QwikCdkInternals): {
   keyboardDispatcher: OverlayKeyboardDispatcher;
   outsideClickDispatcher: OverlayOutsideClickDispatcher;
+  navigationDispatcher: OverlayNavigationDispatcher;
 } {
   if (!internals.keyboardDispatcher || !internals.outsideClickDispatcher) {
     internals.keyboardDispatcher = noSerialize(createOverlayKeyboardDispatcher());
@@ -27,11 +30,15 @@ export function ensureCdkDispatchers(internals: QwikCdkInternals): {
       createOverlayOutsideClickDispatcher(createPlatform()),
     );
   }
+  if (!internals.navigationDispatcher) {
+    internals.navigationDispatcher = noSerialize(createOverlayNavigationDispatcher());
+  }
   if (!internals.dialogScrollStrategyFactory) {
     internals.dialogScrollStrategyFactory = noSerialize(() => createNoopScrollStrategy());
   }
   return {
     keyboardDispatcher: internals.keyboardDispatcher!,
     outsideClickDispatcher: internals.outsideClickDispatcher!,
+    navigationDispatcher: internals.navigationDispatcher!,
   };
 }

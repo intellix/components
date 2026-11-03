@@ -71,3 +71,12 @@ export {
   OVERLAY_OUTSIDE_CLICK_DISPATCHER,
   useOverlayOutsideClickDispatcher,
 } from './dispatchers/overlay-outside-click-dispatcher';
+export type {
+  OverlayNavigationDispatcher,
+  NavigationHandlers,
+} from './dispatchers/overlay-navigation-dispatcher';
+export {
+  createOverlayNavigationDispatcher,
+  OVERLAY_NAVIGATION_DISPATCHER,
+  useOverlayNavigationDispatcher,
+} from './dispatchers/overlay-navigation-dispatcher';

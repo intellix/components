@@ -17,6 +17,7 @@ import type {DialogConfig} from '../dialog/dialog-config';
 import type {DialogRef} from '../dialog/dialog-ref';
 import type {OverlayKeyboardDispatcher} from '../overlay/dispatchers/overlay-keyboard-dispatcher';
 import type {OverlayOutsideClickDispatcher} from '../overlay/dispatchers/overlay-outside-click-dispatcher';
+import type {OverlayNavigationDispatcher} from '../overlay/dispatchers/overlay-navigation-dispatcher';
 import type {ScrollStrategy} from '../overlay/scroll/scroll-strategy';
 import type {OverlayDefaultConfig} from '../overlay/overlay-config';
 import type {Direction} from '../bidi/directionality';
@@ -52,6 +53,13 @@ export interface QwikCdkInternals {
 
   /** Global outside-click router. Populated client-side by `useVisibleTask$`. */
   outsideClickDispatcher: NoSerialize<OverlayOutsideClickDispatcher> | undefined;
+
+  /**
+   * Global `popstate`/`hashchange` broadcaster, backing `closeOnNavigation`
+   * for dialog/bottom-sheet (and any future overlay consumer). Populated
+   * client-side by `useVisibleTask$`, same as the two dispatchers above.
+   */
+  navigationDispatcher: NoSerialize<OverlayNavigationDispatcher> | undefined;
 
   /** Default factory for `DialogConfig.scrollStrategy` when one isn't supplied. */
   dialogScrollStrategyFactory: NoSerialize<() => ScrollStrategy> | undefined;

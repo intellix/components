@@ -70,6 +70,14 @@ export interface MatDialog {
   closeAll$: QRL<() => void>;
   getDialogById$: QRL<(id: string) => NoSerialize<MatDialogRef> | undefined>;
   readonly openDialogs: Signal<readonly NoSerialize<MatDialogRef>[]>;
+  /**
+   * Registers a callback invoked every time `openDialogs` transitions from
+   * non-empty to empty — the Qwik-idiomatic replacement for upstream
+   * `MatDialog.afterAllClosed` (an Observable with the same "emits
+   * whenever the open-dialog count reaches zero" contract). Returns an
+   * unsubscribe function.
+   */
+  afterAllClosed$: QRL<(callback: QRL<() => void>) => QRL<() => void>>;
 }
 
 export function useMatDialog(): MatDialog {
@@ -100,6 +108,11 @@ export function useMatDialog(): MatDialog {
   const matRefsById = useStore<Record<string, NoSerialize<MatDialogRef>>>({});
   const openDialogs = useSignal<readonly NoSerialize<MatDialogRef>[]>([]);
   const idSeq = useStore<{n: number}>({n: 0});
+  // QRL callbacks are plain serializable values, so a signal works fine
+  // here (unlike an `Overlay`/dispatcher instance — see
+  // qwik-cdk/overlay/SYNC.md's `useOverlay()` entry for why those can't
+  // live in a signal the same way).
+  const afterAllClosedCallbacks = useSignal<readonly QRL<() => void>[]>([]);
 
   const open$ = $(
     <C, D, R>(
@@ -140,7 +153,8 @@ export function useMatDialog(): MatDialog {
       }
 
       // Created on demand: <QwikCdkRoot>'s visible task may not have run yet.
-      const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
+      const {keyboardDispatcher, outsideClickDispatcher, navigationDispatcher} =
+        ensureCdkDispatchers(ctx);
 
       // Build a thin idGen + registry that close over the shared ctx signals
       // (same pattern as qwik-cdk's useDialog). This ensures MatDialog entries
@@ -292,14 +306,32 @@ export function useMatDialog(): MatDialog {
         },
       });
 
+      // Wire close-on-navigation: closes when the user navigates back/
+      // forward in history (popstate) or the URL hash changes — NOT on
+      // every link click (this library takes no router dependency, so it
+      // can't distinguish a router-driven pushState from any other call).
+      // Mirrors upstream `OverlayConfig.disposeOnNavigation` (set from
+      // `MatDialogConfig.closeOnNavigation`), default true.
+      if (merged.closeOnNavigation !== false) {
+        navigationDispatcher.add(overlayRef, {
+          onNavigate() {
+            matRef.close();
+          },
+        });
+      }
+
       matRefsById[matRef.id] = wrapped;
       openDialogs.value = [...openDialogs.value, wrapped];
 
       matRef.afterClosed.then(() => {
         keyboardDispatcher.remove(overlayRef);
         outsideClickDispatcher.remove(overlayRef);
+        navigationDispatcher.remove(overlayRef);
         delete matRefsById[matRef.id];
         openDialogs.value = openDialogs.value.filter(r => r?.id !== matRef.id);
+        if (openDialogs.value.length === 0) {
+          for (const cb of afterAllClosedCallbacks.value) cb();
+        }
       });
 
       return wrapped;
@@ -319,7 +351,14 @@ export function useMatDialog(): MatDialog {
     return matRefsById[id];
   });
 
-  return {open$, close$, closeAll$, getDialogById$, openDialogs};
+  const afterAllClosed$ = $((callback: QRL<() => void>): QRL<() => void> => {
+    afterAllClosedCallbacks.value = [...afterAllClosedCallbacks.value, callback];
+    return $(() => {
+      afterAllClosedCallbacks.value = afterAllClosedCallbacks.value.filter(cb => cb !== callback);
+    });
+  });
+
+  return {open$, close$, closeAll$, getDialogById$, openDialogs, afterAllClosed$};
 }
 
 /**

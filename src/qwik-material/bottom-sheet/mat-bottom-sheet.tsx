@@ -183,7 +183,8 @@ export function useMatBottomSheet(): MatBottomSheet {
       }
 
       // Created on demand: <QwikCdkRoot>'s visible task may not have run yet.
-      const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
+      const {keyboardDispatcher, outsideClickDispatcher, navigationDispatcher} =
+        ensureCdkDispatchers(ctx);
 
       // Build a thin idGen + registry that close over the shared ctx signals
       // (same pattern as qwik-material/dialog's useMatDialog()). This
@@ -318,12 +319,25 @@ export function useMatBottomSheet(): MatBottomSheet {
         },
       });
 
+      // Wire close-on-navigation: dismisses when the user navigates back/
+      // forward in history (popstate) or the URL hash changes — NOT on
+      // every link click. Default true, same as MatDialogConfig —
+      // see useMatDialog().open$'s identical wiring for the full rationale.
+      if (merged.closeOnNavigation !== false) {
+        navigationDispatcher.add(overlayRef, {
+          onNavigate() {
+            matRef.dismiss();
+          },
+        });
+      }
+
       const reg = getRegistry(ctx);
       const previous = reg.openedRef;
 
       matRef.afterDismissed.then(() => {
         keyboardDispatcher.remove(overlayRef);
         outsideClickDispatcher.remove(overlayRef);
+        navigationDispatcher.remove(overlayRef);
         // Clear the ref if it hasn't already been replaced by a newer one —
         // mirrors upstream's identical guard in `MatBottomSheet.open()`.
         if (reg.openedRef === wrapped) reg.openedRef = null;

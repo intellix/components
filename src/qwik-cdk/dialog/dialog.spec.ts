@@ -12,6 +12,7 @@ import {
   createOverlayService,
   createOverlayKeyboardDispatcher,
   createOverlayOutsideClickDispatcher,
+  createOverlayNavigationDispatcher,
 } from '../overlay/public-api';
 import type {OverlayEntry, OverlayRegistry} from '../overlay/public-api';
 import {createIdGenerator} from '../a11y/id-generator';
@@ -54,6 +55,7 @@ function makeDialog(defaults: Record<string, unknown> = {}): DialogService {
   >;
   const keyboardDispatcher = createOverlayKeyboardDispatcher();
   const outsideClickDispatcher = createOverlayOutsideClickDispatcher();
+  const navigationDispatcher = createOverlayNavigationDispatcher();
   return createDialogService({
     overlay,
     idGen,
@@ -61,6 +63,7 @@ function makeDialog(defaults: Record<string, unknown> = {}): DialogService {
     openDialogs,
     keyboardDispatcher,
     outsideClickDispatcher,
+    navigationDispatcher,
   });
 }
 
@@ -331,12 +334,44 @@ describe('Dialog', () => {
     expect(dialog.openDialogs.value.length).toBe(0);
   });
 
-  it.skip('should close all dialogs when the user goes forwards/backwards in history (deferred: closeOnNavigation)', () => {
-    // CDK line 491 — closeOnNavigation hook not yet implemented
+  it('should close all dialogs when the user goes forwards/backwards in history', async () => {
+    // CDK line 491 — mocks Location.simulateUrlPop(); this port has no
+    // Location service, so a real `popstate` dispatch on `window` is the
+    // closest equivalent (see OverlayNavigationDispatcher).
+    dialog.open(StubDialog);
+    dialog.open(StubDialog);
+    expect(dialog.openDialogs.value.length).toBe(2);
+
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(dialog.openDialogs.value.length).toBe(0);
   });
 
-  it.skip('should close all open dialogs when the location hash changes (deferred: closeOnNavigation)', () => {
-    // CDK line 508 — location hash change hook not yet implemented
+  it('should close all open dialogs when the location hash changes', async () => {
+    // CDK line 508
+    dialog.open(StubDialog);
+    dialog.open(StubDialog);
+    expect(dialog.openDialogs.value.length).toBe(2);
+
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(dialog.openDialogs.value.length).toBe(0);
+  });
+
+  it('closeOnNavigation: false opts a dialog out of closing on navigation', async () => {
+    const ref = dialog.open(StubDialog, {closeOnNavigation: false});
+    expect(dialog.openDialogs.value.length).toBe(1);
+
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(dialog.openDialogs.value.length).toBe(1);
+    expect(ref.isOpen.value).toBe(true);
   });
 
   it.skip('should close the dialog when detached externally (deferred: CloseScrollStrategy integration)', () => {

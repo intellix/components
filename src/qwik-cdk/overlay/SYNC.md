@@ -574,3 +574,23 @@ bottom sheet, select, menu, autocomplete, tooltip, datepicker, timepicker, snack
 nothing changes unless an app actually sets the prop). Only `usePopover` is implemented for now;
 other app-wide overlay defaults (e.g. a default scroll strategy) can extend the same interface
 later.
+
+## `OverlayNavigationDispatcher` — `closeOnNavigation` (2026-11-03)
+
+New (no direct CDK equivalent): upstream wires `OverlayConfig.disposeOnNavigation` per-`OverlayRef`
+via an injected `Location` service (`this._location.subscribe(() => this.dispose())` in
+`OverlayRef`'s constructor). qwik-cdk takes no router dependency, so there's no `Location`
+service to inject. Added `createOverlayNavigationDispatcher()`
+(`dispatchers/overlay-navigation-dispatcher.ts`), a single shared `popstate`/`hashchange`
+listener on `window` that broadcasts to EVERY currently-attached overlay that registered —
+deliberately different from the keyboard/outside-click dispatchers, which route to only the
+topmost (or first-interested) overlay: a navigation should close every overlay that opted in, not
+just one. Deliberately `popstate`/`hashchange` only, not every `pushState`/`replaceState` call
+(which would also fire for an in-app router's own link-click navigation) — matches the task's
+explicit scope: "closes on back/forward navigation", not "closes on every link click". Wired into
+`QwikCdkInternals.navigationDispatcher` (populated by `ensureCdkDispatchers`, same on-demand-
+creation pattern as the other two dispatchers) and consumed by `qwik-cdk/dialog`'s
+`createDialogService.open()`, `qwik-material/dialog`'s `useMatDialog().open$`, and
+`qwik-material/bottom-sheet`'s `useMatBottomSheet().open$` — each registers the overlay whenever
+`closeOnNavigation !== false` (the default) and deregisters it in the existing close/dismiss
+cleanup.

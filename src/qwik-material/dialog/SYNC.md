@@ -276,3 +276,23 @@ the browser, `mdc-dialog--opening` stayed on the container FOREVER for a 0ms-dur
 `specs/examples-misc/angular-parity.spec.ts`'s `dialog-animations (interaction 1)`). Fixed by
 nesting each `setTimeout` INSIDE its corresponding `requestAnimationFrame` callback, guaranteeing
 the clear always runs after the set, for any duration including 0.
+
+## `closeOnNavigation` wired; `MatDialog.afterAllClosed$` added (2026-11-03)
+
+- `MatDialogConfig.closeOnNavigation` (default `true`) was accepted but never consulted.
+  `useMatDialog().open$` now registers every opened dialog with the new
+  `OverlayNavigationDispatcher` (`qwik-cdk/overlay/SYNC.md`) whenever `closeOnNavigation !==
+  false`, closing it on `popstate`/`hashchange` — NOT on every link click (no router dependency
+  to tell a router's own `pushState` call apart from any other). Deregistered in the existing
+  `afterClosed.then(...)` cleanup. Tested end-to-end in
+  `specs/material-dialog/close-on-navigation.spec.ts` (`history.pushState` + `history.back()`,
+  and a real `hashchange`).
+- `MatDialog.afterAllClosed$(callback): QRL<() => void>` added — the Qwik-idiomatic replacement
+  for upstream's `MatDialog.afterAllClosed` Observable (emits whenever the open-dialog count
+  reaches zero; this port's equivalent is a callback-registration method returning an
+  unsubscribe QRL, since a one-shot `Promise` — this port's usual Observable replacement — can't
+  represent something that fires more than once). Backed by a plain `useSignal<QRL<() =>
+  void>[]>` of registered callbacks, invoked from the same `afterClosed.then(...)` handler that
+  already maintains `openDialogs`, right after the filtered array becomes empty. Tested in
+  `specs/material-dialog/after-all-closed.spec.ts` (opens two dialogs, closes them individually —
+  the callback must fire only once, after the SECOND close, not the first).

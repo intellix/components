@@ -100,6 +100,10 @@ Ported (service-level):
 - "should not close an already-closed dialog again" (extra)
 - "should use default config values when none provided" (extra)
 - "should override default config with per-open config" (extra)
+- "should close all dialogs when the user goes forwards/backwards in history" (CDK line 491,
+  closeOnNavigation — fixed 2026-11-03, see "closeOnNavigation" entry below)
+- "should close all open dialogs when the location hash changes" (CDK line 508, same)
+- "closeOnNavigation: false opts a dialog out of closing on navigation" (extra)
 
 Skipped (DOM-render — deferred until JSDOM infra fix or Playwright covers):
 - "should open a dialog with a component" (CDK line 63)
@@ -148,8 +152,6 @@ Skipped (Angular-only — no Qwik analogue):
 - "should fall back to node injector in template dialog" (CDK line 754) — template injector fallback
 
 Skipped (deferred — not yet implemented):
-- "should close all dialogs when the user goes forwards/backwards in history" (CDK line 491) — closeOnNavigation
-- "should close all open dialogs when the location hash changes" (CDK line 508) — closeOnNavigation
 - "should close the dialog when detached externally" (CDK line 523) — CloseScrollStrategy integration
 - "should close all open dialogs on destroy" (CDK line 563) — Dialog service destroy lifecycle
 - "should determine whether closing via the backdrop is allowed" (CDK line 776) — closePredicate not wired
@@ -165,7 +167,8 @@ Implementation fix applied in this task:
 - dialog.tsx: added hasModifierKey() check to Escape key handler — closes only when no
   modifier keys are held, matching CDK dialog-ref.ts line 73 behaviour.
 
-Total: 37 ported / 54 skipped of 78 CDK source scenarios (+ 13 extra service-level tests).
+Total: 39 ported / 52 skipped of 78 CDK source scenarios (+ 14 extra service-level tests, after
+the 2026-11-03 closeOnNavigation fix moved 2 scenarios from skipped to ported and added 1 extra).
 
 ## Dispatchers created on demand (2026-10-27)
 
@@ -190,3 +193,20 @@ same `OverlayRef.updateProps()` primitive. `DialogRef.setInput` returns `void` (
 matching this file's existing mutator convention (`updatePosition`/`updateSize`/
 `addPanelClass`/`removePanelClass` are also `void` here, unlike the Material-layer refs' chainable
 versions).
+
+## `closeOnNavigation` wired (2026-11-03)
+
+`DialogConfig.closeOnNavigation` was accepted but never consulted (2 CDK scenarios skipped as
+"deferred"). Wired via the new `OverlayNavigationDispatcher`
+(`qwik-cdk/overlay/dispatchers/overlay-navigation-dispatcher.ts` — see its own doc comment and
+`qwik-cdk/overlay/SYNC.md`): `createDialogService.open()` registers the ref whenever
+`closeOnNavigation !== false` (the default), closing via `ref.close()` on `popstate`/
+`hashchange`, and deregisters in the existing `ref.closed.finally(...)` cleanup. Deliberately
+`popstate`/`hashchange` ONLY — a `pushState`-driven in-app link click (what a real router does)
+is NOT distinguished from any other programmatic history mutation, so this library (which takes
+no router dependency) can't fire on "every link click" the way upstream's injected `Location`
+service effectively does when wired through Angular's Router; it only fires on actual
+back/forward navigation or a hash change. `navigationDispatcher` is an optional
+`createDialogService` dependency (defaults to not wiring anything) so the existing vitest harness
+test construction stays backward compatible. Un-skipped CDK line 491/508 — see the scenario log
+above.

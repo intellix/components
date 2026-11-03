@@ -61,6 +61,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
     dialogDefaults: props.dialogDefaults ?? {},
     keyboardDispatcher: undefined,
     outsideClickDispatcher: undefined,
+    navigationDispatcher: undefined,
     dialogScrollStrategyFactory: undefined,
     overlayDefaultConfig,
   });
@@ -91,11 +92,16 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   // remediation explicitly scope out.
   useVisibleTask$(({cleanup}) => {
     // May already exist if an overlay was opened before this task ran.
-    const {keyboardDispatcher: kbd, outsideClickDispatcher: ocd} = ensureCdkDispatchers(internals);
+    const {
+      keyboardDispatcher: kbd,
+      outsideClickDispatcher: ocd,
+      navigationDispatcher: nd,
+    } = ensureCdkDispatchers(internals);
 
     cleanup(() => {
       kbd.dispose();
       ocd.dispose();
+      nd.dispose();
     });
   });
 
