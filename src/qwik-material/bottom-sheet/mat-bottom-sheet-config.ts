@@ -1,5 +1,5 @@
 import type {QRL} from '@qwik.dev/core';
-import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import type {OverlayContextOverride, ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 
 /** Options for where to set focus to automatically on bottom sheet open. */
 export type AutoFocusTarget = 'dialog' | 'first-tabbable' | 'first-heading' | string;
@@ -30,6 +30,16 @@ export interface MatBottomSheetConfig<D = unknown> {
    * `MatBottomSheetRef.setInput`.
    */
   componentProps?: Record<string, unknown>;
+  /**
+   * Qwik context values re-provided directly above the opened component
+   * — the generic opt-in for app contexts (e.g. a context an app's own
+   * provider sets). `useMatBottomSheet().open$` automatically prepends
+   * every visible qwik-material configuration context ahead of this; an
+   * entry here for the same `ContextId` wins. See
+   * `OverlayConfig.context`'s doc comment (qwik-cdk) for why this is
+   * needed at all.
+   */
+  context?: OverlayContextOverride[];
   /** Whether the bottom sheet has a backdrop. Default true. */
   hasBackdrop?: boolean;
   /** Custom class for the backdrop. */

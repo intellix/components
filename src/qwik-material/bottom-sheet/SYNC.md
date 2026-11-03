@@ -224,6 +224,16 @@ on `popstate`/`hashchange` — not on every link click. Deregistered in the exis
 `afterDismissed.then(...)` cleanup. Tested end-to-end in
 `specs/material-bottom-sheet/close-on-navigation.spec.ts`.
 
+## Context reaches sheet content; `MatBottomSheetConfig.context` added (2026-11-03)
+
+Same fix as `qwik-material/dialog`'s entry of the same name. `MatBottomSheetConfig` gained a
+`context?: OverlayContextOverride[]` field (dialog already had one; bottom sheet didn't).
+`useMatBottomSheet().open$` now calls the same `useQwikMaterialContextSnapshot()`
+(`qwik-material/dialog/qwik-material-provider.tsx`) and passes the combined (automatic +
+explicit) list through as `overlayConfig.context`, re-provided generically by `qwik-cdk/overlay`'s
+`OverlayHost` (see its own SYNC.md entry). Tested end-to-end in
+`specs/material-bottom-sheet/context-inheritance.spec.ts`.
+
 ## Pipeline
 
 Run `pnpm test:qwik-material` from the repo root to verify the package (+ `pnpm test:qwik-cdk`

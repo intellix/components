@@ -1,4 +1,4 @@
-import {component$, useSignal, useVisibleTask$} from '@qwik.dev/core';
+import {component$, useContextProvider, useSignal, useVisibleTask$} from '@qwik.dev/core';
 import type {OverlayEntry} from './overlay-registry';
 import {
   applyPopoverInsertionPoint,
@@ -31,6 +31,18 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
   // only teardown path that still works once the host has been physically
   // relocated by `applyPopoverInsertionPoint` below.
   const detached = useSignal(entry.state.detached.value);
+
+  // Re-provide every requested Qwik context value directly above the
+  // attached component — see `OverlayConfig.context`'s doc comment for
+  // why this is needed at all (this component renders under
+  // `<OverlayContainerOutlet>`, a SIBLING of whatever opened the overlay,
+  // not a descendant of any context provider the opener itself sees).
+  // `entry.config.context` is a plain array fixed at `overlay.create()`
+  // time (never mutated afterward), so looping over it unconditionally on
+  // every render is safe and cheap — same call every time.
+  for (const override of entry.config.context ?? []) {
+    useContextProvider(override.ctx, override.value);
+  }
 
   // Drive the OverlayRef lifecycle (host/pane attach, strategy apply, cleanup)
   // directly from this component$'s visible-task. We deliberately don't route

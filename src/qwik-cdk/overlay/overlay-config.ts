@@ -9,6 +9,7 @@
 import type {PositionStrategy} from './position/position-strategy';
 import type {Direction, Directionality} from '../bidi/directionality';
 import type {ScrollStrategy} from './scroll/scroll-strategy';
+import type {OverlayContextOverride} from './overlay-context';
 
 /** Initial configuration used when creating an overlay. */
 export interface OverlayConfig {
@@ -72,6 +73,24 @@ export interface OverlayConfig {
    * event or if the event should go to the next overlay in the stack.
    */
   eventPredicate?: (event: Event) => boolean;
+
+  /**
+   * Qwik context values re-provided directly above the attached
+   * component, inside `OverlayHost`. Qwik-specific — there is no upstream
+   * equivalent (upstream's dialog/overlay content is a normal descendant
+   * of the opener's own injector, so Angular DI inheritance already
+   * solves this; `<OverlayContainerOutlet>` renders overlay content as a
+   * SIBLING of the opener under `<QwikCdkRoot>`, not a descendant, so
+   * Qwik context providers between the root and the opener — e.g. a
+   * nested `<QwikMaterialProvider>` — don't reach it on their own).
+   * `useDialog()`/`useMatDialog()`/`useMatBottomSheet()` populate this
+   * automatically from `config.context` plus every qwik-material
+   * configuration context visible where the hook is called — see
+   * `qwik-material/dialog/qwik-material-provider.tsx`'s
+   * `useQwikMaterialContextSnapshot()`. A raw `useOverlay()` consumer can
+   * also set this directly, as the generic opt-in.
+   */
+  context?: OverlayContextOverride[];
 }
 
 /**

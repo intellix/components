@@ -594,3 +594,32 @@ creation pattern as the other two dispatchers) and consumed by `qwik-cdk/dialog`
 `qwik-material/bottom-sheet`'s `useMatBottomSheet().open$` — each registers the overlay whenever
 `closeOnNavigation !== false` (the default) and deregisters it in the existing close/dismiss
 cleanup.
+
+## `OverlayConfig.context` — context reaching overlay content (2026-11-03)
+
+Upstream has no equivalent problem to solve here: an Angular dialog/overlay's content is a normal
+descendant of the opener's own injector (DI inheritance), so any provider between the app root
+and the opener reaches it for free. In this port, `<OverlayHost>` (and therefore every attached
+overlay's content) renders under `<OverlayContainerOutlet>`, a SIBLING of whatever opened the
+overlay under `<QwikCdkRoot>` — NOT a descendant of any Qwik context provider the opener itself
+sees (e.g. a `<QwikMaterialProvider>` placed between `<QwikCdkRoot>` and the opener). Confirmed
+live: a `MatFormField` rendered inside a dialog previously always fell back to its own hardcoded
+defaults, completely blind to a `<QwikMaterialProvider matFormFieldConfig={{appearance:
+'outline'}}>` wrapping the whole page.
+
+Fixed generically, at the ONE place every overlay's content renders, regardless of which service
+opened it: added `OverlayConfig.context?: OverlayContextOverride[]` (the already-existing
+`OverlayContextOverride` shape, previously only consumed by `qwik-cdk/dialog`'s own
+`DialogWrapper`). `OverlayHost` now loops over `entry.config.context ?? []` and calls
+`useContextProvider(override.ctx, override.value)` for each, unconditionally, right before
+rendering the attached component — safe to call every render since the array is fixed at
+`overlay.create()` time and never mutated afterward. This is the SAME mechanism a raw
+`useOverlay()` consumer gets "for free": set `config.context` on the `OverlayConfig` passed to
+`create$()` and `OverlayHost` re-provides it, no extra wiring needed (the generic, explicit
+opt-in the task calls for).
+
+`qwik-cdk/dialog`'s own `DialogWrapper` loop (pre-existing, from before this change) is left in
+place rather than removed — harmless (an idempotent `useContextProvider` call for the same id,
+called a second time with the same value) and a smaller diff; it operates on the WRAPPER's own
+`config` prop (the `DialogConfig`), a different object from the `OverlayConfig` `OverlayHost`
+reads, so the two don't conflict.

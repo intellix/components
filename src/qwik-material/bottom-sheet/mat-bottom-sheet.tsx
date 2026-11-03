@@ -31,6 +31,7 @@ import {
   MAT_BOTTOM_SHEET_REF,
   MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
 } from './mat-bottom-sheet-tokens';
+import {useQwikMaterialContextSnapshot} from '../dialog/qwik-material-provider';
 
 /**
  * Internal wrapper component that MatBottomSheet opens via the cdk overlay.
@@ -126,6 +127,9 @@ export function useMatBottomSheet(): MatBottomSheet {
     MAT_BOTTOM_SHEET_DEFAULT_OPTIONS,
     {} as Partial<MatBottomSheetConfig>,
   );
+  // Snapshot every qwik-material configuration context visible HERE — see
+  // useMatDialog()'s identical line for the full rationale.
+  const inheritedContext = useQwikMaterialContextSnapshot();
   // Qwik's `useContext(ctx, defaultValue)` has two special cases that make
   // passing a function (even a `noSerialize`-wrapped one, since
   // `noSerialize` just tags the same function reference — `typeof` is
@@ -233,6 +237,10 @@ export function useMatBottomSheet(): MatBottomSheet {
         maxHeight: merged.maxHeight,
         direction: merged.direction,
         positionStrategy,
+        // Automatically-carried qwik-material contexts first, so an
+        // explicit, per-open `merged.context` override wins on a
+        // conflicting id — see useMatDialog().open$'s identical wiring.
+        context: [...inheritedContext, ...(merged.context ?? [])],
       };
 
       const instance = {value: null} as Signal<C | null>;

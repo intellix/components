@@ -23,6 +23,7 @@ import type {MatDialogConfig} from './mat-dialog-config';
 import {createMatDialogRef, MatDialogState, type MatDialogRef} from './mat-dialog-ref';
 import {MatDialogContainer} from './mat-dialog-container';
 import {MAT_DIALOG_DEFAULT_OPTIONS, MAT_DIALOG_SCROLL_STRATEGY} from './mat-dialog-tokens';
+import {useQwikMaterialContextSnapshot} from './qwik-material-provider';
 
 /**
  * Internal wrapper component that MatDialog opens via the cdk overlay. It
@@ -86,6 +87,11 @@ export function useMatDialog(): MatDialog {
   // by qwik-cdk's own useDialog — see src/qwik-cdk/dialog/dialog.tsx.
   const ctx = useContext(QWIK_CDK);
   const defaults = useContext(MAT_DIALOG_DEFAULT_OPTIONS, {} as Partial<MatDialogConfig>);
+  // Snapshot every qwik-material configuration context visible HERE, at the
+  // point useMatDialog() is called (inside the opener's own render) — see
+  // OverlayConfig.context's doc comment for why the dialog's content,
+  // rendered elsewhere under <QwikCdkRoot>, can't see them on its own.
+  const inheritedContext = useQwikMaterialContextSnapshot();
   // Qwik's `useContext(ctx, defaultValue)` has two special cases that make
   // passing a function as the default UNSAFE: (1) an explicit `undefined`
   // default is treated the same as no default (throws
@@ -200,6 +206,13 @@ export function useMatDialog(): MatDialog {
         maxHeight: merged.maxHeight,
         direction: merged.direction,
         positionStrategy,
+        // Automatically-carried qwik-material contexts first, so an
+        // explicit, per-open `merged.context` override (user-supplied,
+        // via MatDialogConfig.context) always wins on a conflicting id —
+        // see OverlayHost's loop, which provides these in array order and
+        // lets a later entry for the same ContextId overwrite an earlier
+        // one.
+        context: [...inheritedContext, ...(merged.context ?? [])],
       };
 
       // Pre-mint state signals + the wrapping matRef with a shim so the

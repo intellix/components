@@ -296,3 +296,22 @@ the clear always runs after the set, for any duration including 0.
   already maintains `openDialogs`, right after the filtered array becomes empty. Tested in
   `specs/material-dialog/after-all-closed.spec.ts` (opens two dialogs, closes them individually —
   the callback must fire only once, after the SECOND close, not the first).
+
+## Context reaches dialog content (2026-11-03)
+
+`qwik-material-provider.tsx` gained `useQwikMaterialContextSnapshot()`: snapshots every one of
+its own ~33 configuration contexts (`QWIK_MATERIAL_CONTEXT_IDS`, kept in that same file so the
+two can't silently drift) that resolves to something other than a module-local sentinel — i.e.
+every one actually provided somewhere above the call site. `useMatDialog()` calls this at hook-
+call time (inside the OPENER's own render) and passes the result through as
+`overlayConfig.context` (automatically-carried entries first, then `MatDialogConfig.context` —
+the pre-existing, previously-never-wired generic opt-in — so an explicit per-open override always
+wins on a conflicting `ContextId`). The actual re-providing happens generically inside
+`qwik-cdk/overlay`'s `OverlayHost` — see its own SYNC.md entry ("`OverlayConfig.context` —
+context reaching overlay content") for the full mechanism and why it has to work this way (the
+dialog's content renders as a sibling of the opener, not a descendant of whatever
+`<QwikMaterialProvider>` the opener itself sees). Tested end-to-end in
+`specs/material-dialog/context-inheritance.spec.ts` (a `MatFormField` inside the dialog picks up
+`appearance: 'outline'` from a provider wrapping the whole route) and that same spec file's
+"config.context opts in an app context into the dialog content" case (the generic opt-in, for an
+app's own, non-qwik-material context, via the `mat-dialog/custom-context-opt-in` dev-app route).

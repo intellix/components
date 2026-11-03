@@ -1,5 +1,13 @@
-import {component$, noSerialize, Slot, useContextProvider, useSignal} from '@qwik.dev/core';
-import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import {
+  component$,
+  noSerialize,
+  Slot,
+  useContext,
+  useContextProvider,
+  useSignal,
+  type ContextId,
+} from '@qwik.dev/core';
+import type {OverlayContextOverride, ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import {createBlockScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import {
@@ -311,3 +319,91 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
 
   return <Slot />;
 });
+
+/**
+ * Every configuration context `<QwikMaterialProvider>` provides, in the
+ * same order its own body provides them. The canonical list backing
+ * `useQwikMaterialContextSnapshot()` below — kept in this file precisely
+ * so the two can't drift silently: adding a new config context to the
+ * provider's body is the same change as adding it here.
+ */
+const QWIK_MATERIAL_CONTEXT_IDS: readonly ContextId<unknown>[] = [
+  MAT_DIALOG_DEFAULT_OPTIONS,
+  MAT_DIALOG_SCROLL_STRATEGY,
+  MAT_ANIMATIONS_DISABLED,
+  MAT_BUTTON_CONFIG,
+  MAT_CARD_CONFIG,
+  MAT_BADGE_CONFIG,
+  MAT_ICON_CONFIG,
+  MAT_PROGRESS_BAR_CONFIG,
+  MAT_PROGRESS_SPINNER_CONFIG,
+  MAT_DIVIDER_CONFIG,
+  MAT_GRID_LIST_CONFIG,
+  MAT_LIST_CONFIG,
+  MAT_BUTTON_TOGGLE_CONFIG,
+  MAT_SLIDE_TOGGLE_CONFIG,
+  MAT_EXPANSION_CONFIG,
+  MAT_RADIO_CONFIG,
+  MAT_CHECKBOX_CONFIG,
+  MAT_SORT_CONFIG,
+  MAT_TABS_CONFIG,
+  MAT_SIDENAV_CONFIG,
+  MAT_SNACK_BAR_DEFAULT_OPTIONS,
+  MAT_BOTTOM_SHEET_DEFAULT_OPTIONS,
+  MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
+  MAT_FORM_FIELD_CONFIG,
+  MAT_INPUT_CONFIG,
+  CDK_STEPPER_GLOBAL_OPTIONS,
+  MAT_CHIPS_CONFIG,
+  MAT_TOOLTIP_DEFAULT_OPTIONS,
+  MAT_SELECT_CONFIG,
+  MAT_MENU_DEFAULT_OPTIONS,
+  MAT_TIMEPICKER_CONFIG,
+  MAT_PAGINATOR_CONFIG,
+  MAT_PAGINATOR_INTL,
+  MAT_AUTOCOMPLETE_CONFIG,
+];
+
+/**
+ * Sentinel distinguishing "no provider for this context" from a real,
+ * legitimately-provided value — including one that happens to also be an
+ * empty object (several configs above default to `{}`). A plain frozen
+ * object compared by reference, not a `Symbol`: a `Symbol` default can't
+ * be SSR-serialized if it ever leaked into state (it doesn't here — this
+ * stays a local variable — but there's no reason to risk it when a plain
+ * object works just as well for reference-equality filtering).
+ */
+const NOT_PROVIDED: unknown = Object.freeze({});
+
+/**
+ * Snapshots every `<QwikMaterialProvider>` configuration context that IS
+ * currently visible — i.e. every one of `QWIK_MATERIAL_CONTEXT_IDS` that
+ * resolves to something other than `NOT_PROVIDED` — as an
+ * `OverlayContextOverride[]` ready to merge into `OverlayConfig.context`.
+ *
+ * This is what makes "automatically carry every qwik-material
+ * configuration context visible where `useMatDialog()`/
+ * `useMatBottomSheet()` is called" possible: those hooks call this at the
+ * point THEY are invoked (inside the opener's own render), capturing
+ * whatever `<QwikMaterialProvider>` ancestors are in scope THERE, then
+ * pass the result through to `OverlayHost` (a sibling of the opener,
+ * under `<QwikCdkRoot>`, which otherwise can't see them — see
+ * `OverlayConfig.context`'s doc comment) via `overlay.create()`'s config.
+ *
+ * Calling `useContext()` in a loop over a fixed, module-level-constant
+ * array (same array, same order, every call) is safe: unlike
+ * `useSignal`/`useStore`/`useTask$`, `useContext` allocates no sequential
+ * per-call slot of its own — it's a pure lookup against the calling
+ * component's live context map, so there is no "hook call order" to keep
+ * consistent across renders here.
+ */
+export function useQwikMaterialContextSnapshot(): OverlayContextOverride[] {
+  const result: OverlayContextOverride[] = [];
+  for (const id of QWIK_MATERIAL_CONTEXT_IDS) {
+    const value = useContext(id, NOT_PROVIDED);
+    if (value !== NOT_PROVIDED) {
+      result.push({ctx: id, value});
+    }
+  }
+  return result;
+}

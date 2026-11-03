@@ -63,6 +63,15 @@ export interface MatDialogConfig<D = unknown> {
   componentProps?: Record<string, unknown>;
 
   scrollStrategy?: ScrollStrategy;
+  /**
+   * Qwik context values re-provided directly above the opened component
+   * — the generic opt-in for app contexts. `useMatDialog().open$`
+   * automatically prepends every visible qwik-material configuration
+   * context ahead of this (see `useQwikMaterialContextSnapshot()` in
+   * `qwik-material-provider.tsx`); an entry here for the same `ContextId`
+   * wins. See `OverlayConfig.context`'s doc comment (qwik-cdk) for why
+   * this is needed at all.
+   */
   context?: OverlayContextOverride[];
 
   // --- QRL callbacks (Qwik replacement for RxJS streams) ---
