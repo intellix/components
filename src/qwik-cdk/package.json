@@ -103,6 +103,11 @@
       "types": "./dist/collections/index.d.ts",
       "import": "./dist/collections/index.js"
     },
+    "./clipboard": {
+      "qwik": "./clipboard/index.ts",
+      "types": "./dist/clipboard/index.d.ts",
+      "import": "./dist/clipboard/index.js"
+    },
     "./overlay-prebuilt.css": "./dist/overlay-prebuilt.css",
     "./a11y-prebuilt.css": "./dist/a11y-prebuilt.css",
     "./scss/*": "./scss/*"

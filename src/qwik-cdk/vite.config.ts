@@ -18,6 +18,7 @@ const entries = [
   'table',
   'tree',
   'collections',
+  'clipboard',
 ];
 
 export default defineConfig({
