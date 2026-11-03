@@ -1,13 +1,16 @@
 import {
   component$,
-  noSerialize,
   Slot,
   useContextProvider,
   useSignal,
   type QRL,
+  useContext,
+  type ContextId,
 } from '@qwik.dev/core';
-import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
-import {createBlockScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import type {
+  OverlayContextOverride,
+  ScrollStrategyDescriptor,
+} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import type {MatDateFormats} from '../core/datetime/date-formats';
@@ -75,9 +78,9 @@ import {MAT_CHIPS_CONFIG} from '../chips/tokens';
 import type {MatTooltipDefaultOptions} from '../tooltip/mat-tooltip-tokens';
 import {MAT_TOOLTIP_DEFAULT_OPTIONS} from '../tooltip/mat-tooltip-tokens';
 import type {MatSelectConfig} from '../select/select-config';
-import {MAT_SELECT_CONFIG} from '../select/select-config';
+import {MAT_SELECT_CONFIG, MAT_SELECT_SCROLL_STRATEGY} from '../select/select-config';
 import type {MatMenuDefaultOptions} from '../menu/mat-menu-tokens';
-import {MAT_MENU_DEFAULT_OPTIONS} from '../menu/mat-menu-tokens';
+import {MAT_MENU_DEFAULT_OPTIONS, MAT_MENU_SCROLL_STRATEGY} from '../menu/mat-menu-tokens';
 import type {MatTimepickerConfig} from '../timepicker/timepicker-config';
 import {MAT_TIMEPICKER_CONFIG} from '../timepicker/timepicker-config';
 import type {MatPaginatorConfig} from '../paginator/paginator-config';
@@ -85,13 +88,20 @@ import {MAT_PAGINATOR_CONFIG} from '../paginator/paginator-config';
 import type {MatPaginatorIntl} from '../paginator/paginator-intl';
 import {MAT_PAGINATOR_INTL, DEFAULT_PAGINATOR_INTL} from '../paginator/paginator-intl';
 import type {MatAutocompleteConfig} from '../autocomplete/autocomplete-config';
-import {MAT_AUTOCOMPLETE_CONFIG} from '../autocomplete/autocomplete-config';
+import {
+  MAT_AUTOCOMPLETE_CONFIG,
+  MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+} from '../autocomplete/autocomplete-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
   matDialogDefaults?: Partial<MatDialogConfig>;
-  /** Factory returning the default ScrollStrategy for MatDialog. Defaults to createBlockScrollStrategy(). */
-  matDialogScrollStrategyFactory?: () => ScrollStrategy;
+  /**
+   * Default `ScrollStrategy` descriptor for MatDialog (`'block'`, `{type:
+   * 'reposition', scrollThrottle: 20}`, a `QRL<() => ScrollStrategy>`, …).
+   * Defaults to `'block'` (upstream's own default).
+   */
+  matDialogScrollStrategy?: ScrollStrategyDescriptor;
   /** Disables all Material animations globally when true. */
   animationsDisabled?: boolean;
   /** Defaults applied to every MatButton / MatIconButton / MatFabButton / MatMiniFabButton in this subtree. */
@@ -132,8 +142,8 @@ export interface QwikMaterialProviderProps {
   matSnackBarDefaults?: Partial<MatSnackBarConfig>;
   /** Defaults merged into every MatBottomSheet open() config. */
   matBottomSheetDefaults?: Partial<MatBottomSheetConfig>;
-  /** Factory returning the default ScrollStrategy for MatBottomSheet. Defaults to createBlockScrollStrategy(). */
-  matBottomSheetScrollStrategyFactory?: () => ScrollStrategy;
+  /** Default `ScrollStrategy` descriptor for MatBottomSheet. Defaults to `'block'`. */
+  matBottomSheetScrollStrategy?: ScrollStrategyDescriptor;
   /** Defaults applied to every MatFormField in this subtree. */
   matFormFieldConfig?: MatFormFieldConfig;
   /** Defaults applied to every MatInput in this subtree. */
@@ -148,8 +158,14 @@ export interface QwikMaterialProviderProps {
   matTooltipDefaults?: MatTooltipDefaultOptions;
   /** Defaults applied to every MatSelect in this subtree. */
   matSelectConfig?: MatSelectConfig;
+  /** Default `ScrollStrategy` descriptor for MatSelect panels. Defaults to
+   *  `{type: 'reposition'}` (this port's pre-existing hard-coded behaviour). */
+  matSelectScrollStrategy?: ScrollStrategyDescriptor;
   /** Defaults merged into every `createMatMenu()`'s resolved config in this subtree. */
   matMenuDefaults?: MatMenuDefaultOptions;
+  /** Default `ScrollStrategy` descriptor for menu panels. Defaults to
+   *  `{type: 'reposition', scrollThrottle: 20}` (pre-existing hard-coded behaviour). */
+  matMenuScrollStrategy?: ScrollStrategyDescriptor;
   /** Defaults applied to every `useMatTimepicker()` / `<MatTimepickerToggle>` in this subtree. */
   matTimepickerConfig?: MatTimepickerConfig;
   /** Defaults applied to every MatPaginator in this subtree (field-by-field fallback, like
@@ -180,19 +196,19 @@ export interface QwikMaterialProviderProps {
    *  on a live adapter instance) to switch locale reactively; see `datepicker/SYNC.md`. Defaults
    *  to `'en-US'`. */
   matDateLocale?: string;
+  /** Default `ScrollStrategy` descriptor for MatAutocomplete panels. Defaults to
+   *  `{type: 'reposition'}` (pre-existing hard-coded behaviour). */
+  matAutocompleteScrollStrategy?: ScrollStrategyDescriptor;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
   const animationsDisabled = useSignal(props.animationsDisabled ?? false);
 
   useContextProvider(MAT_DIALOG_DEFAULT_OPTIONS, props.matDialogDefaults ?? {});
-  // The scroll-strategy factory is a plain function; wrap in noSerialize so
-  // Qwik doesn't try to serialize it when consumer QRLs (useMatDialog.open$)
-  // capture it via useContext.
-  useContextProvider(
-    MAT_DIALOG_SCROLL_STRATEGY,
-    noSerialize(props.matDialogScrollStrategyFactory ?? (() => createBlockScrollStrategy())),
-  );
+  // A plain, serializable descriptor — no noSerialize needed (unlike the
+  // function factory this replaced; see MAT_DIALOG_SCROLL_STRATEGY's own
+  // doc comment for why that doesn't survive into useMatDialog().open$).
+  useContextProvider(MAT_DIALOG_SCROLL_STRATEGY, props.matDialogScrollStrategy ?? 'block');
   useContextProvider(MAT_ANIMATIONS_DISABLED, animationsDisabled);
   // MatButtonConfig is a plain object with primitive fields — no noSerialize needed.
   // Buttons outside a provider get the DEFAULTS declared in each Mat*Button
@@ -277,12 +293,11 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // equivalent to accepting all of them, same pattern as every config above.
   useContextProvider(MAT_SNACK_BAR_DEFAULT_OPTIONS, props.matSnackBarDefaults ?? {});
   useContextProvider(MAT_BOTTOM_SHEET_DEFAULT_OPTIONS, props.matBottomSheetDefaults ?? {});
-  // The scroll-strategy factory is a plain function; wrap in noSerialize so
-  // Qwik doesn't try to serialize it when consumer QRLs (useMatBottomSheet().open$)
-  // capture it via useContext.
+  // A plain, serializable descriptor — see MAT_DIALOG_SCROLL_STRATEGY's own
+  // provide call above for why this no longer needs noSerialize.
   useContextProvider(
     MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
-    noSerialize(props.matBottomSheetScrollStrategyFactory ?? (() => createBlockScrollStrategy())),
+    props.matBottomSheetScrollStrategy ?? 'block',
   );
   // MatFormFieldConfig is a plain object with primitive fields — no
   // noSerialize needed. Form fields outside a provider get the
@@ -318,12 +333,22 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // defaults declared in mat-select.tsx's own prop resolution; providing an
   // empty object here is equivalent to accepting all of them.
   useContextProvider(MAT_SELECT_CONFIG, props.matSelectConfig ?? {});
+  // A plain, serializable descriptor — see MAT_DIALOG_SCROLL_STRATEGY's own
+  // provide call above for why this no longer needs noSerialize.
+  useContextProvider(
+    MAT_SELECT_SCROLL_STRATEGY,
+    props.matSelectScrollStrategy ?? {type: 'reposition'},
+  );
   // MatMenuDefaultOptions is a plain object with primitive fields — no
   // noSerialize needed. Menus outside a provider get the hardcoded
   // MAT_MENU_DEFAULT_OPTIONS_FACTORY fallbacks declared in
   // menu-runtime.ts's `resolveMenuConfig`; providing an empty object here
   // is equivalent to accepting all of them.
   useContextProvider(MAT_MENU_DEFAULT_OPTIONS, props.matMenuDefaults ?? {});
+  useContextProvider(
+    MAT_MENU_SCROLL_STRATEGY,
+    props.matMenuScrollStrategy ?? {type: 'reposition', scrollThrottle: 20},
+  );
   // MatTimepickerConfig is a plain object with primitive fields — no
   // noSerialize needed. Timepickers outside a provider get the hardcoded
   // defaults declared in use-mat-timepicker.ts's own option resolution;
@@ -344,8 +369,8 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // providing an empty object here is equivalent to accepting all of them.
   useContextProvider(MAT_AUTOCOMPLETE_CONFIG, props.matAutocompleteConfig ?? {});
   // `MAT_DATE_ADAPTER_FACTORY`'s value is a QRL (a lazy import reference), never a live
-  // `DateAdapter` instance — QRLs are natively resumable, no `noSerialize()` needed (unlike the
-  // scroll-strategy factories above, which are plain, non-QRL closures). See
+  // `DateAdapter` instance — QRLs are natively resumable, no `noSerialize()` needed (the
+  // scroll-strategy options above are plain descriptor data for the same reason). See
   // `core/datetime/use-date-adapter.ts`'s own doc comment.
   useContextProvider(MAT_DATE_ADAPTER_FACTORY, props.matDateAdapterFactory ?? DEFAULT_DATE_ADAPTER_FACTORY);
   // MatDateFormats is plain, serializable data (strings/Intl format-option objects, never a
@@ -365,6 +390,101 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // seeds it correctly exactly once; nothing more is needed.
   const localeSignal = useSignal(props.matDateLocale ?? 'en-US');
   useContextProvider(MAT_DATE_LOCALE, localeSignal);
+  useContextProvider(
+    MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+    props.matAutocompleteScrollStrategy ?? {type: 'reposition'},
+  );
 
   return <Slot />;
 });
+
+/**
+ * Every configuration context `<QwikMaterialProvider>` provides, in the
+ * same order its own body provides them. The canonical list backing
+ * `useQwikMaterialContextSnapshot()` below — kept in this file precisely
+ * so the two can't drift silently: adding a new config context to the
+ * provider's body is the same change as adding it here.
+ */
+const QWIK_MATERIAL_CONTEXT_IDS: readonly ContextId<unknown>[] = [
+  MAT_DIALOG_DEFAULT_OPTIONS,
+  MAT_DIALOG_SCROLL_STRATEGY,
+  MAT_ANIMATIONS_DISABLED,
+  MAT_BUTTON_CONFIG,
+  MAT_CARD_CONFIG,
+  MAT_BADGE_CONFIG,
+  MAT_ICON_CONFIG,
+  MAT_PROGRESS_BAR_CONFIG,
+  MAT_PROGRESS_SPINNER_CONFIG,
+  MAT_DIVIDER_CONFIG,
+  MAT_GRID_LIST_CONFIG,
+  MAT_LIST_CONFIG,
+  MAT_BUTTON_TOGGLE_CONFIG,
+  MAT_SLIDE_TOGGLE_CONFIG,
+  MAT_EXPANSION_CONFIG,
+  MAT_RADIO_CONFIG,
+  MAT_CHECKBOX_CONFIG,
+  MAT_SORT_CONFIG,
+  MAT_TABS_CONFIG,
+  MAT_SIDENAV_CONFIG,
+  MAT_SNACK_BAR_DEFAULT_OPTIONS,
+  MAT_BOTTOM_SHEET_DEFAULT_OPTIONS,
+  MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
+  MAT_FORM_FIELD_CONFIG,
+  MAT_INPUT_CONFIG,
+  CDK_STEPPER_GLOBAL_OPTIONS,
+  MAT_CHIPS_CONFIG,
+  MAT_TOOLTIP_DEFAULT_OPTIONS,
+  MAT_SELECT_CONFIG,
+  MAT_SELECT_SCROLL_STRATEGY,
+  MAT_MENU_DEFAULT_OPTIONS,
+  MAT_MENU_SCROLL_STRATEGY,
+  MAT_TIMEPICKER_CONFIG,
+  MAT_PAGINATOR_CONFIG,
+  MAT_PAGINATOR_INTL,
+  MAT_AUTOCOMPLETE_CONFIG,
+  MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+];
+
+/**
+ * Sentinel distinguishing "no provider for this context" from a real,
+ * legitimately-provided value — including one that happens to also be an
+ * empty object (several configs above default to `{}`). A plain frozen
+ * object compared by reference, not a `Symbol`: a `Symbol` default can't
+ * be SSR-serialized if it ever leaked into state (it doesn't here — this
+ * stays a local variable — but there's no reason to risk it when a plain
+ * object works just as well for reference-equality filtering).
+ */
+const NOT_PROVIDED: unknown = Object.freeze({});
+
+/**
+ * Snapshots every `<QwikMaterialProvider>` configuration context that IS
+ * currently visible — i.e. every one of `QWIK_MATERIAL_CONTEXT_IDS` that
+ * resolves to something other than `NOT_PROVIDED` — as an
+ * `OverlayContextOverride[]` ready to merge into `OverlayConfig.context`.
+ *
+ * This is what makes "automatically carry every qwik-material
+ * configuration context visible where `useMatDialog()`/
+ * `useMatBottomSheet()` is called" possible: those hooks call this at the
+ * point THEY are invoked (inside the opener's own render), capturing
+ * whatever `<QwikMaterialProvider>` ancestors are in scope THERE, then
+ * pass the result through to `OverlayHost` (a sibling of the opener,
+ * under `<QwikCdkRoot>`, which otherwise can't see them — see
+ * `OverlayConfig.context`'s doc comment) via `overlay.create()`'s config.
+ *
+ * Calling `useContext()` in a loop over a fixed, module-level-constant
+ * array (same array, same order, every call) is safe: unlike
+ * `useSignal`/`useStore`/`useTask$`, `useContext` allocates no sequential
+ * per-call slot of its own — it's a pure lookup against the calling
+ * component's live context map, so there is no "hook call order" to keep
+ * consistent across renders here.
+ */
+export function useQwikMaterialContextSnapshot(): OverlayContextOverride[] {
+  const result: OverlayContextOverride[] = [];
+  for (const id of QWIK_MATERIAL_CONTEXT_IDS) {
+    const value = useContext(id, NOT_PROVIDED);
+    if (value !== NOT_PROVIDED) {
+      result.push({ctx: id, value});
+    }
+  }
+  return result;
+}

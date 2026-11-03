@@ -9,7 +9,7 @@ import {
   type QRL,
 } from '@qwik.dev/core';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
-import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
+import type {OverlayRef, ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import {
   useIdGenerator,
   type ListKeyManager,
@@ -21,7 +21,7 @@ import {
   useOptionalFormFieldConnectedOrigin,
   useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
-import {MAT_SELECT_CONFIG, type MatSelectConfig} from './select-config';
+import {MAT_SELECT_CONFIG, MAT_SELECT_SCROLL_STRATEGY, type MatSelectConfig} from './select-config';
 import {resolveSelectOptions, type MatSelectEntryDef} from './select-option-resolver';
 import {
   handleSelectKeydown,
@@ -208,6 +208,15 @@ function panelAriaLabelledby(
 
 export const MatSelect = component$<MatSelectProps>(props => {
   const config = useContext(MAT_SELECT_CONFIG, MAT_SELECT_CONFIG_DEFAULTS);
+  // `MAT_SELECT_SCROLL_STRATEGY` is a plain, serializable
+  // `ScrollStrategyDescriptor` (string/object, or a `QRL` escape hatch) —
+  // NOT a function factory, so neither of `useContext()`'s two
+  // function-typed-default pitfalls apply here. `{type: 'reposition'}` is
+  // this port's pre-existing, previously hard-coded default behaviour.
+  const scrollStrategyDescriptor = useContext(
+    MAT_SELECT_SCROLL_STRATEGY,
+    {type: 'reposition'} as ScrollStrategyDescriptor,
+  );
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();
@@ -385,6 +394,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
     onValueChange$: props.onValueChange$,
     onTouched$: props.onTouched$,
     onOpenedChange$: props.onOpenedChange$,
+    scrollStrategyDescriptor,
   };
 
   // `ctx` is passed to `select-runtime.ts`'s functions as its OWN top-level

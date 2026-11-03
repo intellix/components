@@ -1,5 +1,9 @@
 import type {QRL} from '@qwik.dev/core';
-import type {ScrollStrategy, OverlayContextOverride} from '@angular-community/qwik-cdk/overlay';
+import type {
+  ScrollStrategy,
+  ScrollStrategyDescriptor,
+  OverlayContextOverride,
+} from '@angular-community/qwik-cdk/overlay';
 
 /** Options for where to set focus to automatically on dialog open. */
 export type AutoFocusTarget = 'dialog' | 'first-tabbable' | 'first-heading' | string;
@@ -52,7 +56,32 @@ export interface MatDialogConfig<D = unknown> {
 
   data?: D | null;
 
-  scrollStrategy?: ScrollStrategy;
+  /**
+   * Initial props passed to the opened component (Qwik's idiomatic
+   * replacement for upstream's `dialogRef.componentInstance.x = …` /
+   * `componentRef.setInput('x', …)`, which don't apply to a Qwik
+   * `component$` — see `MatDialogRef.setInput` for updating these after
+   * open). `MAT_DIALOG_DATA` (the `data` field above) keeps working
+   * independently of this.
+   */
+  componentProps?: Record<string, unknown>;
+
+  /**
+   * Overrides `MAT_DIALOG_SCROLL_STRATEGY`'s default for this dialog only.
+   * Either an already-built `ScrollStrategy` instance, or a plain,
+   * serializable `ScrollStrategyDescriptor` (`'block'`, `{type:
+   * 'reposition', scrollThrottle: 20}`, a `QRL<() => ScrollStrategy>`, …).
+   */
+  scrollStrategy?: ScrollStrategy | ScrollStrategyDescriptor;
+  /**
+   * Qwik context values re-provided directly above the opened component
+   * — the generic opt-in for app contexts. `useMatDialog().open$`
+   * automatically prepends every visible qwik-material configuration
+   * context ahead of this (see `useQwikMaterialContextSnapshot()` in
+   * `qwik-material-provider.tsx`); an entry here for the same `ContextId`
+   * wins. See `OverlayConfig.context`'s doc comment (qwik-cdk) for why
+   * this is needed at all.
+   */
   context?: OverlayContextOverride[];
 
   // --- QRL callbacks (Qwik replacement for RxJS streams) ---

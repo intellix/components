@@ -1,4 +1,5 @@
 import {createContextId} from '@qwik.dev/core';
+import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 
 /**
  * Defaults applied to every `MatSelect` in a subtree that doesn't set its
@@ -36,3 +37,20 @@ export interface MatSelectConfig {
  * publicly and MUST remain stable across releases.
  */
 export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwikMaterial/selectConfig');
+
+/**
+ * Default `ScrollStrategy` descriptor for a `MatSelect` panel that doesn't
+ * specify its own — mirrors upstream's `MAT_SELECT_SCROLL_STRATEGY`
+ * injection token. Provided by `<QwikMaterialProvider
+ * matSelectScrollStrategy={…}>`. Default: `{type: 'reposition'}` (this
+ * port's pre-existing, previously hard-coded behaviour).
+ *
+ * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
+ * factory; see `qwik-material/dialog/mat-dialog-tokens.ts`'s
+ * `MAT_DIALOG_SCROLL_STRATEGY` for why that distinction matters (a
+ * factory function doesn't survive a real SSR→CSR resume — this was a
+ * real, confirmed bug here until fixed; see `select/SYNC.md`).
+ */
+export const MAT_SELECT_SCROLL_STRATEGY = createContextId<ScrollStrategyDescriptor>(
+  'qwikMaterial/selectScrollStrategy',
+);

@@ -298,7 +298,10 @@ describe('MatDialog scenarios', () => {
 
   it.skip('should be able to attach a custom scroll strategy (Angular-only: ScrollStrategy/Injector)', () => {
     // Reason: provides a custom ScrollStrategy and checks scrollStrategy.enable() was called
-    // via Angular injection; qwik-material exposes scrollStrategyFactory in CDK config layer.
+    // via Angular injection; qwik-material exposes this via MAT_DIALOG_SCROLL_STRATEGY's
+    // ScrollStrategyDescriptor (see mat-dialog-tokens.ts) — this pure createMatDialogService
+    // harness has no useContext() of its own to drive that through, so it's exercised
+    // end-to-end instead, via specs/material-dialog/scroll-blocking.spec.ts.
   });
 
   // describe('passing in data')
@@ -383,6 +386,8 @@ describe('MatDialog scenarios', () => {
 
     it.skip('should allow for the disableClose option to be updated while open (DOM-render — deferred to Playwright)', () => {
       // Reason: clicks backdrop DOM element before/after changing disableClose; live browser.
+      // Covered by specs/material-dialog/backdrop-and-escape.spec.ts's
+      // "disable-close: toggling matDialogRef.disableClose after open" case.
     });
 
     it.skip('should recapture focus when clicking on the backdrop (DOM-render — deferred to Playwright)', () => {

@@ -1,4 +1,5 @@
 import {createContextId} from '@qwik.dev/core';
+import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import type {MenuPositionX, MenuPositionY} from './menu-positions';
 
 /**
@@ -37,4 +38,22 @@ export const MAT_MENU_DEFAULT_OPTIONS_FACTORY: Required<
  */
 export const MAT_MENU_DEFAULT_OPTIONS = createContextId<MatMenuDefaultOptions>(
   'qwikMaterial/menuDefaultOptions',
+);
+
+/**
+ * Default `ScrollStrategy` descriptor for a menu panel that doesn't
+ * specify its own — mirrors upstream's `MAT_MENU_SCROLL_STRATEGY`
+ * injection token. Provided by `<QwikMaterialProvider
+ * matMenuScrollStrategy={…}>`. Default: `{type: 'reposition',
+ * scrollThrottle: 20}` (pre-existing, previously hard-coded behaviour).
+ *
+ * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
+ * factory; see `qwik-material/dialog/mat-dialog-tokens.ts`'s
+ * `MAT_DIALOG_SCROLL_STRATEGY` for why that distinction matters (a
+ * factory function doesn't survive a real SSR→CSR resume — this was a
+ * real, confirmed bug here until fixed; see `menu/SYNC.md`'s "scroll
+ * strategy lost after resume" entry).
+ */
+export const MAT_MENU_SCROLL_STRATEGY = createContextId<ScrollStrategyDescriptor>(
+  'qwikMaterial/menuScrollStrategy',
 );

@@ -125,6 +125,39 @@ Fixed (real behaviour bugs, not just DOM — found via the pre-existing failing 
   doesn't use RxJS): the backdrop starts fading out as soon as `close()` is called, independent
   of the pane's own exit animation.
 
+## `backdropClick` fires regardless of `disableClose`; `componentProps`/`setInput` (2026-11-03)
+
+Two real bugs/gaps found porting an app's "discard changes?" confirmation flow and dynamic-input
+use case:
+
+- **`onBackdropClick$` only fired when `!disableClose`.** Upstream `MatDialogRef.backdropClick()`
+  (the real Observable) always emits on every backdrop click, REGARDLESS of `disableClose` — apps
+  subscribe to it separately from the ref's own auto-close logic to show a confirmation dialog even
+  when the primary dialog can't be dismissed by clicking outside it. `useMatDialog().open$`'s
+  outside-click handler previously nested the `onBackdropClick$` call inside the same
+  `!merged.disableClose` check that gates `matRef.close()`. Fixed: the callback now fires whenever
+  there's a backdrop (`hasBackdrop !== false`) and the click is an outside click, unconditionally;
+  only the actual `close()` call is still gated.
+- **`MatDialogRef.disableClose` didn't exist as a live field.** Upstream `MatDialogRef` has its own
+  public `disableClose: boolean | undefined` field (copied from `config.disableClose` at
+  construction), read LIVE by the Escape/backdrop-click handlers on every event — this is what
+  upstream's own "should allow for the disableClose option to be updated while open" test mutates
+  (`dialogRef.disableClose = false`). This port had no such field; the Escape/backdrop handlers read
+  `merged.disableClose` (a closure over the open-time config) instead. Added `disableClose` to
+  `MatDialogRef`, initialised from `config.disableClose`; the handlers in `useMatDialog().open$` now
+  read `matRef.disableClose` live. `mat-dialog-scenarios.spec.ts`'s "should allow for the
+  disableClose option to be updated while open" (previously `it.skip`'d as DOM-render-only) is now
+  covered by `specs/material-dialog/backdrop-click-always.spec.ts`.
+- **`MatDialogConfig.componentProps` / `MatDialogRef.setInput`.** `contentProps` passed to the
+  opened component was hard-coded to `{}` — there was no way to pass data to the content component
+  other than `MAT_DIALOG_DATA`. Added `config.componentProps?: Record<string, unknown>` (seeds the
+  initial props) and `MatDialogRef.setInput(name, value)` (merges a single prop and pushes the
+  result through the overlay reactively — Qwik's replacement for upstream's
+  `dialogRef.componentInstance.x = …` / `ComponentRef.setInput`, neither of which apply to a Qwik
+  `component$`). Built on `OverlayRef.updateProps()` — see `qwik-cdk/overlay/SYNC.md`. `MAT_DIALOG_DATA`
+  is unaffected (orthogonal mechanism). Tested in `mat-dialog-ref.spec.ts` (merge logic) and
+  `specs/material-dialog/set-input.spec.ts` (end-to-end reactivity).
+
 ## Stub inventory
 
 Stubs are compile-time stand-ins for Angular Material (and CDK) internals that qwik-material has not yet ported. Each stub emits the minimum symbols needed for the dialog SCSS chain to compile; they do **NOT** reproduce upstream behavior. When the corresponding upstream module is eventually ported, the stub should be removed and its callers updated to `@use` the real module.
@@ -243,3 +276,95 @@ the browser, `mdc-dialog--opening` stayed on the container FOREVER for a 0ms-dur
 `specs/examples-misc/angular-parity.spec.ts`'s `dialog-animations (interaction 1)`). Fixed by
 nesting each `setTimeout` INSIDE its corresponding `requestAnimationFrame` callback, guaranteeing
 the clear always runs after the set, for any duration including 0.
+
+## `closeOnNavigation` wired; `MatDialog.afterAllClosed$` added (2026-11-03)
+
+- `MatDialogConfig.closeOnNavigation` (default `true`) was accepted but never consulted.
+  `useMatDialog().open$` now registers every opened dialog with the new
+  `OverlayNavigationDispatcher` (`qwik-cdk/overlay/SYNC.md`) whenever `closeOnNavigation !==
+  false`, closing it on `popstate`/`hashchange` — NOT on every link click (no router dependency
+  to tell a router's own `pushState` call apart from any other). Deregistered in the existing
+  `afterClosed.then(...)` cleanup. Tested end-to-end in
+  `specs/material-dialog/close-on-navigation.spec.ts` (`history.pushState` + `history.back()`,
+  and a real `hashchange`).
+- `MatDialog.afterAllClosed$(callback): QRL<() => void>` added — the Qwik-idiomatic replacement
+  for upstream's `MatDialog.afterAllClosed` Observable (emits whenever the open-dialog count
+  reaches zero; this port's equivalent is a callback-registration method returning an
+  unsubscribe QRL, since a one-shot `Promise` — this port's usual Observable replacement — can't
+  represent something that fires more than once). Backed by a plain `useSignal<QRL<() =>
+  void>[]>` of registered callbacks, invoked from the same `afterClosed.then(...)` handler that
+  already maintains `openDialogs`, right after the filtered array becomes empty. Tested in
+  `specs/material-dialog/after-all-closed.spec.ts` (opens two dialogs, closes them individually —
+  the callback must fire only once, after the SECOND close, not the first).
+
+## Context reaches dialog content (2026-11-03)
+
+`qwik-material-provider.tsx` gained `useQwikMaterialContextSnapshot()`: snapshots every one of
+its own ~33 configuration contexts (`QWIK_MATERIAL_CONTEXT_IDS`, kept in that same file so the
+two can't silently drift) that resolves to something other than a module-local sentinel — i.e.
+every one actually provided somewhere above the call site. `useMatDialog()` calls this at hook-
+call time (inside the OPENER's own render) and passes the result through as
+`overlayConfig.context` (automatically-carried entries first, then `MatDialogConfig.context` —
+the pre-existing, previously-never-wired generic opt-in — so an explicit per-open override always
+wins on a conflicting `ContextId`). The actual re-providing happens generically inside
+`qwik-cdk/overlay`'s `OverlayHost` — see its own SYNC.md entry ("`OverlayConfig.context` —
+context reaching overlay content") for the full mechanism and why it has to work this way (the
+dialog's content renders as a sibling of the opener, not a descendant of whatever
+`<QwikMaterialProvider>` the opener itself sees). Tested end-to-end in
+`specs/material-dialog/context-inheritance.spec.ts` (a `MatFormField` inside the dialog picks up
+`appearance: 'outline'` from a provider wrapping the whole route) and that same spec file's
+"config.context opts in an app context into the dialog content" case (the generic opt-in, for an
+app's own, non-qwik-material context, via the `mat-dialog/custom-context-opt-in` dev-app route).
+
+## Real bug: scroll strategy lost after resume (2026-11-03, found working on qwik-material/menu's scroll-strategy task)
+
+`useMatDialog()`'s `scrollStrategyFactory` (resolved via `useContext(MAT_DIALOG_SCROLL_STRATEGY,
+…)` during the hook's OWN render, then captured directly in the `open$` QRL defined at that same
+point) did NOT survive into `open$` once it's actually invoked after a REAL SSR→CSR resume
+boundary — which every genuine page load goes through. Confirmed live: before this fix,
+`open$`'s `if (!merged.scrollStrategy && scrollStrategyFactory) { merged.scrollStrategy =
+scrollStrategyFactory(); }` silently did NOTHING post-resume (`scrollStrategyFactory` read back
+`undefined`), leaving `merged.scrollStrategy` (and therefore `overlayConfig.scrollStrategy`)
+`undefined` — meaning **background scroll was never blocked while ANY dialog was open**, not
+just when a custom factory was configured. This was a real regression from upstream's actual
+default behavior (`MatDialog` always blocks background scroll via `MAT_DIALOG_SCROLL_STRATEGY`'s
+own default, `createBlockScrollStrategy()`), previously unnoticed because nothing asserted on
+`<html>`'s own classes — every DOM-parity check compares the dialog's OWN markup, which this
+side effect doesn't touch.
+
+The root cause: a plain `() => ScrollStrategy` function closure captured from `useContext()`
+during render is NOT serializable — it's gone (reads back `undefined`) the moment the QRL that
+captured it is re-invoked after a real resume, and there's no cheap workaround (`useContext()`
+can't be called again from inside an already-invoked QRL — confirmed live, throws `Code(Q10)`).
+
+### Fix: serializable `ScrollStrategyDescriptor` (2026-11-03, closes the gap below)
+
+Replaced the function-factory context value with a plain, serializable
+`ScrollStrategyDescriptor` (`'block' | 'reposition' | 'close' | 'noop'`, the equivalent `{type:
+…, …options}` object form for `reposition`/`close`'s extra options, or a `QRL<() =>
+ScrollStrategy>` escape hatch for a fully custom strategy) — see
+`qwik-cdk/overlay/scroll/scroll-strategy-descriptor.ts`. `MAT_DIALOG_SCROLL_STRATEGY` is now
+`createContextId<ScrollStrategyDescriptor>(...)` (was `NoSerialize<() => ScrollStrategy>`), and
+`<QwikMaterialProvider matDialogScrollStrategy={…}>` (renamed from
+`matDialogScrollStrategyFactory`) accepts the descriptor directly — plain string/object data
+survives the SSR→CSR resume with no special handling, so the two `useContext()` pitfalls
+(function-typed default treated as a lazy initializer; `undefined` treated as "no default") no
+longer apply either, simplifying the context read to a plain `'block'` fallback.
+
+`MatDialogConfig.scrollStrategy` now accepts `ScrollStrategy | ScrollStrategyDescriptor` (an
+already-built instance, for callers that still want to pass one directly, OR the same descriptor
+shape). `useMatDialog()`'s `open$` is now `async`, resolving the per-open override against the
+context default via `resolveConfiguredScrollStrategy()` (`qwik-cdk/overlay`) BEFORE building
+`overlayConfig` — this only actually suspends for the `QRL` escape hatch; the builtin descriptor
+forms resolve synchronously, so the public `open$` signature changing from sync to
+`Promise<...>` is the only caller-visible shift (every existing caller already does
+`await dialog.open$(...)`).
+
+Tested in `specs/material-dialog/scroll-blocking.spec.ts`: the pre-existing default-strategy case
+(background scroll IS blocked after a real page load + open, confirmed via the
+`cdk-global-scrollblock` class `BlockScrollStrategy.enable()` adds to `<html>`), PLUS a new case
+(`mat-dialog/scroll-strategy-noop` dev-app route) that opens with a PER-CALL
+`dialog.open$(Body, {scrollStrategy: 'noop'})` override and asserts `<html>` does NOT get
+`cdk-global-scrollblock` after the same real page load + open — proving a configured descriptor
+(not just the hard-coded context-level default) actually reaches the runtime post-resume, at
+both the context-default AND per-call layers.

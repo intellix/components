@@ -1,4 +1,4 @@
-import {component$, useSignal, useVisibleTask$} from '@qwik.dev/core';
+import {component$, useContextProvider, useSignal, useVisibleTask$} from '@qwik.dev/core';
 import type {OverlayEntry} from './overlay-registry';
 import {
   applyPopoverInsertionPoint,
@@ -18,12 +18,31 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
   const backdropShowing = useSignal(entry.state.backdropShowing.value);
   const backdropDetached = useSignal(entry.state.backdropDetached.value);
   const panelClasses = useSignal(entry.state.panelClasses.value);
+  // Snapshot of `entry.props` at first render — correct then (any
+  // `updateProps()` call made before mount already mutated `entry.props`
+  // itself), reactive thereafter via `_onAttached`'s `visuals.setProps`.
+  // A whole-object `useSignal` (not a deep `useStore`): `entry.props` can
+  // hold arbitrary consumer values (QRLs, NoSerialize refs, Component
+  // references) that a deep reactive proxy shouldn't wrap.
+  const props = useSignal<Record<string, unknown>>(entry.props);
   // See `OverlayVisualCallbacks.setDetached`'s doc comment (overlay-ref.ts):
   // this component unmounts its OWN previously-rendered host via a normal
   // conditional return (not the parent's list-keyed removal), which is the
   // only teardown path that still works once the host has been physically
   // relocated by `applyPopoverInsertionPoint` below.
   const detached = useSignal(entry.state.detached.value);
+
+  // Re-provide every requested Qwik context value directly above the
+  // attached component — see `OverlayConfig.context`'s doc comment for
+  // why this is needed at all (this component renders under
+  // `<OverlayContainerOutlet>`, a SIBLING of whatever opened the overlay,
+  // not a descendant of any context provider the opener itself sees).
+  // `entry.config.context` is a plain array fixed at `overlay.create()`
+  // time (never mutated afterward), so looping over it unconditionally on
+  // every render is safe and cheap — same call every time.
+  for (const override of entry.config.context ?? []) {
+    useContextProvider(override.ctx, override.value);
+  }
 
   // Drive the OverlayRef lifecycle (host/pane attach, strategy apply, cleanup)
   // directly from this component$'s visible-task. We deliberately don't route
@@ -40,6 +59,7 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
       setBackdropDetached: v => (backdropDetached.value = v),
       setPanelClasses: v => (panelClasses.value = v),
       setDetached: v => (detached.value = v),
+      setProps: v => (props.value = v),
     });
 
     // Mirrors upstream `OverlayRef._attachHost()`: for a popover overlay
@@ -130,6 +150,14 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
                 : []),
           ].join(' ')}
           style={backdropDetached.value ? {pointerEvents: 'none'} : {}}
+          // Mirrors upstream `BackdropRef`'s own click listener, which feeds
+          // `OverlayRef.backdropClick()` unconditionally — qwik-cdk's
+          // `OverlayRef.backdropClick(callback)` subscribers (see
+          // overlay-ref.ts) are notified directly from here, independent of
+          // the outside-click dispatcher any consumer may ALSO have wired up
+          // for actual close behavior (same "always fires" contract already
+          // established for `MatDialogRef`/`MatBottomSheetRef`).
+          onClick$={(event: MouseEvent) => entry.ref?._notifyBackdropClick(event)}
         />
       )}
       <div
@@ -145,7 +173,7 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
           maxHeight: entry.state.maxHeight.value,
         }}
       >
-        <Comp {...(entry.props as any)} />
+        <Comp {...(props.value as any)} />
       </div>
     </div>
   );

@@ -15,7 +15,11 @@ import {createDialogRef, type DialogRef} from './dialog-ref';
 import {CdkDialogContainer} from './dialog-container';
 import type {Overlay, OverlayRef, OverlayRegistry, ScrollStrategy} from '../overlay/public-api';
 import {createOverlayService, createGlobalPositionStrategy} from '../overlay/public-api';
-import type {OverlayKeyboardDispatcher, OverlayOutsideClickDispatcher} from '../overlay/public-api';
+import type {
+  OverlayKeyboardDispatcher,
+  OverlayOutsideClickDispatcher,
+  OverlayNavigationDispatcher,
+} from '../overlay/public-api';
 import {DIALOG_DATA} from './dialog-tokens';
 import type {IdGenerator} from '../a11y/id-generator';
 import {hasModifierKey} from '../keycodes/modifiers';
@@ -62,12 +66,16 @@ export function useDialog(): Dialog {
       config?: DialogConfig<D, R>,
     ): NoSerialize<DialogRef<R, C>> | null => {
       if (typeof window === 'undefined') return null;
-      const {keyboardDispatcher: kbd, outsideClickDispatcher: ocd} = ensureCdkDispatchers(ctx);
+      const {
+        keyboardDispatcher: kbd,
+        outsideClickDispatcher: ocd,
+        navigationDispatcher: nd,
+      } = ensureCdkDispatchers(ctx);
 
       // Build a thin idGen + registry that close over the shared ctx signals.
       const idGen = makeCtxIdGen(ctx.idCounter);
       const registry = makeCtxRegistry(ctx.entries, ctx.overlayContainerCreated);
-      const overlay = createOverlayService(registry, idGen);
+      const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
       const service = createDialogService({
         overlay,
@@ -76,6 +84,7 @@ export function useDialog(): Dialog {
         openDialogs: ctx.openDialogs,
         keyboardDispatcher: kbd,
         outsideClickDispatcher: ocd,
+        navigationDispatcher: nd,
         dialogScrollStrategyFactory: ctx.dialogScrollStrategyFactory,
       });
       const ref = service.open<C, D, R>(component, config);
@@ -168,6 +177,7 @@ export function createDialogService(deps: {
   openDialogs: Signal<readonly NoSerialize<DialogRef>[]>;
   keyboardDispatcher: OverlayKeyboardDispatcher;
   outsideClickDispatcher: OverlayOutsideClickDispatcher;
+  navigationDispatcher?: OverlayNavigationDispatcher;
   dialogScrollStrategyFactory?: () => ScrollStrategy;
 }): DialogService {
   return {
@@ -188,6 +198,7 @@ export function createDialogService(deps: {
             updateSize() {},
             addPanelClass() {},
             removePanelClass() {},
+            updateProps() {},
           } as unknown as OverlayRef,
           config: fakeConfig as DialogConfig<unknown, R>,
           isOpen,
@@ -226,7 +237,11 @@ export function createDialogService(deps: {
       // DialogConfig class instance when passing props through the overlay.
       const overlayRef: OverlayRef = deps.overlay.create(
         DialogWrapper,
-        {config: {...merged}, ContentComponent: component, contentProps: {}},
+        {
+          config: {...merged},
+          ContentComponent: component,
+          contentProps: {...(merged.componentProps ?? {})},
+        },
         {
           hasBackdrop: merged.hasBackdrop ?? true,
           backdropClass: merged.backdropClass,
@@ -267,9 +282,21 @@ export function createDialogService(deps: {
           }
         },
       });
+      // Close on history back/forward navigation or a hash change — NOT on
+      // every link click (no router dependency to distinguish a
+      // router-driven pushState from any other call). Default true,
+      // mirroring upstream `OverlayConfig.disposeOnNavigation` (set from
+      // `DialogConfig.closeOnNavigation`).
+      if (deps.navigationDispatcher && merged.closeOnNavigation !== false) {
+        deps.navigationDispatcher.add(overlayRef, {
+          onNavigate: () => ref.close(),
+        });
+      }
+
       ref.closed.finally(() => {
         deps.keyboardDispatcher.remove(overlayRef);
         deps.outsideClickDispatcher.remove(overlayRef);
+        deps.navigationDispatcher?.remove(overlayRef);
       });
 
       const wrapped = noSerialize(ref as DialogRef)!;

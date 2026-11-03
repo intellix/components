@@ -260,7 +260,7 @@ function buildOverlayAndDispatch<D>(
   const isDialog = core.touchUi.value;
   const idGen = makeIdGen(ctx);
   const registry = makeRegistry(ctx);
-  const overlay = createOverlayService(registry, idGen);
+  const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
   const positionStrategy = isDialog ? buildDialogStrategy() : buildDropdownStrategy(originEl);
 
   core._entering.value = true;

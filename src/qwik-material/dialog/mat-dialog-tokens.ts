@@ -1,5 +1,5 @@
 import {createContextId, type NoSerialize, type Signal} from '@qwik.dev/core';
-import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import type {MatDialogRef} from './mat-dialog-ref';
 
@@ -19,11 +19,19 @@ export const MAT_DIALOG_DEFAULT_OPTIONS = createContextId<Partial<MatDialogConfi
 );
 
 /**
- * Factory that returns the default ScrollStrategy for dialogs that don't
- * specify one. Provided by <QwikMaterialProvider matDialogScrollStrategyFactory={…}>.
- * Default: createBlockScrollStrategy() from qwik-cdk.
+ * Default `ScrollStrategy` descriptor for dialogs that don't specify their
+ * own. Provided by `<QwikMaterialProvider matDialogScrollStrategy={…}>`.
+ * Default: `'block'` (upstream's own `MAT_DIALOG_SCROLL_STRATEGY` default).
+ *
+ * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
+ * factory. A factory function read via `useContext()` here and captured
+ * into `useMatDialog().open$`'s QRL doesn't survive a real SSR→CSR resume
+ * (confirmed live — see `qwik-material/dialog/SYNC.md`'s "scroll strategy
+ * lost after resume" entry for the full incident writeup); a descriptor,
+ * being plain data, survives the SAME capture-and-resume trip the same way
+ * any other config value does.
  */
-export const MAT_DIALOG_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
+export const MAT_DIALOG_SCROLL_STRATEGY = createContextId<ScrollStrategyDescriptor>(
   'qwikMaterial/dialogScrollStrategy',
 );
 

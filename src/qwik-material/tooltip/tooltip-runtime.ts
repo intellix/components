@@ -208,7 +208,7 @@ export function showTooltip(
   const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
   const idGen = makeIdGen(ctx);
   const registry = makeRegistry(ctx);
-  const overlay = createOverlayService(registry, idGen);
+  const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
   const origin = config.positionAtOrigin && originPoint ? originPoint : trigger;
   const strategy = createFlexibleConnectedPositionStrategy(origin)

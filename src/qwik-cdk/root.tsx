@@ -10,7 +10,9 @@ import {
 import type {Direction} from './bidi/directionality';
 import {
   type OverlayEntry,
+  type OverlayDefaultConfig,
   OverlayContainerOutlet,
+  OVERLAY_DEFAULT_CONFIG,
   type OverlayContainerOptions,
 } from './overlay/public-api';
 import type {DialogConfig} from './dialog/dialog-config';
@@ -22,6 +24,15 @@ import {ID_GENERATOR_COUNTER} from './a11y/id-generator';
 export interface QwikCdkRootProps {
   dialogDefaults?: Partial<DialogConfig>;
   overlayContainer?: OverlayContainerOptions;
+  /**
+   * App-wide defaults merged into every overlay's `OverlayConfig` at
+   * creation time (qwik-cdk's `OVERLAY_DEFAULT_CONFIG` equivalent),
+   * honoured by every port entry point that opens an overlay (dialog,
+   * bottom sheet, select, menu, autocomplete, tooltip, datepicker,
+   * timepicker, snack bar) as well as any app-built overlay from
+   * `useOverlay()`.
+   */
+  overlayDefaultConfig?: OverlayDefaultConfig;
   direction?: Direction;
   loadStyles?: boolean;
 }
@@ -33,6 +44,7 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   const openDialogs = useSignal<readonly NoSerialize<DialogRef>[]>([]);
   const direction = useSignal<Direction>(props.direction ?? 'ltr');
   const idCounter = useSignal(0);
+  const overlayDefaultConfig = props.overlayDefaultConfig ?? {};
 
   // Single tracked store so that the NoSerialize dispatcher fields populated by
   // useVisibleTask$ are visible to every consumer reading useContext(QWIK_CDK)
@@ -49,10 +61,17 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
     dialogDefaults: props.dialogDefaults ?? {},
     keyboardDispatcher: undefined,
     outsideClickDispatcher: undefined,
+    navigationDispatcher: undefined,
     dialogScrollStrategyFactory: undefined,
+    overlayDefaultConfig,
   });
 
   useContextProvider(QWIK_CDK, internals);
+  // Plain serializable data (unlike the `Overlay` service itself, which
+  // `useOverlay()` builds on demand from `QWIK_CDK` — see its doc comment
+  // for why providing a ready-made `Overlay` instance here wouldn't survive
+  // the SSR→CSR resume): safe to provide directly.
+  useContextProvider(OVERLAY_DEFAULT_CONFIG, overlayDefaultConfig);
   // Shared counter backing qwik-material's `mat-button-toggle-N` /
   // `mat-button-toggle-group-N` ids (and any future consumer of
   // `useIdGenerator()`) on the same monotonic sequence as `cdk-dialog-N` /
@@ -73,11 +92,16 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
   // remediation explicitly scope out.
   useVisibleTask$(({cleanup}) => {
     // May already exist if an overlay was opened before this task ran.
-    const {keyboardDispatcher: kbd, outsideClickDispatcher: ocd} = ensureCdkDispatchers(internals);
+    const {
+      keyboardDispatcher: kbd,
+      outsideClickDispatcher: ocd,
+      navigationDispatcher: nd,
+    } = ensureCdkDispatchers(internals);
 
     cleanup(() => {
       kbd.dispose();
       ocd.dispose();
+      nd.dispose();
     });
   });
 

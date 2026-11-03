@@ -1,4 +1,5 @@
 import {createContextId} from '@qwik.dev/core';
+import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 
 /**
  * Defaults applied to every `MatAutocomplete` in a subtree that doesn't set
@@ -38,4 +39,21 @@ export interface MatAutocompleteConfig {
  */
 export const MAT_AUTOCOMPLETE_CONFIG = createContextId<MatAutocompleteConfig>(
   'qwikMaterial/autocompleteConfig',
+);
+
+/**
+ * Default `ScrollStrategy` descriptor for a `MatAutocomplete` panel that
+ * doesn't specify its own — mirrors upstream's
+ * `MAT_AUTOCOMPLETE_SCROLL_STRATEGY` injection token. Provided by
+ * `<QwikMaterialProvider matAutocompleteScrollStrategy={…}>`. Default:
+ * `{type: 'reposition'}` (pre-existing, previously hard-coded behaviour).
+ *
+ * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
+ * factory; see `qwik-material/dialog/mat-dialog-tokens.ts`'s
+ * `MAT_DIALOG_SCROLL_STRATEGY` for why that distinction matters (a
+ * factory function doesn't survive a real SSR→CSR resume — this was a
+ * real, confirmed bug here until fixed; see `autocomplete/SYNC.md`).
+ */
+export const MAT_AUTOCOMPLETE_SCROLL_STRATEGY = createContextId<ScrollStrategyDescriptor>(
+  'qwikMaterial/autocompleteScrollStrategy',
 );

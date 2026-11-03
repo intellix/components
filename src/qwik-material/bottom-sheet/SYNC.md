@@ -88,12 +88,11 @@ near-triviality):
   `Dialog`/`DialogRef` machinery those streams came from entirely (same as `useMatDialog()`
   bypasses qwik-cdk's `useDialog()`), so there is no `DialogRef.backdropClick`/`keydownEvents`
   to subscribe to in the first place. No DOM-visible difference.
-- `ref.disableClose` is a plain field consumers COULD mutate at runtime (matching upstream's
-  type), but — unlike upstream, where `MatBottomSheetRef`'s own constructor reads the LIVE
-  `this.disableClose` field on every backdrop/keydown event — this port's dispatcher closures
-  (registered once in `open$`) close over the merged `config.disableClose` value captured at
-  open time. Mutating `ref.disableClose` after open has no effect on close-on-escape/backdrop
-  behavior. No scenario in `angular-parity.spec.ts` exercises mutating it after open.
+- ~~`ref.disableClose` is a plain field consumers COULD mutate at runtime… mutating it after open
+  has no effect~~ — **fixed 2026-11-03**: `useMatBottomSheet().open$`'s Escape/backdrop-click
+  dispatcher closures now read `matRef.disableClose` live (not `merged.disableClose`, a one-time
+  snapshot), matching upstream's own `MatBottomSheetRef` constructor exactly. Covered by
+  `specs/material-bottom-sheet/backdrop-click-always.spec.ts`'s "mutating … after open" case.
 - Hierarchical "currently open sheet" tracking (`MatBottomSheet._parentBottomSheet` /
   `_openedBottomSheetRef` per-injector-level) collapsed to one flat registry per
   `QwikCdkRoot` instance (a `WeakMap` keyed by the shared `QWIK_CDK` context object — see
@@ -103,9 +102,8 @@ near-triviality):
   descendant of `<QwikMaterialProvider>`). No scenario in this port nests multiple
   `<QwikMaterialProvider>`s, so the flattening is unobservable here.
 - `MatBottomSheet.ngOnDestroy()` removed (no service-destroy lifecycle hook in Qwik).
-- `closeOnNavigation` accepted on `MatBottomSheetConfig` for API-surface parity but not wired to
-  any router/location integration (no Angular `Location`/Router equivalent consulted here) —
-  same category of deviation as `MatDialogConfig.closeOnNavigation`.
+- ~~`closeOnNavigation` accepted … but not wired~~ — **fixed 2026-11-03**, see the dedicated
+  entry below (same fix as `MatDialogConfig.closeOnNavigation`).
 - NgModule `MatBottomSheetModule` removed.
 - `MatBottomSheetHarness` deferred.
 - SCSS theming mixin (`mat.bottom-sheet-theme`) not exposed until `qwik-material/core` lands.
@@ -200,9 +198,59 @@ constructors are `create*` factories. Verified by:
   listener on the host I render" affordance, so it's an explicit prop instead. Backward
   compatible (optional, no behavior change when omitted).
 - **`qwik-material/dialog`'s `qwik-material-provider.tsx`** gained
-  `matBottomSheetDefaults`/`matBottomSheetScrollStrategyFactory` props, following the exact
+  `matBottomSheetDefaults`/`matBottomSheetScrollStrategy` props, following the exact
   established pattern of every other entry point's config props living there (same file already
   holds `matTabsConfig`, `matSidenavConfig`, etc.).
+
+## `backdropClick` fires regardless of `disableClose`; `componentProps`/`setInput` (2026-11-03)
+
+Same fixes as `qwik-material/dialog` (see its SYNC.md entry of the same name) ported here:
+
+- `useMatBottomSheet().open$`'s outside-click handler now fires `onBackdropClick$` whenever
+  there's a backdrop and the click is outside the sheet, unconditionally — previously nested
+  inside the same `!disableClose` check gating `dismiss()`. Only the actual `dismiss()` call stays
+  gated.
+- `MatBottomSheetConfig.componentProps?: Record<string, unknown>` (seeds initial props on the
+  opened component) and `MatBottomSheetRef.setInput(name, value)` (reactive update after open),
+  built on `OverlayRef.updateProps()` — see `qwik-cdk/overlay/SYNC.md`. `contentProps` was
+  previously hard-coded to `{}`. `MAT_BOTTOM_SHEET_DATA` is unaffected.
+
+## `closeOnNavigation` wired (2026-11-03)
+
+Same fix as `qwik-material/dialog`'s entry of the same name: `useMatBottomSheet().open$` now
+registers every opened sheet with the shared `OverlayNavigationDispatcher`
+(`qwik-cdk/overlay/SYNC.md`) whenever `closeOnNavigation !== false` (the default), dismissing it
+on `popstate`/`hashchange` — not on every link click. Deregistered in the existing
+`afterDismissed.then(...)` cleanup. Tested end-to-end in
+`specs/material-bottom-sheet/close-on-navigation.spec.ts`.
+
+## Context reaches sheet content; `MatBottomSheetConfig.context` added (2026-11-03)
+
+Same fix as `qwik-material/dialog`'s entry of the same name. `MatBottomSheetConfig` gained a
+`context?: OverlayContextOverride[]` field (dialog already had one; bottom sheet didn't).
+`useMatBottomSheet().open$` now calls the same `useQwikMaterialContextSnapshot()`
+(`qwik-material/dialog/qwik-material-provider.tsx`) and passes the combined (automatic +
+explicit) list through as `overlayConfig.context`, re-provided generically by `qwik-cdk/overlay`'s
+`OverlayHost` (see its own SYNC.md entry). Tested end-to-end in
+`specs/material-bottom-sheet/context-inheritance.spec.ts`.
+
+## Real bug: scroll strategy lost after resume (2026-11-03)
+
+Same bug as `qwik-material/dialog`'s entry of the same name (see it for the full root-cause
+write-up) — restored the real default (background scroll blocked while the sheet is open) for
+every sheet opened after a real page load.
+
+### Fix: serializable `ScrollStrategyDescriptor` (2026-11-03, closes the gap below)
+
+Same fix as `qwik-material/dialog`'s entry of the same name: `MAT_BOTTOM_SHEET_SCROLL_STRATEGY`
+is now `createContextId<ScrollStrategyDescriptor>(...)` (was `NoSerialize<() => ScrollStrategy>`);
+`<QwikMaterialProvider matBottomSheetScrollStrategy={…}>` (renamed from
+`matBottomSheetScrollStrategyFactory`) accepts a plain `ScrollStrategyDescriptor` directly;
+`MatBottomSheetConfig.scrollStrategy` accepts `ScrollStrategy | ScrollStrategyDescriptor`;
+`useMatBottomSheet().open$` is now `async`, resolving via `resolveConfiguredScrollStrategy()`
+(`qwik-cdk/overlay`) before building `overlayConfig` — the custom-strategy gap is CLOSED, a
+configured descriptor (including the `QRL<() => ScrollStrategy>` escape hatch) now survives a
+real resume. Tested in `specs/material-bottom-sheet/scroll-blocking.spec.ts`.
 
 ## Pipeline
 

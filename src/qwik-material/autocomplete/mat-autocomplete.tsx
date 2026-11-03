@@ -11,7 +11,7 @@ import {
 } from '@qwik.dev/core';
 import {isBrowser} from '@qwik.dev/core/build';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
-import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
+import type {OverlayRef, ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import {
   createIdGenerator,
   useIdGenerator,
@@ -24,7 +24,11 @@ import {
   useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import {composeRef, type HostRef} from '../core/host-props';
-import {MAT_AUTOCOMPLETE_CONFIG, type MatAutocompleteConfig} from './autocomplete-config';
+import {
+  MAT_AUTOCOMPLETE_CONFIG,
+  MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+  type MatAutocompleteConfig,
+} from './autocomplete-config';
 import {
   resolveAutocompleteOptions,
   type MatAutocompleteEntryDef,
@@ -248,6 +252,15 @@ export interface MatAutocompleteProps extends Omit<MatFormFieldControlProps, 'va
 
 export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   const config = useContext(MAT_AUTOCOMPLETE_CONFIG, MAT_AUTOCOMPLETE_CONFIG_DEFAULTS);
+  // `MAT_AUTOCOMPLETE_SCROLL_STRATEGY` is a plain, serializable
+  // `ScrollStrategyDescriptor` — see `mat-select.tsx`'s identical read for
+  // why a plain default is safe here (no `useContext()`
+  // function-typed-default pitfall). `{type: 'reposition'}` is this
+  // port's pre-existing, previously hard-coded default behaviour.
+  const scrollStrategyDescriptor = useContext(
+    MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+    {type: 'reposition'} as ScrollStrategyDescriptor,
+  );
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();
@@ -339,6 +352,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
     onValueChange$: props.onValueChange$,
     onTouched$: props.onTouched$,
     onOpenedChange$: props.onOpenedChange$,
+    scrollStrategyDescriptor,
   };
 
   // Reactively re-syncs the ALREADY-OPEN panel whenever `props.options`

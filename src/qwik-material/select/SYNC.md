@@ -622,3 +622,23 @@ control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConn
 `Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
 porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
 change for every existing (always form-field-nested) scenario.
+
+## Scroll-strategy configuration (2026-11-03)
+
+Added `MAT_SELECT_SCROLL_STRATEGY` (mirrors upstream's `MAT_SELECT_SCROLL_STRATEGY` injection
+token) + `<QwikMaterialProvider matSelectScrollStrategy={…}>`, threaded through
+`SelectRuntimeConfig.scrollStrategyDescriptor` into `openSelectPanel()`'s overlay config
+(previously hard-coded to `createRepositionScrollStrategy()`).
+
+Uses the serializable `ScrollStrategyDescriptor` from the start (not the function-factory
+pattern that caused the "scroll strategy lost after resume" bug elsewhere — see
+`qwik-material/dialog/SYNC.md`'s entry of that name for the full root-cause write-up, found
+working on `qwik-material/menu`'s identical addition). `MAT_SELECT_SCROLL_STRATEGY` is
+`createContextId<ScrollStrategyDescriptor>(...)`; `MatSelect` reads it with a plain `{type:
+'reposition'}` `useContext()` default (safe — plain descriptor data, not a function, so neither
+`useContext()` default-value pitfall applies); `openSelectPanel()` is `async`, resolving the
+descriptor via `resolveScrollStrategyDescriptor()` (`qwik-cdk/overlay`) immediately before
+`overlay.create()` — only actually suspends for the `QRL<() => ScrollStrategy>` escape hatch,
+so every existing fire-and-forget call site (never `await`ed) keeps working unchanged. A
+non-default `matSelectScrollStrategy="block"` is covered by
+`specs/material-select/scroll-strategy.spec.ts`.

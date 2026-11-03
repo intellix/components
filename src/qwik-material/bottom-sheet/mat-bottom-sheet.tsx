@@ -13,9 +13,10 @@ import {ensureCdkDispatchers, QWIK_CDK, type QwikCdkInternals} from '@angular-co
 import {
   createOverlayService,
   createGlobalPositionStrategy,
-  createBlockScrollStrategy,
+  resolveConfiguredScrollStrategy,
   type OverlayConfig,
   type OverlayRef,
+  type ScrollStrategyDescriptor,
 } from '@angular-community/qwik-cdk/overlay';
 import type {OverlayEntry, OverlayRegistry} from '@angular-community/qwik-cdk/overlay';
 import type {MatBottomSheetConfig} from './mat-bottom-sheet-config';
@@ -31,6 +32,7 @@ import {
   MAT_BOTTOM_SHEET_REF,
   MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
 } from './mat-bottom-sheet-tokens';
+import {useQwikMaterialContextSnapshot} from '../dialog/qwik-material-provider';
 
 /**
  * Internal wrapper component that MatBottomSheet opens via the cdk overlay.
@@ -110,11 +112,15 @@ function getRegistry(ctx: QwikCdkInternals): BottomSheetRegistry {
  * no DOM-visible difference either way.
  */
 export interface MatBottomSheet {
+  // Returns a Promise directly — see MatDialog.open$'s identical comment
+  // (resolving a QRL<() => ScrollStrategy> escape-hatch factory needs an
+  // await; `await`ing the call, as every consumer already does, flattens
+  // this the same either way).
   open$: QRL<
     <C, D = unknown, R = unknown>(
       component: Component<any>,
       config?: MatBottomSheetConfig<D>,
-    ) => NoSerialize<MatBottomSheetRef<R, C>> | null
+    ) => Promise<NoSerialize<MatBottomSheetRef<R, C>> | null>
   >;
   /** Dismisses the currently-visible bottom sheet, if any. */
   dismiss$: QRL<(result?: unknown) => void>;
@@ -126,54 +132,48 @@ export function useMatBottomSheet(): MatBottomSheet {
     MAT_BOTTOM_SHEET_DEFAULT_OPTIONS,
     {} as Partial<MatBottomSheetConfig>,
   );
-  // Qwik's `useContext(ctx, defaultValue)` has two special cases that make
-  // passing a function (even a `noSerialize`-wrapped one, since
-  // `noSerialize` just tags the same function reference — `typeof` is
-  // unaffected) as the default UNSAFE here:
-  //   1. If no provider is found AND `defaultValue === undefined`, it
-  //      throws `QError_notFoundContext` (an explicit `undefined` default
-  //      is treated the same as no default at all).
-  //   2. If `defaultValue` is itself a function, Qwik treats it as a LAZY
-  //      INITIALIZER and calls it immediately (`defaultValue(value)`),
-  //      storing the RETURN VALUE — not the function reference — as the
-  //      resolved value. Passing our `() => createBlockScrollStrategy()`
-  //      factory directly here would make Qwik call it and try to persist
-  //      the resulting `ScrollStrategy` INSTANCE (which has function
-  //      properties like `.attach`) through the normal serialization path,
-  //      crashing SSR with `QError_verifySerializable` on every route —
-  //      found by booting the real dev-app, not just unit tests.
-  // `useMatBottomSheet()` can be called from a component with no
-  // `<QwikMaterialProvider>` ancestor at all: the `replace-sheet` scenario
-  // calls it from INSIDE a bottom sheet's own content (rendered via
-  // `<OverlayContainerOutlet>`, a sibling of the routed page under
-  // `<QwikCdkRoot>`, not a descendant of `<QwikMaterialProvider>` — see
-  // `BottomSheetRegistry`'s doc comment below). Use `null` (not a function,
-  // not `undefined`) as the safe default sentinel, then substitute the real
-  // fallback factory afterward in plain JS.
-  const scrollStrategyFactoryOrNull = useContext(MAT_BOTTOM_SHEET_SCROLL_STRATEGY, null as any);
-  const scrollStrategyFactory =
-    scrollStrategyFactoryOrNull ?? noSerialize(() => createBlockScrollStrategy());
+  // Snapshot every qwik-material configuration context visible HERE — see
+  // useMatDialog()'s identical line for the full rationale.
+  const inheritedContext = useQwikMaterialContextSnapshot();
+  // `MAT_BOTTOM_SHEET_SCROLL_STRATEGY` is a plain, serializable
+  // `ScrollStrategyDescriptor` — NOT a function factory, so neither of
+  // `useContext()`'s function-typed-default pitfalls apply (see
+  // `useMatDialog()`'s identical comment). `useMatBottomSheet()` can be
+  // called from a component with no `<QwikMaterialProvider>` ancestor at
+  // all (the `replace-sheet` scenario calls it from INSIDE a bottom
+  // sheet's own content — see `BottomSheetRegistry`'s doc comment below),
+  // so a plain `'block'` fallback covers that case too.
+  const scrollStrategyDescriptor = useContext(
+    MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
+    'block' as ScrollStrategyDescriptor,
+  );
 
   const open$ = $(
-    <C, D, R>(
+    async <C, D, R>(
       component: Component<any>,
       config?: MatBottomSheetConfig<D>,
-    ): NoSerialize<MatBottomSheetRef<R, C>> | null => {
+    ): Promise<NoSerialize<MatBottomSheetRef<R, C>> | null> => {
       const merged: MatBottomSheetConfig<D> = Object.assign(
         {} as MatBottomSheetConfig<D>,
         defaults,
         config ?? {},
       );
 
-      if (!merged.scrollStrategy && scrollStrategyFactory) {
-        merged.scrollStrategy = scrollStrategyFactory();
-      }
+      // See `useMatDialog().open$`'s identical comment: resolves the
+      // per-open override against the context-level default descriptor,
+      // surviving the real SSR→CSR resume boundary a function factory
+      // never did (see SYNC.md's "scroll strategy lost after resume"
+      // entry for the full incident writeup).
+      merged.scrollStrategy = await resolveConfiguredScrollStrategy(
+        merged.scrollStrategy,
+        scrollStrategyDescriptor,
+      );
 
       // SSR no-op: return a pre-resolved ref so awaiters never hang on the server.
       if (typeof document === 'undefined') {
         const instance = {value: null} as Signal<C | null>;
         const ref = createMatBottomSheetRef<R, C>({
-          cdkRef: {dispose() {}, detachBackdrop() {}},
+          cdkRef: {dispose() {}, detachBackdrop() {}, updateProps() {}},
           config: merged,
           instance,
           id: 'cdk-dialog-ssr-noop',
@@ -183,7 +183,8 @@ export function useMatBottomSheet(): MatBottomSheet {
       }
 
       // Created on demand: <QwikCdkRoot>'s visible task may not have run yet.
-      const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
+      const {keyboardDispatcher, outsideClickDispatcher, navigationDispatcher} =
+        ensureCdkDispatchers(ctx);
 
       // Build a thin idGen + registry that close over the shared ctx signals
       // (same pattern as qwik-material/dialog's useMatDialog()). This
@@ -205,7 +206,7 @@ export function useMatBottomSheet(): MatBottomSheet {
         },
         get: id => ctx.entries.value.find((x: OverlayEntry) => x.id === id),
       };
-      const overlay = createOverlayService(registry, idGen);
+      const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
       // Mirrors upstream: `MatBottomSheetConfig` has no `id` field — the
       // underlying `Dialog.open()` always mints one (`cdk-dialog-` prefix)
@@ -232,6 +233,10 @@ export function useMatBottomSheet(): MatBottomSheet {
         maxHeight: merged.maxHeight,
         direction: merged.direction,
         positionStrategy,
+        // Automatically-carried qwik-material contexts first, so an
+        // explicit, per-open `merged.context` override wins on a
+        // conflicting id — see useMatDialog().open$'s identical wiring.
+        context: [...inheritedContext, ...(merged.context ?? [])],
       };
 
       const instance = {value: null} as Signal<C | null>;
@@ -239,11 +244,15 @@ export function useMatBottomSheet(): MatBottomSheet {
         real: OverlayRef | null;
         dispose(): void;
         detachBackdrop(): void;
+        updateProps(p: Record<string, unknown>): void;
       }
       const overlayShim: OverlayShim = {
         real: null,
         dispose() {
           this.real?.dispose();
+        },
+        updateProps(p) {
+          this.real?.updateProps(p);
         },
         detachBackdrop() {
           this.real?.detachBackdrop();
@@ -270,7 +279,7 @@ export function useMatBottomSheet(): MatBottomSheet {
           id,
           config: {...merged},
           ContentComponent: component,
-          contentProps: {},
+          contentProps: {...(merged.componentProps ?? {})},
           matBottomSheetRef: wrapped,
         },
         overlayConfig,
@@ -286,7 +295,13 @@ export function useMatBottomSheet(): MatBottomSheet {
         onKeydown(e) {
           if (merged.onKeydown$) merged.onKeydown$(e);
           const isModifierPressed = e.shiftKey || e.ctrlKey || e.altKey || e.metaKey;
-          if (e.key === 'Escape' && !merged.disableClose && !isModifierPressed) {
+          // Mirrors upstream MatBottomSheetRef: `disableClose` is read LIVE
+          // off the ref's own `disableClose` field (not `merged.disableClose`,
+          // which was only ever a one-time snapshot never re-read after
+          // open) — so mutating `matBottomSheetRef.disableClose` after open
+          // takes effect immediately. Fixes the gap this port's SYNC.md
+          // previously documented as a known deviation.
+          if (e.key === 'Escape' && !matRef.disableClose && !isModifierPressed) {
             matRef.dismiss();
           }
         },
@@ -294,15 +309,31 @@ export function useMatBottomSheet(): MatBottomSheet {
 
       // Wire close-on-backdrop-click via outside-click dispatcher (mirrors
       // upstream `MatBottomSheetRef`'s own `backdropClick()` subscription).
+      // `onBackdropClick$` fires for every backdrop click REGARDLESS of
+      // `disableClose` (matching upstream's `backdropClick()` Observable,
+      // which is independent of the ref's own disableClose-gated dismiss
+      // logic) — only the actual `dismiss()` call is gated.
       outsideClickDispatcher.add(overlayRef, {
         onOutsideClick(e) {
           if (merged.onOutsidePointer$) merged.onOutsidePointer$(e);
-          if (merged.hasBackdrop !== false && !merged.disableClose) {
+          if (merged.hasBackdrop !== false) {
             if (merged.onBackdropClick$) merged.onBackdropClick$(e);
-            matRef.dismiss();
+            if (!matRef.disableClose) matRef.dismiss();
           }
         },
       });
+
+      // Wire close-on-navigation: dismisses when the user navigates back/
+      // forward in history (popstate) or the URL hash changes — NOT on
+      // every link click. Default true, same as MatDialogConfig —
+      // see useMatDialog().open$'s identical wiring for the full rationale.
+      if (merged.closeOnNavigation !== false) {
+        navigationDispatcher.add(overlayRef, {
+          onNavigate() {
+            matRef.dismiss();
+          },
+        });
+      }
 
       const reg = getRegistry(ctx);
       const previous = reg.openedRef;
@@ -310,6 +341,7 @@ export function useMatBottomSheet(): MatBottomSheet {
       matRef.afterDismissed.then(() => {
         keyboardDispatcher.remove(overlayRef);
         outsideClickDispatcher.remove(overlayRef);
+        navigationDispatcher.remove(overlayRef);
         // Clear the ref if it hasn't already been replaced by a newer one —
         // mirrors upstream's identical guard in `MatBottomSheet.open()`.
         if (reg.openedRef === wrapped) reg.openedRef = null;
@@ -386,7 +418,7 @@ export function createMatBottomSheetService(
           id,
           config: {...merged},
           ContentComponent: component,
-          contentProps: {},
+          contentProps: {...(merged.componentProps ?? {})},
           matBottomSheetRef: undefined,
         },
         {} as OverlayConfig,

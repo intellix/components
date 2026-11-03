@@ -14,15 +14,17 @@ import {ensureCdkDispatchers, QWIK_CDK} from '@angular-community/qwik-cdk';
 import {
   createOverlayService,
   createGlobalPositionStrategy,
-  createBlockScrollStrategy,
+  resolveConfiguredScrollStrategy,
   type OverlayConfig,
   type OverlayRef,
+  type ScrollStrategyDescriptor,
 } from '@angular-community/qwik-cdk/overlay';
 import type {OverlayEntry, OverlayRegistry} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import {createMatDialogRef, MatDialogState, type MatDialogRef} from './mat-dialog-ref';
 import {MatDialogContainer} from './mat-dialog-container';
 import {MAT_DIALOG_DEFAULT_OPTIONS, MAT_DIALOG_SCROLL_STRATEGY} from './mat-dialog-tokens';
+import {useQwikMaterialContextSnapshot} from './qwik-material-provider';
 
 /**
  * Internal wrapper component that MatDialog opens via the cdk overlay. It
@@ -60,16 +62,29 @@ const MatDialogWrapper = component$<{
  * outside-click dispatchers.
  */
 export interface MatDialog {
+  // Returns a Promise directly (not just via the usual QRL-call wrapping):
+  // resolving MatDialogConfig.scrollStrategy / MAT_DIALOG_SCROLL_STRATEGY
+  // may need to await a QRL<() => ScrollStrategy> escape-hatch factory —
+  // see resolveConfiguredScrollStrategy. `await`ing the call (as every
+  // consumer already does) flattens this the same either way.
   open$: QRL<
     <C, D = unknown, R = unknown>(
       component: Component<any>,
       config?: MatDialogConfig<D>,
-    ) => NoSerialize<MatDialogRef<R, C>> | null
+    ) => Promise<NoSerialize<MatDialogRef<R, C>> | null>
   >;
   close$: QRL<(id: string, result?: unknown) => void>;
   closeAll$: QRL<() => void>;
   getDialogById$: QRL<(id: string) => NoSerialize<MatDialogRef> | undefined>;
   readonly openDialogs: Signal<readonly NoSerialize<MatDialogRef>[]>;
+  /**
+   * Registers a callback invoked every time `openDialogs` transitions from
+   * non-empty to empty — the Qwik-idiomatic replacement for upstream
+   * `MatDialog.afterAllClosed` (an Observable with the same "emits
+   * whenever the open-dialog count reaches zero" contract). Returns an
+   * unsubscribe function.
+   */
+  afterAllClosed$: QRL<(callback: QRL<() => void>) => QRL<() => void>>;
 }
 
 export function useMatDialog(): MatDialog {
@@ -78,34 +93,39 @@ export function useMatDialog(): MatDialog {
   // by qwik-cdk's own useDialog — see src/qwik-cdk/dialog/dialog.tsx.
   const ctx = useContext(QWIK_CDK);
   const defaults = useContext(MAT_DIALOG_DEFAULT_OPTIONS, {} as Partial<MatDialogConfig>);
-  // Qwik's `useContext(ctx, defaultValue)` has two special cases that make
-  // passing a function as the default UNSAFE: (1) an explicit `undefined`
-  // default is treated the same as no default (throws
-  // `QError_notFoundContext` when no provider exists), and (2) a
-  // FUNCTION-typed default is treated as a lazy initializer and INVOKED
-  // immediately, with the return value (not the function) persisted —
-  // which would try to serialize the resulting `ScrollStrategy` instance
-  // (function properties like `.attach`) during SSR, crashing every route.
-  // See `useMatBottomSheet()`'s identical fix in `mat-bottom-sheet.tsx` for
-  // the full explanation and the scenario that surfaced this (calling the
-  // service hook from a component with no `<QwikMaterialProvider>`
-  // ancestor — not currently exercised by any `useMatDialog()` scenario,
-  // but fixed here too since it's the same latent bug). `null` (not a
-  // function, not `undefined`) is the safe default sentinel; the real
-  // fallback factory is substituted afterward in plain JS.
-  const scrollStrategyFactoryOrNull = useContext(MAT_DIALOG_SCROLL_STRATEGY, null as any);
-  const scrollStrategyFactory =
-    scrollStrategyFactoryOrNull ?? noSerialize(() => createBlockScrollStrategy());
+  // Snapshot every qwik-material configuration context visible HERE, at the
+  // point useMatDialog() is called (inside the opener's own render) — see
+  // OverlayConfig.context's doc comment for why the dialog's content,
+  // rendered elsewhere under <QwikCdkRoot>, can't see them on its own.
+  const inheritedContext = useQwikMaterialContextSnapshot();
+  // `MAT_DIALOG_SCROLL_STRATEGY` is a plain, serializable
+  // `ScrollStrategyDescriptor` (string/object, or a `QRL` escape hatch) —
+  // NOT a function factory, so neither of `useContext()`'s two
+  // function-typed-default pitfalls apply here (no lazy-initializer
+  // invocation, and a plain string default is never confused with "no
+  // default"). A plain `'block'` fallback covers calling this hook from a
+  // component with no `<QwikMaterialProvider>` ancestor at all (the
+  // `replace-sheet`-style edge case — see `useMatBottomSheet()`'s
+  // identical comment).
+  const scrollStrategyDescriptor = useContext(
+    MAT_DIALOG_SCROLL_STRATEGY,
+    'block' as ScrollStrategyDescriptor,
+  );
 
   const matRefsById = useStore<Record<string, NoSerialize<MatDialogRef>>>({});
   const openDialogs = useSignal<readonly NoSerialize<MatDialogRef>[]>([]);
   const idSeq = useStore<{n: number}>({n: 0});
+  // QRL callbacks are plain serializable values, so a signal works fine
+  // here (unlike an `Overlay`/dispatcher instance — see
+  // qwik-cdk/overlay/SYNC.md's `useOverlay()` entry for why those can't
+  // live in a signal the same way).
+  const afterAllClosedCallbacks = useSignal<readonly QRL<() => void>[]>([]);
 
   const open$ = $(
-    <C, D, R>(
+    async <C, D, R>(
       component: Component<any>,
       config?: MatDialogConfig<D>,
-    ): NoSerialize<MatDialogRef<R, C>> | null => {
+    ): Promise<NoSerialize<MatDialogRef<R, C>> | null> => {
       const merged: MatDialogConfig<D> = Object.assign(
         {} as MatDialogConfig<D>,
         defaults,
@@ -113,9 +133,19 @@ export function useMatDialog(): MatDialog {
       );
       merged.id = merged.id ?? `mat-mdc-dialog-${idSeq.n++}`;
 
-      if (!merged.scrollStrategy && scrollStrategyFactory) {
-        merged.scrollStrategy = scrollStrategyFactory();
-      }
+      // Resolve the per-open override (already a real instance, a
+      // descriptor, or absent) against the context-level default
+      // descriptor — see `resolveConfiguredScrollStrategy`'s own doc
+      // comment. `scrollStrategyDescriptor` is plain, serializable data,
+      // so — unlike the function-factory this replaced — it survives
+      // having been read via `useContext()` during this hook's OWN
+      // render and then used here, in this QRL, after a real SSR→CSR
+      // resume boundary (see SYNC.md's "scroll strategy lost after
+      // resume" entry for the full incident writeup).
+      merged.scrollStrategy = await resolveConfiguredScrollStrategy(
+        merged.scrollStrategy,
+        scrollStrategyDescriptor,
+      );
 
       // SSR no-op: return a pre-CLOSED ref that resolves all three promises
       // immediately so awaiters never hang on the server.
@@ -128,6 +158,7 @@ export function useMatDialog(): MatDialog {
           updateSize(_o: {width?: string | number; height?: string | number}) {},
           addPanelClass(_c: string | string[]) {},
           removePanelClass(_c: string | string[]) {},
+          updateProps(_p: Record<string, unknown>) {},
         };
         const ref = createMatDialogRef<R, C>({
           cdkRef: fakeOverlayRef,
@@ -139,7 +170,8 @@ export function useMatDialog(): MatDialog {
       }
 
       // Created on demand: <QwikCdkRoot>'s visible task may not have run yet.
-      const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
+      const {keyboardDispatcher, outsideClickDispatcher, navigationDispatcher} =
+        ensureCdkDispatchers(ctx);
 
       // Build a thin idGen + registry that close over the shared ctx signals
       // (same pattern as qwik-cdk's useDialog). This ensures MatDialog entries
@@ -160,7 +192,7 @@ export function useMatDialog(): MatDialog {
         },
         get: id => ctx.entries.value.find((x: OverlayEntry) => x.id === id),
       };
-      const overlay = createOverlayService(registry, idGen);
+      const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
       // Mirrors upstream MatDialog.open(): always opens with a fresh,
       // centered GlobalPositionStrategy (ignoring any CDK-level override —
@@ -185,6 +217,13 @@ export function useMatDialog(): MatDialog {
         maxHeight: merged.maxHeight,
         direction: merged.direction,
         positionStrategy,
+        // Automatically-carried qwik-material contexts first, so an
+        // explicit, per-open `merged.context` override (user-supplied,
+        // via MatDialogConfig.context) always wins on a conflicting id —
+        // see OverlayHost's loop, which provides these in array order and
+        // lets a later entry for the same ContextId overwrite an earlier
+        // one.
+        context: [...inheritedContext, ...(merged.context ?? [])],
       };
 
       // Pre-mint state signals + the wrapping matRef with a shim so the
@@ -200,6 +239,7 @@ export function useMatDialog(): MatDialog {
         addPanelClass(c: string | string[]): void;
         removePanelClass(c: string | string[]): void;
         detachBackdrop(): void;
+        updateProps(p: Record<string, unknown>): void;
       }
       const overlayShim: OverlayShim = {
         real: null,
@@ -221,6 +261,9 @@ export function useMatDialog(): MatDialog {
         detachBackdrop() {
           this.real?.detachBackdrop();
         },
+        updateProps(p) {
+          this.real?.updateProps(p);
+        },
       };
       const matRef = createMatDialogRef<R, C>({
         cdkRef: overlayShim,
@@ -241,7 +284,7 @@ export function useMatDialog(): MatDialog {
         {
           config: {...merged},
           ContentComponent: component,
-          contentProps: {},
+          contentProps: {...(merged.componentProps ?? {})},
           matDialogRef: wrapped,
         },
         overlayConfig,
@@ -262,22 +305,44 @@ export function useMatDialog(): MatDialog {
         onKeydown(e) {
           if (merged.onKeydown$) merged.onKeydown$(e);
           const isModifierPressed = e.shiftKey || e.ctrlKey || e.altKey || e.metaKey;
-          if (e.key === 'Escape' && !merged.disableClose && !isModifierPressed) {
+          // Mirrors upstream MatDialogRef: `disableClose` is read LIVE off the
+          // ref (not snapshotted from `merged` at open time), so mutating
+          // `matDialogRef.disableClose` after open takes effect immediately.
+          if (e.key === 'Escape' && !matRef.disableClose && !isModifierPressed) {
             matRef.close();
           }
         },
       });
 
-      // Wire close-on-backdrop-click via outside-click dispatcher.
+      // Wire close-on-backdrop-click via outside-click dispatcher. Mirrors
+      // upstream: `MatDialogRef.backdropClick()` (here: `onBackdropClick$`)
+      // emits for every backdrop click REGARDLESS of `disableClose` — apps
+      // use this to show a "discard changes?" confirmation even when the
+      // dialog can't be dismissed by clicking outside it. Only the actual
+      // `close()` call is gated on `disableClose`.
       outsideClickDispatcher.add(overlayRef, {
         onOutsideClick(e) {
           if (merged.onOutsidePointer$) merged.onOutsidePointer$(e);
-          if (merged.hasBackdrop !== false && !merged.disableClose) {
+          if (merged.hasBackdrop !== false) {
             if (merged.onBackdropClick$) merged.onBackdropClick$(e);
-            matRef.close();
+            if (!matRef.disableClose) matRef.close();
           }
         },
       });
+
+      // Wire close-on-navigation: closes when the user navigates back/
+      // forward in history (popstate) or the URL hash changes — NOT on
+      // every link click (this library takes no router dependency, so it
+      // can't distinguish a router-driven pushState from any other call).
+      // Mirrors upstream `OverlayConfig.disposeOnNavigation` (set from
+      // `MatDialogConfig.closeOnNavigation`), default true.
+      if (merged.closeOnNavigation !== false) {
+        navigationDispatcher.add(overlayRef, {
+          onNavigate() {
+            matRef.close();
+          },
+        });
+      }
 
       matRefsById[matRef.id] = wrapped;
       openDialogs.value = [...openDialogs.value, wrapped];
@@ -285,8 +350,12 @@ export function useMatDialog(): MatDialog {
       matRef.afterClosed.then(() => {
         keyboardDispatcher.remove(overlayRef);
         outsideClickDispatcher.remove(overlayRef);
+        navigationDispatcher.remove(overlayRef);
         delete matRefsById[matRef.id];
         openDialogs.value = openDialogs.value.filter(r => r?.id !== matRef.id);
+        if (openDialogs.value.length === 0) {
+          for (const cb of afterAllClosedCallbacks.value) cb();
+        }
       });
 
       return wrapped;
@@ -306,7 +375,14 @@ export function useMatDialog(): MatDialog {
     return matRefsById[id];
   });
 
-  return {open$, close$, closeAll$, getDialogById$, openDialogs};
+  const afterAllClosed$ = $((callback: QRL<() => void>): QRL<() => void> => {
+    afterAllClosedCallbacks.value = [...afterAllClosedCallbacks.value, callback];
+    return $(() => {
+      afterAllClosedCallbacks.value = afterAllClosedCallbacks.value.filter(cb => cb !== callback);
+    });
+  });
+
+  return {open$, close$, closeAll$, getDialogById$, openDialogs, afterAllClosed$};
 }
 
 /**
@@ -357,7 +433,7 @@ export function createMatDialogService(deps: CreateMatDialogServiceDeps): MatDia
         {
           config: {...merged},
           ContentComponent: component,
-          contentProps: {},
+          contentProps: {...(merged.componentProps ?? {})},
           matDialogRef: undefined,
         },
         {} as OverlayConfig,

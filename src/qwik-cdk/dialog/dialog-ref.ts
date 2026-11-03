@@ -23,6 +23,13 @@ export interface DialogRef<R = unknown, C = unknown> {
   updateSize(width?: string | number, height?: string | number): void;
   addPanelClass(classes: string | string[]): void;
   removePanelClass(classes: string | string[]): void;
+  /**
+   * Updates a single prop on the opened component, merging it into
+   * `config.componentProps` and pushing the result through the underlying
+   * `OverlayRef.updateProps()` so the component reactively re-renders —
+   * the Qwik equivalent of upstream `ComponentRef.setInput(name, value)`.
+   */
+  setInput(name: string, value: unknown): void;
 }
 
 export function createDialogRef<R = unknown, C = unknown>(deps: {
@@ -41,6 +48,12 @@ export function createDialogRef<R = unknown, C = unknown>(deps: {
   if (!deps.isOpen.value) {
     resolveClosed(undefined);
   }
+
+  // Local mutable copy of `config.componentProps`: `setInput` merges into
+  // this (not `deps.config.componentProps` directly) so repeated calls
+  // compose correctly without re-reading a config field that doesn't itself
+  // change when `overlayRef.updateProps` is called.
+  let componentProps: Record<string, unknown> = {...(deps.config.componentProps ?? {})};
 
   return {
     id: deps.config.id!,
@@ -65,6 +78,12 @@ export function createDialogRef<R = unknown, C = unknown>(deps: {
     },
     removePanelClass(classes) {
       deps.overlayRef.removePanelClass(classes);
+    },
+    setInput(name, value) {
+      componentProps = {...componentProps, [name]: value};
+      // 'contentProps' matches the prop name DialogWrapper forwards onto the
+      // opened component — see createDialogService.open() below.
+      deps.overlayRef.updateProps({contentProps: componentProps});
     },
   };
 }

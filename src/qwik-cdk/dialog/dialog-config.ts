@@ -7,6 +7,12 @@ import type {OverlayContextOverride} from '../overlay/overlay-context';
 
 export interface DialogConfig<D = unknown, R = unknown> {
   data?: D | null;
+  /**
+   * Initial props passed to the opened component (the Qwik-idiomatic
+   * equivalent of upstream's `bindings`/`ComponentRef.setInput`). Updatable
+   * after open via `DialogRef.setInput(name, value)`.
+   */
+  componentProps?: Record<string, unknown>;
   direction?: Direction;
   id?: string;
   role?: 'dialog' | 'alertdialog';

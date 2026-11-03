@@ -448,3 +448,22 @@ call sites was switched to call them instead of the broken raw `useContext(..., 
 Zero behavior change when a `<MatFormField>` ancestor exists (confirmed: `pnpm -C src/qwik-material
 test` 783/783, full `src/qwik-cdk-parity-tests` suite unaffected) — only the previously-crashing
 standalone case now works.
+
+## Scroll-strategy configuration (2026-11-03)
+
+Added `MAT_AUTOCOMPLETE_SCROLL_STRATEGY` (mirrors upstream's `MAT_AUTOCOMPLETE_SCROLL_STRATEGY`
+injection token) + `<QwikMaterialProvider matAutocompleteScrollStrategy={…}>`, threaded
+through `AutocompleteRuntimeConfig.scrollStrategyDescriptor` into `openAutocompletePanel()`'s
+overlay config (previously hard-coded to `createRepositionScrollStrategy()`).
+
+Uses the serializable `ScrollStrategyDescriptor` from the start (not the function-factory
+pattern that caused the "scroll strategy lost after resume" bug elsewhere — see
+`qwik-material/dialog/SYNC.md`'s entry of that name for the full root-cause write-up, and
+`qwik-material/menu/SYNC.md`'s for how the fix was designed). `MAT_AUTOCOMPLETE_SCROLL_STRATEGY`
+is `createContextId<ScrollStrategyDescriptor>(...)`; `MatAutocomplete` reads it with a plain
+`{type: 'reposition'}` `useContext()` default (safe — plain descriptor data, not a function);
+`openAutocompletePanel()` is `async`, resolving the descriptor via
+`resolveScrollStrategyDescriptor()` (`qwik-cdk/overlay`) immediately before `overlay.create()` —
+only actually suspends for the `QRL<() => ScrollStrategy>` escape hatch, so every existing
+fire-and-forget call site (`handleAutocompleteInput`/`Focus`/`Click`/`Keydown`, none of which
+check overlay state synchronously right after calling it) keeps working unchanged.

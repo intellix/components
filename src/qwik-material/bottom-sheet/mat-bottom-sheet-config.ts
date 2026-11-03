@@ -1,5 +1,9 @@
 import type {QRL} from '@qwik.dev/core';
-import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import type {
+  OverlayContextOverride,
+  ScrollStrategy,
+  ScrollStrategyDescriptor,
+} from '@angular-community/qwik-cdk/overlay';
 
 /** Options for where to set focus to automatically on bottom sheet open. */
 export type AutoFocusTarget = 'dialog' | 'first-tabbable' | 'first-heading' | string;
@@ -23,6 +27,23 @@ export interface MatBottomSheetConfig<D = unknown> {
   direction?: 'ltr' | 'rtl';
   /** Data being injected into the content component via MAT_BOTTOM_SHEET_DATA. */
   data?: D | null;
+  /**
+   * Initial props passed to the opened component (Qwik's idiomatic
+   * replacement for upstream's `bindings`/`ComponentRef.setInput`, which
+   * don't apply to a Qwik `component$`). Updatable after open via
+   * `MatBottomSheetRef.setInput`.
+   */
+  componentProps?: Record<string, unknown>;
+  /**
+   * Qwik context values re-provided directly above the opened component
+   * — the generic opt-in for app contexts (e.g. a context an app's own
+   * provider sets). `useMatBottomSheet().open$` automatically prepends
+   * every visible qwik-material configuration context ahead of this; an
+   * entry here for the same `ContextId` wins. See
+   * `OverlayConfig.context`'s doc comment (qwik-cdk) for why this is
+   * needed at all.
+   */
+  context?: OverlayContextOverride[];
   /** Whether the bottom sheet has a backdrop. Default true. */
   hasBackdrop?: boolean;
   /** Custom class for the backdrop. */
@@ -45,8 +66,12 @@ export interface MatBottomSheetConfig<D = unknown> {
   autoFocus?: AutoFocusTarget | false;
   /** Configures the focus restoration behavior. Default true. */
   restoreFocus?: boolean | string | HTMLElement;
-  /** Scroll strategy to be used for the bottom sheet. Default: block strategy. */
-  scrollStrategy?: ScrollStrategy;
+  /**
+   * Overrides `MAT_BOTTOM_SHEET_SCROLL_STRATEGY`'s default for this sheet
+   * only. Either an already-built `ScrollStrategy` instance, or a plain,
+   * serializable `ScrollStrategyDescriptor`. Default: `'block'`.
+   */
+  scrollStrategy?: ScrollStrategy | ScrollStrategyDescriptor;
   /** Height for the bottom sheet. */
   height?: string;
   /** Minimum height for the bottom sheet. If a number is provided, assumes pixel units. */

@@ -1,5 +1,5 @@
 import {createContextId, type NoSerialize} from '@qwik.dev/core';
-import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import type {MatBottomSheetConfig} from './mat-bottom-sheet-config';
 import type {MatBottomSheetRef} from './mat-bottom-sheet-ref';
 
@@ -19,13 +19,17 @@ export const MAT_BOTTOM_SHEET_DEFAULT_OPTIONS = createContextId<Partial<MatBotto
 );
 
 /**
- * Factory that returns the default ScrollStrategy for bottom sheets that
- * don't specify one. Provided by
- * <QwikMaterialProvider matBottomSheetScrollStrategyFactory={…}>. Default:
- * createBlockScrollStrategy() from qwik-cdk (matches upstream
+ * Default `ScrollStrategy` descriptor for bottom sheets that don't specify
+ * their own. Provided by `<QwikMaterialProvider
+ * matBottomSheetScrollStrategy={…}>`. Default: `'block'` (matches upstream
  * `MatBottomSheet.open()`'s own default).
+ *
+ * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
+ * factory; see `qwik-material/dialog/mat-dialog-tokens.ts`'s
+ * `MAT_DIALOG_SCROLL_STRATEGY` for why that distinction matters (a
+ * factory function doesn't survive a real SSR→CSR resume).
  */
-export const MAT_BOTTOM_SHEET_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
+export const MAT_BOTTOM_SHEET_SCROLL_STRATEGY = createContextId<ScrollStrategyDescriptor>(
   'qwikMaterial/bottomSheetScrollStrategy',
 );
 

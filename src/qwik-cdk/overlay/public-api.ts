@@ -1,4 +1,4 @@
-export type {OverlayConfig} from './overlay-config';
+export type {OverlayConfig, OverlayDefaultConfig} from './overlay-config';
 export {OVERLAY_REGISTRY} from './overlay-registry';
 export type {OverlayEntry, OverlayRegistry, OverlayEntryState} from './overlay-registry';
 export {OverlayContainerOutlet} from './overlay-container-outlet';
@@ -19,8 +19,8 @@ export type {
 export {validateVerticalPosition, validateHorizontalPosition} from './position/connected-position';
 export type {OverlayRef, OverlayVisualCallbacks} from './overlay-ref';
 export {createOverlayRef} from './overlay-ref';
-export type {Overlay} from './overlay';
-export {OVERLAY, useOverlay, createOverlayService} from './overlay';
+export type {Overlay, OverlayHandle} from './overlay';
+export {OVERLAY_DEFAULT_CONFIG, useOverlay, createOverlayService} from './overlay';
 export type {OverlayContainer} from './overlay-container';
 export {
   OVERLAY_CONTAINER,
@@ -53,6 +53,17 @@ export {createCloseScrollStrategy} from './scroll/close-scroll-strategy';
 export type {CloseScrollStrategyConfig} from './scroll/close-scroll-strategy';
 export {createRepositionScrollStrategy} from './scroll/reposition-scroll-strategy';
 export type {RepositionScrollStrategyConfig} from './scroll/reposition-scroll-strategy';
+export type {
+  BuiltinScrollStrategyDescriptor,
+  ScrollStrategyDescriptor,
+} from './scroll/scroll-strategy-descriptor';
+export {
+  isBuiltinScrollStrategyDescriptor,
+  resolveBuiltinScrollStrategyDescriptor,
+  resolveScrollStrategyDescriptor,
+  isScrollStrategyInstance,
+  resolveConfiguredScrollStrategy,
+} from './scroll/scroll-strategy-descriptor';
 export type {ScrollStrategyOptions} from './scroll/scroll-strategy-options';
 export {
   createScrollStrategyOptions,
@@ -71,3 +82,12 @@ export {
   OVERLAY_OUTSIDE_CLICK_DISPATCHER,
   useOverlayOutsideClickDispatcher,
 } from './dispatchers/overlay-outside-click-dispatcher';
+export type {
+  OverlayNavigationDispatcher,
+  NavigationHandlers,
+} from './dispatchers/overlay-navigation-dispatcher';
+export {
+  createOverlayNavigationDispatcher,
+  OVERLAY_NAVIGATION_DISPATCHER,
+  useOverlayNavigationDispatcher,
+} from './dispatchers/overlay-navigation-dispatcher';

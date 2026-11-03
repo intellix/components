@@ -192,6 +192,7 @@ export interface AttachSnackBarCtx {
   idCounter: Signal<number>;
   entries: Signal<readonly any[]>;
   overlayContainerCreated: Signal<boolean>;
+  overlayDefaultConfig?: import('@angular-community/qwik-cdk/overlay').OverlayDefaultConfig;
 }
 
 /** Mirrors upstream's `{...new MatSnackBarConfig(), ...this._defaultConfig, ...userConfig}`. */
@@ -232,7 +233,7 @@ export function attachSnackBar<D>(
 ): MatSnackBarRef<unknown> {
   const idGen = makeCtxIdGen(ctx.idCounter);
   const registry = makeCtxRegistry(ctx.entries, ctx.overlayContainerCreated);
-  const overlay = createOverlayService(registry, idGen);
+  const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
   // Mirrors upstream `MatSnackBar._createOverlay()`'s horizontal/vertical
   // position mapping exactly (see angular-parity.spec.ts's "OVERLAY
