@@ -59,7 +59,7 @@ either — a pure dead-CSS removal. No other deviation found.
 - `testing/` (`MatChipHarness` and friends) — Angular test harness surface; no equivalent needed.
 - Upstream `public-api.ts`/`index.ts` — replaced with this port's own re-export shape.
 - `chip-action.ts` (`MatChipAction`/`MatChipContent`) — no standalone component; the primary cell is rendered directly by `MatChip`/`MatChipOption`/`MatChipRow` with the `matchipcontent`/`matchipaction` marker attributes the parity harness expects (see `CONSUMER_SELECTOR_ATTRS` vs. the template's own attrs in the parity spec header).
-- `chip-icons.ts` (`MatChipAvatar`/`MatChipTrailingIcon`/`MatChipRemove`/`MatChipEditInput`/the edit-related directives) — reduced to plain `JSXOutput` props (`avatar`, `trailingIcon`, `removeButton: {content, 'aria-label', disabled}`) on the owning chip, following the same "directive → prop" pattern used throughout this port (e.g. card's `MatCardImage`). `matChipEdit`/inline editing (`MAT_CHIP_EDIT`, `chip-edit-input.ts`) is NOT implemented at all — no parity scenario exercises it (see Deviations #3).
+- `chip-icons.ts` (`MatChipAvatar`/`MatChipTrailingIcon`/`MatChipRemove`/the non-edit-related directives) — reduced to plain `JSXOutput` props (`avatar`, `trailingIcon`, `removeButton: {content, 'aria-label', disabled}`) on the owning chip, following the same "directive → prop" pattern used throughout this port (e.g. card's `MatCardImage`). `MatChipEdit`/`MatChipEditInput` are ALSO reduced the same way (`editIcon: {content, 'aria-label', disabled}` on `MatChipRow` + a built-in default edit span) — see the "Inline editing" section below (was Deviations #3, now resolved).
 - `chip-text-control.ts` (`_MatChipTextControl` interface) — a TypeScript-only structural interface; no runtime behavior to port.
 - `chip.spec.ts`/`chip-set.spec.ts`/`chip-option.spec.ts`/`chip-row.spec.ts`/`chip-listbox.spec.ts`/`chip-input.spec.ts`/`chip-remove.spec.ts`/`chip-edit-input.spec.ts`/`chip-grid.spec.ts` (Angular `TestBed`-based) — not ported 1:1; their behavioral surface is covered far more rigorously by `angular-parity.spec.ts`'s live DOM diffing against the real Angular reference app than a reimplemented `TestBed` spec could achieve in this port. The pure, non-component pieces introduced by this port (`MAT_CHIPS_CONFIG_DEFAULTS`, `MAT_CHIP_LISTBOX_SELECTION`'s shape, `rippleLoaderHostAttrs()`) are unit-tested directly in `tokens.spec.ts`/`internal/listbox-selection.spec.ts`/`internal/ripple-loader.spec.ts` instead — same convention `button-toggle/button-toggle-state.spec.ts` set.
 
@@ -89,9 +89,8 @@ either — a pure dead-CSS removal. No other deviation found.
    redirect additionally strips stale `cdk-*-focused` classes from every surviving row first,
    since a SIBLING row re-rendering for an unrelated reason (the array itself changing, not its
    own focus event) can leave an earlier class assignment in place.
-3. **Inline editing (`matChipEdit`/`MatChipEditInput`) is not implemented.** No parity scenario
-   in `src/dev-app/qwik-parity/chips.ts` exercises it. `MatChipRow`'s Enter-key handling is a
-   documented no-op (would otherwise start/finish an edit upstream).
+3. **RESOLVED (2026-11-03).** Inline editing (`matChipEdit`/`MatChipEditInput`) is now
+   implemented — see the "Inline editing" section below.
 4. **The construction-time `mat-ripple-loader-disabled` correction only ever applies to rows/
    chips that existed at mount.** Upstream's `_isRippleDisabled()` runs once in the base
    `MatChip`'s constructor, before `@ContentChild`/`@ViewChild` queries resolve, so a chip is
@@ -340,9 +339,74 @@ component's existing test surface; each is tracked as an expected parity-suite f
    chip-grid-with-manual-entry part is ported; the free-form-typing + suggestion-panel feature is
    not reproduced at all.
 
-Also unported (documented in `chips-input`'s own file, no parity impact beyond the `editable`
-button itself): `editable`/`matChipEdit` inline editing — `MatChipRowProps`/`MatChipRowDef` have
-no `editable`/`onEdited$` fields (see `mat-chip-row.tsx`'s own doc comment).
+(`editable`/`matChipEdit` inline editing, formerly listed here as unported, is now implemented —
+see "Inline editing" below. `chips-input`'s own `EXPECTED_FAILURES` entry in
+`specs/examples-misc/angular-parity.spec.ts` is narrower now: it covers only the input's DOM
+POSITION — see that section's last paragraph.)
+
+## Inline editing (`matChipEdit`/`MatChipEditInput`) + `MatChipGrid.input.addOnBlur` (2026-11-03)
+
+Ports upstream's `MatChipRow.editable`/`(edited)` + the projected `[matChipEdit]` leading icon
+(`src/material/chips/chip-row.ts`, `chip-icons.ts`'s `MatChipEdit`, `chip-edit-input.ts`) and
+`MatChipInput.addOnBlur` (`src/material/chips/chip-input.ts`).
+
+- `MatChipRowProps`/`MatChipRowDef` gained `editable`, `editIcon: {content, 'aria-label',
+  disabled}` (the `matChipEdit` directive, reduced to a prop the same way `removeButton` already
+  is), `onEdited$: (value: string) => void`, and `'aria-label'`/`'aria-description'` (upstream
+  `MatChip`'s own `@Input` aliases — rendered on the primary action, not the host, which force-
+  nulls them; previously missing from `MatChipRow` entirely, unlike `MatChipOption`, which
+  already had them).
+- Entry points implemented: double-click anywhere on the chip (`_handleDoubleclick`), Enter while
+  the row has focus (`_handleKeydown` — also now stops OTHER keys, while editing, from reaching
+  the owning grid's own arrow-key navigation, so typing moves the text cursor, not focus), and
+  clicking/pressing Enter-or-Space on the projected edit-icon button (`MatChipEdit._handleClick`/
+  `_handleKeydown`, which calls `_edit()` directly — bypassing the "only the primary action
+  reacts" gate the base `matChipAction` click/keydown handling otherwise applies). Finishing:
+  Enter while editing, or the row losing focus entirely (a `focusout` listener, deferred one
+  tick, same convention `mat-chip-grid.tsx`'s own focus-handling already uses).
+- The default edit input (`MatChipEditInput`'s behavior when no custom one is projected) is a
+  `role="textbox" contenteditable="true"` span, seeded with the chip's current (trimmed) text and
+  focused with the cursor moved to the end via a plain `ref` callback (`initEditInput`) — a ref
+  callback runs synchronously the moment the element mounts, matching `core/host-props.ts`'s
+  `composeRef` precedent for why that's safe without `$()`/serialization concerns.
+- The edit icon button's exact class list required one non-obvious finding, confirmed against a
+  real Angular render: `MatChipEdit extends MatChipAction extends MatChipContent`, and Angular's
+  host-metadata inheritance UNIONS every ancestor's static `'class'` string — so the rendered
+  button carries `MatChipContent`'s own `mat-mdc-chip-action mdc-evolution-chip__action` plus
+  `mdc-evolution-chip__action--secondary` (from `_isPrimary = false`) IN ADDITION to `MatChipEdit`'s
+  own 5 literal classes, 8 total — the same inherited-classes composition `mat-chip-row.tsx`'s
+  remove button already reproduced (pre-existing, confirmed unaffected).
+- `MatChipGridInputDef` gained `addOnBlur` — mirrors `MatChipInput._blur()`: the input's own
+  native blur (not the whole grid's — a chip stealing focus within the SAME grid still blurs the
+  input and still commits) fires `onTokenEnd$` unconditionally (even an empty value, matching
+  upstream exactly; the consumer's own handler is expected to guard against that, same as a
+  separator-key commit already requires).
+- NOT ported (real, minor, documented gaps — double-click/Enter/the edit-icon button cover the
+  same outcome either way): (a) upstream's THIRD entry point, a single click on an ALREADY-
+  focused chip ALSO starts editing (`_handleClick`/`_alreadyFocused`, set on a raw `mousedown`
+  listener captured before the click's own focus-shift); (b) projecting your OWN custom
+  `[matChipEditInput]` span instead of the default one — no current scenario needs it; (c)
+  upstream's `_editStartPending` guard against a blur interrupting an edit that's still
+  initializing (a narrow one-tick race, unlikely to be hit by a realistic interaction).
+- Found and fixed PORTING THIS: `chips-input`'s real docs example (the one example this port
+  already had that uses `editable`) is now updated to actually SET `editable`/`editIcon`/
+  `onEdited$`/`addOnBlur`, matching upstream's own example exactly (it previously omitted all
+  four, silently, with no gap documented beyond the top-level "editable not implemented" note).
+- Found and left alone (pre-existing, unrelated, deliberate, NOT a regression from this change):
+  comparing `chips-input` end to end for the first time (previously hidden entirely behind the
+  single "editable not implemented" expected-failure) surfaced that upstream's real example
+  writes `<input [matChipInputFor]="chipGrid">` as a SIBLING of `<mat-chip-grid>` (both children
+  of `<mat-form-field>`), while this port's `<MatChipGrid>` deliberately renders that `<input>`
+  ITSELF, nested one level inside its own chip-set div (see `mat-chip-grid.tsx`'s own module doc
+  comment, "Why the grid owns its input directly", for the id/label-matching rationale). Both are
+  valid Angular — `matChipInputFor` only needs a template-reference lookup, not DOM adjacency —
+  but they're structurally different, 2 child-count mismatches (`specs/examples-misc/
+  angular-parity.spec.ts`'s `chips-input` entry, narrowed to just this).
+- `chips-autocomplete` re-checked, unchanged: still the large, pre-existing, documented gap in
+  the numbered list above (#4) — no ref/hook escape hatch exists to attach a second behavior to
+  `<MatChipGrid>`'s internally-rendered input, so a `MatAutocomplete` trigger still can't stack
+  onto it. A real fix needs `<MatChipGrid>` to expose that input's live element (or accept it as
+  an external ref) — a larger, separate redesign this pass did not attempt.
 
 ## Fixed: chip remove-button content lost on re-render (2026-11-03)
 

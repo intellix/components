@@ -15,6 +15,23 @@ function rowsForFruits(fruits: readonly Fruit[], fruitsSignal: Signal<readonly F
   return fruits.map(fruit => ({
     key: fruit.name,
     content: fruit.name,
+    editable: true,
+    'aria-description': `press enter to edit ${fruit.name}`,
+    editIcon: {
+      content: <MatIcon>edit</MatIcon>,
+      'aria-label': `edit ${fruit.name}`,
+    },
+    // Mirrors upstream's `edit()`: an edit that empties the chip removes it instead;
+    // otherwise replaces this fruit's name with the (untrimmed-by-this-port, trimmed-here-
+    // same-as-upstream) edited value.
+    onEdited$: $((value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        fruitsSignal.value = fruitsSignal.value.filter(f => f !== fruit);
+        return;
+      }
+      fruitsSignal.value = fruitsSignal.value.map(f => (f === fruit ? {name: trimmed} : f));
+    }),
     removeButton: {
       content: <MatIcon>cancel</MatIcon>,
       'aria-label': `remove ${fruit.name}`,
@@ -34,12 +51,10 @@ function rowsForFruits(fruits: readonly Fruit[], fruitsSignal: Signal<readonly F
  * comment for why `rows` must be a `Signal` here, not a plain array, when `<MatChipGrid>` is
  * nested inside `<MatFormField>`).
  *
- * UNPORTED FEATURE (not a small fixable bug): upstream's `editable`/`matChipEdit` inline-editing
- * (the "press enter to edit" pencil-icon button on each chip) has no equivalent at all —
- * `MatChipRowProps`/`MatChipRowDef` have no `editable`/`onEdited$` fields (see
- * qwik-material/chips/mat-chip-row.tsx's own doc comment). The edit button and
- * `aria-description` are omitted; tracked as an expected parity-suite failure
- * (`specs/examples-misc/angular-parity.spec.ts`), not something to silently paper over.
+ * `editable`/`matChipEdit` inline editing (the "press enter to edit" pencil-icon button on each
+ * chip) and `matChipInputAddOnBlur` are both now ported — see `MatChipRowProps`/`MatChipRowDef`'s
+ * `editable`/`editIcon`/`onEdited$` fields and `MatChipGridInputDef.addOnBlur`
+ * (`qwik-material/chips/mat-chip-row.tsx`/`mat-chip-grid.tsx`).
  */
 export default component$(() => {
   useStyles$(styles);
@@ -68,6 +83,7 @@ export default component$(() => {
             input={{
               placeholder: 'New fruit...',
               separatorKeys: ['Enter', ','],
+              addOnBlur: true,
               onTokenEnd$: $((value: string, clear) => {
                 const trimmed = value.trim();
                 if (trimmed) {

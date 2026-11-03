@@ -43,7 +43,9 @@ also gain focus when clicked, ensuring keyboard navigation starts at the current
 Use `<MatChipGrid>` for assisting users with text entry. Pass the chip rows as `rows` and
 register the connected `<input>` through the `input` field (see
 [Angular → Qwik notes](#angular-qwik-notes) below for why the grid renders this input itself,
-rather than a separately-authored element).
+rather than a separately-authored element). `input.onTokenEnd$` fires when the user presses one
+of `input.separatorKeys` (default `['Enter']`); set `input.addOnBlur: true` to ALSO fire it when
+the input loses focus, even without pressing a separator key.
 
 <!-- example(chips-input) -->
 
@@ -70,6 +72,34 @@ Chips also gain focus when clicked, ensuring keyboard navigation starts at the a
 
 Users can press delete to remove a chip. Pressing delete triggers `onRemoved$` on the chip, so
 be sure to implement it if you require that functionality.
+
+#### Editable chips
+
+Set `editable: true` on a `MatChipRowDef` to let the user edit its text inline — double-click
+the chip, press Enter while it's focused, or click/press Enter on the optional `editIcon` button
+(a pencil-style icon rendered as the chip's leading action). Editing replaces the chip's visible
+content with an editable, focused text box seeded with the current text; pressing Enter commits
+the edit and fires `onEdited$` with the new (untrimmed) text — implement it to update your own
+data, same as `onRemoved$`:
+
+```tsx
+<MatChipGrid
+  rows={[
+    {
+      content: fruit.name,
+      editable: true,
+      editIcon: {content: <MatIcon>edit</MatIcon>, 'aria-label': `edit ${fruit.name}`},
+      onEdited$: $((value: string) => {
+        const trimmed = value.trim();
+        // update or remove the chip here, same as the docs example below
+      }),
+    },
+  ]}
+  ...
+/>
+```
+
+<!-- example(chips-input) -->
 
 #### Autocomplete
 
@@ -207,7 +237,10 @@ selected items.
   than a separately-authored `<input matChipInputFor>` element — this is also why there is
   currently no way to compose a `<MatAutocomplete>` trigger onto that same input (no ref/hook
   escape hatch exposed for a second behavior to attach to it).
-- **No inline editing** (`editable`/`matChipEdit`/`onEdited$`) — not implemented at all.
+- **Inline editing** (`editable`/`matChipEdit`/`onEdited$`) is implemented — see "Editable
+  chips" above. Not reproduced: a single click on an already-focused chip ALSO starting editing
+  (double-click and Enter cover the same outcome), and projecting your own custom edit-input
+  element instead of the built-in default one.
 - **No Angular Forms integration.** `[(ngModel)]`/`[formControl]` have no equivalent —
   `<MatChipGrid>` is a controlled component, same as every other interactive component in this
   port. `MatChipGridProps` also has no `touched`/`dirty`/`invalid`/`formBound` fields (unlike
