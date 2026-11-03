@@ -1,5 +1,7 @@
-import {component$, useContext, type JSXOutput, type QRL} from '@qwik.dev/core';
+import {$, component$, useContext, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context';
 
 /**
@@ -42,8 +44,19 @@ export interface MatListItemProps {
   activated?: boolean;
   /** Applies mdc-list-item--disabled + aria-disabled=true.
    *  When as='button', also reflects the native disabled attribute
-   *  (matches upstream (_isButtonElement && disabled) || null binding). */
+   *  (matches upstream (_isButtonElement && disabled) || null binding).
+   *  Also folded into the ripple-disabled check below, matching upstream
+   *  `MatListItemBase.disableRipple`'s own `this.disabled || ...`. */
   disabled?: boolean;
+  /**
+   * Mirrors upstream `MatListItemBase.disableRipple`'s own settable half
+   * (`_disableRipple`). The EFFECTIVE value ORs in `disabled`, the
+   * containing list's own `disableRipple` (see `MatList`/`MatNavList`/
+   * `MatActionList`'s `disableRipple` prop), and animations-disabled —
+   * see the component body below for the exact precedence, copied from
+   * `list-base.ts`'s `disableRipple` getter.
+   */
+  disableRipple?: boolean;
   /** Leading avatar — pass a `<MatListItemAvatar>` element. Mirrors
    *  upstream's `<ng-content select="[matListItemAvatar]">`. Presence
    *  drives the `mdc-list-item--with-leading-avatar` class. */
@@ -117,9 +130,57 @@ export const MatListItem = component$<MatListItemProps>(props => {
   const disabled = props.disabled ?? false;
 
   // Mirrors upstream `inject(MatListBase, {optional: true})` — whether
-  // the containing <MatList>/<MatNavList>/<MatActionList> is interactive.
+  // the containing <MatList>/<MatNavList>/<MatActionList> is interactive,
+  // and its own `disableRipple` input.
   const listBase = useContext(MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
+
+  // Mirrors upstream `_initInteractiveListItem()`'s own guard
+  // (`this._listBase && !this._listBase._isNonInteractive`): a
+  // `RippleRenderer` is only ever constructed for an item inside an
+  // interactive list (<mat-nav-list>/<mat-action-list>, or any list whose
+  // `_isNonInteractive` was overridden). A plain `<mat-list-item>` with no
+  // list ancestor at all also falls here, via `MAT_LIST_BASE_STATE_DEFAULTS`
+  // (`isNonInteractive: true`) — same as upstream's default.
+  const isInteractive = !listBase.isNonInteractive;
+
+  // Mirrors `MatListItemBase.disableRipple`'s getter exactly:
+  // `this.disabled || this._disableRipple || this._noopAnimations ||
+  // !!this._listBase?.disableRipple`. Note `_noopAnimations` here fully
+  // disables the ripple (not just its duration) — a list-item-specific
+  // upstream quirk other ripple-bearing ports in this project don't share
+  // (they only zero the animation duration via `rippleAnimationConfig`).
+  // `MAT_RIPPLE_GLOBAL_OPTIONS.disabled` is folded in separately, by
+  // `handleRippleEvent`'s own 4th argument below (mirrors the SEPARATE
+  // `rippleDisabled` getter: `this.disableRipple || !!this.rippleConfig.disabled`).
+  const rippleDisabled =
+    disabled ||
+    (props.disableRipple ?? false) ||
+    animationsDisabled.value ||
+    !!listBase.disableRipple;
+
+  const hostRef = useSignal<HTMLElement>();
+
+  // Upstream: `new RippleRenderer(this, this._ngZone, this._hostElement, ...)`
+  // — the CONTAINER passed to the renderer is the list item's own host
+  // element itself (no dedicated ripple `<div>`, unlike menu-item/mat-option).
+  // `.mat-ripple-element` spans therefore launch and append as direct
+  // children of `<mat-list-item>`/`<a mat-list-item>`/`<button mat-list-item>`.
+  // ONE shared `$()` reference wired to all six pointer events — see
+  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
+  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+    handleRippleEvent(
+      event,
+      hostRef.value,
+      {
+        rippleDisabled,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
+  });
 
   const avatarCount = countSection(props.avatar);
   const iconCount = countSection(props.icon);
@@ -210,9 +271,30 @@ export const MatListItem = component$<MatListItemProps>(props => {
     'aria-describedby': props['aria-describedby'],
   };
 
+  // Only attached for an item inside an interactive list — mirrors
+  // upstream never constructing a `RippleRenderer`/registering its
+  // trigger-event listeners at all for a non-interactive one.
+  const rippleProps = isInteractive
+    ? {
+        onMouseDown$: rippleEvent$,
+        onMouseUp$: rippleEvent$,
+        onMouseLeave$: rippleEvent$,
+        onTouchStart$: rippleEvent$,
+        onTouchEnd$: rippleEvent$,
+        onTouchCancel$: rippleEvent$,
+      }
+    : {};
+
   if (as === 'a') {
     return (
-      <a {...sharedAttrs} href={props.href} aria-current={ariaCurrent} onClick$={props.onClick$}>
+      <a
+        ref={hostRef}
+        {...sharedAttrs}
+        href={props.href}
+        aria-current={ariaCurrent}
+        onClick$={props.onClick$}
+        {...rippleProps}
+      >
         {body}
       </a>
     );
@@ -221,10 +303,12 @@ export const MatListItem = component$<MatListItemProps>(props => {
   if (as === 'button') {
     return (
       <button
+        ref={hostRef}
         {...sharedAttrs}
         type={nativeType}
         disabled={nativeDisabled as unknown as boolean}
         onClick$={props.onClick$}
+        {...rippleProps}
       >
         {body}
       </button>
@@ -233,7 +317,7 @@ export const MatListItem = component$<MatListItemProps>(props => {
 
   // Default: <mat-list-item> custom element.
   return (
-    <mat-list-item {...sharedAttrs} onClick$={props.onClick$}>
+    <mat-list-item ref={hostRef} {...sharedAttrs} onClick$={props.onClick$} {...rippleProps}>
       {body}
     </mat-list-item>
   );

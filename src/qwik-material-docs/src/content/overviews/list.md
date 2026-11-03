@@ -293,10 +293,16 @@ to `<MatList>` and give each list item an appropriate `role`.
   (`<mat-list-item>`, `<a mat-list-item>`, `<button mat-list-item>`); `MatListItem` renders its
   own host and picks the tag via `as: 'div' | 'a' | 'button'` (default `'div'`) — combine with
   `href` for `as="a"` or `onClick$` for `as="button"`.
-- **No ripple on interactive items yet.** Upstream wires up `RippleRenderer` for `MatNavList`/
-  `MatActionList` items. No current scenario exercises interaction-driven ripple DOM, so this
-  port's `mat-mdc-list-item-interactive` class (added at construction, matching upstream) has no
-  backing ripple elements yet.
+- **Ripple on interactive items.** Upstream wires up `RippleRenderer` for `MatNavList`/
+  `MatActionList` items (and any `<mat-list-item>` rendered inside one); `MatListItem` does the
+  same, launching real `.mat-ripple-element` spans directly into its own host element on
+  `mousedown`/`touchstart` (the item itself is the ripple container, matching upstream — no
+  separate wrapper `<div>`). `disableRipple` is available on `<MatList>`/`<MatNavList>`/
+  `<MatActionList>` AND on `<MatListItem>` itself, animations-disabled fully suppresses it
+  (matching upstream's own list-specific `disableRipple` getter), and
+  `<QwikMaterialProvider matRippleConfig={...}>` applies too. A plain, non-interactive
+  `<mat-list>`'s items never get one, matching upstream's `mat-mdc-list-item-interactive` class
+  (added at construction) having no interaction behavior behind it in that case either.
 - **`MatSelectionList`/`MatListOption` aren't ported.** They're a dedicated future port with a
   forms tier (checkbox/radio selection indicators, a selection model, keyboard navigation) —
   genuinely out of scope here, not a small addition. The [Selection lists](#selection-lists)

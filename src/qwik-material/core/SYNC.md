@@ -419,7 +419,8 @@ Confirmed against upstream templates (`grep -rlnE '\bmat-ripple\b|\bmatRipple\b'
 
 - **`MatRippleLoader` consumers** (lazy container creation, `button/internal/ripple-loader.ts`'s `useRippleLoader()`): button/icon-button/fab/mini-fab, chips (chip/chip-option/chip-row, via their own `chips/internal/ripple-loader.ts` copy), and every internal reuser of button's loader — paginator nav buttons, datepicker-toggle, timepicker-toggle, calendar-header's nav buttons.
 - **Direct `[mat-ripple]`/`matRipple` consumers** (static container already existed; this pass added the pointer wiring): checkbox, radio, slide-toggle, button-toggle, core/`MatOption`, menu-item, stepper's `MatStepHeaderItem`, tabs' per-tab label ripple + both pagination buttons (`MatTabGroup`) and tab-link + both pagination buttons (`MatTabNav`).
-- **Deliberately NOT touched**: slider (`slider-ripple.ts` is its own purpose-built three-slot hover/focus/active state machine, pre-existing and already parity-tested; left intact per the task's own instruction). List items, paginator's own non-nav-button surface, expansion, and datepicker's calendar-body have NO `matRipple`/`MatRippleLoader` upstream at all (confirmed by the same grep) — nothing to wire.
+- **List items** (`src/material/list/list-base.ts`'s `MatListItemBase`) construct a raw `RippleRenderer` directly in their constructor — no `[mat-ripple]`/`matRipple` directive selector at all, so the grep above doesn't surface them; ported 2026-11-03 anyway, using the SAME `handleRippleEvent()`/`useRippleGlobalOptions()` entry points as every row above. See `qwik-material/list/SYNC.md`'s own "Ripple" section.
+- **Deliberately NOT touched**: slider (`slider-ripple.ts` is its own purpose-built three-slot hover/focus/active state machine, pre-existing and already parity-tested; left intact per the task's own instruction). Paginator's own non-nav-button surface, expansion, and datepicker's calendar-body have NO ripple upstream at all (confirmed by the same grep, AND no raw `RippleRenderer` construction either, unlike list items above) — nothing to wire.
 
 ### `button-prebuilt.scss`'s CSS-only "click burst" deleted
 
@@ -483,8 +484,10 @@ time, same as each already reads `useAnimationsDisabled()`, and passes it throug
 (`mat-button-toggle.tsx`) and `stepper` (`mat-step-header.tsx`, wired after the parallel
 branches merged). `slider` is untouched for the same pre-existing reason the
 section above already documents (`slider-ripple.ts` is its own purpose-built state machine, never
-routed through `handleRippleEvent()` at all). List items have no ripple ported AT ALL yet (see
-"Components wired" above) — nothing to wire for global options either.
+routed through `handleRippleEvent()` at all). **List items** (`qwik-material/list/mat-list-item.tsx`)
+were ported WITHOUT global-options wiring at the time this paragraph was first written; as of
+2026-11-03 they ARE wired too, through the same `handleRippleEvent()` 4th argument — see
+`qwik-material/list/SYNC.md`'s "Ripple" section for the full write-up.
 
 Parity: upstream's `ripple-overview` docs example ported verbatim
 (`qwik-material-examples/core/ripple-overview`, dev-app route `examples/ripple-overview`,
