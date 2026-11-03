@@ -1,4 +1,4 @@
-import {component$, useContextProvider, useSignal, type JSXOutput} from '@qwik.dev/core';
+import {component$, useContextProvider, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
 import {
   cdkColumnClass,
@@ -21,6 +21,7 @@ import type {
 } from './mat-table-types';
 
 export type {
+  MatTableCellProps,
   MatColumnDef,
   MatNoDataRowDef,
   MatTableProps,
@@ -64,6 +65,14 @@ function mergeStyle(
   return {...a, ...b};
 }
 
+/** Normalizes a `MatTableRow.class`/`MatTableCellProps.class` value (string, string array, or
+ *  absent) into a flat array for spreading onto a generated class list. */
+function toClassArray(value: string | ReadonlyArray<string> | undefined): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return [...(value as ReadonlyArray<string>)];
+  return [value as string];
+}
+
 interface CellRenderArgs {
   kind: 'header' | 'data' | 'footer';
   isNative: boolean;
@@ -72,6 +81,8 @@ interface CellRenderArgs {
   style: Record<string, string> | undefined;
   content: JSXOutput | string | number | null | undefined;
   ariaLabel?: string;
+  /** `MatTableCellProps.colSpan` — native `<table>` form only; see that field's doc comment. */
+  colSpan?: number;
 }
 
 /** Renders one `<th>`/`<td>` (native) or `<mat-header-cell>`/`<mat-cell>`/
@@ -80,10 +91,18 @@ interface CellRenderArgs {
  *  badge/list use for their polymorphic `as` branches, just factored out
  *  because `MatTable` has many more leaf shapes than a single element. */
 function renderCell(args: CellRenderArgs): JSXOutput {
-  const {kind, isNative, key, classes, style, content, ariaLabel} = args;
+  const {kind, isNative, key, classes, style, content, ariaLabel, colSpan} = args;
+  const nativeColSpan = isNative ? colSpan : undefined;
   if (kind === 'header') {
     return isNative ? (
-      <th key={key} role="columnheader" class={classes} style={style} aria-label={ariaLabel}>
+      <th
+        key={key}
+        role="columnheader"
+        class={classes}
+        style={style}
+        aria-label={ariaLabel}
+        colSpan={nativeColSpan}
+      >
         {content}
       </th>
     ) : (
@@ -100,7 +119,7 @@ function renderCell(args: CellRenderArgs): JSXOutput {
   }
   if (kind === 'footer') {
     return isNative ? (
-      <td key={key} role="cell" class={classes} style={style}>
+      <td key={key} role="cell" class={classes} style={style} colSpan={nativeColSpan}>
         {content}
       </td>
     ) : (
@@ -110,7 +129,7 @@ function renderCell(args: CellRenderArgs): JSXOutput {
     );
   }
   return isNative ? (
-    <td key={key} role="cell" class={classes} style={style}>
+    <td key={key} role="cell" class={classes} style={style} colSpan={nativeColSpan}>
       {content}
     </td>
   ) : (
@@ -127,10 +146,12 @@ interface RowRenderArgs {
   classes: string[];
   style: Record<string, string> | undefined;
   cells: JSXOutput[];
+  /** `MatTableRow.onClick$` — data rows only. */
+  onClick$?: QRL<(event: MouseEvent) => void>;
 }
 
 function renderRow(args: RowRenderArgs): JSXOutput {
-  const {kind, isNative, key, classes, style, cells} = args;
+  const {kind, isNative, key, classes, style, cells, onClick$} = args;
   if (kind === 'header') {
     return isNative ? (
       <tr key={key} role="row" class={classes} style={style}>
@@ -154,11 +175,11 @@ function renderRow(args: RowRenderArgs): JSXOutput {
     );
   }
   return isNative ? (
-    <tr key={key} role="row" class={classes} style={style}>
+    <tr key={key} role="row" class={classes} style={style} onClick$={onClick$}>
       {cells}
     </tr>
   ) : (
-    <mat-row key={key} role="row" class={classes} style={style}>
+    <mat-row key={key} role="row" class={classes} style={style} onClick$={onClick$}>
       {cells}
     </mat-row>
   );
@@ -241,6 +262,11 @@ export const MatTable = component$<MatTableProps>(props => {
   ];
   const footerRowDefs: MatTableRowGroupDef[] = props.footerRows ?? [];
   const dataColumns = props.displayedColumns;
+  // Per-row column list — falls back to `dataColumns` (the common, uniform case). Overridden by
+  // `MatTableRow.columns` for upstream's `multiTemplateDataRows` pattern (a "detail" row placed
+  // right after its main row in the flat `rows` array, rendering a DIFFERENT, usually shorter,
+  // column list) — see that field's doc comment in mat-table-types.ts.
+  const resolvedRowColumns = props.rows.map(row => row.columns ?? dataColumns);
 
   // --- Sticky positioning — qwik-cdk/table's StickyStyler, operating on
   // VirtualStickyElements built fresh for this render (no persistent DOM to
@@ -251,7 +277,7 @@ export const MatTable = component$<MatTableProps>(props => {
   const headerCellVE = headerRowDefs.map(def =>
     def.columns.map(() => createVirtualStickyElement()),
   );
-  const dataCellVE = props.rows.map(() => dataColumns.map(() => createVirtualStickyElement()));
+  const dataCellVE = resolvedRowColumns.map(cols => cols.map(() => createVirtualStickyElement()));
   const footerRowVE = footerRowDefs.map(() => createVirtualStickyElement());
   const footerCellVE = footerRowDefs.map(def =>
     def.columns.map(() => createVirtualStickyElement()),
@@ -312,15 +338,31 @@ export const MatTable = component$<MatTableProps>(props => {
     );
   });
   if (props.rows.length) {
-    const defs = dataColumns.map(name => columnsByName.get(name));
-    const startStates = defs.map(d => !!d?.sticky);
-    const endStates = defs.map(d => !!d?.stickyEnd);
-    styler.updateStickyColumns(
-      dataCellVE.map(cells => ({cells})),
-      startStates,
-      endStates,
-      defs.map(() => 0),
-    );
+    // Grouped by resolved column list (not a single global pass over `dataColumns`) — see
+    // `resolvedRowColumns`'s doc comment above: a detail row's column list can differ in both
+    // length and content from the main data rows', so its sticky start/end states must be
+    // computed against ITS OWN columns, not the table's `displayedColumns`.
+    const groups = new Map<string, {columns: string[]; rowIndices: number[]}>();
+    resolvedRowColumns.forEach((cols, r) => {
+      const key = cols.join('\u0000');
+      const existing = groups.get(key);
+      if (existing) {
+        existing.rowIndices.push(r);
+      } else {
+        groups.set(key, {columns: cols, rowIndices: [r]});
+      }
+    });
+    for (const {columns, rowIndices} of groups.values()) {
+      const defs = columns.map(name => columnsByName.get(name));
+      const startStates = defs.map(d => !!d?.sticky);
+      const endStates = defs.map(d => !!d?.stickyEnd);
+      styler.updateStickyColumns(
+        rowIndices.map(r => ({cells: dataCellVE[r]})),
+        startStates,
+        endStates,
+        defs.map(() => 0),
+      );
+    }
   }
   footerRowDefs.forEach((def, i) => {
     const defs = def.columns.map(name => columnsByName.get(name));
@@ -379,18 +421,26 @@ export const MatTable = component$<MatTableProps>(props => {
       kind: 'data',
       isNative,
       key: row.key ?? r,
-      classes: [...DATA_ROW_BASE_CLASSES],
+      classes: [...DATA_ROW_BASE_CLASSES, ...toClassArray(row.class)],
       style: undefined,
-      cells: dataColumns.map((name, j) => {
+      onClick$: row.onClick$,
+      cells: resolvedRowColumns[r].map((name, j) => {
         const col = columnsByName.get(name);
+        const cellOverride = row.cellProps?.[name];
         const ve = virtualStickyElementToProps(dataCellVE[r][j]);
         return renderCell({
           kind: 'data',
           isNative,
           key: name,
-          classes: [...DATA_CELL_BASE_CLASSES, ...columnClasses(name), ...ve.classes],
+          classes: [
+            ...DATA_CELL_BASE_CLASSES,
+            ...columnClasses(name),
+            ...ve.classes,
+            ...toClassArray(cellOverride?.class),
+          ],
           style: mergeStyle(ve.style, justifyStyle(col?.justify)),
           content: cloneJsxForReuse(row.cells[name]) ?? null,
+          colSpan: cellOverride?.colSpan,
         });
       }),
     }),

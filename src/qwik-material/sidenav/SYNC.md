@@ -214,7 +214,8 @@ accepted wart; no runtime validation enforces it.
 
 | File | Upstream path | Sync state | Notes |
 | --- | --- | --- | --- |
-| `sidenav/mat-drawer.tsx` | `src/material/sidenav/drawer.ts` (`MatDrawer` class) + `drawer.html` + `src/material/sidenav/sidenav.ts` (`MatSidenav extends MatDrawer`) | ported | `createDrawer(hostTag, extraHostClass)` factory parameterizes `MatDrawer`/`MatSidenav`, same pattern `createSpinner()` uses for `MatProgressSpinner`/`MatSpinner`. Controlled component: `opened` prop + `onOpenedChange$`/`onOpened$`/`onClosed$`/`onOpenedStart$`/`onClosedStart$` QRLs, no Qwik equivalent of an `exportAs`-exposed `open()`/`close()`/`toggle()` instance method — a consumer that would write `<mat-drawer #d>` + `d.toggle()` in Angular flips its own `opened` signal directly instead (see every `src/qwik-cdk-dev-app/src/routes/mat-sidenav/*` route). `position`/`mode`/`disableClose`/`autoFocus`/`width` map directly to upstream inputs (`width` replaces upstream's raw `style` binding — every scenario's inline `style` attribute on a drawer is purely a width declaration, see each route). `MatSidenav`-only `fixedInViewport`/`fixedTopGap`/`fixedBottomGap` on `MatSidenavProps`. Renders the `cdkscrollable` bare attribute on the inner container (mirrors `drawer.html`'s `cdkScrollable` directive-selector). See "Qwik limitations" above for the animation-timing/registry-write architecture |
+| `sidenav/mat-drawer.tsx` | `src/material/sidenav/drawer.ts` (`MatDrawer` class) + `drawer.html` + `src/material/sidenav/sidenav.ts` (`MatSidenav extends MatDrawer`) | ported | `createDrawer(hostTag, extraHostClass)` factory parameterizes `MatDrawer`/`MatSidenav`, same pattern `createSpinner()` uses for `MatProgressSpinner`/`MatSpinner`. Controlled component: `opened` prop + `onOpenedChange$`/`onOpened$`/`onClosed$`/`onOpenedStart$`/`onClosedStart$` QRLs; no Qwik equivalent of an `exportAs`-exposed `open()`/`close()`/`toggle()` instance method on THIS component specifically, but see `use-mat-drawer-ref.ts` (2026-11-03, tier2/datanav) for an opt-in imperative handle built entirely on top of this controlled API — a consumer either flips its own `opened` signal directly (see every `src/qwik-cdk-dev-app/src/routes/mat-sidenav/*` route) OR uses that hook. `position`/`mode`/`disableClose`/`autoFocus`/`width` map directly to upstream inputs (`width` replaces upstream's raw `style` binding — every scenario's inline `style` attribute on a drawer is purely a width declaration, see each route). `MatSidenav`-only `fixedInViewport`/`fixedTopGap`/`fixedBottomGap` on `MatSidenavProps`. Renders the `cdkscrollable` bare attribute on the inner container (mirrors `drawer.html`'s `cdkScrollable` directive-selector). See "Qwik limitations" above for the animation-timing/registry-write architecture |
+| `sidenav/use-mat-drawer-ref.ts` | `src/material/sidenav/drawer.ts` (`MatDrawer.open()`/`.close()`/`.toggle()`/`MatDrawerToggleResult`) | new | `useMatDrawerRef()` — see this file's own dedicated section below |
 | `sidenav/mat-drawer-container.tsx` | `src/material/sidenav/drawer.ts` (`MatDrawerContainer` class) + `drawer-container.html` + `src/material/sidenav/sidenav.ts` (`MatSidenavContainer extends MatDrawerContainer`) + `sidenav-container.html` | ported | `createContainer(hostTag, extraHostClass)` factory. `autosize`/`hasBackdrop`/`onBackdropClick$` map to upstream inputs/output. The upstream "no explicit `<mat-drawer-content>`? wrap the default content in one" fallback (`@if (!_content)`) is NOT replicated — every consumer must render its own `MatDrawerContent`/`MatSidenavContent` explicitly (true of every scenario this port targets; see `MatDrawerContainerProps`'s doc comment) |
 | `sidenav/mat-drawer-content.tsx` | `src/material/sidenav/drawer.ts` (`MatDrawerContent` class) + `src/material/sidenav/sidenav.ts` (`MatSidenavContent extends MatDrawerContent`) | ported | `createContent(hostTag, extraHostClass)` factory. No props beyond `class`/`id` (upstream has none either beyond the base directive's). `_shouldBeHidden()` (SSR-vs-hydration content-jump mitigation, `mat-drawer-content-hidden` class) is NOT ported — see Deviations |
 | `sidenav/drawer-state.ts` | (partial — the `MatDrawerContainer`-internal state + computation logic `@ContentChildren` would otherwise drive) | new | Shared registry type + context id + every pure backdrop/margins/trap/inert derivation. See "Architecture" above |
@@ -237,7 +238,7 @@ accepted wart; no runtime validation enforces it.
 
 ## Deviations from upstream
 
-1. **Controlled component, no `exportAs`/instance methods.** Qwik has no equivalent of a template-ref-exposed `open()`/`close()`/`toggle()`. A consumer flips its own `opened` signal directly instead — see every dev-app route under `src/qwik-cdk-dev-app/src/routes/mat-sidenav/`.
+1. **Controlled component by default, with an opt-in imperative handle.** Qwik has no equivalent of a template-ref-exposed `open()`/`close()`/`toggle()` instance method. A consumer flips its own `opened` signal directly, as every pre-existing dev-app route under `src/qwik-cdk-dev-app/src/routes/mat-sidenav/` does — OR, since 2026-11-03 (tier2/datanav), calls `useMatDrawerRef()` (`use-mat-drawer-ref.ts`) for a `{opened, onOpenedChange$, open$, close$, toggle$}` handle usable from anywhere the hook's return value is held (a toolbar button elsewhere in the page, a layout service) — see that section below. Built ENTIRELY on top of the existing controlled API (zero changes to `mat-drawer.tsx`/`mat-drawer-container.tsx`/`mat-drawer-content.tsx`): the hook is a thin wrapper a consumer wires `opened`/`onOpenedChange$` through, same as always.
 2. **`position="end"` uses a named slot, not an imperative DOM move.** See "Architecture" above.
 3. **`autosize` always behaves as if `true`.** This port keeps every drawer's measured width live via a `ResizeObserver` unconditionally (needed anyway for the non-autosize scenarios' initial render — a drawer's width can't be known any other way in Qwik). The `autosize` prop is still accepted (and still defaults from `MAT_DRAWER_DEFAULT_AUTOSIZE`'s equivalent config) for API parity, but has no further behavioral effect here, unlike upstream's `ngDoCheck`-gated continuous remeasurement.
 4. **`mat-drawer-container-has-open` is a plain OR across non-side drawers, not upstream's actual per-drawer-event "last write wins".** Upstream's `_setContainerClass(drawer.opened)` is called from EACH non-side drawer's own `openedChange`, toggling the SAME class based on whichever drawer's event fired most recently — with two independently-toggling non-side drawers, this can differ from a true OR. No scenario has two non-side drawers (the only two-drawer scenario, `two-drawers`, uses side mode for both), so this simplification is unverifiable either way and was chosen as simpler/more predictable.
@@ -246,6 +247,61 @@ accepted wart; no runtime validation enforces it.
 7. **Focus-management timing is simplified relative to upstream's split between an immediate (synchronous, un-delayed) close-time restore-focus and a delayed (animation-settled) open-time auto-focus.** This port settles BOTH auto-focus-on-open and restore-focus-on-close from the same animation-settled point. Deliberate: no parity scenario's structural DOM diff is sensitive to which node currently holds focus (the parity spec's own header comment confirms this explicitly), and the ~400ms difference is imperceptible to a real user.
 8. **Restoring focus to the "previously focused" element uses plain `.focus()`, not `focusVia()`.** `focusVia()`'s pending-origin handoff attribute (`data-cdk-pending-focus-origin`) is only ever consumed by a `useFocusOrigin()` listener on the SAME element; a plain consumer-provided `<button>` (every scenario here) has none, so the attribute would leak into the compared DOM forever. Behaviorally identical for every scenario here either way (a plain, unmonitored button gets no `cdk-*-focused` classes from upstream's real `FocusMonitor` either).
 9. **Angular-specific removals:** `@Input()` decorators + `coerceBooleanProperty`/`coerceNumberProperty` → TypeScript prop types + plain prop passthrough; `AfterViewInit`/`AfterContentInit`/`DoCheck`/`OnDestroy` lifecycle → no lifecycle, reactive `useTask$`/`useVisibleTask$` instead; `FocusTrapFactory`/`FocusMonitor`/`InteractivityChecker` DI tokens → the local `focus-helpers.ts` + `qwik-cdk/a11y`'s already-ported `createInteractivityChecker()`; `Renderer2`-based `keydown`/`transitionend`/`transitioncancel` listeners outside `NgZone` → a lazy, resumable `useOn('keydown', ...)` (see "Qwik v2 regressions" below for why it's `useOn`, not a JSX `onKeyDown$` prop, as of 2026-11-01) + the fixed-timer workaround for the transition events (Qwik limitation #2 above); `providers: [{provide: MAT_DRAWER_CONTAINER, useExisting: ...}]`/`{provide: MatDrawer, useExisting: MatSidenav}` → the shared `MAT_DRAWER_CONTAINER_STATE` context; `exportAs` → N/A; `ViewEncapsulation.None` + host bindings → plain JSX attribute/class passthrough.
+
+## Imperative `open()`/`close()`/`toggle()` handle — `useMatDrawerRef()` (2026-11-03, tier2/datanav)
+
+Upstream's `MatDrawer.open()`/`.close()`/`.toggle(isOpen?)` return `Promise<MatDrawerToggleResult>`
+('open' | 'close'), resolved off the drawer's own `_animationEnd`-driven `openedChange` emission
+(`_setOpen()`: `isOpen === this.opened` early-returns `Promise.resolve(...)` as a no-op; otherwise
+the returned Promise resolves on the NEXT `openedChange`). `use-mat-drawer-ref.ts`'s
+`useMatDrawerRef(options?)` reproduces this exactly as a hook, following the SAME architectural
+precedent `qwik-material/timepicker`'s `useMatTimepicker()` and `qwik-material/dialog`'s
+`useMatDialog()` already established (a hook called once, in the CONSUMER's own render, returning
+a plain bag of `Signal`s/`QRL`s — not a context value or component ref, so it's usable from
+anywhere the returned object is subsequently held, not just from inside `<MatDrawer>`'s own
+subtree):
+
+```tsx
+const drawerRef = useMatDrawerRef();
+
+<MatDrawerContainer>
+  <MatDrawer
+    q:slot="start-drawer"
+    opened={drawerRef.opened.value}
+    onOpenedChange$={drawerRef.onOpenedChange$}
+  >
+    ...
+  </MatDrawer>
+  <MatDrawerContent>
+    <button onClick$={() => drawerRef.toggle$()}>Toggle</button>
+  </MatDrawerContent>
+</MatDrawerContainer>
+```
+
+Two signals track desired-vs-settled state: `opened` (written immediately by `open$`/`close$`/
+`toggle$`, driving the `opened` prop that triggers `<MatDrawer>`'s own transition) and an
+internal `settledOpened`/`settleSeq` pair (written by `onOpenedChange$`, which the consumer wires
+onto `<MatDrawer>` — the SAME settle-timing contract as `MatDrawerProps.onOpenedChange$`, already
+fired once the open/close transition has visually settled). `open$()`/`close$()`/`toggle$()`
+await the NEXT `settleSeq` increment via a bounded 16ms poll (no `NoSerialize` resolver registry
+needed — avoided deliberately, since these calls only ever happen client-side, post-resume, from
+a real event handler) — mirrors upstream's "resolve off the next `openedChange` emission" exactly,
+including the no-op-when-already-at-target early return.
+
+**No changes needed to `mat-drawer.tsx`** — `onOpenedChange$`/`onOpened$`/`onClosed$`/
+`onOpenedStart$`/`onClosedStart$` were ALL already present on `MatDrawerProps` since the initial
+port (the task brief that prompted this work flagged them as "events if missing," but they
+weren't missing — only the imperative wrapper was). Verified live via the new
+`specs/material-sidenav/imperative-ref.spec.ts` (fresh `page.goto`, post-resume, `mode="side"` —
+`mode="over"` was tried first and found to overlap/obscure the content-area control buttons once
+opened, the same reason `specs/material-sidenav/angular-parity.spec.ts`'s own `mode-over`
+scenario never clicks "Toggle" while open either): `open$()` resolves `'open'` and fires
+`onOpened$`; a redundant `open$()` call while already open resolves immediately with no second
+transition; `close$()` resolves `'close'` and fires `onClosed$`; `toggle$()` flips either
+direction correctly. The existing `two-drawers`/`mode-over`/`mode-push`/`mode-side`/
+`fixedInViewport`+`fixedTopGap` scenarios (`specs/material-sidenav/angular-parity.spec.ts`) are
+unaffected regression-wise, since nothing in `qwik-material/sidenav`'s own component files
+changed.
 
 ## Class count
 

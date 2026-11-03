@@ -35,7 +35,7 @@ mutates the parent's own state directly (see below).
 | `sort/sort-direction.ts` | `src/material/sort/sort-direction.ts` (`SortDirection`) + `sort.ts` (`Sort` interface) | ported | Plain type re-export; `MatSortable` interface not ported (no registration model — see deviations). |
 | `sort/sort-config.ts` | `src/material/sort/sort.ts` (`SortHeaderArrowPosition`, `MatSortDefaultOptions`, `MAT_SORT_DEFAULT_OPTIONS`) | ported | `MatSortConfig` carries both upstream fields (`disableClear`, `arrowPosition`); folded into `QwikMaterialProvider.matSortConfig`. |
 | `sort/sort-state.ts` | `src/material/sort/sort.ts` (`MatSort` class: `getSortDirectionCycle`, `getNextSortDirection`, `sort()`, `register`/`deregister`/`sortables`/`initialized`/`_stateChanges`) | ported (math) / not ported (registration) | `getSortDirectionCycle`/`getNextSortDirection` ported verbatim as pure functions (fully vitest-tested, DOM-free — see sort-state.spec.ts). `computeNextSort` ports `MatSort.sort(sortable)`'s branching (new column adopts its own `start` override; re-activating the current column advances the cycle using its own `disableClear` override) as a pure function too. `register`/`deregister`/`sortables` Map/`initialized`/`_stateChanges` NOT ported — see deviations #1. |
-| `sort/mat-sort.tsx` | `src/material/sort/sort.ts` (`MatSort` directive, no template) | ported | Polymorphic `as` prop (`'table' \| 'div'`, default `'table'`) renders the host element itself — same pattern as `MatBadge`/`MatListItem` for a directive with no view of its own. Provides `MAT_SORT_STATE` (two independently-owned Signals — see sort-state.ts's `MatSortSharedState` doc comment and the "real bug" section below). |
+| `sort/mat-sort.tsx` | `src/material/sort/sort.ts` (`MatSort` directive, no template) | ported | Polymorphic `as` prop (`'table' \| 'div'`, default `'table'`) renders the host element itself — same pattern as `MatBadge`/`MatListItem` for a directive with no view of its own. Provides `MAT_SORT_STATE` (two independently-owned Signals — see sort-state.ts's `MatSortSharedState` doc comment and the "real bug" section below). `active`/`direction` props are LIVE (2026-11-03, tier2/datanav — see that section below), not initial-only. |
 | `sort/mat-sort-header.tsx` | `src/material/sort/sort-header.ts` (`MatSortHeader` component class) + `sort-header.html` (42 LOC template inlined) | ported | Renders `<th>` itself as its own host (upstream: `ViewEncapsulation.None`, selector `[mat-sort-header]`, no wrapper tag) — host-level `click`/`keydown`/`mouseleave` listeners + `aria-sort`/`mat-sort-header-disabled` (matches upstream's `host: {...}` bindings being on the component's host, NOT the inner container). Inner `.mat-sort-header-container.mat-focus-indicator` div carries `tabindex`/`role`/`aria-describedby` + all direction/sorted/position/recently-cleared/animations classes, exactly per `sort-header.html`. `_renderArrow()` (`!isDisabled \|\| isSorted`) ported verbatim. `useFocusOrigin()` (qwik-cdk/a11y) replaces `FocusMonitor.monitor(this._elementRef, true)` for the generic `cdk-focused`/`cdk-*-focused` classes. `useAnimationsDisabled()` drives `mat-sort-header-animations-disabled`. `useIdGenerator()` mints the `aria-describedby` id (always present — upstream's `sortActionDescription` defaults to `'Sort'` and AriaDescriber runs unconditionally in `ngOnInit`). |
 | `scss/sort/sort-header.scss` | `src/material/sort/sort-header.scss` (104 LOC) | synced | Byte-identical copy — no `@angular/cdk` import exists in this file, so no cdk-stub swap is needed (unlike every other synced qwik-material SCSS file so far). |
 | `scss/sort/_m2-sort.scss` | `src/material/sort/_m2-sort.scss` | synced | byte-identical copy |
@@ -113,6 +113,48 @@ Angular side either, same precedent as every other qwik-material config):
   arrowPosition" / "should render arrows in proper position"
   (`MAT_SORT_DEFAULT_OPTIONS = {arrowPosition: 'before'}`, no per-header
   override): every header gets `mat-sort-header-position-before`.
+- `live-active-direction.spec.ts` (new, 2026-11-03, tier2/datanav) — see
+  the dedicated section below.
+
+## 2026-11-03 — live `active`/`direction` props (tier2/datanav)
+
+**Problem.** `MatSort.active`/`.direction` are plain mutable upstream fields, both `@Input()`-
+bound (so a LATER template rebind — `[matSortActive]="x"` where `x` changes — re-assigns them,
+same as any Angular input) AND mutated directly by `MatSortHeader._toggleOnInteraction()`
+(`this._sort.sort(this)`). This port previously seeded `sortValue` ONCE from the initial props
+(a lazy `useSignal` initializer) and never looked at the props again — so a consumer who re-
+rendered `<MatSort>` with a NEW `active`/`direction` value post-mount saw no effect at all.
+
+**Fix.** `mat-sort.tsx` now tracks the LAST `active`/`direction` prop VALUES it has itself
+observed, in a `lastSeenProps` store, and only overwrites `sortValue.value` when
+`props.active`/`props.direction` differ from what was last seen — exactly replicating Angular's
+own input-binding dirty check (which compares the BOUND EXPRESSION's new value against its own
+last-written value, not the instance field's current value, so a header-driven internal mutation
+is never clobbered by an unrelated re-render that re-passes the SAME prop values). This is a
+plain, render-body, GUARDED read+write of a store this component OWNS (never a read-then-
+rewrite of `sortValue` itself, which the component's render body still never reads — preserving
+the infinite-loop-safety invariant from the "real bug" section above) — the identical, already-
+proven-safe technique `qwik-material/stepper/mat-stepper.tsx`'s `ariaDisabledQuirk` store uses.
+
+**`sortChange` semantics verified against upstream source (`src/material/sort/sort.ts`):** a
+props-driven `active`/`direction` change does NOT emit `onSortChange$` — upstream's
+`ngOnChanges()` only calls `this._stateChanges.next()` (a private notification Subject,
+unrelated to `sortChange`), never `sortChange.emit()`; only `sort(sortable)` (called by a
+header's click/keydown, or directly by any code holding a `MatSort` instance) emits. This port's
+guarded-write path never calls `props.onSortChange$` either — matching exactly. Verified live via
+the new `live-active-direction.spec.ts` (fresh `page.goto`, post-resume): a programmatic prop
+change updates `aria-sort`/the header's direction classes but leaves a change-counter fed by
+`onSortChange$` untouched; a subsequent real header click still both updates AND increments it.
+
+**`sort(sortable)` equivalent.** Qwik has no instance methods to call imperatively. The pure-
+function math `MatSort.sort(sortable)` is built from — `computeNextSort`/`getNextSortDirection`/
+`getSortDirectionCycle`/`isSorted` (already written, DOM-free, and unit-tested in
+`sort-state.spec.ts` since the initial port) — is now also RE-EXPORTED from `public-api.ts`
+(previously internal-only). A consumer wanting the full programmatic-activate-or-cycle behavior
+computes the next `Sort` with `computeNextSort(current, sortable, tableStart, tableDisableClear)`
+and assigns it to whatever signal feeds the now-LIVE `active`/`direction` props, firing their own
+`sortChange`-equivalent side effect themselves — matching upstream exactly (a props-driven change
+never auto-emits on your behalf there either).
 
 ## 2026-10-28 addendum — qwik-material/table integration
 

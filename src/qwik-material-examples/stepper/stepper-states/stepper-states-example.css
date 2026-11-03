@@ -1,0 +1,13 @@
+/*
+ * Adapted from src/components-examples/material/stepper/stepper-states/stepper-states-example.css
+ * — upstream's selectors are unscoped (Angular's view encapsulation scopes them implicitly);
+ * here every selector is prefixed with the example's own host tag (specs/examples-css enforces
+ * this — an unscoped selector would leak onto every page that imports this stylesheet).
+ */
+stepper-states-example .mat-stepper-horizontal {
+  margin-top: 8px;
+}
+
+stepper-states-example .mat-mdc-form-field {
+  margin-top: 16px;
+}

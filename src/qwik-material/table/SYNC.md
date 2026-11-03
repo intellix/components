@@ -67,7 +67,7 @@ into `<MatTable>`'s props) is what this port uses throughout.
 
 | File | Upstream path | Sync state | Notes |
 | --- | --- | --- | --- |
-| `table/mat-table-types.ts` | `src/material/table/{table,row,cell,text-column}.ts` (combined input shape) | ported (restructured) | `MatColumnDef`/`MatTableRow`/`MatTableRowGroupDef`/`MatNoDataRowDef`/`MatTableSortConfig`/`MatTableProps` — see "Why columns/rows are data" above. `MatColumnDef.sticky`/`stickyEnd` mirror `CdkColumnDef`'s inputs; `justify` mirrors `CdkTextColumn.justify`; `sortHeader` is new (see matSort integration below). |
+| `table/mat-table-types.ts` | `src/material/table/{table,row,cell,text-column}.ts` (combined input shape) | ported (restructured) | `MatColumnDef`/`MatTableRow`/`MatTableRowGroupDef`/`MatNoDataRowDef`/`MatTableSortConfig`/`MatTableProps` — see "Why columns/rows are data" above. `MatColumnDef.sticky`/`stickyEnd` mirror `CdkColumnDef`'s inputs; `justify` mirrors `CdkTextColumn.justify`; `sortHeader` is new (see matSort integration below). `MatTableRow.onClick$`/`.class`/`.cellProps`/`.columns` + `MatTableCellProps` (2026-11-03, tier2/datanav) mirror `(click)`/`[class.x]` on `<tr mat-row>`, a cell-level `[attr.colspan]`, and `multiTemplateDataRows` — see this file's own dedicated section below. |
 | `table/mat-table.tsx` | `src/material/table/table.ts` (`MatTable`, `host: {'class': 'mat-mdc-table mdc-data-table__table'}`, `stickyCssClass` override = `'mat-mdc-table-sticky'`, `needsPositionStickyOnElement` override = `false`) + `src/material/table/row.ts` (`MatHeaderRow`/`MatRow`/`MatFooterRow`/`MatNoDataRow` host classes) + `src/material/table/cell.ts` (`MatHeaderCell`/`MatCell`/`MatFooterCell` host classes, `MatColumnDef._updateColumnCssClassName`'s `mat-column-<name>` push) + the matching `src/cdk/table/*` base classes (CDK+Material host-class concatenation — see `angular-parity.spec.ts` point 1 for the full verified class-string table) | ported | The native-table `<thead role="rowgroup">`/`<tbody role="rowgroup" class="mdc-data-table__content">`/`<tfoot role="rowgroup">` wrapper (upstream's own inline `@Component({template: ...})`, confirmed byte-identical to CDK's except the one `mdc-data-table__content` class on `<tbody>`) is reproduced directly, branching on `props.as`. The flex form renders header/data/footer rows as direct children with NO wrapper, in declaration order (header row defs, then data rows, then footer row defs — matching the AUTHORED `<tr>` order in both forms' templates upstream). `role="table"` is always set (no "already has a role" override support — see deviation #4); `role="columnheader"` is always static on header cells; `role="cell"` on data/footer cells goes through `qwik-cdk/table`'s `getCellRole('table')`, which always resolves to `'cell'` (no grid/treegrid support). |
 | `table/mat-text-column.ts` | `src/material/table/text-column.ts` (`MatTextColumn`) + `src/cdk/table/text-column.ts` (`CdkTextColumn`) | ported (as a plain function, not a component) | See deviation #2 — `<mat-text-column>` never renders upstream either (point 8 of `angular-parity.spec.ts`'s header comment: "the `<mat-text-column>` tag itself is COMPLETELY ABSENT from the rendered DOM"), so a Qwik `<mat-text-column>` custom element would be equally pointless. `matTextColumn(name, {header, justify, footer})` returns a plain `MatColumnDef` using `qwik-cdk/table`'s `createDefaultHeaderText`/the `justify` default `'start'`. |
 | `scss/table/table.scss` | `src/material/table/table.scss` (184 LOC) | synced | Byte-identical copy. No `@angular/cdk` import exists in this file, so no cdk-stub swap needed (same as `sort/sort-header.scss`). |
@@ -162,3 +162,66 @@ unchanged), so this is a no-op for all of them.
 
 Verified: `specs/examples-data-nav/angular-parity.spec.ts`'s table scenarios (10 cases) pass, run
 3x as part of the full 48-case suite. `specs/material-table` 12/12 unaffected.
+
+## Row-level interaction, per-cell class/colSpan, and multiTemplateDataRows (2026-11-03, tier2/datanav)
+
+Previously `MatTableRow` was `{key, cells}` only — no way to port upstream's `(click)`/
+`[class.x]` on `<tr mat-row>`, a cell-level `[attr.colspan]`, or `multiTemplateDataRows` (more
+than one `*matRowDef` per data item — an expandable "detail row" pattern). All three are now
+supported, additively (every pre-existing scenario's plain `{key, cells}` shape still works
+unchanged):
+
+- **`MatTableRow.onClick$`/`.class`** — mirrors `(click)`/`[class.x]` on `<tr mat-row>` directly
+  (e.g. upstream's `table-row-binding` docs example: `(click)="clickedRows.add(row)"` +
+  `[class.demo-row-is-clicked]="clickedRows.has(row)"`). `renderRow()` now takes an `onClick$`
+  and merges `toClassArray(row.class)` onto the generated `cdk-row mat-mdc-row …` list, for both
+  the native `<tr>` and flex `<mat-row>` forms.
+- **`MatTableRow.cellProps: Partial<Record<string, MatTableCellProps>>`** (`{class?, colSpan?}`)
+  — per-cell overrides, keyed by column name, kept as a SIBLING field to `cells` (which stays
+  content-only, unchanged) rather than widening `cells`' value type — avoids any ambiguity
+  between a bare content value and a described-cell object. `colSpan` is native-`<table>`-only
+  (the flex `<mat-table>` form has no table semantics to span — same category as every other
+  native-only feature in this port, e.g. `sortHeader`).
+- **`MatTableRow.columns?: string[]`** — overrides which columns THIS row renders (falls back to
+  `MatTableProps.displayedColumns`). This is the whole mechanism for upstream's
+  `multiTemplateDataRows`: the consumer simply places MORE THAN ONE `MatTableRow` entry per data
+  item in the flat `rows` array (e.g. a main row using the regular columns, immediately followed
+  by a "detail" row using a single different column spanning the full width via
+  `cellProps.<name>.colSpan`) — see `qwik-material-examples/table/table-expandable-rows`. No
+  separate `multiTemplateDataRows` boolean exists to set or echo (`EXAMPLE_IGNORE_ATTRS` in
+  `specs/examples-data-nav/angular-parity.spec.ts` lists it as an upstream static attribute this
+  port has no equivalent for, same treatment as `table-pagination`'s `showFirstLastButtons`).
+  **Sticky-column computation had to change to support this**: `resolvedRowColumns` (falls back
+  per-row to `dataColumns`) replaces the single global `dataColumns`-based pass over
+  `StickyStyler.updateStickyColumns()` — rows are now GROUPED by their resolved column list (a
+  `cols.join('\0')` key) and each group's sticky start/end states are computed against THAT
+  group's own columns, not the table's `displayedColumns`. Mathematically identical to the old
+  code for the (still overwhelmingly common) uniform-columns case — a single group covering every
+  row — and correctly scoped for a detail row's shorter, different column list, which previously
+  would have been sized/looked-up against the WRONG column list entirely had this port naively
+  kept a single global pass.
+- **`trackBy` is already covered by `MatTableRow.key`** — no separate API needed. Upstream's
+  `trackBy: (index, item) => any` and this port's existing `key` (falls back to the row's array
+  index) serve the IDENTICAL row-reuse purpose; a migrating consumer sets `key: item.id` in place
+  of a `trackBy` function returning `item.id`.
+- **`matNoDataRow` was already supported** (`MatTableProps.noData` + `renderNoDataRow()`, since
+  the initial port) — not a gap, despite the task brief flagging it as one to double check.
+
+Ported upstream examples demonstrating the new API, via the established
+`qwik-material-examples/table/<id>` + dev-app `examples/<id>` route + `examples-map.ts` +
+`specs/examples-data-nav/angular-parity.spec.ts` pipeline:
+
+- **`table-row-binding`** — `onClick$`/`.class` on a plain, non-multi-row table; an interaction
+  step (clicking a row) is included.
+- **`table-expandable-rows`** — the full `multiTemplateDataRows` pattern: one main row +
+  one detail row per data item (10 periodic-table elements, verbatim from upstream's own data —
+  an earlier draft of this port's example only included 5, which is EXACTLY the kind of
+  structural mismatch this harness catches: `child count 20 != 10` against the real Angular
+  reference, fixed by copying the full 10-element array). An interaction step (clicking a row's
+  own expand-toggle icon button, which `stopPropagation()`s so it doesn't ALSO trigger the row's
+  own click-to-expand, matching upstream exactly) is included.
+
+Both pass `specs/examples-data-nav/angular-parity.spec.ts` (initial + interaction snapshots),
+`specs/examples-css` (CSS scoped under each example's own host tag), and
+`specs/examples-rerender` (hover/focus re-renders don't corrupt the new per-row
+`onClick$`-bearing cells or the icon-button/detail-row content), run 3x.

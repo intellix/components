@@ -19,4 +19,19 @@ export {
   readSortState,
   type MatSortSharedState,
   type MatSortTableConfig,
+  // Pure-function equivalent of upstream's `MatSort.sort(sortable)`/
+  // `getNextSortDirection()`/`getSortDirectionCycle()` instance methods —
+  // Qwik has no instance methods to call imperatively, so a consumer
+  // wanting the SAME "activate/cycle a column programmatically" behavior
+  // computes the next `Sort` with one of these pure functions and assigns
+  // it to whatever signal feeds `<MatSort active=... direction=...>` (now
+  // LIVE — see `mat-sort.tsx`'s `MatSortProps.active` doc comment),
+  // firing their own change side-effect themselves (matches upstream: a
+  // props-driven active/direction change never emits `sortChange` on its
+  // own either).
+  computeNextSort,
+  getNextSortDirection,
+  getSortDirectionCycle,
+  isSorted,
+  type SortableOverrides,
 } from './sort-state';

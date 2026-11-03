@@ -77,9 +77,12 @@ stepper) and the user has interacted with the step. You can also override this d
 
 #### Overriding icons
 
-Upstream lets you override the `create`/`done` step-header icons by placing a `matStepperIcon`
-template for each icon you want to override — not yet ported (see [Angular → Qwik
-notes](#angular-qwik-notes)).
+Upstream lets you override the `number`/`edit`/`done`/`error` (or any custom `state` string)
+step-header icons by placing a `matStepperIcon` template for each icon you want to override.
+qwik-material exposes the same behavior via `<MatStepper>`'s `stepperIcon` prop — a
+`Partial<Record<StepState, JSXOutput>>` keyed by the icon state it replaces. Content provided for
+a state completely replaces the default icon markup for every step currently resolved to that
+state (see [Angular → Qwik notes](#angular-qwik-notes) for the one difference from upstream).
 
 <!-- example(stepper-states) -->
 
@@ -108,9 +111,11 @@ will not affect steppers marked `linear`.
 
 ### Lazy rendering
 
-By default, the stepper renders all of its content when it's initialized, and keeps it rendered
-— qwik-material never detaches a step's content once rendered (see [Angular → Qwik
-notes](#angular-qwik-notes)).
+By default, the stepper renders all of its content (the `content` field on each step's
+`MatStepDef`) when it's initialized, and keeps it rendered. For content that should only render
+once a step is first selected — and then stay rendered, exactly like eager content, never
+detached again — set a step's `lazyContent` field instead of (or alongside) `content`. This
+mirrors upstream's `matStepContent` template.
 
 <!-- example(stepper-lazy-content) -->
 
@@ -158,12 +163,17 @@ The stepper is treated as a tabbed view for accessibility purposes, so it is giv
   `useMatStepperPrevious()` return the equivalent `hostProps`, spread onto whatever component
   you're using as the button. Each hook call must happen in a component rendered INSIDE the
   owning `<MatStepper>`'s active step `content` (context resolves by the actual render tree).
-- **No custom step-icon overrides (`matStepperIcon`) yet.** No equivalent prop/slot exists for
-  overriding the default `create`/`done` icons per state.
+- **Step-icon overrides (`stepperIcon`) are static content, not a per-occurrence template.**
+  Upstream passes each override a fresh `{index, active, optional}` context per step that reaches
+  that state (any number of steps can share one override); Qwik can't synchronously re-invoke a
+  per-occurrence render callback inside the stepper's own render (the same reasoning that rules
+  out a per-row cell-render callback for `<MatTable>`), so an override here is a single static
+  `JSXOutput` shared by every step currently in that state. Sufficient for every known use —
+  material.angular.dev's own icon-override example never references the context either.
 - **Step content is never detached once rendered, regardless of lazy/eager origin upstream.**
-  Unlike `MatTabGroup` (which detaches off-screen tab content by default), this port's step
-  content persists once rendered — there's no separate "lazy" mechanism to opt into since all
-  content effectively behaves the same way.
+  Unlike `MatTabGroup` (which detaches off-screen tab content by default), neither `content` nor
+  `lazyContent` is ever detached once rendered here — `lazyContent` only controls the FIRST
+  render timing (deferred until the step is first selected), not ongoing attach/detach.
 - **No `MatStepperIntl` localization yet.** Step-header strings (e.g. "Optional") are hardcoded
   English; no DI-style override mechanism is ported.
 - **Dynamic orientation switching based on viewport isn't demonstrated as a live example yet** —

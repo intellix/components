@@ -46,7 +46,10 @@ format for this generated class is `mat-column-NAME`. For example, cells in a co
 ### Row Templates
 
 Upstream lets you bind event handlers/properties directly on the row template, applied to every
-rendered row — not yet ported (see [Angular → Qwik notes](#angular-qwik-notes)).
+rendered row. qwik-material exposes the same behavior on each `MatTableRow` entry directly:
+`onClick$` mirrors `(click)` on `<tr mat-row>`, and `class` mirrors `[class.x]`. Per-cell
+overrides (a class, or a native-table-only `colSpan`) are a sibling `cellProps` field, keyed by
+column name, so `cells` itself stays content-only.
 
 <!-- example(table-row-binding) -->
 
@@ -144,12 +147,16 @@ viewport, via a column's `sticky`/`stickyEnd` fields.
 
 <!-- example(table-sticky-columns) -->
 
-#### Multiple row templates
+#### Multiple row templates (expandable rows)
 
-Upstream's `multiTemplateDataRows` lets a single data object render as multiple `<tr>`s — not yet
-ported (see [Angular → Qwik notes](#angular-qwik-notes)).
+Upstream's `multiTemplateDataRows` lets a single data object render as multiple `<tr>`s — e.g. a
+main row plus a "detail" row that expands below it. There's no separate boolean to set: a
+`MatTableRow` entry's own `columns` field overrides which columns THAT row renders (falling back
+to `displayedColumns`), so you simply place more than one `MatTableRow` per data item in the flat
+`rows` array — a main row using the regular columns, immediately followed by a detail row using
+a single different column that spans the full width via `cellProps.<name>.colSpan`.
 
-<!-- example(table-multiple-row-template) -->
+<!-- example(table-expandable-rows) -->
 
 ### Accessibility
 
@@ -191,12 +198,14 @@ ported for rows specifically (see [Angular → Qwik notes](#angular-qwik-notes))
   attaches TWO directives to the SAME `<th>`; Qwik renders exactly one element per cell, so
   `MatColumnDef.sortHeader` tells `<MatTable>` to render a `<MatSortHeader>` directly as the
   header cell instead.
-- **No per-row class/click handler (`MatTableRow` is plain data).** Binding event handlers or
-  properties directly on the row template (Row Templates, `table-row-binding`) isn't
-  reproducible — there's no row-level component to attach a handler to.
+- **Per-row class/click handler and per-cell class/colSpan are plain fields on `MatTableRow`,
+  not a directive on a row template.** `onClick$`/`class` on `MatTableRow` mirror `(click)`/
+  `[class.x]` on `<tr mat-row>`; `cellProps.<name>.{class, colSpan}` mirrors a cell-level
+  binding, kept as a sibling to `cells` (content-only) rather than widening its value type.
 - **No virtual scrolling.** `@angular/cdk/scrolling` has no qwik-cdk entry point yet.
 - **No drag-and-drop column/row reordering.** `@angular/cdk/drag-drop` has no qwik-cdk entry
   point yet.
-- **No `multiTemplateDataRows` (multiple rows per data object).** `MatTableRow` is a single
-  flat row; there's no mechanism for one data object to expand into several `<tr>`s yet.
+- **`multiTemplateDataRows` has no separate boolean — it's just more than one `MatTableRow` per
+  data item.** This port's flat, consumer-built `rows` array already allows any number of row
+  entries per data item (each with its own `columns` override); there's nothing to flip on.
 - **No `MatRipple` on table rows.** Not yet wired up for the row-data shape this port uses.

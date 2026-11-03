@@ -17,3 +17,9 @@ export {
   MatSidenavContainer,
   type MatDrawerContainerProps,
 } from './mat-drawer-container';
+export {
+  useMatDrawerRef,
+  type MatDrawerRef,
+  type MatDrawerToggleResult,
+  type UseMatDrawerRefOptions,
+} from './use-mat-drawer-ref';

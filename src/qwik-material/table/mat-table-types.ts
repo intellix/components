@@ -56,15 +56,57 @@ export interface MatColumnDef {
   justify?: 'start' | 'end' | 'center';
 }
 
+/** Per-cell class/attribute overrides for one data row, keyed by column name — the migration
+ *  mapping of a cell-level binding like `[attr.colspan]="n"` on `<td mat-cell *matCellDef>`.
+ *  Separate from `MatTableRow.cells` (which stays content-only, unchanged) so there's no
+ *  ambiguity between a bare content value and an object describing it — see
+ *  `MatTableRow.cellProps`'s own doc comment. */
+export interface MatTableCellProps {
+  /** Extra classes merged onto this cell's generated `cdk-cell mat-mdc-cell …
+   *  mat-column-<name>` class list. */
+  class?: string | ReadonlyArray<string>;
+  /** `[attr.colspan]` — native `<table>` form only (see table/SYNC.md; the flex `<mat-table>`
+   *  form has no table semantics to span). Used by upstream's `multiTemplateDataRows`
+   *  expandable/detail-row pattern — see `MatTableRow.columns`'s doc comment. */
+  colSpan?: number;
+}
+
 /** One rendered data row. `cells` is keyed by column name, already
  *  evaluated for THIS row — the migration mapping of
  *  `*matCellDef="let element">{{ element.position }}` is simply
  *  `cells: {position: element.position}` in the consumer's own `.map()`
  *  over its data array (see SYNC.md). */
 export interface MatTableRow {
-  /** Stable key for Qwik's keyed rendering; falls back to the row's index. */
+  /** Stable key for Qwik's keyed rendering; falls back to the row's index. Equivalent to
+   *  upstream's `trackBy` (which CdkTable uses for the identical row-reuse purpose) — a
+   *  consumer migrating a `trackBy: (index, item) => item.id` function sets `key: item.id`
+   *  instead of passing a separate function. */
   key?: string | number;
   cells: Partial<Record<string, JSXOutput | string | number | null | undefined>>;
+  /** Per-cell class/`colSpan` overrides for this row, keyed by column name — see
+   *  `MatTableCellProps`. */
+  cellProps?: Partial<Record<string, MatTableCellProps>>;
+  /**
+   * Overrides which columns THIS row renders, in order — falls back to `MatTableProps
+   * .displayedColumns` when omitted. Mirrors upstream's `multiTemplateDataRows` +
+   * `*matRowDef="let row; columns: [...]"`: a table can place MORE THAN ONE `MatTableRow`
+   * entry per data item in the flat `rows` array (e.g. a normal row using the regular
+   * `displayedColumns`, immediately followed by a "detail" row using a single different
+   * column that spans the full width via `cellProps.<name>.colSpan`) — see
+   * `qwik-material-examples/table/table-expandable-rows` for the full pattern this mirrors.
+   * There is no separate `multiTemplateDataRows` boolean to set: upstream's flag just permits
+   * >1 `*matRowDef` per data item, which this port's flat, consumer-built `rows` array already
+   * allows unconditionally (the consumer decides how many `MatTableRow` entries to emit per
+   * data item).
+   */
+  columns?: string[];
+  /** Extra classes merged onto this row's generated `cdk-row mat-mdc-row …` class list —
+   *  mirrors `[class.x]="..."` on `<tr mat-row>` (e.g. upstream's `table-row-binding` docs
+   *  example, `[class.demo-row-is-clicked]="clickedRows.has(row)"`). */
+  class?: string | ReadonlyArray<string>;
+  /** Mirrors `(click)` on `<tr mat-row>` (e.g. upstream's `table-row-binding` docs example,
+   *  `(click)="clickedRows.add(row)"`). */
+  onClick$?: QRL<(event: MouseEvent) => void>;
 }
 
 /** One header or footer row definition (`*matHeaderRowDef`/

@@ -6,11 +6,9 @@ import {StepperNextButton, StepperPreviousButton} from './stepper-nav-buttons';
 // by the Angular dev-app at /qwik-parity/examples/stepper-lazy-content.
 //
 // Upstream contrasts steps 1-2 (lazy, via `<ng-template matStepContent>`) with step 3 (eager,
-// plain content) -- but this port's `MatStepDef.content` is NEVER detached once rendered
-// regardless (qwik-material/stepper/SYNC.md: "step content is never detached regardless"), so
-// there's no structural "lazy vs eager" distinction to reproduce here; all three steps render
-// identically either way. The DOM/behavior is faithfully reproduced; only the upstream-internal
-// initialization-timing nuance the example's prose describes has no equivalent to demonstrate.
+// plain content) — `MatStepDef.lazyContent` now reproduces this exactly (ported, see
+// qwik-material/stepper/SYNC.md): steps 1-2 use `lazyContent` (rendered only once each step is
+// first selected, then kept forever), step 3 uses the always-eager `content`.
 
 export default component$(() => (
   <stepper-lazy-content-example>
@@ -19,7 +17,7 @@ export default component$(() => (
       steps={[
         {
           label: 'Step 1',
-          content: (
+          lazyContent: (
             <>
               <p>This content was rendered lazily</p>
               <StepperNextButton>Next</StepperNextButton>
@@ -28,7 +26,7 @@ export default component$(() => (
         },
         {
           label: 'Step 2',
-          content: (
+          lazyContent: (
             <>
               <p>This content was also rendered lazily</p>
               <StepperPreviousButton>Back</StepperPreviousButton>

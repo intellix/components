@@ -41,6 +41,7 @@ const EXAMPLES: string[] = [
   'stepper-lazy-content',
   'stepper-optional',
   'stepper-editable',
+  'stepper-states',
   'table-column-styling',
   'table-pagination',
   'table-filtering',
@@ -49,6 +50,8 @@ const EXAMPLES: string[] = [
   'table-sticky-header',
   'table-sticky-footer',
   'table-sticky-columns',
+  'table-row-binding',
+  'table-expandable-rows',
   'tree-nested-child-accessor-overview',
 ];
 
@@ -146,6 +149,29 @@ const clickTab = (index: number): ParityStep => ({
   },
 });
 
+/** `table-row-binding` — clicks a data row (`<tr mat-row>`), toggling its own
+ *  `demo-row-is-clicked` class and appending to the click log below the table. No settle wait
+ *  needed beyond a short buffer: the handler's own state update is synchronous once committed. */
+const clickTableRow = (index: number): ParityStep => ({
+  name: `click table row ${index}`,
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] tr.mat-mdc-row').nth(index).click();
+    await page.waitForTimeout(SETTLE_MS);
+  },
+});
+
+/** `table-expandable-rows` — clicks the first row's own expand toggle button (NOT the row
+ *  itself, to match upstream's `(click)="toggle(element); $event.stopPropagation()"` on the
+ *  button — clicking the row directly would ALSO toggle, which is exercised identically
+ *  either way, but the button is the more specific, intended trigger). */
+const clickExpandToggle = (index: number): ParityStep => ({
+  name: `click expand toggle ${index}`,
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] button[aria-label="expand row"]').nth(index).click();
+    await page.waitForTimeout(SETTLE_MS);
+  },
+});
+
 const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}[]> = {
   'table-sorting': [{steps: [clickSortHeader(1)]}],
   'tree-nested-child-accessor-overview': [{steps: [clickTreeToggle('Fruit')]}],
@@ -160,6 +186,8 @@ const EXAMPLE_STEPS: Record<string, {steps: ParityStep[]; rootSelector?: string}
   // sidenav-autosize: button 0 is the drawer's own "Toggle extra text"; button 1 ("Toggle
   // sidenav") actually opens/closes it.
   'sidenav-autosize': [{steps: [clickToggleDrawer(1)]}],
+  'table-row-binding': [{steps: [clickTableRow(1)]}],
+  'table-expandable-rows': [{steps: [clickExpandToggle(0)]}],
 };
 
 /** Per-example `ignoreAttrs` — see `specs/examples/angular-parity.spec.ts`'s own comment. */
@@ -200,6 +228,11 @@ const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'stepper-editable': ['linear'],
   // `table-pagination-example.html` writes `showFirstLastButtons` as a bare static attribute.
   'table-pagination': ['showfirstlastbuttons'],
+  // `table-expandable-rows-example.html` writes `multiTemplateDataRows` as a bare static
+  // attribute on `<table mat-table>` — this port achieves the same effect via a flat `rows`
+  // array with more than one `MatTableRow` entry per data item (see `MatTableRow.columns`'s doc
+  // comment), with no separate boolean to echo.
+  'table-expandable-rows': ['multitemplatedatarows'],
 };
 
 /** Known, documented gaps — run as expected failures so the suite stays green but flags them if
@@ -228,14 +261,6 @@ const EXPECTED_FAILURES: Record<string, string> = {
   'stepper-animations':
     "Upstream's <mat-vertical-stepper> tag alias isn't reproduced (MatStepper always renders " +
     '<mat-stepper>) — confirmed live as the only diff; a real, minor, undone gap.',
-  // Steps 1-2 use upstream's lazy `<ng-template matStepContent>`; this port's step content is
-  // never detached/deferred regardless (qwik-material/stepper/SYNC.md), so it's already rendered
-  // before first activation — a real, structural, pre-existing (not new) simplification this
-  // example newly exposes. See the Stepper overview's "Lazy rendering" notes.
-  'stepper-lazy-content':
-    "This port's step content is never deferred (qwik-material/stepper/SYNC.md) — confirmed " +
-    "live: unvisited steps' content is already in the DOM here, unlike upstream's " +
-    '<ng-template matStepContent>, which defers it until first activation.',
 };
 
 /** `tab-group-lazy-loaded` stamps a real `new Date()` on each side (see that port's own doc

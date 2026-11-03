@@ -1,0 +1,23 @@
+/*
+ * Adapted from
+ * src/components-examples/material/table/table-row-binding/table-row-binding-example.css —
+ * every selector prefixed with the example's own host tag (specs/examples-css enforces this;
+ * upstream's selectors are unscoped, relying on Angular's view encapsulation instead).
+ */
+table-row-binding-example .demo-table {
+  width: 100%;
+}
+
+table-row-binding-example .mat-mdc-row .mat-mdc-cell {
+  border-bottom: 1px solid transparent;
+  border-top: 1px solid transparent;
+  cursor: pointer;
+}
+
+table-row-binding-example .mat-mdc-row:hover .mat-mdc-cell {
+  border-color: currentColor;
+}
+
+table-row-binding-example .demo-row-is-clicked {
+  font-weight: bold;
+}

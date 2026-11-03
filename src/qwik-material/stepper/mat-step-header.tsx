@@ -4,6 +4,7 @@ import type {StepperOrientation, StepState} from '@angular-community/qwik-cdk/st
 import {MatIcon} from '../icon/mat-icon';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /**
  * Internal per-step header item — `src/material/stepper/step-header.html` +
@@ -14,8 +15,9 @@ import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-do
  * Hardcodes `MatStepperIntl`'s default English strings ('Optional'/
  * 'Completed'/'Editable') — no i18n/Intl service exists anywhere in this
  * port yet (no other ported component has one either), so this is a scope
- * cut, not a stepper-specific one. `matStepperIcon` overrides are not
- * ported — not exercised by any angular-parity.spec.ts scenario.
+ * cut, not a stepper-specific one. `matStepperIcon` overrides (static
+ * content only, no context — see `iconOverride` below and `mat-
+ * stepper.tsx`'s `stepperIcon` doc comment) are ported.
  */
 export interface MatStepHeaderItemProps {
   orientation: StepperOrientation;
@@ -60,6 +62,18 @@ export interface MatStepHeaderItemProps {
    *  — upstream `step-header.html`'s `[matRippleDisabled]="disableRipple"`
    *  reads the OWNING STEPPER's input, not a per-step one. */
   disableRipple?: boolean;
+  /** `MatStepper.stepperIcon?.[state]` — the override content for THIS
+   *  step's resolved icon state, already resolved by `mat-stepper.tsx`'s
+   *  `renderHeader` (a plain lookup, `props.stepperIcon?.[indicatorType]`).
+   *  `undefined` means no override for this state — render the default
+   *  icon markup. When present, REPLACES `.mat-step-icon-content`'s entire
+   *  default content (the number span / done-or-edit hidden label +
+   *  `<MatIcon>`) — mirrors `step-header.html`'s `@if (iconOverrides &&
+   *  iconOverrides[state])` branch. Cloned via `cloneJsxForReuse` at the
+   *  embedding site below since the SAME override object can be shared by
+   *  more than one step header within a single render (one override per
+   *  STATE, not per step). */
+  iconOverride?: JSXOutput;
   /** Mirrors `step.select()` — always attempts a real selection change;
    *  whether it succeeds is the stepper's own linear/editable gating. */
   onHeaderClick$: QRL<(index: number) => void>;
@@ -168,7 +182,9 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
       />
       <div class={iconClasses}>
         <div class="mat-step-icon-content">
-          {props.state === 'number' ? (
+          {props.iconOverride !== undefined ? (
+            cloneJsxForReuse(props.iconOverride)
+          ) : props.state === 'number' ? (
             <span aria-hidden="true">{defaultTextForState(props.state, props.index)}</span>
           ) : (
             <>

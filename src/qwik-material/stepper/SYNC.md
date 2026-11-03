@@ -47,8 +47,8 @@ upstream's source code.
 - Upstream `public-api.ts`/`index.ts` — replaced with this port's own re-export shape.
 - `step.html`/`step.ts` (`MatStep`) — replaced by the `MatStepDef` data-array entry; `<mat-step>` never appears in the live (non-SSR) DOM upstream either (angular-parity.spec.ts shared-structure note).
 - `step-label.ts` (`MatStepLabel`/`CdkStepLabel`) — replaced by `MatStepDef.labelTemplate` (a plain `JSXOutput` prop); `label` covers the plain-string (`_stringLabel()`) branch.
-- `step-content.ts` (`MatStepContent`) — not ported; no scenario exercises lazy step content (step content is never detached regardless, per note 5 — there is no distinct "lazy" behavior to replicate even if it were).
-- `stepper-icon.ts` (`MatStepperIcon`) — not ported; no scenario overrides an icon.
+- `step-content.ts` (`MatStepContent`) — ported as `MatStepDef.lazyContent` (2026-11-03, tier2/datanav). See "matStepperIcon overrides and matStepContent lazy content" below.
+- `stepper-icon.ts` (`MatStepperIcon`) — ported as `MatStepperProps.stepperIcon` (2026-11-03, tier2/datanav), static-content-only (no context — see below).
 - `stepper-intl.ts` (`MatStepperIntl`) — hardcoded English strings ('Optional'/'Completed'/'Editable') directly in `mat-step-header.tsx` instead; no i18n/Intl service exists anywhere in this port yet (not stepper-specific).
 - `stepper.spec.ts` (Angular `TestBed`-based) — reframed as `mat-stepper-scenarios.spec.tsx` (export/shape sanity + `describe.skip` documentation, same convention as `qwik-material/expansion`/`tabs`) + the authoritative `angular-parity.spec.ts`. The CDK-level pure logic these would otherwise exercise is unit-tested directly in `qwik-cdk/stepper/step-logic.spec.ts`/`stepper-keyboard.spec.ts` — no DOM needed for those.
 
@@ -158,11 +158,10 @@ upstream's source code.
    before waiting for it to clear — the same documented fix already
    applied for `qwik-material/checkbox` (see that entry's SYNC.md,
    "Known flakiness" / "First paint + handler timing").
-7. **No `matStepperIcon` overrides, no `matStepContent` lazy content, no
-   `MatStepperIntl` i18n service, no RTL.** None exercised by any parity
-   scenario; none are stepper-specific scope cuts (no i18n service exists
-   anywhere in this port; RTL is the same LTR-only cut as every other
-   keyboard-handling component).
+7. **No `MatStepperIntl` i18n service, no RTL.** Neither is stepper-specific
+   (no i18n service exists anywhere in this port; RTL is the same LTR-only
+   cut as every other keyboard-handling component). `matStepperIcon`/
+   `matStepContent` are now ported — see below.
 8. **Angular-specific removals:** `@Component`/`@Directive` decorators,
    `@Input`/`@Output`/`booleanAttribute`/`numberAttribute`,
    `@ContentChild(ren)`/`@ViewChild(ren)`, `inject()` DI,
@@ -244,6 +243,68 @@ plain string or plain HTML elements, never a component with its own `<Slot/>`) �
 case a future stepper/tabs scenario (or new "steps/tabs-as-data" component) adds one and needs the
 same `StepContent`-style isolation wrapper.
 
+## matStepperIcon overrides and matStepContent lazy content (2026-11-03, tier2/datanav)
+
+Ported both previously-cut upstream directives. Gated by three new Qwik-only functional specs
+(no upstream docs example exercised `matStepperIcon`'s CONTEXT parameter, and the one example
+that DOES exercise both — `stepper-states`/`stepper-lazy-content`, see below — only needed
+static override content) plus the existing `specs/examples-data-nav` Angular-parity harness.
+
+**`matStepContent` (lazy content) — `MatStepDef.lazyContent`.** Mirrors `CdkStep._lazyContent`'s
+attach gate (`step.ts`'s `ngAfterContentInit`): rendered ONLY once a step is first selected
+(including on the VERY FIRST render if a step starts out selected — mirrors the subscription's
+own `startWith(this._stepper.selected === this)`), then KEPT forever regardless of later
+deselection (upstream never tears the attached `TemplatePortal` down either). A new
+`everSelectedStore: boolean[]` in `mat-stepper.tsx` (seeded from the initial `selectedIndex`,
+latched `true` by `trySelectIndex$` on every successful move) gates
+`{everSelectedStore[i] && s.lazyContent !== undefined && <StepContent content={s.lazyContent} />}`
+in both the vertical/horizontal content-rendering branches, appended AFTER the always-eager
+`content` (matches `step.html`'s `<ng-content/>` followed by the portal outlet). Reuses the
+existing `StepContent` reference-equality wrapper (see that component's own doc comment above) —
+safe without `cloneJsxForReuse` for the identical reason `content` already is: each step's
+`lazyContent` object is only ever embedded by ONE `StepContent` instance, never twice. `content`
+is now OPTIONAL (`MatStepDef.content?: JSXOutput`) since a step can be lazy-only (no eager
+children at all) — `stepper-lazy-content`'s steps 1-2 are exactly this shape.
+
+Verified against the REAL upstream behavior this unlocks: `stepper-lazy-content` (see
+`qwik-material-examples/stepper/stepper-lazy-content`) previously had to fake this feature —
+every step's content rendered eagerly regardless, flagged as a documented, `test.fail()`-gated
+gap in `specs/examples-data-nav/angular-parity.spec.ts`'s `EXPECTED_FAILURES`. Steps 1-2 now use
+`lazyContent`, step 3 keeps `content` (eager) — matching upstream's own contrast exactly — and
+the `test.fail()` gate was REMOVED: the example now passes real DOM parity (an unvisited lazy
+step's content is genuinely absent from the DOM on both sides).
+
+**`matStepperIcon` overrides — `MatStepperProps.stepperIcon`.** `Partial<Record<StepState,
+JSXOutput>>`, keyed by the icon state it replaces ('number' | 'edit' | 'done' | 'error' | a
+custom `step.state` string). `mat-stepper.tsx`'s `renderHeader` looks up
+`props.stepperIcon?.[indicatorType]` (computed fresh, inline, at the JSX prop call site — same
+rule as every other per-step value here) and passes it as `MatStepHeaderItem`'s new
+`iconOverride` prop; `mat-step-header.tsx` renders `cloneJsxForReuse(props.iconOverride)` in
+place of the ENTIRE default `.mat-step-icon-content` body (the number span / done-or-edit hidden
+label + `<MatIcon>`) when set — mirrors `step-header.html`'s `@if (iconOverrides &&
+iconOverrides[state])` branch. `cloneJsxForReuse` IS required here (unlike `content`/
+`lazyContent`/`labelTemplate`): the SAME override object can be embedded by MULTIPLE different
+`MatStepHeaderItem` instances within a single render whenever more than one step currently
+resolves to that state.
+
+**Scope cut: no per-occurrence `MatStepperIconContext` (`{index, active, optional}`).** Upstream
+passes each override a FRESH context via `ngTemplateOutletContext`, re-evaluated per step that
+reaches that state (any number of steps can share one override). Rendering that synchronously,
+per-occurrence, inside `MatStepper`'s own render is not viable in Qwik — invoking a QRL is always
+async (the identical finding that already rules out a per-row cell-render callback in
+`qwik-material/table`'s SYNC.md), and a plain function captured from props into this port's
+render path would not survive SSR→resume regardless (the project's own documented pitfall). So an
+override here is a single, STATIC `JSXOutput`, shared by every step currently in that state — a
+genuine, confirmed-sufficient simplification: material.angular.dev's OWN `stepper-states` example
+(the only upstream docs example exercising `matStepperIcon`) uses purely static `<mat-icon>`
+content for both of its overrides (`phone`/`chat`), never referencing `index`/`active`/
+`optional`. No parity scenario needs the context either. See `qwik-material-examples/stepper/
+stepper-states` (ported 2026-11-03) for the full worked example, including the real, confirmed-live
+`STEPPER_GLOBAL_OPTIONS = {displayDefaultIndicatorType: false}` interaction with
+`computeIndicatorType` (an initially-selected, editable, non-completed step shows an "edit"
+pencil, NOT its number or override, until it's deselected — already correctly handled by the
+pre-existing, faithfully-ported `step-logic.ts`, confirmed live against the real Angular app).
+
 ## Class count
 
 `grep -rnE "^export class" src/qwik-material/stepper/ 2>/dev/null` → 0 (no
@@ -260,14 +321,18 @@ snack-bar + core + stepper.
 
 ## Qwik-only Playwright specs
 
-None added. `specs/material-stepper/angular-parity.spec.ts`'s 11
+None added directly in `specs/material-stepper/` — `matStepperIcon`/`matStepContent` are instead
+gated by the Angular-mirrored `specs/examples-data-nav/angular-parity.spec.ts` cases for
+`stepper-states` (new, 2026-11-03) and `stepper-lazy-content` (now a real, non-`test.fail()`
+pass — see this file's own entry above), which exercise both features against the real Angular
+DOM, including an interaction step. `specs/material-stepper/angular-parity.spec.ts`'s 11
 scenarios and their interaction steps (roving-tabindex keyboard nav with
 wrap on arrows/no-wrap on Home-End, horizontal-arrows-work-in-both-
 orientations, manual-activation Enter/Space, linear `stepControl` gating,
 `editable:false` backward-navigation blocking with its focus-class
 asymmetry, the four icon states, custom/plain-string labels, label/header
 position, an initial non-zero `selectedIndex`, and the error-state icon +
-sub-label) already cover every behavior this port implements against the
-real Angular DOM — the strongest test available. `qwik-cdk/stepper/
+sub-label) cover every other behavior this port implements against the
+real Angular DOM. `qwik-cdk/stepper/
 step-logic.spec.ts` (26 tests) and `stepper-keyboard.spec.ts` (5 tests)
 cover the pure logic beneath it.

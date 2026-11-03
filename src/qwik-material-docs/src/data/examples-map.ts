@@ -190,6 +190,7 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
     {route: 'stepper-lazy-content', upstreamId: 'stepper-lazy-content', pkg: 'stepper'},
     {route: 'stepper-optional', upstreamId: 'stepper-optional', pkg: 'stepper'},
     {route: 'stepper-editable', upstreamId: 'stepper-editable', pkg: 'stepper'},
+    {route: 'stepper-states', upstreamId: 'stepper-states', pkg: 'stepper'},
   ],
   'mat-table': [
     {route: 'example', upstreamId: 'table-basic', pkg: 'table'},
@@ -202,6 +203,8 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
     {route: 'table-sticky-header', upstreamId: 'table-sticky-header', pkg: 'table'},
     {route: 'table-sticky-footer', upstreamId: 'table-sticky-footer', pkg: 'table'},
     {route: 'table-sticky-columns', upstreamId: 'table-sticky-columns', pkg: 'table'},
+    {route: 'table-row-binding', upstreamId: 'table-row-binding', pkg: 'table'},
+    {route: 'table-expandable-rows', upstreamId: 'table-expandable-rows', pkg: 'table'},
   ],
   'mat-tabs': [
     {route: 'example', upstreamId: 'tab-group-basic', pkg: 'tabs'},

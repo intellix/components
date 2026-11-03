@@ -4,6 +4,7 @@ import {
   useContext,
   useContextProvider,
   useSignal,
+  useStore,
   type QRL,
 } from '@qwik.dev/core';
 import {MAT_SORT_CONFIG, type MatSortConfig} from './sort-config';
@@ -22,18 +23,37 @@ import {MAT_SORT_STATE, type MatSortSharedState, type MatSortTableConfig} from '
 export interface MatSortProps {
   /** Which host tag MatSort renders. Default 'table'. */
   as?: 'table' | 'div';
-  /** The id of the most recently sorted column. `matSortActive` — an
-   *  INITIAL value only; thereafter MatSort self-manages this (see
-   *  sort-state.ts's doc comment), matching upstream's own `active` field,
-   *  which is likewise only ever re-assigned by header interaction once
-   *  rendered, not by a later `[matSortActive]` re-binding in any parity
-   *  scenario's template. */
+  /**
+   * The id of the most recently sorted column. `matSortActive`. LIVE —
+   * mirrors upstream's plain mutable `active` field: Angular's template
+   * binding (`[matSortActive]="x"`) re-assigns `this.active` on every
+   * change-detection cycle where the BOUND EXPRESSION's value differs from
+   * what it last wrote, independent of whatever `MatSortHeader.sort()`
+   * (a click) may have separately mutated it to since. This prop follows
+   * the identical rule: `<MatSort>` re-applies `active`/`direction` to its
+   * internal sort state ONLY when ITS OWN prop value has changed since the
+   * last time this component last observed it — a header-driven change
+   * (`toggleOnInteraction$`, writing `sortValue.value` directly) is never
+   * clobbered by an unrelated re-render that re-passes the SAME `active`/
+   * `direction` prop values it had before. Programmatically changing this
+   * prop does NOT emit `onSortChange$` — matches upstream, where
+   * `ngOnChanges()` only calls `_stateChanges.next()` (a private
+   * change-notification Subject `MatSortHeader` doesn't even subscribe to
+   * for `sortChange` purposes), never `sortChange.emit()` — only `sort()`
+   * (called by a header's click/keydown, or directly by a consumer holding
+   * a `MatSort` instance) emits that. See `computeNextSort()`/
+   * `getNextSortDirection()` (re-exported from `public-api.ts`) for the
+   * pure-function equivalent of calling `sort(sortable)` programmatically:
+   * compute the next `Sort`, assign it to the signal you pass as `active`/
+   * `direction` here, AND fire your own `onSortChange$`-equivalent
+   * side-effect yourself (this port doesn't emit on your behalf for a
+   * props-driven change, matching upstream exactly). */
   active?: string;
   /** Starting sort direction when a column is first sorted. `matSortStart`.
    *  Default 'asc'. */
   start?: SortDirection;
-  /** The initial sort direction of `active`. `matSortDirection`. See `active`
-   *  doc above re: initial-only. */
+  /** The sort direction of the currently-active column. `matSortDirection`.
+   *  LIVE — see `active`'s doc comment above for the full behavior. */
   direction?: SortDirection;
   /** Whether to disable the user from clearing the sort by finishing the
    *  sort direction cycle. May be overridden by a column's own
@@ -80,6 +100,32 @@ export const MatSort = component$<MatSortProps>(props => {
     active: props.active ?? '',
     direction: props.direction ?? '',
   }));
+
+  // Tracks the LAST `active`/`direction` prop VALUES this component itself
+  // observed (never `sortValue.value` — this component's render body must
+  // never read that signal; see the CRITICAL note above) — the "last bound
+  // value" half of Angular's own input-binding dirty check. Guarded: only
+  // write `sortValue.value` (below) when `props.active`/`props.direction`
+  // genuinely differ from what was last seen HERE, so an unrelated
+  // re-render that re-passes the SAME prop values never clobbers a header-
+  // driven change. Safe from the infinite-loop class of bug documented in
+  // sort-state.ts (`MatSortSharedState`'s doc comment) for the same reason
+  // `mat-stepper.tsx`'s `ariaDisabledQuirk` store is: this is a plain,
+  // internally-consistent read+conditionally-write of a store THIS
+  // component owns, not an unconditional read-then-rewrite of the shared
+  // signal another component also subscribes to.
+  const lastSeenProps = useStore(() => ({
+    active: props.active ?? '',
+    direction: props.direction ?? '',
+  }));
+  if (
+    (props.active ?? '') !== lastSeenProps.active ||
+    (props.direction ?? '') !== lastSeenProps.direction
+  ) {
+    lastSeenProps.active = props.active ?? '';
+    lastSeenProps.direction = props.direction ?? '';
+    sortValue.value = {active: lastSeenProps.active, direction: lastSeenProps.direction};
+  }
 
   // OWNED by this component: overwritten with a freshly-computed object on
   // every render, no read-back of the signal's previous value (so this
