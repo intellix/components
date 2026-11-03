@@ -72,6 +72,30 @@ function buildRouteList() {
   return routes;
 }
 
+/** `/components/<id>/` and `/cdk/<id>/` redirect to their Overview tab via an `onGet` handler,
+ *  which only exists under SSR — a static host has no server to run it, so without a file there
+ *  it falls back to the homepage. Write a meta-refresh page in its place instead. */
+function writeRedirectStubs() {
+  const stubs = [
+    ...COMPONENT_IDS.map(id => `/components/${id}/`),
+    ...CDK_IDS.map(id => `/cdk/${id}/`),
+  ];
+  for (const route of stubs) {
+    const target = `${route}overview/`;
+    const file = routeToFile(route);
+    fs.mkdirSync(path.dirname(file), {recursive: true});
+    fs.writeFileSync(
+      file,
+      `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+        `<title>Redirecting…</title><link rel="canonical" href="${target}">` +
+        `<meta http-equiv="refresh" content="0; url=${target}">` +
+        `<script>location.replace(${JSON.stringify(target)} + location.hash)</script>` +
+        `</head><body><a href="${target}">Continue to the overview</a></body></html>\n`,
+    );
+  }
+  return stubs.length;
+}
+
 function routeToFile(route) {
   const trimmed = route.replace(/^\//, '').replace(/\/$/, '');
   return trimmed === '' ? path.join(DIST, 'index.html') : path.join(DIST, trimmed, 'index.html');
@@ -111,7 +135,7 @@ async function main() {
     }
   }
 
-  console.log(`Prerendered ${ok}/${routes.length} routes.`);
+  console.log(`Prerendered ${ok}/${routes.length} routes, ${writeRedirectStubs()} redirect stubs.`);
   if (failures.length > 0) {
     console.error(`${failures.length} failure(s):`);
     for (const f of failures) console.error(' -', f);

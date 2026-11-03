@@ -109,6 +109,15 @@ test.describe('docs site smoke', () => {
     });
   }
 
+  // The bare component/CDK URLs must land on the Overview tab, not the homepage fallback.
+  for (const [section, id] of [['components', 'button'], ['components', 'tree'], ['cdk', 'overlay']]) {
+    test(`${section}: ${id} / index redirects to overview`, async ({page}) => {
+      await page.goto(`${BASE_URL}/${section}/${id}/`);
+      await expect(page).toHaveURL(`${BASE_URL}/${section}/${id}/overview/`);
+      await expect(page.locator('.docs-page-header h1')).toHaveCount(1);
+    });
+  }
+
   for (const id of GUIDE_IDS) {
     test(`guide: ${id}`, async ({page}) => {
       await expectNoConsoleErrors(page, `${BASE_URL}/guide/${id}/`);
