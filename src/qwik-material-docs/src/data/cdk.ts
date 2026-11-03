@@ -26,9 +26,19 @@ export const CDK_ENTRIES: CdkEntry[] = [
     summary: 'Resolves and observes the current text layout direction (LTR/RTL).',
   },
   {
+    id: 'clipboard',
+    name: 'Clipboard',
+    summary: 'Copies text to the clipboard, including a directive hook for a copy-trigger element.',
+  },
+  {
     id: 'coercion',
     name: 'Coercion',
     summary: 'Small helpers for normalizing boolean/number/array/CSS-pixel inputs.',
+  },
+  {
+    id: 'collections',
+    name: 'Collections',
+    summary: 'Single/multiple selection state, plus a DataSource abstraction for array-rendering components.',
   },
   {
     id: 'dialog',
@@ -58,7 +68,13 @@ export const CDK_ENTRIES: CdkEntry[] = [
   {
     id: 'portal',
     name: 'Portal',
-    summary: 'Renders content into a different part of the DOM than where it was declared.',
+    summary:
+      'Renders content into a different part of the DOM than where it was declared, including attaching into an arbitrary external DOM node while keeping Qwik context intact.',
+  },
+  {
+    id: 'scrolling',
+    name: 'Scrolling',
+    summary: 'Tracks registered scrollable elements and reports viewport size/scroll-position changes.',
   },
   {
     id: 'stepper',
@@ -69,6 +85,11 @@ export const CDK_ENTRIES: CdkEntry[] = [
     id: 'table',
     name: 'Table',
     summary: 'A headless, high-performance data-table core that Material Table builds on.',
+  },
+  {
+    id: 'text-field',
+    name: 'Text field',
+    summary: 'Autosizing textarea and real browser-autofill detection for text inputs.',
   },
   {
     id: 'tree',
