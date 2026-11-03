@@ -17,6 +17,7 @@ const entries = [
   'dialog',
   'table',
   'tree',
+  'collections',
 ];
 
 export default defineConfig({

@@ -98,6 +98,11 @@
       "types": "./dist/tree/index.d.ts",
       "import": "./dist/tree/index.js"
     },
+    "./collections": {
+      "qwik": "./collections/index.ts",
+      "types": "./dist/collections/index.d.ts",
+      "import": "./dist/collections/index.js"
+    },
     "./overlay-prebuilt.css": "./dist/overlay-prebuilt.css",
     "./a11y-prebuilt.css": "./dist/a11y-prebuilt.css",
     "./scss/*": "./scss/*"
