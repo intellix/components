@@ -63,6 +63,8 @@ const EXAMPLES: string[] = [
   'datepicker-actions',
   'datepicker-touch',
   'datepicker-inline-calendar',
+  'datepicker-date-class',
+  'datepicker-locale',
 ];
 
 /** `timepicker-forms`'s initial value is `new Date()` ("today", at 12:30) — deterministic only
@@ -73,6 +75,12 @@ const TIMEPICKER_FORMS_CLOCK = new Date(2024, 0, 15, 10, 0, 0);
 /** `datepicker-value`'s 3 fields all show "today" — same clock-pinning need as
  *  `TIMEPICKER_FORMS_CLOCK` above. */
 const DATEPICKER_VALUE_CLOCK = new Date(2024, 0, 15, 10, 0, 0);
+
+/** `datepicker-date-class`'s "open calendar" interaction shows a `mat-calendar-body-today` cell
+ *  — same clock-pinning need as `DATEPICKER_VALUE_CLOCK` above (the 1st/20th highlight itself is
+ *  deterministic regardless of month — every month has both days — but "today" isn't without a
+ *  pinned clock). */
+const DATEPICKER_DATE_CLASS_CLOCK = new Date(2024, 0, 15, 10, 0, 0);
 
 /** Clicks the `select-disabled` example's "Disable select" checkbox, which drives `[disabled]`
  *  on both the `<mat-select>` and the native `<select>` cards. */
@@ -143,6 +151,43 @@ const openAutocompleteUnderRestingLabel: ParityStep = {
   },
 };
 
+/** `datepicker-date-class`: opens the calendar (within `[data-parity-root]`) so the `dateClass`-
+ *  highlighted 1st/20th cells actually render — same wait pattern as `specs/examples/`'s own
+ *  `openDatepicker` (`datepicker-overview`'s headline interaction). */
+const openDatepickerInRoot: ParityStep = {
+  name: 'open calendar via toggle',
+  run: async (page: Page) => {
+    await page.locator('[data-parity-root] mat-datepicker-toggle button').click();
+    await page.waitForSelector('.mat-datepicker-content', {state: 'attached', timeout: 5000});
+    await page
+      .waitForFunction(
+        () => !document.querySelector('.mat-datepicker-content.mat-datepicker-content-animating'),
+        undefined,
+        {timeout: 2000},
+      )
+      .catch(() => {});
+  },
+};
+
+/**
+ * `datepicker-locale`'s own "Dynamically switch to French" interaction is deliberately NOT
+ * exercised here (no `EXAMPLE_STEPS` entry) — it changes the example's `<mat-hint>` text on the
+ * real Angular side (a live `computed()` signal), but this port's `<mat-hint>` text can't
+ * follow it: `hintStart` is captured into a frozen `useSignal(() => props.hintStart)` snapshot
+ * at `MatFormField` mount (see `mat-form-field.tsx`'s own `hintStartSnapshot`), so a later
+ * render's new `<MatHint>` JSX element for the same slot is never substituted in — a real,
+ * pre-existing `MatFormField` limitation unrelated to this task's own date-adapter/locale work
+ * (every OTHER frozen content prop — `control`/`infixContent`/etc. — exists for an unrelated,
+ * necessary reason: a brand-new JSX reference for an unresolved component QRL crashes Qwik
+ * core). The locale switch itself, and its effect on the CALENDAR's own labels (which are NOT
+ * threaded through any of `MatFormField`'s frozen props — the popup is an imperatively-created
+ * overlay content component), is instead covered by
+ * `specs/material-datepicker/functional.spec.ts`'s own `locale switch updates calendar labels`
+ * test — a Qwik-only functional assertion, not a DOM-parity one, so the hint-text gap doesn't
+ * apply there. The DEFAULT (non-interaction) comparison below is unaffected either way (correct
+ * on both sides at first render) and stays a real regression check.
+ */
+
 const EXAMPLE_STEPS: Record<
   string,
   {steps: ParityStep[]; rootSelector?: string; clockDate?: Date | number | string}[]
@@ -159,6 +204,7 @@ const EXAMPLE_STEPS: Record<
   'autocomplete-auto-active-first-option': [{steps: [openAutocompleteInRoot]}],
   'autocomplete-plain-input': [{steps: [openAutocompleteInRoot]}],
   'autocomplete-optgroup': [{steps: [openAutocompleteUnderRestingLabel]}],
+  'datepicker-date-class': [{steps: [openDatepickerInRoot], clockDate: DATEPICKER_DATE_CLASS_CLOCK}],
   // form-field-error: no extra interaction — a typed-then-blurred field needing to wait out the
   // fill appearance's line-ripple transition (`specs/material-form-field/angular-parity.spec.ts`'s
   // own `waitForLineRippleSettled` pattern) was tried but consistently timed out waiting for the

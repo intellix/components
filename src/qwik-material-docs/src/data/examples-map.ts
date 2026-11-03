@@ -92,6 +92,8 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
       upstreamId: 'datepicker-inline-calendar',
       pkg: 'datepicker',
     },
+    {route: 'datepicker-date-class', upstreamId: 'datepicker-date-class', pkg: 'datepicker'},
+    {route: 'datepicker-locale', upstreamId: 'datepicker-locale', pkg: 'datepicker'},
   ],
   'mat-dialog': [
     {route: 'example', upstreamId: 'dialog-overview', pkg: 'dialog'},
