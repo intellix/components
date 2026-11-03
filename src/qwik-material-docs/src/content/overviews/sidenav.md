@@ -41,11 +41,20 @@ A `<MatSidenav>`'s opened state is owned by the consumer — pass `opened` and r
 via `onOpenedChange$` (see [Angular → Qwik notes](#angular-qwik-notes)).
 
 `<MatSidenav>` also supports callback props for just open and just close events: `onOpened$` and
-`onClosed$` respectively.
+`onClosed$` respectively, plus `onOpenedStart$`/`onClosedStart$` for when a transition begins.
 
 <!-- example(sidenav-open-close) -->
 
 All of these props work on `<MatDrawer>` as well.
+
+#### Opening/closing imperatively
+
+If you need to open/close/toggle a drawer from code that isn't rendering the `opened` prop
+itself (a toolbar button elsewhere in the page, a layout service), call `useMatDrawerRef()` and
+wire its `opened`/`onOpenedChange$` onto your `<MatDrawer>`/`<MatSidenav>` the same way you would
+your own signal. The returned handle's `open$()`/`close$()`/`toggle$(isOpen?)` mirror upstream's
+`MatDrawer.open()`/`close()`/`toggle()`, each resolving a `Promise<'open' | 'close'>` once the
+transition has settled (see [Angular → Qwik notes](#angular-qwik-notes)).
 
 ### Changing the sidenav's behavior
 
@@ -138,12 +147,16 @@ The sidenav has the ability to capture focus. This behavior is turned on for the
   q:slots instead — pass your `<MatSidenav>`/`<MatDrawer>` with `q:slot="start-drawer"` (or
   `"end-drawer"`). Everything else (typically `<MatSidenavContent>`, or any other content) goes
   in as the container's plain default-slotted children.
-- **`opened` is a consumer-owned prop, not an imperative `open()`/`close()`/`toggle()` API.**
-  Upstream's `<mat-sidenav>` exposes `open()`/`close()`/`toggle()` methods (each returning a
-  `Promise<boolean>`) you'd call via a template reference or `@ViewChild`. This port has no
-  component-instance handle to call methods on — toggle a sidenav by flipping your own `opened`
-  signal directly (`opened.value = !opened.value`), and read settled state back via
-  `onOpenedChange$`.
+- **`opened` is a consumer-owned prop; the imperative `open()`/`close()`/`toggle()` equivalent
+  is an opt-in hook, not a component-instance handle.** Upstream's `<mat-sidenav>` exposes
+  `open()`/`close()`/`toggle()` methods (each returning a `Promise<MatDrawerToggleResult>`) you'd
+  call via a template reference or `@ViewChild`. Qwik has no component-instance handle to call
+  methods on, so the default is still flipping your own `opened` signal directly
+  (`opened.value = !opened.value`) and reading settled state back via `onOpenedChange$` — but
+  `useMatDrawerRef()` gives you the same `Promise`-returning `open$()`/`close$()`/`toggle$()`
+  shape as a plain hook result, wired onto `<MatDrawer>` the same way your own signal would be,
+  and usable from anywhere the returned handle is held (not just from inside the drawer's own
+  subtree).
 - **`autosize` is accepted but has no additional effect.** This port always keeps drawer widths
   live via a `ResizeObserver`, unlike upstream's opt-in remeasurement (only on open/resize/mode
   change by default, to avoid layout thrashing) — kept as a prop for API parity only.
