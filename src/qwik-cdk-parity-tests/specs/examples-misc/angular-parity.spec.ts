@@ -149,6 +149,11 @@ const EXAMPLE_STEPS: Record<
       rootSelector: overlayRoot,
     },
   ],
+  // No interaction step for `ripple-overview` — clicking any of its checkboxes exercises an
+  // unrelated, pre-existing gap (a missed re-render once `useMatRipple()` also reads the signal
+  // the click's own `onChange$` writes — see `core/ripple-overview/index.tsx`'s own doc comment
+  // "Known gap"). The pristine, no-interaction render below already covers the actual contract
+  // this batch of work fixed (the three checkboxes' `ng-pristine`/`ng-untouched`/`ng-valid`).
 };
 
 /**
@@ -171,6 +176,17 @@ const EXAMPLE_STEPS: Record<
  *   `matTooltipPosition` bare.
  * - `dialog-content`: `<mat-dialog-actions align="end">` echoes `align`.
  * - `chips-stacked`: `<mat-chip-option selected>` echoes `selected`.
+ * - `ripple-overview`: `<div matRipple ...>Click me</div>` echoes `matripple` — found only once
+ *   the `ripple-overview`/checkbox `EXPECTED_FAILURES` entry below was removed (it was
+ *   previously masking this SEPARATE, unrelated gap too). This is the first ported example to
+ *   write `matRipple` directly on the CONSUMER's own element (every other `mat-ripple`/
+ *   `matripple` this harness compares is Material's own internal template markup, e.g. inside
+ *   `MatCheckbox`/`MatButtonToggle`, which must still be reproduced — see `lib/material-
+ *   parity.ts`'s own `CONSUMER_SELECTOR_ATTRS` comment). `useMatRipple()`'s `hostProps` has no
+ *   equivalent static marker attribute (it only ever contributes `class`/pointer handlers — see
+ *   `core/ripple/use-mat-ripple.ts`), so this is scoped to this one example rather than added to
+ *   the global `CONSUMER_SELECTOR_ATTRS` list (which would also stop comparing the Material-
+ *   internal cases).
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'button-disabled-interactive': ['disabledinteractive'],
@@ -181,6 +197,7 @@ const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'tooltip-manual': ['mattooltipposition'],
   'dialog-content': ['align'],
   'chips-stacked': ['selected'],
+  'ripple-overview': ['matripple'],
 };
 
 /**
@@ -240,16 +257,6 @@ const EXPECTED_FAILURES: Record<string, string> = {
     '(confirmed live: all 4 real chips render aria-selected="true" simultaneously, even though ' +
     'the listbox has no `multiple` attribute); this port only ever reflects ONE of them as ' +
     'selected. A real fix would need a different initial-selection model, not a small change.',
-  'ripple-overview':
-    "upstream's ripple-overview-example.html binds all three checkboxes via [(ngModel)] " +
-    "(FormsModule), which attaches Angular's NgControlStatus directive to each real " +
-    '<mat-checkbox> host from the very first render (ng-pristine/ng-untouched/ng-valid ' +
-    'classes); MatCheckboxProps has no touched/dirty/formBound-style fields at all (confirmed ' +
-    'against mat-checkbox.tsx) to reproduce that triad on a checkbox host — same category of ' +
-    'gap as the chips-reactive-form/chips-template-form entries above, not something ripple ' +
-    'work itself should fix. The ripple directive/classes/DOM this example actually exists to ' +
-    'exercise (mat-ripple, mat-ripple-unbounded, the two mat-form-field inputs) match exactly; ' +
-    'only the three checkbox hosts carry the extra classes.',
 };
 
 test.describe('qwik-material-examples (non-headline) — Angular DOM parity', () => {
