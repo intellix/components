@@ -43,6 +43,7 @@ const EXAMPLE_IDS = [
   'chips-autocomplete',
   'chips-avatar',
   'chips-stacked',
+  'ripple-overview',
 ];
 
 /**
@@ -231,6 +232,16 @@ const EXPECTED_FAILURES: Record<string, string> = {
     '(confirmed live: all 4 real chips render aria-selected="true" simultaneously, even though ' +
     'the listbox has no `multiple` attribute); this port only ever reflects ONE of them as ' +
     'selected. A real fix would need a different initial-selection model, not a small change.',
+  'ripple-overview':
+    "upstream's ripple-overview-example.html binds all three checkboxes via [(ngModel)] " +
+    "(FormsModule), which attaches Angular's NgControlStatus directive to each real " +
+    '<mat-checkbox> host from the very first render (ng-pristine/ng-untouched/ng-valid ' +
+    'classes); MatCheckboxProps has no touched/dirty/formBound-style fields at all (confirmed ' +
+    'against mat-checkbox.tsx) to reproduce that triad on a checkbox host — same category of ' +
+    'gap as the chips-reactive-form/chips-template-form entries above, not something ripple ' +
+    'work itself should fix. The ripple directive/classes/DOM this example actually exists to ' +
+    'exercise (mat-ripple, mat-ripple-unbounded, the two mat-form-field inputs) match exactly; ' +
+    'only the three checkbox hosts carry the extra classes.',
 };
 
 test.describe('qwik-material-examples (non-headline) — Angular DOM parity', () => {
