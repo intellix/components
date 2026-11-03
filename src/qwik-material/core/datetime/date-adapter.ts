@@ -18,23 +18,35 @@
  * upstream — just call them from your own object's methods instead of
  * inheriting them. `createNativeDateAdapter` does exactly that.
  *
- * `MAT_DATE_LOCALE`/`localeChanges`/`setLocale` are intentionally NOT ported:
- * no scenario in this project overrides the locale or changes it after
- * creation (see `../../timepicker/SYNC.md`), so `locale` is a plain,
- * readonly field fixed at creation time (`createNativeDateAdapter(locale)`).
- * A future consumer that needs live locale switching should add a
- * `Signal`-based mechanism analogous to `qwik-cdk/a11y`'s other reactive
- * primitives rather than resurrecting RxJS — out of scope here.
+ * `setLocale`/`localeChanges` ARE now ported (2026-11-03, for the pluggable-DateAdapter /
+ * locale / `dateClass` task — see `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS /
+ * MAT_DATE_LOCALE / dateClass" section). `localeChanges` is a `Signal<number>` (a version
+ * counter bumped by `setLocale`), the Qwik-native equivalent of upstream's RxJS
+ * `Subject<void>` — render code that displays locale-sensitive text reads `.value` (even just
+ * to subscribe) before calling any locale-sensitive method, so a `setLocale()` call triggers a
+ * re-render, the same way subscribing to upstream's `localeChanges` does. `MAT_DATE_LOCALE`
+ * itself is ported as a Qwik context carrying a `Signal<string>` (`use-date-adapter.ts`'s
+ * `MAT_DATE_LOCALE`), not a one-shot DI value, so a provider's locale can also be changed
+ * reactively without calling `setLocale` on every live adapter instance directly — see that
+ * file's doc comment.
  */
+import type {Signal} from '@qwik.dev/core';
 
 /** Adapts type `D` to be usable as a date by qwik-cdk/qwik-material components that work with
  * dates (today: `qwik-material/timepicker`; later: a date picker). Mirrors upstream's
  * `DateAdapter<D>` abstract class surface — see the module doc comment for why this is a plain
  * interface instead. */
 export interface DateAdapter<D> {
-  /** The locale used for all `Intl`-backed formatting on this adapter instance. Fixed at
-   *  creation — see the module doc comment. */
-  readonly locale: string;
+  /** The locale currently used for all `Intl`-backed formatting on this adapter instance.
+   *  Mutable via {@link DateAdapter.setLocale} — see the module doc comment. */
+  locale: string;
+  /** Bumped every time {@link DateAdapter.setLocale} runs — the Qwik-signal equivalent of
+   *  upstream's `localeChanges: Subject<void>`. Read `.value` from render code that displays
+   *  locale-sensitive text (even just to subscribe) so a locale change re-renders it. */
+  readonly localeChanges: Signal<number>;
+  /** Sets the locale used for all subsequent `Intl`-backed formatting on THIS adapter instance,
+   *  and bumps {@link DateAdapter.localeChanges}. Mirrors upstream `DateAdapter.setLocale()`. */
+  setLocale(locale: string): void;
 
   /** Gets the year component of the given date. */
   getYear(date: D): number;
