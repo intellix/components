@@ -513,6 +513,46 @@ v2 pass) still fails.
    dirty" section for why there's no `MatTimepickerInput.onTouched$`/
    `onDirty$` prop (the picker tracks both internally instead).
 
+## Fixed: a pre-seeded `value`'s FIRST paint used the hardcoded default adapter, not the configured one (coordinator follow-up, 2026-11-03)
+
+`<MatTimepickerInput>`'s own `initialDisplay` — the SSR-correct snapshot fed into the native
+`<input>`'s `value` DOM property — was a plain `useSignal(() => formatTimeForDisplay(picker.
+value.value))`, and `formatTimeForDisplay()` (see deviation 2, above, and `datepicker/SYNC.md`'s
+identical gap for `<MatDatepickerInput>`) always formats with the hardcoded `DEFAULT_DATE_ADAPTER`/
+`MAT_NATIVE_DATE_FORMATS` singleton, never whatever `MAT_DATE_ADAPTER_FACTORY`/`MAT_DATE_FORMATS`
+the app configured. Confirmed live: seeding the `custom-adapter` dev-app route's timepicker
+example with a non-null `PRESET_TIME` (14:30) rendered `"2:30 PM"` (the default adapter's 12-hour
+format) instead of `"14:30"` (`DOT_DATE_FORMATS.display.timeInput`'s 24-hour format) on first
+paint, both in the raw SSR response and after resume.
+
+Fixed the same way as `<MatDatepickerInput>`'s identical gap (see `datepicker/SYNC.md`'s own
+write-up for the full rationale): `initialDisplay` is now a `useComputed$`, built from two frozen
+`useSignal`s (`mountValue`/`mountLocale`, snapshotting `picker.value.value`/`picker._locale.value`
+ONCE at mount) and `formatTimeWithAdapter()` (the existing private helper backing
+`resolveAdapterForTimepicker()`'s callers, now also exported for this use):
+
+```ts
+const mountValue = useSignal(() => picker.value.value);
+const mountLocale = useSignal(() => picker._locale.value);
+const initialDisplay = useComputed$(() => {
+  if (mountValue.value == null) return '';
+  return resolveDateAdapter(picker._dateAdapterFactory, mountLocale.value).then(a =>
+    formatTimeWithAdapter(a, picker._dateFormats, mountValue.value),
+  );
+});
+```
+
+Returns a plain, synchronous `''` for the common empty-input case (never even an `async function`
+for it — never enters the async-suspension engine at all); returns a real `Promise<string>` only
+when a non-null seed needs the configured adapter's own `format()`. Reading `.value` on a
+still-pending `ComputedSignal` throws the in-flight promise, which Qwik's renderer catches and
+retries — SSR blocks until resolved, and the client re-suspends the same way on its first read
+after a resume. Same pattern `qwik-material/icon`'s `resolvedSvgIcon` established first (see that
+package's SYNC.md deviation #20) and the same pattern used for `<MatDatepickerInput>`. Verified
+via the new `specs/material-datepicker/functional.spec.ts` `pluggable DateAdapter — pre-seeded
+value, initial paint` tests (covers all three date-aware inputs — datepicker, range, timepicker —
+from the shared `custom-adapter` route).
+
 ## `ref` prop — composed with `picker._inputRef` (2026-11-02)
 
 `MatTimepickerInputProps.ref` (new): an external ref, merged via `composeRef()` with

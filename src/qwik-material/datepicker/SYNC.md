@@ -689,14 +689,44 @@ outside-click dispatcher, so the backdrop dismissal still fires too, correctly).
 
 ### Known gaps
 
-- **A pre-seeded `value`'s FIRST paint uses the hardcoded `en-US` `DEFAULT_DATE_ADAPTER`'s
-  format, not a configured custom adapter's.** `formatDateForDisplay()` (used for the SSR-correct
-  initial display snapshot on `<MatDatepickerInput>`/the range input's mirror spans) can't resolve
-  an async `QRL` factory synchronously (`component$`'s render function can't be async in this Qwik
-  version). Only interacting with the control (typing+blur, or a calendar-cell selection)
-  reformats through the configured adapter. No scenario pre-seeds a non-null value under a custom
-  adapter, so this is untested but real; the functional spec for the custom-adapter scenario
-  starts from an empty input specifically to sidestep it.
+- ~~A pre-seeded `value`'s FIRST paint uses the hardcoded `en-US` `DEFAULT_DATE_ADAPTER`'s
+  format, not a configured custom adapter's.~~ **FIXED** (coordinator follow-up, same task).
+  `initialDisplay` on `<MatDatepickerInput>` (and `<MatTimepickerInput>` — see
+  `timepicker/SYNC.md`) is now a `useComputed$`, not a plain `useSignal`, following the exact
+  pattern `qwik-material/icon`'s `resolvedSvgIcon` established first (see that package's SYNC.md
+  deviation #20): the compute function returns a plain, synchronous `''` when there's nothing to
+  format (the common empty-input case — never even an `async function` for it, so it never enters
+  the async-suspension engine at all), and a real `Promise<string>` — resolved through
+  `resolveDateAdapter(picker._dateAdapterFactory, mountLocale.value).then(a =>
+  formatDateWithAdapter(a, picker._dateFormats, mountValue.value))` — only when a non-null seed
+  value needs the configured adapter's own `format()`. Reading `.value` on a still-pending
+  `ComputedSignal` THROWS the in-flight promise, which Qwik's own renderer catches and retries —
+  SSR blocks until resolved (confirmed live: the raw SSR response body for `/mat-datepicker/
+  custom-adapter/`, fetched with a plain HTTP GET and no browser JS at all, already contains
+  `"05.12.2024"`/`"14:30"` — the `DotDateAdapter`/`DOT_DATE_FORMATS`-correct text for that route's
+  pre-seeded `PRESET_DATE`/`PRESET_TIME` — never the hardcoded-default `"12/5/2024"`/`"2:30 PM"`
+  it produced before this fix), and the client re-suspends the same way on its own first read
+  after a resume. `mountValue`/`mountLocale` snapshot `picker.value.value`/`picker._locale.value`
+  ONCE, at mount, into separate frozen `useSignal`s BEFORE the `useComputed$` reads them — this
+  preserves the existing "frozen, computed once, never reactively rewritten" invariant the native
+  `value` DOM property write already required (see `mat-input.tsx`'s own `initialValue` doc
+  comment); a `useComputed$` that instead called the (already-existing, private)
+  `resolveAdapterForPicker(picker)` helper directly would auto-track the LIVE `picker._locale`
+  signal (read synchronously, before its first `await`) and could reactively recompute — and
+  rewrite the input's `.value` — while a user is actively typing. `MatDateRangeInput` needed no
+  equivalent fix: its own `formatted` signal was already built with a `useTask$` that resolves the
+  configured adapter (added earlier in this same task), which already blocks SSR the same way.
+  New functional spec added: `specs/material-datepicker/functional.spec.ts`'s `pluggable
+  DateAdapter — pre-seeded value, initial paint` describe block (2 tests: raw SSR HTML via
+  `request.get()`, and the same values still correct after a real-browser resume). The
+  `custom-adapter` route (`src/qwik-cdk-dev-app/src/routes/mat-datepicker/custom-adapter/
+  index.tsx`) now seeds all three examples with a non-null value (`PRESET_DATE`/
+  `PRESET_RANGE_START`/`PRESET_RANGE_END`/`PRESET_TIME`) specifically so a wrong
+  (hardcoded-adapter) render is OBSERVABLY different from a correct one; `DOT_DATE_FORMATS.
+  display.timeInput` was also changed to an explicit 24-hour `{hour: '2-digit', minute: '2-digit',
+  hour12: false}` (was `{hour: 'numeric', minute: 'numeric'}`, which happened to collide with the
+  default adapter's own 12-hour-with-numeric-hour shape for some times) so the SAME
+  observable-difference trick works for the timepicker fixture too.
 - **`<mat-hint>` text bound to a value computed from `useDateLocale()` does not update on a
   locale change.** Pre-existing, unrelated-to-this-task `MatFormField` limitation: `hintStart`
   (like `control`/`infixContent`) is captured into a frozen `useSignal(() => props.hintStart)`
@@ -707,26 +737,41 @@ outside-click dispatcher, so the backdrop dismissal still fires too, correctly).
   of `MatFormField`'s frozen content props), which is why `specs/material-datepicker/
   functional.spec.ts`'s `locale switch updates calendar labels` test only asserts the calendar,
   and why `specs/examples-forms/angular-parity.spec.ts` deliberately has no `datepicker-locale`
-  interaction step (see that file's own comment).
-- **`specs/material-datepicker/angular-parity.spec.ts`'s `actions (calendar)` scenario: a 12px
-  horizontal overlay-position difference, found running this task's own regression pass.**
-  Reproduced in isolation (a minimal script: open/cancel/open/apply the single-date picker, then
-  open the range picker) — the Qwik page's `<mat-form-field>` elements each have a real, computed
-  `margin: 0 12px 0 0` that the equivalent Angular page's elements do not; confirmed via
-  `getComputedStyle()` on both sides and via grep that NO qwik-material SCSS file (ported or
-  otherwise) declares any `margin-right`/`margin` on `.mat-mdc-form-field` — upstream's own
-  `form-field.scss` doesn't either. The gap is present identically before and after the
-  "Apply" step that commits a value (confirmed in the same repro), i.e. it's not caused by
-  anything this task's `applyDatepickerSelection`-is-now-async change writes — it's a pre-existing
-  spacing difference between this port's and Angular's `<mat-form-field>` rendering that
-  apparently was never previously exercised by a position-sensitive comparison (every OTHER
-  scenario in this suite has at most one `<mat-form-field>` on the page at a time; `actions` is
-  the only one with two side by side, and its own `(field)` counterpart — which passes — compares
-  structure/classes, not absolute pixel position, so it never caught this). Root cause not
-  isolated further (out of scope for this task — no SCSS was touched by this work); left as a
-  known, documented gap, same category as `specs/material-timepicker`'s own pre-existing
-  `min-max` failure. `actions (field)` and every other `specs/material-datepicker` scenario pass
-  (23/24; `specs/material-timepicker` 6/7, its own pre-existing `min-max` unaffected).
+  interaction step (see that file's own comment). **Evaluated for a cheap fix in the coordinator
+  follow-up above and deliberately left as-is**: `mat-form-field.tsx`'s own doc comment (around
+  `controlSnapshot`) documents that EVERY frozen slot signal in that file — not just
+  `hintStart` — exists to guard against a confirmed-live Qwik core bug (a freshly-reconstructed
+  `JSXOutput` prop value swapped in for an unresolved child component's render QRL can be
+  observed disconnected from the DOM mid-replace). Un-freezing `hintStart` alone to fix this one
+  gap would reintroduce that exact class of bug for the hint slot specifically — not a small or
+  safe change, so left documented rather than attempted.
+- ~~`specs/material-datepicker/angular-parity.spec.ts`'s `actions (calendar)` scenario: a 12px
+  horizontal overlay-position difference.~~ **This was a genuine REGRESSION introduced by this
+  task, not pre-existing — found and fixed in the coordinator follow-up.** Proven with a
+  throwaway `git worktree add /tmp/dates-base a684af0357` (the base commit on `qwik-port-21.2`,
+  before any of this task's changes) built and served on `:4197`: `actions (calendar)` passed
+  6/6 there (3 repeats) against the SAME `:4201` Angular reference that failed against this
+  branch's own `:4192` preview. Root cause: `src/qwik-material-examples/datepicker/
+  datepicker-locale/datepicker-locale-example.css` (added by THIS task, for the `datepicker-locale`
+  example) had a bare, unscoped `mat-form-field { margin-right: 12px; }` rule, copied verbatim
+  from upstream's own Angular example — which relies on Angular's automatic per-component View
+  Encapsulation to scope that selector invisibly to just that one component's template. This
+  port's plain CSS import (`import './datepicker-locale-example.css'`, same shape every other
+  example uses) has NO such scoping: it is a GLOBAL side effect the moment that CSS chunk is
+  bundled into the dev-app AT ALL, applying to every `<mat-form-field>` on every route, not just
+  `datepicker-locale`'s own two fields — including the completely unrelated `actions` scenario,
+  which happens to be the only scenario in this suite with two `<mat-form-field>`s side by side
+  (making the leak position-sensitive, and therefore the only place a DOM-parity comparison could
+  actually observe it; `actions (field)`, which compares structure/classes rather than absolute
+  pixel position, never caught it either). Fixed by scoping the selector to the example's own
+  host tag instead: `datepicker-locale-example mat-form-field { margin-right: 12px; }` (the
+  component already renders a `<datepicker-locale-example>` wrapper). Verified: `actions`'s
+  computed `margin` went from `0px 12px 0px 0px` back to `0px`; `datepicker-locale`'s own two
+  fields are unaffected (still `0px 12px 0px 0px`). Two OTHER, pre-existing examples in the same
+  directory have the identical unscoped shape (`timepicker-datepicker-integration-example.css`,
+  `timepicker-validation-example.css`) — left untouched (out of scope for this fix; neither
+  happens to collide with a position-sensitive scenario the way this one did, so they're latent,
+  not regressions).
 
 ### Verification
 
@@ -738,14 +783,17 @@ outside-click dispatcher, so the backdrop dismissal still fires too, correctly).
 - `src/qwik-material-examples`/`src/qwik-material-docs` both typecheck clean.
 - `pnpm -C src/qwik-material-docs generate` picks up the 2 new examples
   (`datepicker-date-class`/`datepicker-locale`) automatically.
-- New functional specs (`specs/material-datepicker/functional.spec.ts`, 5 tests): 15/15 across
+- New functional specs (`specs/material-datepicker/functional.spec.ts`, now 7 tests — 5 from the
+  original task plus the 2 pre-seeded-value/SSR ones from the coordinator follow-up): 21/21 across
   `--repeat-each=3`.
 - New example parity cases (`datepicker-date-class`/`datepicker-locale`, default + the
   `date-class` interaction): 9/9 across `--repeat-each=3`; the full `specs/examples-forms` suite
-  (50 tests, every batch) and `specs/examples`/`specs/examples-rerender` filtered to
-  `datepicker|timepicker|date-range` all pass.
+  (50 tests, every batch — re-run clean after the `datepicker-locale-example.css` scoping fix) and
+  `specs/examples`/`specs/examples-rerender` filtered to `date|time` all pass (21/21).
 - `specs/formisch` (12/12, including its own `datepicker round-trips` test exercising the
   now-async `handleDatepickerBlur`/`setMatDatepickerValue` paths) unaffected.
-- `specs/material-datepicker/angular-parity.spec.ts`: 23/24 (the one known, documented
-  `actions (calendar)` gap above). `specs/material-timepicker/angular-parity.spec.ts`: 6/7 (the
-  pre-existing, unrelated `min-max` failure this project already carries).
+- `specs/material-datepicker/angular-parity.spec.ts`: 24/24 — INCLUDING `actions (calendar)`,
+  confirmed stable 10/10 across `--repeat-each=5` after the CSS-scoping fix.
+  `specs/material-timepicker/angular-parity.spec.ts`: 6/7 (the one pre-existing, unrelated
+  `min-max` failure this project's baseline already carries — see `qwik-port-21.2`'s own baseline,
+  578/579).
