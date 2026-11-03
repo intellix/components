@@ -175,3 +175,18 @@ outside-click dispatchers. Visible tasks run in no guaranteed order, so a
 dialog opened from another visible task intermittently never opened.
 `ensureCdkDispatchers()` (`internals/ensure-dispatchers.ts`) now creates them on
 first use; the root task reuses them and disposes them on teardown.
+
+## `DialogConfig.componentProps` / `DialogRef.setInput` (2026-11-03)
+
+`DialogWrapper`'s `contentProps` was hard-coded to `{}` — no way to pass props to the opened
+component other than `DIALOG_DATA`. Added `DialogConfig.componentProps?: Record<string, unknown>`
+(seeds the initial props passed to `createDialogService.open()`'s `DialogWrapper` instance) and
+`DialogRef.setInput(name, value): void` (merges a single prop into a local copy and pushes the
+result through `overlayRef.updateProps({contentProps: …})` — see `qwik-cdk/overlay/SYNC.md`'s
+`OverlayRef.updateProps()` entry for the underlying reactivity mechanism). Mirrors the identical
+addition to `qwik-material/dialog`'s `MatDialogConfig`/`MatDialogRef` and
+`qwik-material/bottom-sheet`'s `MatBottomSheetConfig`/`MatBottomSheetRef` — all three build on the
+same `OverlayRef.updateProps()` primitive. `DialogRef.setInput` returns `void` (not `this`),
+matching this file's existing mutator convention (`updatePosition`/`updateSize`/
+`addPanelClass`/`removePanelClass` are also `void` here, unlike the Material-layer refs' chainable
+versions).

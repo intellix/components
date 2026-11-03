@@ -67,7 +67,7 @@ export function useDialog(): Dialog {
       // Build a thin idGen + registry that close over the shared ctx signals.
       const idGen = makeCtxIdGen(ctx.idCounter);
       const registry = makeCtxRegistry(ctx.entries, ctx.overlayContainerCreated);
-      const overlay = createOverlayService(registry, idGen);
+      const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
       const service = createDialogService({
         overlay,
@@ -188,6 +188,7 @@ export function createDialogService(deps: {
             updateSize() {},
             addPanelClass() {},
             removePanelClass() {},
+            updateProps() {},
           } as unknown as OverlayRef,
           config: fakeConfig as DialogConfig<unknown, R>,
           isOpen,
@@ -226,7 +227,11 @@ export function createDialogService(deps: {
       // DialogConfig class instance when passing props through the overlay.
       const overlayRef: OverlayRef = deps.overlay.create(
         DialogWrapper,
-        {config: {...merged}, ContentComponent: component, contentProps: {}},
+        {
+          config: {...merged},
+          ContentComponent: component,
+          contentProps: {...(merged.componentProps ?? {})},
+        },
         {
           hasBackdrop: merged.hasBackdrop ?? true,
           backdropClass: merged.backdropClass,
