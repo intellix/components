@@ -1,0 +1,77 @@
+/*
+ * Adapted from
+ * src/components-examples/material/table/table-expandable-rows/table-expandable-rows-example.css
+ * — every selector prefixed with the example's own host tag (specs/examples-css enforces this;
+ * upstream's selectors are unscoped, relying on Angular's view encapsulation instead).
+ */
+table-expandable-rows-example table {
+  width: 100%;
+}
+
+table-expandable-rows-example tr.example-detail-row {
+  height: 0;
+}
+
+table-expandable-rows-example tr.example-element-row {
+  cursor: pointer;
+}
+
+table-expandable-rows-example tr.example-element-row:not(.example-expanded-row):hover {
+  background: whitesmoke;
+}
+
+table-expandable-rows-example tr.example-element-row:not(.example-expanded-row):active {
+  background: #efefef;
+}
+
+table-expandable-rows-example .example-element-row td {
+  border-bottom-width: 0;
+}
+
+table-expandable-rows-example .example-element-detail-wrapper {
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 0fr;
+  grid-template-columns: 100%;
+  transition: grid-template-rows 225ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+table-expandable-rows-example .example-element-detail-wrapper-expanded {
+  grid-template-rows: 1fr;
+}
+
+table-expandable-rows-example .example-element-detail {
+  display: flex;
+  min-height: 0;
+}
+
+table-expandable-rows-example .example-element-diagram {
+  min-width: 80px;
+  border: 2px solid black;
+  padding: 8px;
+  font-weight: lighter;
+  margin: 8px 0;
+  height: 104px;
+}
+
+table-expandable-rows-example .example-element-symbol {
+  font-weight: bold;
+  font-size: 40px;
+  line-height: normal;
+}
+
+table-expandable-rows-example .example-element-description {
+  padding: 16px;
+}
+
+table-expandable-rows-example .example-element-description-attribution {
+  opacity: 0.5;
+}
+
+table-expandable-rows-example .example-toggle-button {
+  transition: transform 225ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+table-expandable-rows-example .example-toggle-button-expanded {
+  transform: rotate(180deg);
+}
