@@ -20,6 +20,7 @@ const entries = [
   'collections',
   'clipboard',
   'text-field',
+  'scrolling',
 ];
 
 export default defineConfig({

@@ -113,6 +113,11 @@
       "types": "./dist/text-field/index.d.ts",
       "import": "./dist/text-field/index.js"
     },
+    "./scrolling": {
+      "qwik": "./scrolling/index.ts",
+      "types": "./dist/scrolling/index.d.ts",
+      "import": "./dist/scrolling/index.js"
+    },
     "./overlay-prebuilt.css": "./dist/overlay-prebuilt.css",
     "./a11y-prebuilt.css": "./dist/a11y-prebuilt.css",
     "./text-field-prebuilt.css": "./dist/text-field-prebuilt.css",
