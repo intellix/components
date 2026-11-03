@@ -43,6 +43,61 @@ export default component$(() => {
 Default dialog options can be provided through `<QwikMaterialProvider matDialogDefaults={{hasBackdrop: false}}>`
 at the root of your app — see [Composing directives](/guide/composing-directives/).
 
+### Passing props to the opened component
+Use `componentProps` to pass initial props to the component rendered inside the dialog, and
+`setInput` on the returned `MatDialogRef` to update a prop later, reactively:
+
+```tsx
+const ref = dialog.open$(UserProfileComponent, {
+  componentProps: {userId: '42'},
+});
+
+ref?.setInput('userId', '43');
+```
+
+### Confirming before closing
+`onBackdropClick$` fires on every backdrop click, even when `disableClose` is `true` — use it to
+show your own confirmation before deciding whether to close:
+
+```tsx
+const ref = dialog.open$(UserProfileComponent, {
+  disableClose: true,
+  onBackdropClick$: $(() => {
+    if (confirm('Discard changes?')) ref?.disableClose = false;
+  }),
+});
+```
+
+`disableClose` can be read and reassigned on the ref at any time; the dialog's Escape-key and
+backdrop-click handling always consult its current value.
+
+### Closing on navigation
+By default (`closeOnNavigation: true`), the dialog closes when the user navigates back or
+forward in their browser history, or the URL hash changes — not on every link click. Set
+`closeOnNavigation: false` to opt out.
+
+### Running code once every dialog is closed
+`dialog.afterAllClosed$` registers a callback that fires whenever the number of open dialogs
+returns to zero:
+
+```tsx
+const unsubscribe = await dialog.afterAllClosed$($(() => {
+  console.log('No dialogs are open');
+}));
+```
+
+### Contexts inside the dialog
+Content rendered inside the dialog automatically sees every `<QwikMaterialProvider>`
+configuration context visible where `useMatDialog()` was called — a form field inside the
+dialog picks up `matFormFieldConfig` from a provider wrapping your app, for example. To make your
+own app context available too, pass it via `context`:
+
+```tsx
+dialog.open$(UserProfileComponent, {
+  context: [{ctx: MY_APP_THEME, value: theme}],
+});
+```
+
 ### Sharing data with the Dialog component.
 If you want to share data with your dialog, you can use the `data` option to pass information to
 the dialog component.
@@ -150,7 +205,11 @@ You can add handling for this situation with the `afterClosed` promise on `MatDi
   `MatDialogRef.afterClosed()`/`.afterOpened()`/`.beforeClosed()` Observables become plain
   `afterClosed`/`afterOpened`/`beforeClosed` Promise properties.
 - **`MatDialogRef.backdropClick()`/`keydownEvents()` Observables → `onBackdropClick$`/
-  `onKeydown$`/`onOutsidePointer$` QRLs on `MatDialogConfig`.**
+  `onKeydown$`/`onOutsidePointer$` QRLs on `MatDialogConfig`.** `onBackdropClick$` fires on every
+  backdrop click regardless of `disableClose`, matching upstream.
+- **`MatDialog.afterAllClosed` Observable → `afterAllClosed$(callback)`**, a callback-
+  registration method returning an unsubscribe QRL (a one-shot `Promise` can't represent
+  something that fires more than once).
 - **No `TemplateRef` overload** — `open$` only accepts a `component$`.
 - **`mat-dialog-title`/`mat-dialog-content`/`mat-dialog-actions`/`mat-dialog-close` directives →
   components (`<MatDialogTitle>`, `<MatDialogContent>`, `<MatDialogActions>`,

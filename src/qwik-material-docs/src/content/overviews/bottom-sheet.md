@@ -52,6 +52,27 @@ Default bottom sheet options can be provided through `<QwikMaterialProvider matB
 at the root of your app — see [Composing directives](/guide/composing-directives/) for how
 `QwikMaterialProvider` folds every component-family config token into one set of props.
 
+### Passing props to the opened component
+Use `componentProps` to pass initial props to the component rendered inside the sheet, and
+`setInput` on the returned `MatBottomSheetRef` to update a prop later, reactively — same pattern
+as [the dialog overview](/overview/dialog/#passing-props-to-the-opened-component).
+
+### Confirming before dismissing
+`onBackdropClick$` fires on every backdrop click, even when `disableClose` is `true`, and
+`disableClose` itself can be reassigned on the ref at any time — same pattern as
+[the dialog overview](/overview/dialog/#confirming-before-closing).
+
+### Closing on navigation
+By default (`closeOnNavigation: true`), the sheet dismisses when the user navigates back or
+forward in their browser history, or the URL hash changes — not on every link click. Set
+`closeOnNavigation: false` to opt out.
+
+### Contexts inside the bottom sheet
+Content rendered inside the sheet automatically sees every `<QwikMaterialProvider>`
+configuration context visible where `useMatBottomSheet()` was called, and can opt in your own
+app contexts via `context` — same pattern as
+[the dialog overview](/overview/dialog/#contexts-inside-the-dialog).
+
 ### Accessibility
 
 `useMatBottomSheet()` creates modal dialogs that implement the ARIA `role="dialog"` pattern. This
@@ -106,11 +127,12 @@ ref?.afterDismissed.then(() => {
   `afterOpened()` Observables become plain `afterDismissed` / `afterOpened` Promise properties.
 - **`MatBottomSheetRef.backdropClick()` / `keydownEvents()` Observables → `onBackdropClick$` /
   `onKeydown$` / `onOutsidePointer$` QRLs on `MatBottomSheetConfig`** — same deviation as
-  `qwik-material/dialog`'s `MatDialogConfig`.
+  `qwik-material/dialog`'s `MatDialogConfig`. `onBackdropClick$` fires on every backdrop click
+  regardless of `disableClose`, matching upstream.
 - **No `TemplateRef` overload.** `open$` only accepts a `component$`, never a template.
 - **No `viewContainerRef` / `injector` / `bindings` config fields** — no DI container or
-  signal-input `Binding[]` API in Qwik; pass data through the content component's own props
-  (currently always `{}` via an internal `contentProps` mechanism) or `MAT_BOTTOM_SHEET_DATA`.
+  signal-input `Binding[]` API in Qwik; pass data through the content component's own props via
+  `componentProps` / `MatBottomSheetRef.setInput`, or `MAT_BOTTOM_SHEET_DATA`.
 - **`MatBottomSheetRef.componentRef` / `.instance` not meaningfully populated** — no `ComponentRef`
   equivalent exists in Qwik; `instance` is always `Signal<null>`.
 - **Global defaults via `QwikMaterialProvider`**, not an `MAT_BOTTOM_SHEET_DEFAULT_OPTIONS`
