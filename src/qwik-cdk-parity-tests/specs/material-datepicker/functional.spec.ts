@@ -190,3 +190,70 @@ test.describe('pluggable DateAdapter — functional', () => {
     // gap.
   });
 });
+
+test.describe('pluggable DateAdapter — pre-seeded value, initial paint', () => {
+  // `custom-adapter`'s three examples are seeded with a non-null `value` (`PRESET_DATE`/
+  // `PRESET_RANGE_START`/`PRESET_RANGE_END`/`PRESET_TIME` — see that route's own doc comment),
+  // specifically so a wrong (hardcoded-`DEFAULT_DATE_ADAPTER`/`MAT_NATIVE_DATE_FORMATS`) first
+  // paint is OBSERVABLY different from a correct (app-configured `DotDateAdapter`/
+  // `DOT_DATE_FORMATS`) one: `DotDateAdapter` reads/writes dates as `dd.mm.yyyy` (never
+  // `12/5/2024`, the default en-US `m/d/yyyy` a hardcoded adapter would produce for 5 December
+  // 2024), and `DOT_DATE_FORMATS.display.timeInput` is deliberately 24-hour (`"14:30"`, never
+  // `"2:30 PM"`, the default adapter's 12-hour format for the same instant).
+  //
+  // This matters for real apps rendering an EDIT form with a saved value: the datepicker input,
+  // the date-range input, and the timepicker input must all format that pre-seeded value with
+  // the APP-CONFIGURED adapter+formats on the very first paint — both in the raw SSR response
+  // (nothing here waits for any client JS; a GET request never runs the browser at all) and
+  // after the page is resumed in a real browser. See `datepicker/SYNC.md` and
+  // `timepicker/SYNC.md` for the `useComputed$`-based fix this proves (mirrors
+  // `qwik-material/icon`'s own `resolvedSvgIcon` pattern: the compute function returns a plain
+  // string when there's nothing to format, and a real `Promise<string>` — resolved through
+  // `resolveDateAdapter()` — only when a seed value needs the configured adapter's own
+  // `format()`; reading a still-pending result throws the in-flight promise, which Qwik's
+  // renderer catches and retries, so SSR blocks until resolved and the client re-suspends the
+  // same way on its first read after a resume).
+  test('SSR raw HTML has the custom-formatted initial values (date, range, time)', async ({
+    request,
+  }) => {
+    // A literal HTTP GET — no browser, no JS execution of any kind. Whatever text is in THIS
+    // response body is exactly what any crawler/curl/"view source" would see, and exactly what
+    // the browser's HTML parser has to work with before Qwik's own loader script runs a single
+    // line.
+    const response = await request.get(`${QWIK_URL}/mat-datepicker/custom-adapter/`);
+    expect(response.ok()).toBe(true);
+    const html = await response.text();
+
+    // The WRONG, hardcoded-default-adapter/-formats renderings must never appear anywhere in the
+    // raw response — not even transiently (there's no "transiently" in a single GET response).
+    expect(html).not.toContain('12/5/2024');
+    expect(html).not.toContain('12/25/2024');
+    expect(html).not.toMatch(/2:30\s*PM/i);
+
+    // The CORRECT, `DotDateAdapter`/`DOT_DATE_FORMATS`-formatted renderings must already be
+    // present. The range mirrors render as plain visible text content; the single-date and
+    // timepicker inputs' `.value` DOM property is restored via Qwik's own serialized
+    // backpatch state (a native `<input>`'s `value` is a DOM property, not an HTML attribute —
+    // see `mat-input.tsx`'s doc comment — so it's carried in that state rather than as a
+    // `value="..."` attribute on the tag itself), which is itself part of this same raw response
+    // body, not something a browser computes afterward.
+    expect(html).toContain('05.12.2024'); // dot-date input AND the range-start mirror
+    expect(html).toContain('25.12.2024'); // range-end mirror
+    expect(html).toContain('14:30'); // timepicker input, 24-hour format
+  });
+
+  test('pre-seeded values are still correctly formatted after resume', async ({page}) => {
+    await openCustomAdapterPage(page);
+
+    await expect(page.locator('#dot-date-input')).toHaveValue('05.12.2024');
+    await expect(page.locator('#dot-time-input')).toHaveValue('14:30');
+
+    const rangeField = page.locator('[data-parity-root] mat-form-field').nth(1);
+    await expect(rangeField.locator('.mat-date-range-input-mirror').first()).toHaveText(
+      '05.12.2024',
+    );
+    await expect(rangeField.locator('.mat-date-range-input-mirror').last()).toHaveText(
+      '25.12.2024',
+    );
+  });
+});

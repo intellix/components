@@ -66,8 +66,13 @@ class DotDateAdapter extends NativeDateAdapter {
  *  `.parse()` recognize (mirrors how a real Moment/Luxon-backed `MatDateFormats` uses a format
  *  LIBRARY's own format-string syntax instead of `Intl.DateTimeFormatOptions`) — every other
  *  field is unchanged from `MAT_NATIVE_DATE_FORMATS` (month/year labels stay `Intl`-based; the
- *  dot format only applies to the plain date-input text). `timeInput`/`timeOptionLabel` are also
- *  unchanged, since `DotDateAdapter` never overrides time formatting. */
+ *  dot format only applies to the plain date-input text). `timeInput`'s `Intl.DateTimeFormatOptions`
+ *  is deliberately a DIFFERENT shape from `MAT_NATIVE_DATE_FORMATS`'s own default (24-hour
+ *  `HH:mm` instead of the default's 12-hour `h:mm a`) even though `DotDateAdapter` never
+ *  overrides time FORMATTING logic itself — this makes a wrong (hardcoded-default-adapter/
+ *  formats) initial-value render OBSERVABLY DIFFERENT from a correct (configured-formats) one
+ *  for the timepicker fixture below too, the same way the dot date format already does for the
+ *  datepicker/range-input fixtures. */
 const DOT_DATE_FORMATS: MatDateFormats = {
   parse: {
     dateInput: 'DD.MM.YYYY',
@@ -75,7 +80,7 @@ const DOT_DATE_FORMATS: MatDateFormats = {
   },
   display: {
     dateInput: 'DD.MM.YYYY',
-    timeInput: {hour: 'numeric', minute: 'numeric'},
+    timeInput: {hour: '2-digit', minute: '2-digit', hour12: false},
     monthYearLabel: {year: 'numeric', month: 'short'},
     dateA11yLabel: {year: 'numeric', month: 'long', day: 'numeric'},
     monthYearA11yLabel: {year: 'numeric', month: 'long'},
@@ -83,8 +88,15 @@ const DOT_DATE_FORMATS: MatDateFormats = {
   },
 };
 
+const PRESET_DATE = new Date(2024, 11, 5); // 5 December 2024 — dot-format: "05.12.2024"
+const PRESET_RANGE_START = new Date(2024, 11, 5);
+const PRESET_RANGE_END = new Date(2024, 11, 25);
+const PRESET_TIME = new Date(2024, 11, 5, 14, 30); // 14:30 — 24h format: "14:30"
+
 const DotDatepickerInputExample = component$(() => {
-  const picker = useMatDatepicker<Date>({}) as unknown as MatDatepickerHandle<unknown>;
+  const picker = useMatDatepicker<Date>({
+    value: PRESET_DATE,
+  }) as unknown as MatDatepickerHandle<unknown>;
   return (
     <MatFormField
       style="width: 300px"
@@ -97,8 +109,9 @@ const DotDatepickerInputExample = component$(() => {
 });
 
 const DotDateRangeInputExample = component$(() => {
-  const range = useSignal<DateRange<Date>>({start: null, end: null});
+  const range = useSignal<DateRange<Date>>({start: PRESET_RANGE_START, end: PRESET_RANGE_END});
   const picker = useMatDateRangePicker<Date>({
+    value: {start: PRESET_RANGE_START, end: PRESET_RANGE_END},
     onValueChange$: $((v: DateRange<Date>) => {
       range.value = v;
     }),
@@ -123,8 +136,9 @@ const DotDateRangeInputExample = component$(() => {
 });
 
 const DotTimepickerInputExample = component$(() => {
-  const value = useSignal<Date | null>(null);
+  const value = useSignal<Date | null>(PRESET_TIME);
   const picker = useMatTimepicker<Date>({
+    value: PRESET_TIME,
     onValueChange$: $((v: Date | null) => {
       value.value = v;
     }),
