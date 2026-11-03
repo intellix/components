@@ -35,6 +35,7 @@ and `src/qwik-material/card/SYNC.md`.
 5. **Custom-element tag names (`mat-toolbar`, `mat-toolbar-row`) emitted verbatim** via IntrinsicElements augmentation (same pattern as Card).
 6. **`toolbar.html` collapses into `mat-toolbar.tsx` JSX.** Single unnamed `<Slot />` — Qwik preserves child source order automatically, matching Angular's ordering of the two adjacent `<ng-content>` projections.
 7. **QwikMaterialProvider NOT extended.** Upstream has no `MAT_TOOLBAR_CONFIG` token; per-instance `color` prop is the only consumer knob.
+8. **`color` prop widened to `OpenString<MatToolbarColor>` (2026-11-03, open-ended-color task).** Upstream's real `color` Input (`src/material/toolbar/toolbar.ts:59`) is typed `string | null`, not `ThemePalette`. Fixed via `core/open-string.ts`'s `OpenString<T>`.
 
 ## Stub inventory delta
 

@@ -1,9 +1,15 @@
 import {component$, Slot} from '@qwik.dev/core';
 import type {MatToolbarColor} from './toolbar-color';
+import type {OpenString} from '../core/open-string';
 
 export interface MatToolbarProps {
-  /** M2 palette color. Deprecated in M3 but honoured. Adds `mat-<color>` class. */
-  color?: MatToolbarColor;
+  /**
+   * Theme color class. Deprecated in M3 but honoured. Adds `mat-<color>`
+   * class. Upstream (`src/material/toolbar/toolbar.ts:59`) types `color`
+   * `string | null` — any value is accepted — so this prop accepts any
+   * string too, while still suggesting the three palette names.
+   */
+  color?: OpenString<MatToolbarColor>;
   /**
    * When true, applies `mat-toolbar-multiple-rows` class instead of
    * `mat-toolbar-single-row`. Consumer opts in explicitly because Qwik

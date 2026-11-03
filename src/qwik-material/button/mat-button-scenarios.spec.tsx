@@ -39,6 +39,10 @@ import {
   MatFabButton,
   MatMiniFabButton,
   MAT_BUTTON_CONFIG,
+  type MatButtonProps,
+  type MatIconButtonProps,
+  type MatFabProps,
+  type MatMiniFabProps,
 } from './public-api';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,6 +73,44 @@ describe('MatButton public-api exports — sanity', () => {
   it('MAT_BUTTON_CONFIG context id is defined', () => {
     expect(MAT_BUTTON_CONFIG).toBeDefined();
     expect(MAT_BUTTON_CONFIG.id).toBe('qwik-material/button-config');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Task 2 (open-ended `color`): upstream's real `color` Input is typed
+// `string | null` (src/material/button/button-base.ts:96), not the narrower
+// ThemePalette the config default-options token uses — any app-defined
+// palette name is valid. These are compile-time assertions (the widened
+// `OpenString<MatButtonColor>` type, see core/open-string.ts); a real DOM
+// assertion lives in specs/material-button/color-custom.spec.ts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MatButton family — color accepts an arbitrary palette string', () => {
+  it('MatButtonProps.color accepts a custom palette name', () => {
+    const p: MatButtonProps = {color: 'accent-outline'};
+    expect(p.color).toBe('accent-outline');
+  });
+
+  it('MatIconButtonProps.color accepts a custom palette name', () => {
+    const p: MatIconButtonProps = {color: 'accent-outline'};
+    expect(p.color).toBe('accent-outline');
+  });
+
+  it('MatFabProps.color accepts a custom palette name', () => {
+    const p: MatFabProps = {color: 'accent-outline'};
+    expect(p.color).toBe('accent-outline');
+  });
+
+  it('MatMiniFabProps.color accepts a custom palette name', () => {
+    const p: MatMiniFabProps = {color: 'accent-outline'};
+    expect(p.color).toBe('accent-outline');
+  });
+
+  it('still suggests the three documented palette names', () => {
+    const a: MatButtonProps = {color: 'primary'};
+    const b: MatButtonProps = {color: 'accent'};
+    const c: MatButtonProps = {color: 'warn'};
+    expect([a.color, b.color, c.color]).toEqual(['primary', 'accent', 'warn']);
   });
 });
 

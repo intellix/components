@@ -44,6 +44,7 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 11. **`ThemePalette` narrowed** to `MatProgressSpinnerColor = 'primary' | 'accent' | 'warn'`.
 12. **Deprecated Angular `MatSpinner` const alias** (`export const MatSpinner = MatProgressSpinner`) replaced by a first-class real component with distinct DOM tag (`<mat-spinner>`) and distinct default mode (`indeterminate`).
 13. **`intrinsic-elements.d.ts` widens BOTH `<mat-progress-spinner>` AND `<mat-spinner>` to `QwikIntrinsicElements['div'] & {mode?: string}`.** Both tag types need the widening because both components emit the `mode` custom attribute.
+14. **`color` prop widened to `OpenString<MatProgressSpinnerColor>` (2026-11-03, open-ended-color task).** Upstream's real `color` setter (`src/material/progress-spinner/progress-spinner.ts:109`) is typed `string | null | undefined`, not `ThemePalette` (deviation #11 above narrowed it incorrectly). Fixed by widening just the prop (not `MatProgressSpinnerConfig.color`) to `OpenString<MatProgressSpinnerColor>` (`core/open-string.ts`); `MatSpinnerProps` inherits the fix.
 
 ## Stub inventory delta
 

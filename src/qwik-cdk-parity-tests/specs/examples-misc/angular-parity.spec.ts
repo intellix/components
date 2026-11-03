@@ -20,6 +20,7 @@ const overlayRoot = '.cdk-overlay-container';
  * route segment shared by every entry here instead of a per-component one.
  */
 const EXAMPLE_IDS = [
+  'icon-svg',
   'button-disabled-interactive',
   'progress-bar-indeterminate',
   'progress-bar-buffer',

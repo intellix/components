@@ -32,4 +32,18 @@ describe('withIconSvgAttributes', () => {
     const output = withIconSvgAttributes(input);
     expect(output).toContain('<rect width="1" height="1"/>');
   });
+
+  it('applies an IconOptions.viewBox override, replacing any pre-existing viewBox', () => {
+    const input = `<svg viewBox="0 0 24 24"><path d="M1 1"/></svg>`;
+    const output = withIconSvgAttributes(input, '0 0 48 48');
+    expect(output).not.toContain('0 0 24 24');
+    expect((output.match(/viewBox="/g) ?? []).length).toBe(1);
+    expect(output).toContain('viewBox="0 0 48 48"');
+  });
+
+  it('leaves viewBox untouched when no override is given', () => {
+    const input = `<svg viewBox="0 0 24 24"><path d="M1 1"/></svg>`;
+    const output = withIconSvgAttributes(input);
+    expect(output).toContain('viewBox="0 0 24 24"');
+  });
 });

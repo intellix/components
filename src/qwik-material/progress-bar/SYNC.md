@@ -43,6 +43,7 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 11. **Three explicit aria-* passthrough props** (`aria-label` / `aria-labelledby` / `aria-describedby`) declared on `MatProgressBarProps` and forwarded to `<mat-progress-bar>`. Icon-precedent adjudication.
 12. **`intrinsic-elements.d.ts` widens `<mat-progress-bar>` to `QwikIntrinsicElements['div'] & {mode?: string}`.** The `mode` custom attribute mirrors upstream's `[attr.mode]` host binding. Same widening pattern as Icon's `fontIcon` attr.
 13. **`useOn('transitionend', ...)` handler reads live prop values via the Qwik props proxy at fire time**, not render-time-derived locals. Ensures mid-animation `mode` swaps are respected in the filter.
+14. **`color` prop widened to `OpenString<MatProgressBarColor>` (2026-11-03, open-ended-color task).** Upstream's real `color` setter (`src/material/progress-bar/progress-bar.ts:156`) is typed `string | null | undefined`, not `ThemePalette` (deviation #8 above narrowed it incorrectly). Fixed by widening just the prop (not `MatProgressBarConfig.color`) to `OpenString<MatProgressBarColor>` (`core/open-string.ts`).
 
 ## Stub inventory delta
 

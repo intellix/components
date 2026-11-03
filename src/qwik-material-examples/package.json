@@ -70,6 +70,7 @@
     "./form-field/form-field-prefix-suffix": "./form-field/form-field-prefix-suffix/index.tsx",
     "./grid-list/example": "./grid-list/example/index.tsx",
     "./icon/example": "./icon/example/index.tsx",
+    "./icon/icon-svg": "./icon/icon-svg/index.tsx",
     "./list/example": "./list/example/index.tsx",
     "./menu/example": "./menu/example/index.tsx",
     "./menu/menu-icons": "./menu/menu-icons/index.tsx",

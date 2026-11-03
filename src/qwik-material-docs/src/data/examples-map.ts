@@ -111,7 +111,10 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
     {route: 'form-field-prefix-suffix', upstreamId: 'form-field-prefix-suffix', pkg: 'form-field'},
   ],
   'mat-grid-list': [{route: 'example', upstreamId: 'grid-list-overview', pkg: 'grid-list'}],
-  'mat-icon': [{route: 'example', upstreamId: 'icon-overview', pkg: 'icon'}],
+  'mat-icon': [
+    {route: 'example', upstreamId: 'icon-overview', pkg: 'icon'},
+    {route: 'icon-svg', upstreamId: 'icon-svg', pkg: 'icon'},
+  ],
   'mat-list': [{route: 'example', upstreamId: 'list-overview', pkg: 'list'}],
   'mat-menu': [
     {route: 'example', upstreamId: 'menu-overview', pkg: 'menu'},

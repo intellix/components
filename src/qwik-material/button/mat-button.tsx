@@ -5,6 +5,7 @@ import {
   type MatButtonColor,
 } from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
+import type {OpenString} from '../core/open-string';
 import {PersistentRipple} from './internal/persistent-ripple';
 import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
@@ -51,8 +52,14 @@ const KNOWN_PROPS = new Set<string>([
 export interface MatButtonProps {
   /** Appearance variant. Default 'text' (or provider's defaultAppearance). */
   appearance?: MatButtonAppearance;
-  /** M2 palette class. Deprecated in M3 but honoured. Falls back to provider config. */
-  color?: MatButtonColor;
+  /**
+   * Theme color class. Deprecated in M3 but honoured. Falls back to provider
+   * config. Upstream (`src/material/button/button-base.ts:96`) types its
+   * `color` Input `string | null` — any value is accepted and rendered as
+   * `mat-<color>`, not just the M2 palette names — so this prop accepts any
+   * string too, while still suggesting the three palette names.
+   */
+  color?: OpenString<MatButtonColor>;
   /** Disables the button. Renders `disabled` attr on <button> or blocks click on <a>. */
   disabled?: boolean;
   /** Adds .mat-mdc-button-ripple-disabled which hides the state-layer overlay. */
