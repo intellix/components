@@ -1,4 +1,4 @@
-export type {OverlayConfig} from './overlay-config';
+export type {OverlayConfig, OverlayDefaultConfig} from './overlay-config';
 export {OVERLAY_REGISTRY} from './overlay-registry';
 export type {OverlayEntry, OverlayRegistry, OverlayEntryState} from './overlay-registry';
 export {OverlayContainerOutlet} from './overlay-container-outlet';
@@ -19,8 +19,8 @@ export type {
 export {validateVerticalPosition, validateHorizontalPosition} from './position/connected-position';
 export type {OverlayRef, OverlayVisualCallbacks} from './overlay-ref';
 export {createOverlayRef} from './overlay-ref';
-export type {Overlay} from './overlay';
-export {OVERLAY, useOverlay, createOverlayService} from './overlay';
+export type {Overlay, OverlayHandle} from './overlay';
+export {OVERLAY_DEFAULT_CONFIG, useOverlay, createOverlayService} from './overlay';
 export type {OverlayContainer} from './overlay-container';
 export {
   OVERLAY_CONTAINER,

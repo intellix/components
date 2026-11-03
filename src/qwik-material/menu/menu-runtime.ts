@@ -260,7 +260,7 @@ export function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): void {
   const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
   const idGen = makeIdGen(ctx);
   const registry = makeRegistry(ctx);
-  const overlay = createOverlayService(registry, idGen);
+  const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
   const parentInnerPadding = options.isSubmenu ? getParentInnerPadding(options.triggerEl) : 0;
   const positions = computePositions(resolved, options.isSubmenu, parentInnerPadding);

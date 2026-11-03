@@ -492,3 +492,85 @@ object rendered a second time, even within the same mount" bug category this is 
 of (confirmed: `MatSelectPanel`'s `option.content` here is a plain string in every current
 select scenario, ruled out directly by removing its only reactive dependency and reproducing the
 SAME crash unchanged).
+
+## `OverlayRef.updateProps()` — reactive content-component props (2026-11-03)
+
+No way existed to update an already-attached component's own props after `Overlay.create()` —
+`entry.props` was set once and read directly by `OverlayHost` (`<Comp {...entry.props} />`), so a
+later mutation was invisible post-mount (same "plain carrier, not a real signal" category as
+`panelClasses`/`backdropShowing` before their own fixes — see "DOM parity remediation" above).
+Added `OverlayRef.updateProps(partial)`: shallow-merges `partial` onto `entry.props` (so it's
+still correct pre-mount) and, via a new `OverlayVisualCallbacks.setProps` callback, pushes the
+merged object through a real `useSignal()` `OverlayHost` now owns for its rendered props
+(`<Comp {...props.value} />` instead of `<Comp {...entry.props} />`) — same pattern as every
+other post-mount-reactivity fix in this file. This is the shared primitive
+`MatDialogRef.setInput`/`MatBottomSheetRef.setInput`/`DialogRef.setInput` are all built on (see
+each package's own SYNC.md) — none of their wrapper components needed any new plumbing of their
+own, since the wrapper's OWN `contentProps` prop is just one key inside the same `entry.props` bag
+`updateProps({contentProps: …})` replaces.
+
+## `useOverlay()` — app-facing overlay hook (2026-11-03)
+
+Nothing provided the `Overlay` service to application code — `useOverlay()` read a context no
+provider ever installed, so calling it under `<QwikCdkRoot>` threw. Every other consumer-facing
+overlay hook in this port (`useDialog()`, `useMatDialog()`, `useMatBottomSheet()`) builds its OWN
+`Overlay` via `createOverlayService(registry, idGen)` inside a `$()`-wrapped method, closing over
+`QWIK_CDK`'s signals — never handing the plain `Overlay` object itself to the component tree.
+`useOverlay()` now does the same, but as a general-purpose, standalone hook.
+
+This was NOT as simple as `useContextProvider(OVERLAY, createOverlayService(...))` from
+`<QwikCdkRoot>`'s render body, which was the first approach tried and is worth recording as a
+dead end: `Overlay.create`/`position` are plain JS closures (over a registry/id-generator), not
+`$()` QRLs. A real app almost always calls `useOverlay()` during render and then invokes the
+result LATER, from an event handler's own `$()` scope — capturing a plain `Overlay` instance that
+way fails SSR serialization outright with `Code(Q34)` (confirmed live). Wrapping it in
+`noSerialize()` avoids the crash but silently resolves to `undefined` after the SSR→CSR resume
+(also confirmed live) — the object only ever existed in the SERVER's render pass; nothing
+repopulates it client-side (unlike `keyboardDispatcher`/`dialogScrollStrategyFactory`, which live
+on `QwikCdkInternals` as NoSerialize fields explicitly repopulated in a client-only
+`useVisibleTask$`).
+
+Fixed by giving `useOverlay()` the exact shape `useDialog()` already proves out: it returns
+`{create$: QRL<...>}`, where `create$`'s own closure captures only `ctx` (the `QwikCdkInternals`
+store — a provided context value, safely serializable) and builds a FRESH `Overlay` inside its
+own body on every call, never capturing one from outside. The returned `OverlayRef` is
+`noSerialize()`-wrapped before returning, matching `MatDialog.open$`/`Dialog.open$`'s own
+convention. Consumers call `await overlay.create$(Component, props, config)` from their own event
+handlers — exercised end-to-end (SSR → resume → open → backdrop click → close) by
+`specs/cdk-overlay/basic-create.spec.ts`. The `OVERLAY` context id itself was removed (it never
+worked and nothing else referenced it); `OVERLAY_DEFAULT_CONFIG` stays (see below — plain data, no
+closures, safe to provide directly).
+
+Also added in the same pass:
+- `OverlayRef.detachments(callback): () => void` — fires once, when `detach()`/`dispose()` runs.
+- `OverlayRef.backdropClick(callback): () => void` — fires on every click on this overlay's own
+  backdrop element, wired directly from a new `onClick$` on `OverlayHost`'s backdrop `<div>`
+  (mirrors upstream `BackdropRef`'s own click listener feeding `OverlayRef.backdropClick()`
+  unconditionally — independent of whatever close behaviour a consumer wires up separately, same
+  "always fires" contract already established for `MatDialogRef.onBackdropClick$`/
+  `MatBottomSheetRef.onBackdropClick$`).
+- `OverlayRef.keydownEvents(callback): () => void` — installs a fan-out on the existing
+  `_keydownEvents` field the keyboard dispatcher already reads as a fallback
+  (`h?.onKeydown ?? overlayRef._keydownEvents`); the caller still has to register the ref with the
+  dispatcher itself (`keyboardDispatcher.add(overlayRef)`, no handlers) for events to actually
+  reach it — this method only wires the fan-out, it doesn't also auto-register (auto-registering
+  every `OverlayRef` with the keyboard/outside-click dispatchers on attach, like upstream's own
+  `OverlayRef.attach()` does unconditionally, would be the fully-faithful fix, but touches the
+  shared attach/detach path every existing consumer — dialog, bottom sheet, select, menu,
+  autocomplete, tooltip, datepicker — already depends on; deliberately left as a documented gap
+  rather than risked here).
+
+## `OverlayDefaultConfig` — app-wide overlay defaults (2026-11-03)
+
+Added `OverlayDefaultConfig` (`{usePopover?: boolean}`) + `OVERLAY_DEFAULT_CONFIG` context,
+provided by `<QwikCdkRoot overlayDefaultConfig={…}>` (plain data, safe to provide directly — see
+`useOverlay()`'s entry above for why the SAME approach doesn't work for the `Overlay` service
+itself) and also stored on `QwikCdkInternals.overlayDefaultConfig` (defaults to `{}`).
+`createOverlayService()` takes it as an optional third argument and folds it into the
+`usePopover` fallback chain (`config.usePopover ?? defaultConfig?.usePopover ?? true`). Wired
+through every existing `createOverlayService()` call site in the qwik-material package (dialog,
+bottom sheet, select, menu, autocomplete, tooltip, datepicker, timepicker, snack bar) via
+`ctx.overlayDefaultConfig` — each is a one-line, backward-compatible change (defaults to `{}`, so
+nothing changes unless an app actually sets the prop). Only `usePopover` is implemented for now;
+other app-wide overlay defaults (e.g. a default scroll strategy) can extend the same interface
+later.

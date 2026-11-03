@@ -22,6 +22,18 @@ export interface OverlayVisualCallbacks {
    */
   setPanelClasses(classes: readonly string[]): void;
   /**
+   * Mirrors the backdrop/panel-class setters above, for `updateProps()`
+   * calls made AFTER the overlay has already mounted. `entry.props` (the
+   * plain object the attached component receives as its own JSX props) is
+   * only correct on `OverlayHost`'s *first* render for the same reason as
+   * every other `OverlayEntryState` field — the entry is built inside a
+   * QRL, where Qwik hooks can't run, so nothing observes a later mutation.
+   * `OverlayHost` owns a real `useSignal()` of the current props object;
+   * `updateProps()` replaces it wholesale (a shallow merge happens in
+   * `OverlayRef.updateProps` itself, before calling this).
+   */
+  setProps(props: Record<string, unknown>): void;
+  /**
    * ONLY wired for a reparented host (see `_onReparented()` below) — never
    * for the common 'global' case. Still provided and still called by
    * `OverlayHost` (`detached.value`'s conditional-null-return below is
@@ -112,10 +124,49 @@ export interface OverlayRef {
   }): void;
   addPanelClass(classes: string | string[]): void;
   removePanelClass(classes: string | string[]): void;
+  /**
+   * Shallow-merges `partial` onto the attached component's own props (the
+   * `props` object passed to `Overlay.create(component, props, config)`)
+   * and, once the overlay has mounted, pushes the merged result through
+   * `OverlayHost`'s real signal so the attached component re-renders with
+   * the new props — the generic primitive every "update an opened
+   * component's inputs" API in this port (`MatDialogRef.setInput`,
+   * `MatBottomSheetRef.setInput`, `DialogRef.setInput`) is built on.
+   */
+  updateProps(partial: Record<string, unknown>): void;
   /** Optional keydown callback; assigned by `OverlayKeyboardDispatcher.add`. */
   _keydownEvents?: (event: KeyboardEvent) => void;
   /** Optional outside-pointer callback; assigned by `OverlayOutsideClickDispatcher.add`. */
   _outsidePointerEvents?: (event: MouseEvent) => void;
+
+  /**
+   * Registers a callback invoked once, when this overlay is torn down
+   * (`detach()`/`dispose()`) — qwik-cdk's equivalent of upstream
+   * `OverlayRef.detachments()`. Returns an unsubscribe function.
+   */
+  detachments(callback: () => void): () => void;
+  /**
+   * Registers a callback invoked on every click that lands on this
+   * overlay's own backdrop element — qwik-cdk's equivalent of upstream
+   * `OverlayRef.backdropClick()`, for apps building their own overlay via
+   * `useOverlay()`. Fires regardless of any close behavior the app wires
+   * up separately (same "always emits" contract `MatDialogRef`/
+   * `MatBottomSheetRef`'s own `onBackdropClick$` already has). Returns an
+   * unsubscribe function.
+   */
+  backdropClick(callback: (event: MouseEvent) => void): () => void;
+  /**
+   * Registers a callback invoked on keydown events routed to this overlay
+   * by the global `OverlayKeyboardDispatcher` — qwik-cdk's equivalent of
+   * upstream `OverlayRef.keydownEvents()`. The ref must ALSO be added to
+   * the dispatcher (`keyboardDispatcher.add(overlayRef)`, no handlers
+   * argument) for events to actually reach it — this method only wires the
+   * fan-out `_keydownEvents` field the dispatcher already knows to read.
+   * Returns an unsubscribe function.
+   */
+  keydownEvents(callback: (event: KeyboardEvent) => void): () => void;
+  /** @internal Called by `OverlayHost`'s backdrop click handler. */
+  _notifyBackdropClick(event: MouseEvent): void;
 }
 
 export function createOverlayRef(deps: {
@@ -128,6 +179,10 @@ export function createOverlayRef(deps: {
   let paneEl: HTMLElement | null = null;
   let visuals: OverlayVisualCallbacks | null = null;
   let reparented = false;
+  let alreadyDetached = false;
+  const detachmentCallbacks = new Set<() => void>();
+  const backdropClickCallbacks = new Set<(event: MouseEvent) => void>();
+  const keydownCallbacks = new Set<(event: KeyboardEvent) => void>();
 
   const ref: OverlayRef = {
     get config() {
@@ -195,6 +250,10 @@ export function createOverlayRef(deps: {
       } else {
         deps.registry.remove(deps.entry.id);
       }
+      if (!alreadyDetached) {
+        alreadyDetached = true;
+        for (const cb of detachmentCallbacks) cb();
+      }
     },
     dispose() {
       ref.detach();
@@ -228,6 +287,35 @@ export function createOverlayRef(deps: {
       const next = deps.entry.state.panelClasses.value.filter(c => !arr.includes(c));
       deps.entry.state.panelClasses.value = next;
       visuals?.setPanelClasses(next);
+    },
+    updateProps(partial) {
+      const next = {...deps.entry.props, ...partial};
+      deps.entry.props = next;
+      visuals?.setProps(next);
+    },
+    detachments(callback) {
+      detachmentCallbacks.add(callback);
+      return () => detachmentCallbacks.delete(callback);
+    },
+    backdropClick(callback) {
+      backdropClickCallbacks.add(callback);
+      return () => backdropClickCallbacks.delete(callback);
+    },
+    keydownEvents(callback) {
+      keydownCallbacks.add(callback);
+      // Lazily install the fan-out the keyboard dispatcher already knows to
+      // read (`h?.onKeydown ?? overlayRef._keydownEvents`) — see this
+      // method's doc comment on the interface for the dispatcher
+      // registration the caller still has to do separately.
+      if (!ref._keydownEvents) {
+        ref._keydownEvents = event => {
+          for (const cb of keydownCallbacks) cb(event);
+        };
+      }
+      return () => keydownCallbacks.delete(callback);
+    },
+    _notifyBackdropClick(event) {
+      for (const cb of backdropClickCallbacks) cb(event);
     },
   };
 

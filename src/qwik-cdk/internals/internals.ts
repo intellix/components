@@ -18,6 +18,7 @@ import type {DialogRef} from '../dialog/dialog-ref';
 import type {OverlayKeyboardDispatcher} from '../overlay/dispatchers/overlay-keyboard-dispatcher';
 import type {OverlayOutsideClickDispatcher} from '../overlay/dispatchers/overlay-outside-click-dispatcher';
 import type {ScrollStrategy} from '../overlay/scroll/scroll-strategy';
+import type {OverlayDefaultConfig} from '../overlay/overlay-config';
 import type {Direction} from '../bidi/directionality';
 
 export interface QwikCdkInternals {
@@ -54,6 +55,16 @@ export interface QwikCdkInternals {
 
   /** Default factory for `DialogConfig.scrollStrategy` when one isn't supplied. */
   dialogScrollStrategyFactory: NoSerialize<() => ScrollStrategy> | undefined;
+
+  /**
+   * App-wide defaults merged into every overlay's `OverlayConfig` at
+   * creation time (qwik-cdk's `OVERLAY_DEFAULT_CONFIG` equivalent).
+   * Populated from `<QwikCdkRoot overlayDefaultConfig={…}>`; defaults to
+   * `{}` (no overrides) when the prop is omitted. Every
+   * `createOverlayService()` call site passes this through as its third
+   * argument.
+   */
+  overlayDefaultConfig: OverlayDefaultConfig;
 }
 
 /**

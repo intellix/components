@@ -401,7 +401,7 @@ export function openSelectPanel(
   const {keyboardDispatcher, outsideClickDispatcher} = ensureCdkDispatchers(ctx);
   const idGen = makeIdGen(ctx);
   const registry = makeRegistry(ctx);
-  const overlay = createOverlayService(registry, idGen);
+  const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
   signals.exiting.value = false;
 

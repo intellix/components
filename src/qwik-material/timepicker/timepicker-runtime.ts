@@ -199,7 +199,7 @@ export function openTimepickerPanel<D>(
 
   const {outsideClickDispatcher} = ensureCdkDispatchers(ctx);
   const registry = makeRegistry(ctx);
-  const overlay = createOverlayService(registry, idGen);
+  const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
   picker._exiting.value = false;
 

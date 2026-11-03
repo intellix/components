@@ -328,4 +328,41 @@ describe('Overlay (createOverlayService)', () => {
   it.skip('should do nothing when trying to attach a disposed overlay', () => {
     // SKIP: DOM-render — checks that no .cdk-overlay-pane appears in DOM.
   });
+
+  describe('OverlayDefaultConfig (createOverlayService third argument)', () => {
+    // Popover-API feature detection (`'showPopover' in document.body`) isn't
+    // implemented by happy-dom, so every other test in this file naturally
+    // exercises the `usePopover === false` branch. Mock it here to exercise
+    // the `defaultConfig.usePopover` fallback specifically.
+    beforeEach(() => {
+      (document.body as any).showPopover = () => {};
+    });
+    afterEach(() => {
+      delete (document.body as any).showPopover;
+    });
+
+    it('falls back to defaultConfig.usePopover when a per-overlay config omits it', () => {
+      const registry = makeRegistry();
+      const idGen = createIdGenerator();
+      const overlay = createOverlayService(registry, idGen, {usePopover: false});
+      overlay.create(StubComponent, {});
+      expect(registry.entries.value[0].usePopover).toBe(false);
+    });
+
+    it('a per-overlay config.usePopover always wins over the default', () => {
+      const registry = makeRegistry();
+      const idGen = createIdGenerator();
+      const overlay = createOverlayService(registry, idGen, {usePopover: false});
+      overlay.create(StubComponent, {}, {usePopover: true} as OverlayConfig);
+      expect(registry.entries.value[0].usePopover).toBe(true);
+    });
+
+    it('defaults to true (Popover API available) when neither is set', () => {
+      const registry = makeRegistry();
+      const idGen = createIdGenerator();
+      const overlay = createOverlayService(registry, idGen);
+      overlay.create(StubComponent, {});
+      expect(registry.entries.value[0].usePopover).toBe(true);
+    });
+  });
 });

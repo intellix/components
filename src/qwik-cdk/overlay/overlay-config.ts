@@ -73,3 +73,21 @@ export interface OverlayConfig {
    */
   eventPredicate?: (event: Event) => boolean;
 }
+
+/**
+ * App-wide defaults merged into every overlay's `OverlayConfig` at creation
+ * time, qwik-cdk's equivalent of upstream `OVERLAY_DEFAULT_CONFIG`.
+ * Provided by `<QwikCdkRoot overlayDefaultConfig={…}>`; consumed by every
+ * `createOverlayService()` call site (dialog, bottom-sheet, select, menu,
+ * autocomplete, tooltip, datepicker, timepicker, snack-bar) via
+ * `QwikCdkInternals.overlayDefaultConfig`. A per-overlay `OverlayConfig`
+ * field always wins over this default when both are set.
+ */
+export interface OverlayDefaultConfig {
+  /**
+   * Default for `OverlayConfig.usePopover` when an individual overlay
+   * doesn't specify one. qwik-cdk's own fallback (browser supports the
+   * Popover API) stays `true` when this is unset.
+   */
+  usePopover?: boolean;
+}
