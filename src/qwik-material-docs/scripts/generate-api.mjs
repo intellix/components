@@ -33,8 +33,8 @@ const MATERIAL_ENTRY_POINTS = [
 ];
 
 const CDK_ENTRY_POINTS = [
-  'a11y', 'accordion', 'bidi', 'coercion', 'dialog', 'keycodes', 'layout', 'overlay', 'platform',
-  'portal', 'stepper', 'table', 'tree',
+  'a11y', 'accordion', 'bidi', 'clipboard', 'coercion', 'collections', 'dialog', 'keycodes',
+  'layout', 'overlay', 'platform', 'portal', 'scrolling', 'stepper', 'table', 'text-field', 'tree',
 ];
 
 const project = new Project({

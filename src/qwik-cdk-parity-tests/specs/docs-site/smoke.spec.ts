@@ -19,8 +19,8 @@ const COMPONENT_IDS = [
   'toolbar', 'tooltip', 'tree',
 ];
 const CDK_IDS = [
-  'a11y', 'accordion', 'bidi', 'coercion', 'dialog', 'keycodes', 'layout', 'overlay', 'platform',
-  'portal', 'stepper', 'table', 'tree',
+  'a11y', 'accordion', 'bidi', 'clipboard', 'coercion', 'collections', 'dialog', 'keycodes',
+  'layout', 'overlay', 'platform', 'portal', 'scrolling', 'stepper', 'table', 'text-field', 'tree',
 ];
 const GUIDE_IDS = [
   'getting-started', 'theming', 'composing-directives', 'using-with-formisch',
@@ -69,7 +69,8 @@ test.describe('docs site smoke', () => {
 
   test('cdk index', async ({page}) => {
     await expectNoConsoleErrors(page, `${BASE_URL}/cdk/`);
-    await expect(page.locator('.docs-card-link')).toHaveCount(13);
+    // 13 original entries + clipboard/collections/scrolling/text-field (blockers/cdk expansion).
+    await expect(page.locator('.docs-card-link')).toHaveCount(17);
   });
 
   test('guide index', async ({page}) => {

@@ -17,6 +17,10 @@ const entries = [
   'dialog',
   'table',
   'tree',
+  'collections',
+  'clipboard',
+  'text-field',
+  'scrolling',
 ];
 
 export default defineConfig({
@@ -33,6 +37,7 @@ export default defineConfig({
         const entries: [string, string][] = [
           ['scss/overlay/overlay-prebuilt.scss', 'dist/overlay-prebuilt.css'],
           ['scss/a11y/a11y-prebuilt.scss', 'dist/a11y-prebuilt.css'],
+          ['scss/text-field/text-field-prebuilt.scss', 'dist/text-field-prebuilt.css'],
         ];
         for (const [src, out] of entries) {
           const result = sass.compile(path.resolve(__dirname, src), {style: 'expanded'});

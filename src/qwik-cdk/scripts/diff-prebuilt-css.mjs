@@ -28,6 +28,7 @@ const sass = require('sass');
 const pairs = [
   ['src/cdk/overlay/overlay-prebuilt.scss', 'src/qwik-cdk/dist/overlay-prebuilt.css'],
   ['src/cdk/a11y/a11y-prebuilt.scss', 'src/qwik-cdk/dist/a11y-prebuilt.css'],
+  ['src/cdk/text-field/text-field-prebuilt.scss', 'src/qwik-cdk/dist/text-field-prebuilt.css'],
 ];
 
 /** Strip copyright/license/sourcemap comment blocks then collapse whitespace. */
