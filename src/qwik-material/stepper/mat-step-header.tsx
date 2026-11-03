@@ -4,6 +4,7 @@ import type {StepperOrientation, StepState} from '@angular-community/qwik-cdk/st
 import {MatIcon} from '../icon/mat-icon';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /**
@@ -93,6 +94,7 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
   const animationsDisabled = useAnimationsDisabled();
   const hostRef = useSignal<HTMLElement>();
   const rippleContainerRef = useSignal<HTMLElement>();
+  const rippleGlobalOptions = useRippleGlobalOptions();
 
   // Upstream `step-header.html`: `[matRippleTrigger]="_getHostElement()"` —
   // the step header's own host `<mat-step-header>` (hostRef below). ONE
@@ -100,10 +102,15 @@ export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
   // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
   // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
   const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: !!props.disableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: !!props.disableRipple,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   const horizontal = props.orientation === 'horizontal';

@@ -3,6 +3,7 @@ import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatPseudoCheckbox} from '../core/mat-pseudo-checkbox';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {
   MAT_BUTTON_TOGGLE_GROUP_STATE,
   MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS,
@@ -149,6 +150,7 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
   ].filter(Boolean) as string[];
 
   const rippleContainerRef = useSignal<HTMLElement>();
+  const rippleGlobalOptions = useRippleGlobalOptions();
 
   // Upstream `button-toggle.html`: `[matRippleTrigger]="button"` — `#button`
   // is the inner `<button>` below, a SIBLING of the `.mat-button-toggle-ripple`
@@ -163,10 +165,15 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
     const live = stateSignal.value;
     const liveDisableRipple = (props.disableRipple ?? false) || live.disableRipple;
     const liveDisabled = live.disabled || (props.disabled ?? false);
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: liveDisableRipple || liveDisabled,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: liveDisableRipple || liveDisabled,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   const onClick$ = $(async (event: Event) => {

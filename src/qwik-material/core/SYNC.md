@@ -478,13 +478,10 @@ into every consumer SAFE to touch from this worktree (reads `useRippleGlobalOpti
 time, same as each already reads `useAnimationsDisabled()`, and passes it through): `button`/
 `icon-button`/`fab`/`mini-fab`'s shared `internal/ripple-loader.ts`, `chips`' own
 `internal/ripple-loader.ts` copy, `checkbox`, `radio`, core's `MatOption`, `menu-item`,
-`slide-toggle`, and every tab surface (`MatTabGroup`'s per-label ripple + both pagination buttons,
-`MatTabLabelItem`, `MatTabLink`, `MatTabNav`'s pagination buttons). Deliberately NOT touched from
-this worktree (owned by a parallel tier-2 task on a different branch — see this repo's worktree
-map): `button-toggle` (`mat-button-toggle.tsx`) and `stepper` (`mat-step-header.tsx`); both still
-call `handleRippleEvent()` with the pre-2026-11-03 3-argument form, so they're simply unaffected by
-`MAT_RIPPLE_GLOBAL_OPTIONS` until that task (or a follow-up here) adds the same one-line wiring —
-not a regression, a documented gap. `slider` is untouched for the same pre-existing reason the
+`slide-toggle`, every tab surface (`MatTabGroup`'s per-label ripple + both pagination buttons,
+`MatTabLabelItem`, `MatTabLink`, `MatTabNav`'s pagination buttons), `button-toggle`
+(`mat-button-toggle.tsx`) and `stepper` (`mat-step-header.tsx`, wired after the parallel
+branches merged). `slider` is untouched for the same pre-existing reason the
 section above already documents (`slider-ripple.ts` is its own purpose-built state machine, never
 routed through `handleRippleEvent()` at all). List items have no ripple ported AT ALL yet (see
 "Components wired" above) — nothing to wire for global options either.
