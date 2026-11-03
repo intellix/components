@@ -232,6 +232,17 @@ export const MatIcon = component$<MatIconProps>(props => {
         data-mat-icon-type="svg"
         data-mat-icon-name={dataName}
         data-mat-icon-namespace={dataNamespace}
+        // Confirmed live against the real `icon-svg` docs example: Angular's template writes
+        // `<mat-icon svgIcon="thumbs-up">` with NO brackets, and Angular's compiler leaves a
+        // static (non-property-bound) attribute that also matches a known `@Input` in the
+        // rendered DOM as a literal attribute, in ADDITION to consuming it as the input value —
+        // there's no explicit `[attr.svgIcon]` host binding in icon.ts (unlike `fontIcon`, which
+        // DOES have one and is rendered unconditionally below in font mode for that reason); this
+        // is purely the "static attribute syntax" behavior, and it's how virtually every
+        // real-world usage (including every upstream doc example) writes a literal `svgIcon`
+        // value. Reflecting it here unconditionally when set keeps this port's DOM matching that
+        // common case.
+        svgIcon={props.svgIcon}
         {...extraAttrs}
         dangerouslySetInnerHTML={svgMarkup}
       />
