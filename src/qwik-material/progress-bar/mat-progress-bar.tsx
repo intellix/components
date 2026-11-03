@@ -3,6 +3,7 @@ import type {MatProgressBarColor} from './progress-bar-color';
 import type {MatProgressBarMode} from './progress-bar-mode';
 import {MAT_PROGRESS_BAR_CONFIG, type MatProgressBarConfig} from './progress-bar-config';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import type {OpenString} from '../core/open-string';
 
 /**
  * Props for <MatProgressBar>. Renders <mat-progress-bar> custom element with
@@ -13,7 +14,13 @@ export interface MatProgressBarProps {
   value?: number;
   /** Buffer percentage 0-100 (clamped). Only visually applied in `buffer` mode. */
   bufferValue?: number;
-  color?: MatProgressBarColor;
+  /**
+   * Upstream (`src/material/progress-bar/progress-bar.ts:156`) types `color`
+   * `string | null | undefined` — any value is accepted and rendered as
+   * `mat-<color>` — so this prop accepts any string too, while still
+   * suggesting the three palette names.
+   */
+  color?: OpenString<MatProgressBarColor>;
   mode?: MatProgressBarMode;
   /**
    * Fires when the primary bar's `transitionend` event completes in

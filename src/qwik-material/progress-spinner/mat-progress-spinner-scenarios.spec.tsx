@@ -86,6 +86,16 @@ describe('MatProgressSpinner / MatSpinner — sanity', () => {
     const r: MatSpinnerProps = q;
     expect(r.diameter).toBe(24);
   });
+
+  // Task 2 (open-ended `color`): upstream types `color`'s setter
+  // `string | null | undefined` (src/material/progress-spinner/progress-spinner.ts:109),
+  // not the narrower ThemePalette the config default-options token uses — any
+  // app-defined palette name is valid. Compile-time assertion for the
+  // widened `OpenString<MatProgressSpinnerColor>` type (see core/open-string.ts).
+  it('MatProgressSpinnerProps.color accepts a custom palette name', () => {
+    const p: MatProgressSpinnerProps = {color: 'accent-outline'};
+    expect(p.color).toBe('accent-outline');
+  });
 });
 
 describe.skip('MatProgressSpinner DOM-rendered scenarios — deferred to Playwright Task 10', () => {

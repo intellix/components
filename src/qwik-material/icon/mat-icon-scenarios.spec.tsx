@@ -56,6 +56,16 @@ describe('MatIcon — sanity', () => {
     expect(cfg.color).toBe('accent');
   });
 
+  // Task 2 (open-ended `color`): upstream types `color`'s setter
+  // `string | null | undefined` (src/material/icon/icon.ts:168) — any
+  // app-defined palette name is valid. Compile-time assertion for the
+  // widened `OpenString<MatIconColor>` type (see core/open-string.ts). A
+  // real DOM assertion lives in specs/material-icon/color-custom.spec.ts.
+  it('MatIconProps.color accepts a custom palette name', () => {
+    const p: MatIconProps = {color: 'brand-highlight'};
+    expect(p.color).toBe('brand-highlight');
+  });
+
   it('MatIconProps accepts font-mode props', () => {
     const p: MatIconProps = {
       fontIcon: 'home',

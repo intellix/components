@@ -3,6 +3,7 @@ import type {MatIconColor} from './icon-color';
 import {MAT_ICON_CONFIG, MAT_ICON_DEFAULT_FONT_SET_CLASS, type MatIconConfig} from './icon-config';
 import {withIconSvgAttributes} from './icon-svg-attrs';
 import {extraHostAttrs, type HostRef} from '../core/host-props';
+import type {OpenString} from '../core/open-string';
 
 /** See `button/mat-button.tsx`'s identical constant doc comment. */
 const KNOWN_PROPS = new Set<string>([
@@ -40,8 +41,13 @@ const KNOWN_PROPS = new Set<string>([
  * See design spec §3 for the full rendered DOM shape.
  */
 export interface MatIconProps {
-  /** M2 palette color. Adds `.mat-<color>` class. */
-  color?: MatIconColor;
+  /**
+   * Theme color. Adds `.mat-<color>` class. Upstream
+   * (`src/material/icon/icon.ts:168`) types `color`'s setter
+   * `string | null | undefined` — any value is accepted — so this prop
+   * accepts any string too, while still suggesting the three palette names.
+   */
+  color?: OpenString<MatIconColor>;
   /** Inline sizing — applies `.mat-icon-inline`. */
   inline?: boolean;
   /** Font-icon glyph name. Emitted as `fontIcon` attribute for CSS ::before. */

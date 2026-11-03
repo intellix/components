@@ -1,6 +1,7 @@
 import {component$, Slot, useContext, $} from '@qwik.dev/core';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
+import type {OpenString} from '../core/open-string';
 import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
@@ -39,7 +40,10 @@ const KNOWN_PROPS = new Set<string>([
 ]);
 
 export interface MatIconButtonProps {
-  color?: MatButtonColor;
+  /** See `mat-button.tsx`'s identical `color` prop doc comment — widened to
+   *  `OpenString<MatButtonColor>` since `MatIconButton` extends the same
+   *  upstream `MatButtonBase` (`color: string | null`). */
+  color?: OpenString<MatButtonColor>;
   disabled?: boolean;
   disableRipple?: boolean;
   disabledInteractive?: boolean;

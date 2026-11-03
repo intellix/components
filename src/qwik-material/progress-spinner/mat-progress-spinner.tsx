@@ -6,6 +6,7 @@ import {
   type MatProgressSpinnerConfig,
 } from './progress-spinner-config';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import type {OpenString} from '../core/open-string';
 
 /**
  * Props for <MatProgressSpinner> and <MatSpinner>. Both components accept the
@@ -19,7 +20,13 @@ export interface MatProgressSpinnerProps {
   diameter?: number;
   /** Pixel stroke width. Defaults to config.strokeWidth, then diameter / 10. */
   strokeWidth?: number;
-  color?: MatProgressSpinnerColor;
+  /**
+   * Upstream (`src/material/progress-spinner/progress-spinner.ts:109`) types
+   * `color` `string | null | undefined` — any value is accepted and
+   * rendered as `mat-<color>` — so this prop accepts any string too, while
+   * still suggesting the three palette names.
+   */
+  color?: OpenString<MatProgressSpinnerColor>;
   /** Explicit mode. Overrides the component's per-tag default. */
   mode?: MatProgressSpinnerMode;
   'aria-label'?: string;

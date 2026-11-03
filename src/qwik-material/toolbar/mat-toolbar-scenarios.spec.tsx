@@ -12,7 +12,7 @@
  * src/qwik-cdk-parity-tests/specs/material-toolbar/*.spec.ts.
  */
 import {describe, it, expect} from 'vitest';
-import {MatToolbar, MatToolbarRow} from './public-api';
+import {MatToolbar, MatToolbarRow, type MatToolbarProps} from './public-api';
 
 describe('MatToolbar — sanity', () => {
   it('MatToolbar is exported', () => {
@@ -34,6 +34,15 @@ describe('MatToolbar — sanity', () => {
     // consumer-facing named exports the design spec §2.4 promises.
     expect(typeof MatToolbar).toBe('function');
     expect(typeof MatToolbarRow).toBe('function');
+  });
+
+  // Task 2 (open-ended `color`): upstream types `color` `string | null`
+  // (src/material/toolbar/toolbar.ts:59) — any app-defined palette name is
+  // valid. Compile-time assertion for the widened `OpenString<MatToolbarColor>`
+  // type (see core/open-string.ts).
+  it('MatToolbarProps.color accepts a custom palette name', () => {
+    const p: MatToolbarProps = {color: 'accent-outline'};
+    expect(p.color).toBe('accent-outline');
   });
 });
 

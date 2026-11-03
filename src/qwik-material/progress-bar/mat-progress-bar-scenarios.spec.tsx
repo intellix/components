@@ -72,6 +72,16 @@ describe('MatProgressBar — sanity', () => {
     };
     expect(p['aria-label']).toBe('Uploading');
   });
+
+  // Task 2 (open-ended `color`): upstream types `color`'s setter
+  // `string | null | undefined` (src/material/progress-bar/progress-bar.ts:156),
+  // not the narrower ThemePalette the config default-options token uses — any
+  // app-defined palette name is valid. Compile-time assertion for the widened
+  // `OpenString<MatProgressBarColor>` type (see core/open-string.ts).
+  it('MatProgressBarProps.color accepts a custom palette name', () => {
+    const p: MatProgressBarProps = {color: 'accent-outline'};
+    expect(p.color).toBe('accent-outline');
+  });
 });
 
 describe.skip('MatProgressBar DOM-rendered scenarios — deferred to Playwright Task 10', () => {
