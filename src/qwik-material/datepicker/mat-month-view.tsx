@@ -32,7 +32,7 @@
 import {$, component$, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import {hasModifierKey} from '@angular-community/qwik-cdk/keycodes';
 import type {DateAdapter} from '../core/datetime/date-adapter';
-import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
+import {DEFAULT_DATE_ADAPTER, NativeDateAdapter} from '../core/datetime/native-date-adapter';
 import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';
 import {MatCalendarBody} from './mat-calendar-body';
 import {
@@ -40,6 +40,7 @@ import {
   monthActiveDateDelta,
   toStartEndCompareValues,
   type CalendarCell,
+  type MatCalendarCellClassFunction,
   type MonthViewData,
   type SelectionValue,
 } from './calendar-math';
@@ -47,12 +48,28 @@ import {
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 const formats = MAT_NATIVE_DATE_FORMATS;
 
+/** LABEL text only (weekday/date names) — see `mat-calendar.tsx`'s own `locale` doc comment for
+ *  why a fresh, hardcoded `NativeDateAdapter` construction is always resume-safe here. Falls
+ *  back to the plain module `adapter` on the (overwhelmingly common) default-locale path. */
+function resolveLabelAdapter(locale: string | undefined): DateAdapter<unknown> {
+  return locale && locale !== adapter.locale
+    ? (new NativeDateAdapter(locale) as unknown as DateAdapter<unknown>)
+    : adapter;
+}
+
 export interface MatMonthViewProps<D = unknown> {
   activeDate: D;
   selected: SelectionValue<D>;
   minDate?: D | null;
   maxDate?: D | null;
   dateFilter?: QRL<(date: D) => boolean>;
+  /** Mirrors `[dateClass]` — a QRL (see `dateFilter`'s own doc comment for why), resolved the
+   *  same way, in the same `useTask$` below. */
+  dateClass?: QRL<MatCalendarCellClassFunction<D>>;
+  /** See `mat-calendar.tsx`'s own `locale` doc comment — only locale-sensitive LABEL text
+   *  (weekday/month names, date a11y labels) is affected; the grid's day-of-month arithmetic is
+   *  identical regardless of locale. */
+  locale?: string;
   previewStart?: number | null;
   previewEnd?: number | null;
   startDateAccessibleName?: string | null;
@@ -83,7 +100,7 @@ export const MatMonthView = component$<MatMonthViewProps>(props => {
   const maxDate = (props.maxDate ?? null) as unknown;
 
   const view = useSignal<MonthViewData<unknown>>(() =>
-    buildMonthView(adapter, formats, props.activeDate, minDate, maxDate, undefined),
+    buildMonthView(resolveLabelAdapter(props.locale), formats, props.activeDate, minDate, maxDate, undefined),
   );
   // Synchronous (no `await`) whenever there's no filter to resolve — the overwhelmingly common
   // case (no scenario outside `min-max-filter` passes one) — rather than unconditionally async,
@@ -94,13 +111,28 @@ export const MatMonthView = component$<MatMonthViewProps>(props => {
     track(() => props.activeDate);
     track(() => props.minDate);
     track(() => props.maxDate);
+    const localeAdapter = resolveLabelAdapter(track(() => props.locale));
     const filterQrl = props.dateFilter as QRL<(date: unknown) => boolean> | undefined;
-    if (!filterQrl) {
-      view.value = buildMonthView(adapter, formats, props.activeDate, minDate, maxDate, undefined);
+    const classQrl = props.dateClass as
+      | QRL<MatCalendarCellClassFunction<unknown>>
+      | undefined;
+    if (!filterQrl && !classQrl) {
+      view.value = buildMonthView(localeAdapter, formats, props.activeDate, minDate, maxDate, undefined);
       return;
     }
-    return filterQrl.resolve().then(filterFn => {
-      view.value = buildMonthView(adapter, formats, props.activeDate, minDate, maxDate, filterFn);
+    return Promise.all([
+      filterQrl ? filterQrl.resolve() : Promise.resolve(undefined),
+      classQrl ? classQrl.resolve() : Promise.resolve(undefined),
+    ]).then(([filterFn, classFn]) => {
+      view.value = buildMonthView(
+        localeAdapter,
+        formats,
+        props.activeDate,
+        minDate,
+        maxDate,
+        filterFn,
+        classFn,
+      );
     });
   });
 

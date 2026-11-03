@@ -48,12 +48,15 @@ import {
   type OverlayRegistry,
 } from '@angular-community/qwik-cdk/overlay';
 import type {DateAdapter} from '../core/datetime/date-adapter';
+import type {MatDateFormats} from '../core/datetime/date-formats';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {MAT_NATIVE_DATE_FORMATS} from '../core/datetime/native-date-formats';
+import {resolveDateAdapter} from '../core/datetime/use-date-adapter';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
 import {DATEPICKER_INTL} from './datepicker-intl';
 import {MatDatepickerContent, type MatDatepickerContentProps} from './mat-datepicker-content';
 import {isRangeComplete, rangeSelectionFinished, type DateRange} from './date-range-selection';
+import type {MatCalendarCellClassFunction} from './calendar-math';
 import type {
   MatDatepickerCore,
   MatDatepickerHandle,
@@ -175,21 +178,59 @@ export function closeDatepickerPanel<D>(
 
 /** Writes the formatted display string for `value` directly onto `el`'s DOM `.value` property —
  *  mirrors `MatDatepickerInputBase._formatValue()`. A direct ref write, not a reactive JSX prop,
- *  matching `qwik-material/input`'s own established "value via ref" pattern. */
-function writeFormattedValue(el: HTMLInputElement | undefined, value: unknown): void {
+ *  matching `qwik-material/input`'s own established "value via ref" pattern. Uses the GIVEN
+ *  adapter/formats (never the hardcoded module singleton) — see `formatDateWithAdapter()`. */
+function writeFormattedValueWithAdapter<D>(
+  el: HTMLInputElement | undefined,
+  a: DateAdapter<D>,
+  f: MatDateFormats,
+  value: D | null,
+): void {
   if (!el) return;
-  el.value =
-    value != null && adapter.isValid(value)
-      ? (adapter.format(value, formats.display.dateInput) as string)
-      : '';
+  el.value = formatDateWithAdapter(a, f, value);
 }
 
-/** Formats `value` for display — exported so `mat-datepicker-input.tsx`/the consumer's dev-app
- *  route can compute the SSR-correct initial `value` snapshot (mirrors `MatInput`'s/
- *  `MatTimepickerInput`'s own `initialValue`/`formatTimeForDisplay` pattern). */
+/** Writes the formatted display string using the hardcoded `DEFAULT_DATE_ADAPTER`/
+ *  `MAT_NATIVE_DATE_FORMATS` singleton — kept for `setMatDatepickerValue()`'s existing contract
+ *  (a form-library integration helper; see that function's own doc comment — out of scope for
+ *  the pluggable-adapter task). */
+function writeFormattedValue(el: HTMLInputElement | undefined, value: unknown): void {
+  writeFormattedValueWithAdapter(el, adapter, formats, value as never);
+}
+
+/** Formats `value` for display with the GIVEN adapter/formats — the adapter-agnostic core
+ *  `formatDateForDisplay()` (below) and every custom-adapter-aware call site in this file share. */
+export function formatDateWithAdapter<D>(
+  a: DateAdapter<D>,
+  f: MatDateFormats,
+  value: D | null,
+): string {
+  if (value == null || !a.isValid(value)) return '';
+  return a.format(value, f.display.dateInput) as string;
+}
+
+/** Formats `value` for display using the hardcoded `en-US` `DEFAULT_DATE_ADAPTER`/
+ *  `MAT_NATIVE_DATE_FORMATS` singleton — exported so `mat-datepicker-input.tsx`/the consumer's
+ *  dev-app route can compute the SSR-correct INITIAL `value` snapshot (mirrors `MatInput`'s/
+ *  `MatTimepickerInput`'s own `initialValue`/`formatTimeForDisplay` pattern) before any
+ *  app-supplied adapter has been resolved (resolving a `QRL` factory is async — see
+ *  `resolveDateAdapterForPicker()` below — but every initial render must be synchronous).
+ *  Deviation: an app-supplied custom adapter's format is therefore NOT reflected in a
+ *  pre-seeded `value`'s FIRST paint, only once the input is interacted with (typed into/
+ *  blurred) or a calendar selection is made — see `datepicker/SYNC.md`. */
 export function formatDateForDisplay<D>(value: D | null): string {
-  if (value == null || !adapter.isValid(value)) return '';
-  return adapter.format(value, formats.display.dateInput) as string;
+  return formatDateWithAdapter(adapter as unknown as DateAdapter<D>, formats, value);
+}
+
+/** Resolves the `DateAdapter`/`MatDateFormats` a picker handle was configured with (app-wide or
+ *  per subtree — see `use-mat-datepicker.ts`'s `_dateAdapterFactory`/`_dateFormats`/`_locale`
+ *  doc comments) into a live adapter instance, fresh, every call — never cache the result past
+ *  the current async call (see `core/datetime/use-date-adapter.ts`'s own doc comment for why). */
+async function resolveAdapterForPicker<D>(
+  core: Pick<MatDatepickerCore<D>, '_dateAdapterFactory' | '_locale' | '_dateFormats'>,
+): Promise<{adapter: DateAdapter<D>; formats: MatDateFormats}> {
+  const a = await resolveDateAdapter(core._dateAdapterFactory, core._locale.value);
+  return {adapter: a, formats: core._dateFormats};
 }
 
 /**
@@ -280,11 +321,16 @@ function buildOverlayAndDispatch<D>(
 }
 
 /** Mirrors `MatDatepickerContent._handleUserSelection()` for a SINGLE date (non-range) picker —
- *  see this module's doc comment for the pending-vs-real split. */
-export function handleDatepickerUserSelect<D>(
+ *  see this module's doc comment for the pending-vs-real split. Async: formatting the written
+ *  display text goes through whatever `DateAdapter`/`MatDateFormats` this picker was configured
+ *  with (app-wide or per subtree — see `use-mat-datepicker.ts`), resolved via
+ *  `resolveAdapterForPicker()`. `sameDate` below is pure arithmetic (never locale/format-
+ *  dependent), so it can stay on the hardcoded module singleton regardless of which adapter is
+ *  configured — see `datepicker/SYNC.md`. */
+export async function handleDatepickerUserSelect<D>(
   picker: MatDatepickerHandle<D>,
   date: D | null,
-): void {
+): Promise<void> {
   const a = adapter as unknown as DateAdapter<D>;
   const hasActions = picker._actionsContent.value !== undefined;
   const activeModel = hasActions ? picker._pendingValue : picker.value;
@@ -293,7 +339,13 @@ export function handleDatepickerUserSelect<D>(
     activeModel.value = date;
     if (!hasActions) {
       picker.dirty.value = true;
-      writeFormattedValue(picker._elementRef.value as HTMLInputElement | undefined, date);
+      const resolved = await resolveAdapterForPicker(picker);
+      writeFormattedValueWithAdapter(
+        picker._elementRef.value as HTMLInputElement | undefined,
+        resolved.adapter,
+        resolved.formats,
+        date,
+      );
       picker.onValueChange$?.(date);
     }
   }
@@ -303,12 +355,19 @@ export function handleDatepickerUserSelect<D>(
   }
 }
 
-/** Mirrors `MatDatepickerApply._applySelection()` for a single-date picker. */
-export function applyDatepickerSelection<D>(picker: MatDatepickerHandle<D>): void {
+/** Mirrors `MatDatepickerApply._applySelection()` for a single-date picker. See
+ *  {@link handleDatepickerUserSelect}'s doc comment for why this is async. */
+export async function applyDatepickerSelection<D>(picker: MatDatepickerHandle<D>): Promise<void> {
   const value = picker._pendingValue.value;
   picker.value.value = value;
   picker.dirty.value = true;
-  writeFormattedValue(picker._elementRef.value as HTMLInputElement | undefined, value);
+  const resolved = await resolveAdapterForPicker(picker);
+  writeFormattedValueWithAdapter(
+    picker._elementRef.value as HTMLInputElement | undefined,
+    resolved.adapter,
+    resolved.formats,
+    value,
+  );
   picker.onValueChange$?.(value);
   closeDatepickerPanel(picker);
 }
@@ -319,14 +378,28 @@ export function cancelDatepickerSelection<D>(picker: MatDatepickerHandle<D>): vo
   closeDatepickerPanel(picker);
 }
 
-/** Mirrors `MatDatepickerInput._onInput()`. */
-export function handleDatepickerInput<D>(event: Event, picker: MatDatepickerHandle<D>): void {
-  const a = adapter as unknown as DateAdapter<D>;
-  const text = (event.target as HTMLInputElement).value;
-  const parsed = a.parse(text, formats.parse.dateInput as never);
+/**
+ * Shared parse+commit logic for `handleDatepickerInput`/`handleDatepickerBlur` — mirrors
+ * `MatDatepickerInput._onInput()`. Idempotent: calling it twice with the SAME typed text (e.g.
+ * once from `input`, once from a blur that re-derives the same text — see
+ * `handleDatepickerBlur`'s own doc comment for why it does) only fires `onValueChange$` once,
+ * since `hasChanged` guards every write.
+ *
+ * Async — `parse()`/`isValid()` go through whichever `DateAdapter`/`MatDateFormats` this picker
+ * was configured with (an app-supplied custom adapter's whole point, e.g. accepting
+ * `dd.mm.yyyy` — see `datepicker/SYNC.md`), resolved fresh via `resolveAdapterForPicker()` — a
+ * `QRL` factory, never a stored live instance, so this resolves correctly even on the FIRST
+ * invocation after a real SSR→resume (the exact case this task's own functional spec
+ * exercises). `sameDate` (arithmetic only) stays on the hardcoded module singleton — see
+ * `handleDatepickerUserSelect`'s doc comment.
+ */
+async function parseAndCommitTypedDate<D>(picker: MatDatepickerHandle<D>, text: string): Promise<void> {
+  const {adapter: a, formats: f} = await resolveAdapterForPicker(picker);
+  const parsed = a.parse(text, f.parse.dateInput as never);
   const valid = !parsed || a.isValid(parsed);
   const validDate = a.getValidDateOrNull(parsed);
-  const hasChanged = !a.sameDate(validDate, picker.value.value);
+  const arithmetic = adapter as unknown as DateAdapter<D>;
+  const hasChanged = !arithmetic.sameDate(validDate, picker.value.value);
 
   picker.parseError.value = !valid;
 
@@ -337,11 +410,48 @@ export function handleDatepickerInput<D>(event: Event, picker: MatDatepickerHand
   }
 }
 
-/** Mirrors `MatDatepickerInputBase._onBlur()`. */
-export function handleDatepickerBlur<D>(picker: MatDatepickerHandle<D>): void {
+/** Mirrors `MatDatepickerInput._onInput()`. See {@link parseAndCommitTypedDate}'s doc comment. */
+export async function handleDatepickerInput<D>(
+  event: Event,
+  picker: MatDatepickerHandle<D>,
+): Promise<void> {
+  await parseAndCommitTypedDate(picker, (event.target as HTMLInputElement).value);
+}
+
+/**
+ * Mirrors `MatDatepickerInputBase._onBlur()` — reformats a valid value with whichever
+ * `DateAdapter`/`MatDateFormats` this picker was configured with. See
+ * {@link handleDatepickerInput}'s doc comment for the resume-safety rationale.
+ *
+ * Re-parses the NATIVE INPUT's own current text first (via the same
+ * {@link parseAndCommitTypedDate} input uses), rather than trusting `picker.value.value` to
+ * already reflect it. This is NOT redundant: upstream's real `_onBlur`/`_onInput` are both
+ * perfectly synchronous, so a browser's `input` event's handler ALWAYS fully completes (any
+ * model write included) before its subsequent `blur` event's handler can even start — no
+ * handler-ordering question is possible there. Here, BOTH handlers are async (resolving the
+ * SAME `DateAdapter` factory), which gives the event loop a real opportunity to run `blur`'s
+ * handler to completion WHILE `input`'s own handler is still suspended on its own `await` —
+ * confirmed live (reproducible 100% of the time, not a timing flake — simulating a fast,
+ * essentially instantaneous type-then-blur, exactly what a real fast typist or any automated
+ * driver does): without this, `_onBlur` reading a not-yet-updated `picker.value.value` would
+ * see `null` and skip reformatting forever (nothing re-triggers it afterward). Re-deriving from
+ * the native text makes blur self-sufficient regardless of which handler's chunk/promise
+ * happens to settle first.
+ */
+export async function handleDatepickerBlur<D>(picker: MatDatepickerHandle<D>): Promise<void> {
+  const el = picker._elementRef.value as HTMLInputElement | undefined;
+  if (el) {
+    await parseAndCommitTypedDate(picker, el.value);
+  }
   const value = picker.value.value;
   if (value != null) {
-    writeFormattedValue(picker._elementRef.value as HTMLInputElement | undefined, value);
+    const resolved = await resolveAdapterForPicker(picker);
+    writeFormattedValueWithAdapter(
+      el,
+      resolved.adapter,
+      resolved.formats,
+      value,
+    );
   }
   picker.touched.value = true;
 }
@@ -375,6 +485,8 @@ export function openDatepickerPanel<D>(
     minDate: picker.min.value,
     maxDate: picker.max.value,
     dateFilter: picker.dateFilter as QRL<(date: unknown) => boolean> | undefined,
+    dateClass: picker.dateClass as QRL<MatCalendarCellClassFunction<unknown>> | undefined,
+    locale: picker._locale.value,
     isRange: false,
     selected: activeModel as unknown as Signal<unknown>,
     startDateAccessibleName: null,
@@ -400,11 +512,12 @@ export function openDatepickerPanel<D>(
 // ============================================================================================
 
 /** Mirrors `MatDatepickerContent._handleUserSelection()` for a date-range picker — routes through
- *  `rangeSelectionFinished` (ported from `DefaultMatCalendarRangeStrategy.selectionFinished()`). */
-export function handleRangePickerUserSelect<D>(
+ *  `rangeSelectionFinished` (ported from `DefaultMatCalendarRangeStrategy.selectionFinished()`).
+ *  Async — see {@link handleDatepickerUserSelect}'s doc comment for why. */
+export async function handleRangePickerUserSelect<D>(
   picker: MatDateRangePickerHandle<D>,
   date: D | null,
-): void {
+): Promise<void> {
   const a = adapter as unknown as DateAdapter<D>;
   const hasActions = picker._actionsContent.value !== undefined;
   const activeModel = hasActions ? picker._pendingValue : picker.value;
@@ -414,7 +527,7 @@ export function handleRangePickerUserSelect<D>(
     activeModel.value = next;
     if (!hasActions) {
       picker.dirty.value = true;
-      writeRangeFormattedValues(picker, next);
+      await writeRangeFormattedValues(picker, next);
       picker.onValueChange$?.(next);
     }
   }
@@ -424,20 +537,24 @@ export function handleRangePickerUserSelect<D>(
   }
 }
 
-function writeRangeFormattedValues<D>(
+async function writeRangeFormattedValues<D>(
   picker: MatDateRangePickerHandle<D>,
   range: DateRange<D>,
-): void {
-  writeFormattedValue(picker._startInputRef.value, range.start);
-  writeFormattedValue(picker._endInputRef.value, range.end);
+): Promise<void> {
+  const resolved = await resolveAdapterForPicker(picker);
+  writeFormattedValueWithAdapter(picker._startInputRef.value, resolved.adapter, resolved.formats, range.start);
+  writeFormattedValueWithAdapter(picker._endInputRef.value, resolved.adapter, resolved.formats, range.end);
 }
 
-/** Mirrors `MatDatepickerApply._applySelection()` for a date-range picker. */
-export function applyDateRangePickerSelection<D>(picker: MatDateRangePickerHandle<D>): void {
+/** Mirrors `MatDatepickerApply._applySelection()` for a date-range picker. Async — see
+ *  {@link handleDatepickerUserSelect}'s doc comment for why. */
+export async function applyDateRangePickerSelection<D>(
+  picker: MatDateRangePickerHandle<D>,
+): Promise<void> {
   const value = picker._pendingValue.value;
   picker.value.value = value;
   picker.dirty.value = true;
-  writeRangeFormattedValues(picker, value);
+  await writeRangeFormattedValues(picker, value);
   picker.onValueChange$?.(value);
   closeDatepickerPanel(picker);
 }
@@ -477,6 +594,8 @@ export function openDateRangePickerPanel<D>(
     minDate: picker.min.value,
     maxDate: picker.max.value,
     dateFilter: picker.dateFilter as QRL<(date: unknown) => boolean> | undefined,
+    dateClass: picker.dateClass as QRL<MatCalendarCellClassFunction<unknown>> | undefined,
+    locale: picker._locale.value,
     isRange: true,
     selected: activeModel as unknown as Signal<unknown>,
     startDateAccessibleName: picker._startInputRef.value?.placeholder || null,

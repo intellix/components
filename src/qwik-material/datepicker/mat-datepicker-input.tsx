@@ -141,8 +141,8 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
     props.onFocus$?.(event, picker._elementRef.value as NativeInputElement);
   });
 
-  const handleBlur$ = $((event: FocusEvent) => {
-    handleDatepickerBlur(picker);
+  const handleBlur$ = $(async (event: FocusEvent) => {
+    await handleDatepickerBlur(picker);
     const liveEmpty = !(picker._elementRef.value as NativeInputElement | undefined)?.value;
     if (formField) {
       formField.focused = false;
@@ -152,8 +152,8 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
     props.onBlur$?.(event, picker._elementRef.value as NativeInputElement);
   });
 
-  const handleInput$ = $((event: Event) => {
-    handleDatepickerInput(event, picker);
+  const handleInput$ = $(async (event: Event) => {
+    await handleDatepickerInput(event, picker);
     props.onInput$?.(event, picker._elementRef.value as NativeInputElement);
   });
 

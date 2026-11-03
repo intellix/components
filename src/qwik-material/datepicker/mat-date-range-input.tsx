@@ -23,7 +23,7 @@
  * `for`) is how this control associates with that label instead, exactly mirroring
  * `_getAriaLabelledby()`.
  */
-import {component$, Slot, useSignal} from '@qwik.dev/core';
+import {component$, Slot, useSignal, useTask$} from '@qwik.dev/core';
 import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {
   type MatFormFieldControlProps,
@@ -32,7 +32,8 @@ import {
 } from '../core/mat-form-field-control';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
-import {formatDateForDisplay} from './datepicker-runtime';
+import {resolveDateAdapter} from '../core/datetime/use-date-adapter';
+import {formatDateForDisplay, formatDateWithAdapter} from './datepicker-runtime';
 import type {MatDateRangePickerHandle} from './use-mat-datepicker';
 
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
@@ -91,8 +92,29 @@ export const MatDateRangeInput = component$<MatDateRangeInputProps>(props => {
   const startPlaceholder = props.startPlaceholder ?? '';
   const endPlaceholder = props.endPlaceholder ?? '';
   const rangeValue = picker.value.value;
-  const startText = formatDateForDisplay(rangeValue.start);
-  const endText = formatDateForDisplay(rangeValue.end);
+  // Seeded with the hardcoded `en-US` default (synchronous — a `component$` render body can't
+  // await) and corrected below by a `useTask$` once this picker's actual configured adapter
+  // (app-wide/subtree default, or a custom one) resolves — mirrors `mat-month-view.tsx`'s own
+  // `dateFilter`-resolution pattern, which this reuses: `useTask$` runs before SSR finalizes
+  // output (so the first paint is already correct) and re-runs whenever `picker.value`/the
+  // configured locale changes (so a calendar-cell selection re-displays with the right format).
+  const formatted = useSignal(() => ({
+    start: formatDateForDisplay(rangeValue.start),
+    end: formatDateForDisplay(rangeValue.end),
+  }));
+  useTask$(({track}) => {
+    const start = track(() => picker.value.value.start);
+    const end = track(() => picker.value.value.end);
+    const locale = track(() => picker._locale.value);
+    return resolveDateAdapter(picker._dateAdapterFactory, locale).then(a => {
+      formatted.value = {
+        start: formatDateWithAdapter(a, picker._dateFormats, start),
+        end: formatDateWithAdapter(a, picker._dateFormats, end),
+      };
+    });
+  });
+  const startText = formatted.value.start;
+  const endText = formatted.value.end;
   const startEmpty = startText.length === 0;
   const endEmpty = endText.length === 0;
   const startMirror = startEmpty ? startPlaceholder : startText;
