@@ -328,7 +328,7 @@ async function waitForStepperSettled(page: Page): Promise<void> {
   // (~200ms after init) class, which Qwik adds from a lazily-loaded task.
   await page.waitForFunction(
     () =>
-      [...document.querySelectorAll('[data-parity-root] mat-stepper')].every(el =>
+      Array.from(document.querySelectorAll('[data-parity-root] mat-stepper')).every(el =>
         el.classList.contains('mat-stepper-animations-enabled'),
       ),
     undefined,

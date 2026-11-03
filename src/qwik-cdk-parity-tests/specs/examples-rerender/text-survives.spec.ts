@@ -53,8 +53,8 @@ for (const route of ROUTES) {
     await page.waitForSelector('[data-parity-root]');
     await page.waitForTimeout(250);
     await page.evaluate(() => {
-      for (const el of document.querySelectorAll('[data-parity-root] *')) {
-        const own = [...el.childNodes]
+      for (const el of Array.from(document.querySelectorAll('[data-parity-root] *'))) {
+        const own = Array.from(el.childNodes)
           .filter(c => c.nodeType === Node.TEXT_NODE)
           .map(c => c.textContent)
           .join('')
@@ -80,10 +80,10 @@ for (const route of ROUTES) {
     await page.waitForTimeout(350);
 
     const lost = await page.evaluate(() =>
-      [...document.querySelectorAll('[data-text-before]')]
+      Array.from(document.querySelectorAll('[data-text-before]'))
         .filter(
           el =>
-            ![...el.childNodes]
+            !Array.from(el.childNodes)
               .filter(c => c.nodeType === Node.TEXT_NODE)
               .map(c => c.textContent)
               .join('')
