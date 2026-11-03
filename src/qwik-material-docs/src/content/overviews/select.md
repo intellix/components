@@ -109,6 +109,34 @@ default "joined option labels" text.
 
 <!-- example(select-panel-class) -->
 
+### Comparing objects
+
+By default `MatSelect` uses the `===` operator to determine whether an option is selected. With
+objects, this means that a new object, even if it has the same properties, is not considered
+equal. If an option needs to be selected based on an identifying property (e.g. its `id`), set
+`compareWith` to a function accepting two option values and returning whether they should be
+considered equal:
+
+```tsx
+<MatSelect
+  controlType="mat-select"
+  value={selectedFood.value}
+  onValueChange$={(v) => (selectedFood.value = v)}
+  compareWith$={$((o1: Food, o2: Food) => o1?.id === o2?.id)}
+  options={foods.map((f) => ({value: f, label: f.name}))}
+/>
+```
+
+`compareWith$` must be a `QRL` (wrap it in `$(...)`) so it survives resume — a plain function
+can't cross the SSR→client boundary. It's used for both single- and `multiple`-mode selection,
+and on every initial-value match, matching upstream `MatSelect.compareWith` exactly (including
+argument order: the option's own value first, the value being matched against it second).
+
+### Error messages
+
+Pass `errorStateMatcher` to control when `<MatFormField>` shows this select's error state — see
+[Form field → Error messages](/components/form-field/overview/#error-messages).
+
 ### Keyboard interaction
 
 | Keyboard shortcut | Action |
@@ -147,11 +175,17 @@ visually — use with care.
 - **`value` is read once, not live.** Unlike most qwik-material props, writing a new value into
   the `value` prop after first render does *not* move the selection — drive changes through
   `onValueChange$`'s own round trip instead.
-- **Not ported:** `compareWith` (custom value-equality function), `disableRipple`, and
-  `errorStateMatcher` (no bundled form-library validity model to match against — see
-  [Migrating from Angular Material](/guide/migrating-from-angular-material/)'s `FormControl` row).
-- **`canSelectNullableOptions` and `disableOptionCentering`** exist on `MatSelectConfig` for API
-  shape parity but currently have no effect — no scenario in this port exercises either.
+- **`compareWith` is now `compareWith$`, a `QRL`**, not a plain function — see "Comparing objects"
+  above.
+- **`errorStateMatcher` is ported** — see [Form field → Error messages](/components/form-field/overview/#error-messages).
+  It accepts `'touched'`/`'dirty'` (the two upstream built-in matchers) or a
+  `QRL<(state) => boolean>` for a custom one — never a class instance.
+- **Not ported:** `disableRipple`.
+- **`canSelectNullableOptions` exists on `MatSelectConfig` for API shape parity but currently has
+  no effect** — no scenario in this port exercises it. **`disableOptionCentering` is accepted
+  (both via `MatSelectConfig` and directly on `<MatSelect>`) but is a genuine upstream no-op in
+  Material 21.2** — it has no effect there either (verified by reading `select.ts`: the field is
+  declared but read nowhere else), not something this port chose to drop.
 - **No native `<select matNativeControl>` support.** `<MatInput>` doesn't implement a native-select
   mode; a form field with a native `<select>` needs its own small control component implementing
   the same `MatFormFieldControlProps` contract `MatInput`/`MatSelect` do (see

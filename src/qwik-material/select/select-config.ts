@@ -8,13 +8,20 @@ import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay
  * `<QwikMaterialProvider matSelectConfig={{...}}>`.
  *
  * `disableOptionCentering`/`canSelectNullableOptions` are accepted for API
- * parity but unused by this port — see `select/SYNC.md`'s deviations list
- * (no scenario exercises either, and `disableOptionCentering` specifically
- * only affected the now-removed non-flexible positioning math upstream's
- * own M2-era select used).
+ * parity but unused by this port — see `select/SYNC.md`'s deviations list.
+ * `canSelectNullableOptions` has no scenario exercising it; `disableOptionCentering`
+ * is a genuine upstream no-op in Material 21.2 — VERIFIED by reading `select.ts`
+ * directly: the field is declared (`@Input() disableOptionCentering = this._defaultOptions
+ * ?.disableOptionCentering ?? false`) and stored, but grep-confirmed to be read NOWHERE
+ * else in the class — it only ever affected the pre-`FlexibleConnectedPositionStrategy`
+ * positioning math Angular Material removed entirely in a much earlier major version. This
+ * port's own earlier doc comment here described it as affecting "non-flexible positioning
+ * math this port doesn't replicate", which was imprecise (implying the port was the one
+ * dropping behavior) — upstream itself has nothing left to drop in 21.2.
  */
 export interface MatSelectConfig {
-  /** Whether option centering should be disabled. Accepted, unused — see doc comment. */
+  /** Whether option centering should be disabled. Accepted, unused — a genuine upstream
+   *  no-op in Material 21.2 (see doc comment above), not a scope cut this port made. */
   disableOptionCentering?: boolean;
   /** Time to wait in ms after the last keystroke before moving focus to an item. Default 200. */
   typeaheadDebounceInterval?: number;

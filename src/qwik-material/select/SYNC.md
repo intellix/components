@@ -448,21 +448,20 @@ times; `specs/material-form-field`, `material-menu`, `material-chips`,
 
 ## Deviations from upstream
 
-- **`compareWith` is always strict `===`.** No scenario needs object-identity
-  comparison with custom equality; every value in every scenario is a
-  primitive string. Accepting a custom comparator function as a prop would
-  hit the exact same "plain function crossing a `$()` boundary" hazard that
-  motivated the `options` redesign above, for no benefit yet exercised.
 - **`sortComparator` is not accepted.** Multi-select values are always
   resorted into panel (document) order (`_sortValues()`'s default
   behavior) — no scenario supplies a custom sort.
-- **`disableOptionCentering`/`canSelectNullableOptions` are accepted via
-  `MAT_SELECT_CONFIG` for API parity but `disableOptionCentering` has no
-  effect** — it only ever affected upstream's non-flexible positioning math,
-  which this port's `FlexibleConnectedPositionStrategy` usage doesn't
-  replicate a non-flexible variant of. `canSelectNullableOptions` IS wired
-  (gates the "null value resets selection" branch in `selectOption()`), just
-  unexercised by any scenario (every option here has a real string value).
+- **`disableOptionCentering` is accepted (both via `MAT_SELECT_CONFIG` and as a direct
+  `<MatSelect disableOptionCentering>` prop) for API parity but has NO effect** — VERIFIED by
+  reading upstream `select.ts` directly (not inferred): the field is declared and defaulted
+  (`@Input() disableOptionCentering = this._defaultOptions?.disableOptionCentering ?? false`)
+  but grep-confirmed to be read NOWHERE else in the class. This is a genuine upstream no-op in
+  Material 21.2, not a scope cut THIS port made — see `select-config.ts`'s doc comment for the
+  full write-up (an earlier version of this note incorrectly implied the port was dropping
+  behavior upstream still has; it isn't — upstream itself has nothing left to drop).
+  `canSelectNullableOptions` IS wired (gates the "null value resets selection" branch in
+  `selectOption()`), just unexercised by any scenario (every option here has a real string
+  value).
 - **No real `AriaDescriber`/hidden describedby elements.** Not needed —
   `MatSelect` never renders one upstream either (unlike tooltip/badge).
 - **Typeahead/navigation key dispatch uses `qwik-cdk/a11y`'s shared
@@ -622,6 +621,104 @@ control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConn
 `Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
 porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
 change for every existing (always form-field-nested) scenario.
+
+## `compareWith` (2026-11-03)
+
+Previously always strict `===` (see the removed deviation bullet above — this was a genuine gap,
+not a documented-and-accepted scope cut, since upstream's `compareWith` is explicitly designed
+for the common "object-valued options, matched by a key field" case this port couldn't handle at
+all before). Implemented as `compareWith$?: QRL<(o1: T, o2: T) => boolean>` on `MatSelectProps`
+— mirrors upstream's `(o1, o2) => boolean` signature exactly, including argument order (`o1` is
+always an OPTION's value, `o2` the value being matched against it — upstream's own
+`this._compareWith(option.value, value)`).
+
+### Why a `QRL`, and how it stays correct on the very first SSR paint
+
+A `QRL` is required for the same reason `options`/`displayWith$` already are (see this file's
+own header and `autocomplete/SYNC.md`'s `displayWith$` section) — a plain function cannot survive
+SSR→resume. The harder problem `compareWith` has that neither of those two precedents did: it's
+needed SYNCHRONOUSLY, inside `MatSelect`'s own render body (to compute the trigger's displayed
+label for the CURRENT value), not just inside an already-`async` runtime function
+(`openSelectPanel`) or a one-shot commit path (`selectAutocompleteOption`). A `component$`'s
+`OnRenderFn` cannot itself be `async` (no async component bodies in this Qwik version), so the
+render body can't simply `await cfg.compareWith$(...)`.
+
+Solved with the EXACT pattern `qwik-material/datepicker/mat-month-view.tsx`'s `dateFilter`/
+`dateClass` QRL resolution already establishes (see that file's own doc comment) — a `useTask$`
+with NO `useVisibleTask$`-style browser-only strategy, which Qwik's render pipeline awaits
+BEFORE finalizing SSR output (confirmed by this project's own prior investigation, documented at
+length in `form-field/SYNC.md`'s architecture section): `mat-select.tsx`'s new `triggerLabel`
+signal is seeded synchronously (`useSignal(() => computeTriggerLabel(..., STRICT_EQUALS))` — the
+correct, zero-cost fallback for the overwhelmingly common no-`compareWith$` case), then a
+`useTask$(({track}) => { track(() => value.value); ... })` resolves `compareWith$` (when given)
+and overwrites it with the real, `compareWith$`-aware label — this re-render happens BEFORE the
+SSR HTML is ever serialized, so an object-valued `compareWith$`-matched INITIAL selection
+(`compare-with.spec.ts`'s `single`/`multi` scenarios) is already correct on the very first paint,
+not just after a later client-side re-render. The task re-runs correctly after resume too,
+whenever `value.value` changes via a real user interaction (the SAME `Signal` object `select-
+runtime.ts`'s functions write into directly — Qwik's reactivity is subscription-based, not
+hierarchy-aware, so this needs no extra plumbing).
+
+### Resolved ONCE per async entry point, then threaded as a plain function — never re-resolved per option
+
+Every OTHER consumer of `compareWith` (the panel's per-option `selected` state, the multi-select
+membership/sort checks, the closed-select Ctrl+A select-all check, `_highlightCorrectOption`'s
+own active-item lookup on open) resolves the QRL exactly ONCE per call, into a plain,
+synchronously-callable comparator (`cfg.compareWith$.resolve()`, NOT calling the QRL directly
+per-option — resolving once and reusing the returned function is far cheaper for an option list
+of any real size), then threads that plain function through:
+
+- `openSelectPanel()` (already `async`, same function that resolves the scroll-strategy
+  descriptor) resolves `compareFn` once per open session and passes it BOTH to
+  `highlightCorrectOption()` (now takes an optional `compareFn` param) AND to `MatSelectPanel` as
+  a new, plain (non-`$()`) `compareFn` prop — safe because `MatSelectPanel` is created and
+  consumed ENTIRELY client-side via `overlay.create()` (this function already returns early when
+  `!isBrowser`), never crossing an SSR→resume boundary — the exact same "plain function prop is
+  safe here" precedent this file's own `onOptionSelect` callback already established. The panel's
+  own local `isSelected()` (duplicated from `select-runtime.ts`'s, by design — see that file's
+  module doc comment on why panel-side logic doesn't import runtime helpers) gained the same
+  `compareFn` parameter.
+- `handleOpenKeydown()` is now `async` SOLELY to resolve `compareFn` for its own two branches
+  that need one (Enter/Space selection, Ctrl+A select-all) — every `event.preventDefault()` call
+  still runs synchronously, before the branch's own `await`, so this stays safe to call from a
+  real keyboard event (same ordering discipline `autocomplete-runtime.ts`'s
+  `selectAutocompleteOption` already establishes). `handleSelectKeydown` dispatches to it without
+  awaiting (fire-and-forget — same established pattern as `openSelectPanel`'s own call sites).
+- `selectOption()` gained an optional `compareFn` parameter (default: upstream's own strict
+  `(o1, o2) => o1 === o2`, exported as `STRICT_EQUALS`) — used for the multi-select
+  include/exclude check AND, found via `compare-with.spec.ts`'s own multi-select toggle test, the
+  panel-order SORT step too: `_sortValues()`'s `indexOf` lookup was initially left on `===`,
+  which silently failed to find ANY `compareWith`-matched value in `flat` (since a pre-existing
+  entry in the consumer's array is whatever reference THEY hold, not necessarily any `flat`
+  option's own `value` reference) — leaving every entry at `indexOf -1` and the sort a no-op.
+  Confirmed live: toggling "Pizza" on into `[Steak, Tacos]` (document order 1, 2, 3) produced
+  `[Tacos, Pizza]` instead of the correct `[Pizza, Tacos]` before this fix. Callers that can never
+  reach the `multiple` branch at all (`buildKeyManager`'s closed-select `onChange`, `onTabOut` —
+  both explicitly single-select-only) omit the argument; it's unused on that path regardless.
+
+### `canSelectNullableOptions` interaction
+
+Unaffected — `selectOption()`'s `option.value == null && !cfg.canSelectNullableOptions` branch
+is checked BEFORE any `compareFn` use, exactly as before.
+
+No matching upstream docs example exists (`compareWith` only appears in upstream's own unit
+tests, `select.spec.ts`, never a `components-examples` route) — covered by
+`specs/material-select/compare-with.spec.ts` (Playwright, fresh `page.goto` per test; object
+`value`s are deliberately FRESH, never-the-same-reference literals on every render, to prove the
+key-based comparator — not reference equality — is what makes initial selection, display,
+multi-select toggling, and panel-order sorting all work).
+
+## `ErrorStateMatcher` (2026-11-03)
+
+Previously hardcoded the default formula (`invalid && (touched || formSubmitted)`) directly, with
+no way to override it. Now reads `props.errorStateMatcher ?? <QwikMaterialProvider
+errorStateMatcher> ?? 'touched'`, same `useSignal`+`useTask$` resolution pair this file's own
+`compareWith` section above establishes (`triggerLabel`) — see `core/error-state-matcher.ts`'s
+doc comment for the full design, and `input/SYNC.md`'s own `ErrorStateMatcher` section for the
+shared write-up (first ported there) and the new scenarios covering it
+(`input-error-state-matcher`, `error-state-matcher.spec.ts`,
+`error-state-matcher-modes.spec.ts` — none of this component's own scenarios needed a dedicated
+one; the mechanism is identical across every control).
 
 ## Scroll-strategy configuration (2026-11-03)
 
