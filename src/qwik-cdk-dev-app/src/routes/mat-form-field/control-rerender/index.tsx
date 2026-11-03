@@ -1,5 +1,9 @@
 import {component$, useSignal} from '@qwik.dev/core';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
 
 /**

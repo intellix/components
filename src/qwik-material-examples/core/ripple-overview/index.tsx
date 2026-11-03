@@ -1,6 +1,10 @@
 import {component$, useSignal, useStyles$} from '@qwik.dev/core';
 import {MatCheckbox} from '@angular-community/qwik-material/checkbox';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
 import {mergeHostProps, useMatRipple} from '@angular-community/qwik-material/core';
 import styles from './example.css?inline';
