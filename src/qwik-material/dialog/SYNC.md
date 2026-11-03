@@ -315,3 +315,35 @@ dialog's content renders as a sibling of the opener, not a descendant of whateve
 `appearance: 'outline'` from a provider wrapping the whole route) and that same spec file's
 "config.context opts in an app context into the dialog content" case (the generic opt-in, for an
 app's own, non-qwik-material context, via the `mat-dialog/custom-context-opt-in` dev-app route).
+
+## Real bug: scroll strategy lost after resume (2026-11-03, found working on qwik-material/menu's scroll-strategy task)
+
+`useMatDialog()`'s `scrollStrategyFactory` (resolved via `useContext(MAT_DIALOG_SCROLL_STRATEGY,
+…)` during the hook's OWN render, then captured directly in the `open$` QRL defined at that same
+point) does NOT survive into `open$` once it's actually invoked after a REAL SSR→CSR resume
+boundary — which every genuine page load goes through. Confirmed live: before this fix,
+`open$`'s `if (!merged.scrollStrategy && scrollStrategyFactory) { merged.scrollStrategy =
+scrollStrategyFactory(); }` silently did NOTHING post-resume (`scrollStrategyFactory` reads back
+`undefined`), leaving `merged.scrollStrategy` (and therefore `overlayConfig.scrollStrategy`)
+`undefined` — meaning **background scroll was never blocked while ANY dialog was open**, not
+just when a custom factory was configured. This is a real regression from upstream's actual
+default behavior (`MatDialog` always blocks background scroll via `MAT_DIALOG_SCROLL_STRATEGY`'s
+own default, `createBlockScrollStrategy()`), previously unnoticed because nothing asserted on
+`<html>`'s own classes — every DOM-parity check compares the dialog's OWN markup, which this
+side effect doesn't touch.
+
+See `qwik-material/menu/SYNC.md`'s "scroll strategy lost after resume" entry for the full
+root-cause write-up (same bug, found while wiring an analogous feature for menus) — there's no
+cheap workaround for `useContext()` not being callable again from inside the already-invoked
+QRL (confirmed live: throws `Code(Q10)`).
+
+Fixed HERE for the default (unconfigured) case only: `open$` now ALWAYS falls back to a fresh
+`createBlockScrollStrategy()`, created inline inside the QRL itself (not captured from the lost
+context read), whenever `merged.scrollStrategy` is still unset by the time it's needed — instead
+of only doing so when the (usually-undefined-post-resume) `scrollStrategyFactory` happens to be
+truthy. A CUSTOM `matDialogScrollStrategyFactory` is still silently lost after resume — same
+documented, not-yet-fixed customization gap as `qwik-material/menu`'s (a proper fix needs a
+`QRL<() => ScrollStrategy>` factory type and an async `open$`). Tested in
+`specs/material-dialog/scroll-blocking.spec.ts` (background scroll IS blocked after a real page
+load + open, confirmed via the `cdk-global-scrollblock` class `BlockScrollStrategy.enable()`
+adds to `<html>`).

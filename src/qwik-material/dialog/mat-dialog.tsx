@@ -132,8 +132,19 @@ export function useMatDialog(): MatDialog {
       );
       merged.id = merged.id ?? `mat-mdc-dialog-${idSeq.n++}`;
 
-      if (!merged.scrollStrategy && scrollStrategyFactory) {
-        merged.scrollStrategy = scrollStrategyFactory();
+      // `scrollStrategyFactory` is captured via `useContext()` during this
+      // hook's OWN render; it does NOT reliably survive into this QRL
+      // after a real SSR→CSR resume boundary (confirmed live — Qwik has
+      // no way to re-read context from inside an already-invoked QRL; see
+      // SYNC.md's "scroll strategy lost after resume" entry). Falling back
+      // to a FRESH `createBlockScrollStrategy()` here — rather than ending
+      // up with NO scroll strategy at all — at least restores upstream's
+      // real default behavior (background scroll blocked while the dialog
+      // is open) for the common, unconfigured case. A CUSTOM
+      // `matDialogScrollStrategyFactory` is still silently lost post-resume
+      // — known, documented gap, not fixed by this fallback.
+      if (!merged.scrollStrategy) {
+        merged.scrollStrategy = (scrollStrategyFactory ?? (() => createBlockScrollStrategy()))();
       }
 
       // SSR no-op: return a pre-CLOSED ref that resolves all three promises

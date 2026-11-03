@@ -169,8 +169,17 @@ export function useMatBottomSheet(): MatBottomSheet {
         config ?? {},
       );
 
-      if (!merged.scrollStrategy && scrollStrategyFactory) {
-        merged.scrollStrategy = scrollStrategyFactory();
+      // `scrollStrategyFactory` is captured via `useContext()` during this
+      // hook's OWN render; it does NOT reliably survive into this QRL
+      // after a real SSR→CSR resume boundary (same bug as
+      // `qwik-material/dialog` — see its SYNC.md's "scroll strategy lost
+      // after resume" entry). Falling back to a FRESH
+      // `createBlockScrollStrategy()` here restores upstream's real
+      // default behavior for the common, unconfigured case; a CUSTOM
+      // `matBottomSheetScrollStrategyFactory` is still silently lost
+      // post-resume — known, documented gap.
+      if (!merged.scrollStrategy) {
+        merged.scrollStrategy = (scrollStrategyFactory ?? (() => createBlockScrollStrategy()))();
       }
 
       // SSR no-op: return a pre-resolved ref so awaiters never hang on the server.

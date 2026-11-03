@@ -234,6 +234,16 @@ explicit) list through as `overlayConfig.context`, re-provided generically by `q
 `OverlayHost` (see its own SYNC.md entry). Tested end-to-end in
 `specs/material-bottom-sheet/context-inheritance.spec.ts`.
 
+## Real bug: scroll strategy lost after resume (2026-11-03)
+
+Same fix as `qwik-material/dialog`'s entry of the same name (see it for the full root-cause
+write-up): `useMatBottomSheet().open$` now always falls back to a fresh
+`createBlockScrollStrategy()`, created inline, whenever `merged.scrollStrategy` is still unset —
+restoring the real default (background scroll blocked while the sheet is open) for every sheet
+opened after a real page load, not just before a resume boundary. A CUSTOM
+`matBottomSheetScrollStrategyFactory` is still silently lost post-resume (documented gap,
+unchanged). Tested in `specs/material-bottom-sheet/scroll-blocking.spec.ts`.
+
 ## Pipeline
 
 Run `pnpm test:qwik-material` from the repo root to verify the package (+ `pnpm test:qwik-cdk`
