@@ -126,6 +126,7 @@ export const OverlayHost = component$<{entry: OverlayEntry}>(({entry}) => {
           el.setAttribute('popover', 'manual');
           const tryShow = () => {
             if (!el.isConnected) {
+              // ssr-leak-ok: element ref callbacks only run in the browser.
               requestAnimationFrame(tryShow);
               return;
             }

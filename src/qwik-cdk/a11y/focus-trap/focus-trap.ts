@@ -240,6 +240,7 @@ export function createFocusTrap(
     // first paint - rare, but possible under a fast scripted close).
     const tryAttach = () => {
       if (destroyed || trap.attachAnchors()) return;
+      // ssr-leak-ok: anchors attach only in the browser (the trap is built in an isBrowser-gated task).
       requestAnimationFrame(tryAttach);
     };
     tryAttach();
