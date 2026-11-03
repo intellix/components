@@ -714,3 +714,15 @@ Qwik-internal diffing shortcut mishandles the boolean form specifically on a lat
 re-render. Zero effect on every existing `<MatForm>` consumer (`formisch/account`'s own `<Form>`
 doesn't use `<MatForm>` at all — see `MatFormSubmittedProvider`'s own doc comment — and no other
 scenario passes `noValidate` with a live `class`).
+
+## Fixed: `useMatFormControl()` dropped its caller's re-renders (2026-11-03)
+
+`useMatFormControl()` attached fresh `setValue$`/`markAsTouched$`/`markAsDirty$` QRLs to its store
+on every render. A component that read one of them in its JSX (e.g.
+`onBlur$={name.markAsTouched$}`) and re-ran for any other reason (a signal read in its body)
+therefore wrote a new value to a store property it had just read, during its own render, and
+Qwik dropped that re-render: unrelated state in the same component stopped updating (found via
+the `ripple-overview` example, whose checkboxes never showed as checked). Each QRL is now created
+once with `useConstant()`, so later renders re-assign an identical value. Guarded by
+`specs/material-form-field/control-rerender.spec.ts` and a click step on `ripple-overview` in
+`specs/examples-misc`.

@@ -129,14 +129,39 @@ const openDialogByButton = (name: string): ParityStep => ({
   },
 });
 
+/** Checks all three of `ripple-overview`'s option checkboxes (Centered, Disabled, Unbounded). */
+const clickRippleOptions: ParityStep = {
+  name: 'check centered/disabled/unbounded',
+  run: async (page: Page) => {
+    const boxes = page.locator('[data-parity-root] mat-checkbox');
+    for (let i = 0; i < 3; i++) {
+      await boxes.nth(i).locator('input').click();
+      await page.waitForFunction(
+        index =>
+          document
+            .querySelectorAll('[data-parity-root] mat-checkbox')
+            [index]?.classList.contains('mat-mdc-checkbox-checked'),
+        i,
+        {timeout: 5000},
+      );
+    }
+  },
+};
+
 /** Interactions per example, added alongside each new port as needed. */
 const EXAMPLE_STEPS: Record<
   string,
   {steps: ParityStep[]; rootSelector?: string; expectedFailure?: string}[]
 > = {
   'snack-bar-annotated-component': [{steps: [openPizzaPartySnackBar], rootSelector: overlayRoot}],
-  'tooltip-position': [{steps: [hoverActionButton]}, {steps: [hoverActionButton], rootSelector: overlayRoot}],
-  'tooltip-delay': [{steps: [hoverActionButton]}, {steps: [hoverActionButton], rootSelector: overlayRoot}],
+  'tooltip-position': [
+    {steps: [hoverActionButton]},
+    {steps: [hoverActionButton], rootSelector: overlayRoot},
+  ],
+  'tooltip-delay': [
+    {steps: [hoverActionButton]},
+    {steps: [hoverActionButton], rootSelector: overlayRoot},
+  ],
   'tooltip-modified-defaults': [
     {steps: [hoverActionButton]},
     {steps: [hoverActionButton], rootSelector: overlayRoot},
@@ -149,11 +174,9 @@ const EXAMPLE_STEPS: Record<
       rootSelector: overlayRoot,
     },
   ],
-  // No interaction step for `ripple-overview` — clicking any of its checkboxes exercises an
-  // unrelated, pre-existing gap (a missed re-render once `useMatRipple()` also reads the signal
-  // the click's own `onChange$` writes — see `core/ripple-overview/index.tsx`'s own doc comment
-  // "Known gap"). The pristine, no-interaction render below already covers the actual contract
-  // this batch of work fixed (the three checkboxes' `ng-pristine`/`ng-untouched`/`ng-valid`).
+  // Toggles every option checkbox: each must flip to checked + `ng-dirty`, and "Unbounded" adds
+  // `mat-ripple-unbounded` to the ripple container.
+  'ripple-overview': [{steps: [clickRippleOptions]}],
 };
 
 /**
@@ -209,16 +232,16 @@ const EXPECTED_FAILURES: Record<string, string> = {
     "this port's MatButtonToggleGroup/MatButtonToggle have no appearance prop at all (only the " +
     "modern 'standard' appearance is implemented — see qwik-material/button-toggle/SYNC.md's " +
     "'Deviations from upstream' §6); the example's second ('Legacy appearance') section can only " +
-    'render with the standard appearance, which never matches upstream\'s distinctly-templated ' +
-    "legacy group (no mat-pseudo-checkbox, different ripple-trigger wiring, a separate CSS class " +
+    "render with the standard appearance, which never matches upstream's distinctly-templated " +
+    'legacy group (no mat-pseudo-checkbox, different ripple-trigger wiring, a separate CSS class ' +
     'ladder) — a real, large unported feature, not a fixable bug.',
   'chips-input':
     'upstream writes the real example\'s <input [matChipInputFor]="chipGrid"> as a SIBLING of ' +
     '<mat-chip-grid>, both children of <mat-form-field> — valid either way in real Angular (the ' +
     'directive just looks up its grid via a template reference, regardless of DOM position), but ' +
-    'this port\'s <MatChipGrid> deliberately renders the input ITSELF, nested one level inside ' +
+    "this port's <MatChipGrid> deliberately renders the input ITSELF, nested one level inside " +
     "its own chip-set div, so a form-field's `for` and the input's `id` always agree without " +
-    'the consumer having to coordinate them (see mat-chip-grid.tsx\'s own module doc comment for ' +
+    "the consumer having to coordinate them (see mat-chip-grid.tsx's own module doc comment for " +
     'the full rationale) — a real, deliberate, pre-existing structural difference (2 child-count ' +
     'mismatches at the form-field-infix/chip-set levels), not something editable/addOnBlur work ' +
     'should change. Every editable-chip/edit-icon/aria-description DOM this example actually ' +
@@ -243,10 +266,10 @@ const EXPECTED_FAILURES: Record<string, string> = {
   'chips-avatar':
     "found live: upstream's matChipAvatar directive adds its three classes " +
     '(mat-mdc-chip-avatar/mdc-evolution-chip__icon/mdc-evolution-chip__icon--primary) directly ' +
-    'onto the projected <img> element itself (no extra wrapper) — this port\'s MatChip always ' +
+    "onto the projected <img> element itself (no extra wrapper) — this port's MatChip always " +
     'wraps `avatar` content in its OWN extra <span class="mat-mdc-chip-avatar ..."> (see ' +
     'mat-chip.tsx), one level deeper than upstream for element content. Never caught before: ' +
-    "the only existing avatar scenario (mat-chips/avatar-trailing-icon) uses plain TEXT " +
+    'the only existing avatar scenario (mat-chips/avatar-trailing-icon) uses plain TEXT ' +
     'content, which has no tag to reveal the extra wrapper. A real fix would need the host ' +
     'classes applied to arbitrary consumer-supplied JSXOutput, which this port has no ' +
     'mechanism for (same category as MatCardAvatar always rendering its own <img>).',

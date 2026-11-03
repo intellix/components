@@ -30,28 +30,6 @@ import styles from './example.css?inline';
  * sits on, reading every one of `matRippleCentered`/`matRippleDisabled`/
  * `matRippleUnbounded`/`matRippleRadius`/`matRippleColor` from this
  * component's own live signals.
- *
- * ## Known gap, found while adding the above (NOT fixed here — out of scope for form-state work)
- *
- * Clicking any of the three checkboxes does NOT visually update ITS OWN host (`mat-mdc-checkbox-
- * checked`/`ng-dirty` never appear, even though the native `.checked` property does flip —
- * confirmed live: `MatCheckbox`'s own click handler runs, `checked.value`'s internal signal write
- * happens, but the component's render never re-executes). Root-caused to this file specifically
- * (reproduces even on the UNMODIFIED, pre-`formBound` version of this file — confirmed by
- * temporarily reverting this file's `onChange$` handlers to no-ops, which restores the class
- * update, then reverting that revert): each checkbox's `onChange$` writes a signal
- * (`centered`/`disabled`/`unbounded`) that `useMatRipple({centered: centered.value, ...})` ALSO
- * reads — i.e. a SIBLING hook call, not a direct JSX read. When that write and the checkbox's
- * own internal `checked.value` write land in the same synchronous handler invocation, the
- * checkbox's own scheduled re-render appears to get dropped (Qwik v2; same general class of
- * "signal write doesn't re-render" issue this project has hit before, e.g. this file's own
- * checkbox/radio/slide-toggle/button-toggle SYNC.md "stale capture" write-ups — but this one is
- * about a MISSED re-render, not a stale closure, and wasn't tracked down further: it needs a
- * dedicated repro outside this example to isolate from `useMatRipple()`/`MatCheckbox`
- * specifically). Because of this, no CLICK-driven interaction step is added to this example's
- * parity spec entry (`specs/examples-misc/angular-parity.spec.ts`) — only the pristine,
- * no-interaction render is compared (which DOES now match, `ng-pristine`/`ng-untouched`/
- * `ng-valid` on all three checkboxes, the gap this file's `formBound` wiring above fixes).
  */
 export default component$(() => {
   useStyles$(styles);

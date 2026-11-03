@@ -1,4 +1,4 @@
-import {$, useStore, type QRL} from '@qwik.dev/core';
+import {$, useConstant, useStore, type QRL} from '@qwik.dev/core';
 
 /**
  * A small, framework-appropriate replacement for Angular's reactive forms
@@ -154,16 +154,27 @@ export function useMatFormControl(options: MatFormControlOptions = {}): MatFormC
     touched: false,
     dirty: false,
   } as MatFormControl);
-  control.setValue$ = $((value: string) => {
-    control.value = value;
-    control.dirty = true;
-  });
-  control.markAsTouched$ = $(() => {
-    control.touched = true;
-  });
-  control.markAsDirty$ = $(() => {
-    control.dirty = true;
-  });
+  // Each QRL is created ONCE (`useConstant`), so re-assigning it on later renders writes an
+  // identical value and notifies nobody. Creating fresh QRLs every render wrote a NEW value to a
+  // store property the calling component may have just read (e.g. `onBlur$={name.markAsTouched$}`
+  // in its JSX) — a write during its own render, so Qwik dropped that component's re-render
+  // whenever it re-ran for any other reason.
+  control.setValue$ = useConstant(() =>
+    $((value: string) => {
+      control.value = value;
+      control.dirty = true;
+    }),
+  );
+  control.markAsTouched$ = useConstant(() =>
+    $(() => {
+      control.touched = true;
+    }),
+  );
+  control.markAsDirty$ = useConstant(() =>
+    $(() => {
+      control.dirty = true;
+    }),
+  );
   return control;
 }
 
