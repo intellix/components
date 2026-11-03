@@ -128,6 +128,7 @@ export function useMatDialog(): MatDialog {
           updateSize(_o: {width?: string | number; height?: string | number}) {},
           addPanelClass(_c: string | string[]) {},
           removePanelClass(_c: string | string[]) {},
+          updateProps(_p: Record<string, unknown>) {},
         };
         const ref = createMatDialogRef<R, C>({
           cdkRef: fakeOverlayRef,
@@ -160,7 +161,7 @@ export function useMatDialog(): MatDialog {
         },
         get: id => ctx.entries.value.find((x: OverlayEntry) => x.id === id),
       };
-      const overlay = createOverlayService(registry, idGen);
+      const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
       // Mirrors upstream MatDialog.open(): always opens with a fresh,
       // centered GlobalPositionStrategy (ignoring any CDK-level override —
@@ -200,6 +201,7 @@ export function useMatDialog(): MatDialog {
         addPanelClass(c: string | string[]): void;
         removePanelClass(c: string | string[]): void;
         detachBackdrop(): void;
+        updateProps(p: Record<string, unknown>): void;
       }
       const overlayShim: OverlayShim = {
         real: null,
@@ -221,6 +223,9 @@ export function useMatDialog(): MatDialog {
         detachBackdrop() {
           this.real?.detachBackdrop();
         },
+        updateProps(p) {
+          this.real?.updateProps(p);
+        },
       };
       const matRef = createMatDialogRef<R, C>({
         cdkRef: overlayShim,
@@ -241,7 +246,7 @@ export function useMatDialog(): MatDialog {
         {
           config: {...merged},
           ContentComponent: component,
-          contentProps: {},
+          contentProps: {...(merged.componentProps ?? {})},
           matDialogRef: wrapped,
         },
         overlayConfig,
@@ -262,19 +267,27 @@ export function useMatDialog(): MatDialog {
         onKeydown(e) {
           if (merged.onKeydown$) merged.onKeydown$(e);
           const isModifierPressed = e.shiftKey || e.ctrlKey || e.altKey || e.metaKey;
-          if (e.key === 'Escape' && !merged.disableClose && !isModifierPressed) {
+          // Mirrors upstream MatDialogRef: `disableClose` is read LIVE off the
+          // ref (not snapshotted from `merged` at open time), so mutating
+          // `matDialogRef.disableClose` after open takes effect immediately.
+          if (e.key === 'Escape' && !matRef.disableClose && !isModifierPressed) {
             matRef.close();
           }
         },
       });
 
-      // Wire close-on-backdrop-click via outside-click dispatcher.
+      // Wire close-on-backdrop-click via outside-click dispatcher. Mirrors
+      // upstream: `MatDialogRef.backdropClick()` (here: `onBackdropClick$`)
+      // emits for every backdrop click REGARDLESS of `disableClose` — apps
+      // use this to show a "discard changes?" confirmation even when the
+      // dialog can't be dismissed by clicking outside it. Only the actual
+      // `close()` call is gated on `disableClose`.
       outsideClickDispatcher.add(overlayRef, {
         onOutsideClick(e) {
           if (merged.onOutsidePointer$) merged.onOutsidePointer$(e);
-          if (merged.hasBackdrop !== false && !merged.disableClose) {
+          if (merged.hasBackdrop !== false) {
             if (merged.onBackdropClick$) merged.onBackdropClick$(e);
-            matRef.close();
+            if (!matRef.disableClose) matRef.close();
           }
         },
       });
@@ -357,7 +370,7 @@ export function createMatDialogService(deps: CreateMatDialogServiceDeps): MatDia
         {
           config: {...merged},
           ContentComponent: component,
-          contentProps: {},
+          contentProps: {...(merged.componentProps ?? {})},
           matDialogRef: undefined,
         },
         {} as OverlayConfig,

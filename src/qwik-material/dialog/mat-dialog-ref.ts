@@ -54,6 +54,19 @@ export interface MatDialogRef<R = unknown, C = unknown> {
   readonly componentInstance: Signal<C | null>;
   readonly state: Signal<MatDialogState>;
 
+  /**
+   * Whether the user is allowed to close the dialog. Mirrors upstream
+   * `MatDialogRef.disableClose`: a plain, independently-mutable field
+   * (initialised from `config.disableClose` at open time) that the
+   * Escape-key and backdrop-click handlers installed by `useMatDialog()`
+   * read LIVE on every event — so mutating it after open changes future
+   * close-on-Escape/backdrop behaviour without needing to reopen the
+   * dialog. `onBackdropClick$`/`onKeydown$` still fire unconditionally
+   * either way (see those fields' own doc comments on MatDialogConfig) —
+   * this field only gates whether the dialog actually CLOSES in response.
+   */
+  disableClose: boolean | undefined;
+
   /** Resolves once the enter animation completes. */
   readonly afterOpened: Promise<void>;
   /** Resolves once the exit animation completes; carries the close result. */
@@ -66,6 +79,14 @@ export interface MatDialogRef<R = unknown, C = unknown> {
   updateSize(width?: string, height?: string): MatDialogRef<R, C>;
   addPanelClass(classes: string | string[]): MatDialogRef<R, C>;
   removePanelClass(classes: string | string[]): MatDialogRef<R, C>;
+  /**
+   * Updates a single prop on the opened component, merging it into the
+   * props bag seeded by `config.componentProps` and pushing the result
+   * through the underlying overlay so the component reactively re-renders
+   * — the Qwik equivalent of upstream `ComponentRef.setInput(name, value)`
+   * / `dialogRef.componentInstance.x = …`.
+   */
+  setInput(name: string, value: unknown): MatDialogRef<R, C>;
 
   /**
    * @internal Container calls this to resolve `afterOpened` when the enter
@@ -107,6 +128,8 @@ export function createMatDialogRef<R = unknown, C = unknown>(deps: {
     removePanelClass(cls: string | string[]): void;
     /** Optional: detaches the backdrop independently of the pane's exit animation. */
     detachBackdrop?(): void;
+    /** Optional: pushes updated content-component props through the overlay. */
+    updateProps?(partial: Record<string, unknown>): void;
   };
   config: MatDialogConfig;
   state: Signal<MatDialogState>;
@@ -136,6 +159,12 @@ export function createMatDialogRef<R = unknown, C = unknown>(deps: {
   let pendingResult: R | undefined = undefined;
   // Installed by MatDialogContainer via [REGISTER_CLOSE_HANDLER] once it mounts.
   let requestClose: (() => void) | undefined;
+  // Local mutable copy of config.componentProps: setInput() merges into
+  // this (not deps.config.componentProps directly), then pushes the result
+  // through deps.cdkRef.updateProps({contentProps: ...}) — 'contentProps'
+  // matches the prop name MatDialogWrapper forwards onto the opened
+  // component (see useMatDialog().open$ in mat-dialog.tsx).
+  let componentProps: Record<string, unknown> = {...(deps.config.componentProps ?? {})};
 
   // If the caller pre-set state to CLOSED (SSR no-op), resolve everything
   // immediately so awaiters never hang.
@@ -150,6 +179,7 @@ export function createMatDialogRef<R = unknown, C = unknown>(deps: {
     config: deps.config,
     state: deps.state,
     componentInstance: deps.componentInstance,
+    disableClose: deps.config.disableClose,
     afterOpened,
     beforeClosed,
     afterClosed,
@@ -204,6 +234,12 @@ export function createMatDialogRef<R = unknown, C = unknown>(deps: {
 
     removePanelClass(classes) {
       deps.cdkRef.removePanelClass(classes);
+      return ref;
+    },
+
+    setInput(name, value) {
+      componentProps = {...componentProps, [name]: value};
+      deps.cdkRef.updateProps?.({contentProps: componentProps});
       return ref;
     },
 

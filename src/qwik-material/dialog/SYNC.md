@@ -125,6 +125,39 @@ Fixed (real behaviour bugs, not just DOM — found via the pre-existing failing 
   doesn't use RxJS): the backdrop starts fading out as soon as `close()` is called, independent
   of the pane's own exit animation.
 
+## `backdropClick` fires regardless of `disableClose`; `componentProps`/`setInput` (2026-11-03)
+
+Two real bugs/gaps found porting an app's "discard changes?" confirmation flow and dynamic-input
+use case:
+
+- **`onBackdropClick$` only fired when `!disableClose`.** Upstream `MatDialogRef.backdropClick()`
+  (the real Observable) always emits on every backdrop click, REGARDLESS of `disableClose` — apps
+  subscribe to it separately from the ref's own auto-close logic to show a confirmation dialog even
+  when the primary dialog can't be dismissed by clicking outside it. `useMatDialog().open$`'s
+  outside-click handler previously nested the `onBackdropClick$` call inside the same
+  `!merged.disableClose` check that gates `matRef.close()`. Fixed: the callback now fires whenever
+  there's a backdrop (`hasBackdrop !== false`) and the click is an outside click, unconditionally;
+  only the actual `close()` call is still gated.
+- **`MatDialogRef.disableClose` didn't exist as a live field.** Upstream `MatDialogRef` has its own
+  public `disableClose: boolean | undefined` field (copied from `config.disableClose` at
+  construction), read LIVE by the Escape/backdrop-click handlers on every event — this is what
+  upstream's own "should allow for the disableClose option to be updated while open" test mutates
+  (`dialogRef.disableClose = false`). This port had no such field; the Escape/backdrop handlers read
+  `merged.disableClose` (a closure over the open-time config) instead. Added `disableClose` to
+  `MatDialogRef`, initialised from `config.disableClose`; the handlers in `useMatDialog().open$` now
+  read `matRef.disableClose` live. `mat-dialog-scenarios.spec.ts`'s "should allow for the
+  disableClose option to be updated while open" (previously `it.skip`'d as DOM-render-only) is now
+  covered by `specs/material-dialog/backdrop-click-always.spec.ts`.
+- **`MatDialogConfig.componentProps` / `MatDialogRef.setInput`.** `contentProps` passed to the
+  opened component was hard-coded to `{}` — there was no way to pass data to the content component
+  other than `MAT_DIALOG_DATA`. Added `config.componentProps?: Record<string, unknown>` (seeds the
+  initial props) and `MatDialogRef.setInput(name, value)` (merges a single prop and pushes the
+  result through the overlay reactively — Qwik's replacement for upstream's
+  `dialogRef.componentInstance.x = …` / `ComponentRef.setInput`, neither of which apply to a Qwik
+  `component$`). Built on `OverlayRef.updateProps()` — see `qwik-cdk/overlay/SYNC.md`. `MAT_DIALOG_DATA`
+  is unaffected (orthogonal mechanism). Tested in `mat-dialog-ref.spec.ts` (merge logic) and
+  `specs/material-dialog/set-input.spec.ts` (end-to-end reactivity).
+
 ## Stub inventory
 
 Stubs are compile-time stand-ins for Angular Material (and CDK) internals that qwik-material has not yet ported. Each stub emits the minimum symbols needed for the dialog SCSS chain to compile; they do **NOT** reproduce upstream behavior. When the corresponding upstream module is eventually ported, the stub should be removed and its callers updated to `@use` the real module.

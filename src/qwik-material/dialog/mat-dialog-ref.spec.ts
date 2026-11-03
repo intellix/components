@@ -118,4 +118,50 @@ describe('createMatDialogRef', () => {
     await expect(ref.beforeClosed).resolves.toBeUndefined();
     await expect(ref.afterClosed).resolves.toBeUndefined();
   });
+
+  it('disableClose mirrors config.disableClose at creation time', () => {
+    const ref = createMatDialogRef({
+      cdkRef: makeCdkRefStub(),
+      config: {id: 'x', disableClose: true},
+      state: makeSignal(MatDialogState.OPEN),
+      componentInstance: makeSignal(null),
+    });
+    expect(ref.disableClose).toBe(true);
+  });
+
+  it('disableClose is independently mutable after creation (mirrors upstream MatDialogRef.disableClose)', () => {
+    const ref = createMatDialogRef({
+      cdkRef: makeCdkRefStub(),
+      config: {id: 'x', disableClose: true},
+      state: makeSignal(MatDialogState.OPEN),
+      componentInstance: makeSignal(null),
+    });
+    expect(ref.disableClose).toBe(true);
+    ref.disableClose = false;
+    expect(ref.disableClose).toBe(false);
+    // Mutating the ref's own field must not rewrite the original config —
+    // matches upstream, where `disableClose` is a separate constructor-time
+    // copy, not a live alias of `config.disableClose`.
+    expect(ref.config.disableClose).toBe(true);
+  });
+
+  it('setInput merges onto config.componentProps and pushes the result via cdkRef.updateProps', () => {
+    const updateCalls: Record<string, unknown>[] = [];
+    const cdkRef = {
+      ...makeCdkRefStub(),
+      updateProps: (p: Record<string, unknown>) => updateCalls.push(p),
+    };
+    const ref = createMatDialogRef({
+      cdkRef,
+      config: {id: 'x', componentProps: {a: 1}},
+      state: makeSignal(MatDialogState.OPEN),
+      componentInstance: makeSignal(null),
+    });
+
+    expect(ref.setInput('b', 2)).toBe(ref);
+    expect(updateCalls).toEqual([{contentProps: {a: 1, b: 2}}]);
+
+    ref.setInput('a', 99);
+    expect(updateCalls).toEqual([{contentProps: {a: 1, b: 2}}, {contentProps: {a: 99, b: 2}}]);
+  });
 });

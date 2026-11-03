@@ -52,6 +52,16 @@ export interface MatDialogConfig<D = unknown> {
 
   data?: D | null;
 
+  /**
+   * Initial props passed to the opened component (Qwik's idiomatic
+   * replacement for upstream's `dialogRef.componentInstance.x = …` /
+   * `componentRef.setInput('x', …)`, which don't apply to a Qwik
+   * `component$` — see `MatDialogRef.setInput` for updating these after
+   * open). `MAT_DIALOG_DATA` (the `data` field above) keeps working
+   * independently of this.
+   */
+  componentProps?: Record<string, unknown>;
+
   scrollStrategy?: ScrollStrategy;
   context?: OverlayContextOverride[];
 

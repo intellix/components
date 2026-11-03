@@ -383,6 +383,8 @@ describe('MatDialog scenarios', () => {
 
     it.skip('should allow for the disableClose option to be updated while open (DOM-render — deferred to Playwright)', () => {
       // Reason: clicks backdrop DOM element before/after changing disableClose; live browser.
+      // Covered by specs/material-dialog/backdrop-and-escape.spec.ts's
+      // "disable-close: toggling matDialogRef.disableClose after open" case.
     });
 
     it.skip('should recapture focus when clicking on the backdrop (DOM-render — deferred to Playwright)', () => {
