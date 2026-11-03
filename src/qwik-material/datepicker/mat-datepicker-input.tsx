@@ -1,4 +1,4 @@
-import {$, component$, useContext, useSignal, type QRL} from '@qwik.dev/core';
+import {$, component$, useComputed$, useContext, useSignal, type QRL} from '@qwik.dev/core';
 import {
   type MatFormFieldControlProps,
   useOptionalFormFieldConnectedOrigin,
@@ -7,8 +7,9 @@ import {
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
+import {resolveDateAdapter} from '../core/datetime/use-date-adapter';
 import {
-  formatDateForDisplay,
+  formatDateWithAdapter,
   handleDatepickerBlur,
   handleDatepickerInput,
   openDatepickerPanel,
@@ -129,9 +130,32 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
     }
   }
 
-  // SSR-correct initial display string, snapshotted once — mirrors `MatInput`'s/
-  // `MatTimepickerInput`'s own `initialValue`/initial-display pattern.
-  const initialDisplay = useSignal(() => formatDateForDisplay(picker.value.value));
+  // SSR-correct initial display string. `mountValue`/`mountLocale` snapshot `picker.value.value`/
+  // `picker._locale.value` ONCE, at mount — this feeds a native `value` DOM property write,
+  // which must never be reactively rewritten later (it would clobber whatever the user is
+  // actively typing), mirroring `MatInput`'s/`MatTimepickerInput`'s own frozen `initialValue`
+  // pattern exactly. `initialDisplay` itself is a `useComputed$`, not a plain `useSignal`,
+  // because formatting a NON-null seed needs the app-configured `DateAdapter` (an app-supplied
+  // custom adapter's whole point — e.g. `dd.mm.yyyy` — see `datepicker/SYNC.md`), which can only
+  // be resolved asynchronously (`picker._dateAdapterFactory` is a `QRL` factory). The compute
+  // function returns a plain, synchronous string when there's nothing to format (the common
+  // empty-input case — never even an `async function`, so this never enters the async-
+  // suspension engine for it) and a `Promise<string>` only when a seed value needs the
+  // configured adapter's own `format()`. Reading `.value` on a still-pending result THROWS the
+  // in-flight promise, which Qwik's own renderer catches and retries — SSR blocks until
+  // resolved (so the server HTML already has the real formatted text, never the wrong
+  // hardcoded-default one, and never a flash/fallback state), and the client re-suspends the
+  // same way on its own first read after a resume. Same pattern `qwik-material/icon`'s own
+  // `resolvedSvgIcon` established first (see that package's SYNC.md deviation #20 for the
+  // confirmed-live `AsyncSignal`/`ComputedSignal` suspend-and-retry semantics this relies on).
+  const mountValue = useSignal(() => picker.value.value);
+  const mountLocale = useSignal(() => picker._locale.value);
+  const initialDisplay = useComputed$(() => {
+    if (mountValue.value == null) return '';
+    return resolveDateAdapter(picker._dateAdapterFactory, mountLocale.value).then(a =>
+      formatDateWithAdapter(a, picker._dateFormats, mountValue.value),
+    );
+  });
 
   const handleFocus$ = $((event: FocusEvent) => {
     if (!disabledOverride && formField) {

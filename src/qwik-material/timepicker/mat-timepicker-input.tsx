@@ -1,4 +1,4 @@
-import {$, component$, useContext, useSignal, type QRL} from '@qwik.dev/core';
+import {$, component$, useComputed$, useContext, useSignal, type QRL} from '@qwik.dev/core';
 import {
   type MatFormFieldControlProps,
   useOptionalFormFieldConnectedOrigin,
@@ -7,12 +7,13 @@ import {
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {QWIK_CDK} from '@angular-community/qwik-cdk';
 import {
-  formatTimeForDisplay,
+  formatTimeWithAdapter,
   handleTimepickerBlur,
   handleTimepickerInput,
   handleTimepickerInputKeydown,
   openTimepickerPanel,
 } from './timepicker-runtime';
+import {resolveDateAdapter} from '../core/datetime/use-date-adapter';
 import type {MatTimepickerHandle} from './use-mat-timepicker';
 import {useMatFormSubmitted} from '../core/mat-form';
 import {composeRef, type HostRef} from '../core/host-props';
@@ -173,10 +174,24 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
   const id = formField ? formField.assignedId : props.id;
   const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];
 
-  // SSR-correct initial display string, snapshotted once — mirrors `MatInput`'s own
-  // `initialValue` pattern (see that component's doc comment for the full "value is a DOM
-  // property, not an attribute" rationale this also relies on).
-  const initialDisplay = useSignal(() => formatTimeForDisplay(picker.value.value));
+  // SSR-correct initial display string. `mountValue`/`mountLocale` snapshot `picker.value.value`/
+  // `picker._locale.value` ONCE, at mount — this feeds a native `value` DOM property write, which
+  // must never be reactively rewritten later (it would clobber whatever the user is actively
+  // typing), mirroring `MatInput`'s/`MatDatepickerInput`'s own frozen `initialValue`/
+  // `mountValue`/`mountLocale` pattern exactly (see that component's doc comment for the full
+  // rationale, including why this is a `useComputed$` rather than a plain `useSignal`: formatting
+  // a non-null seed needs the app-configured `DateAdapter`, resolved only asynchronously via
+  // `picker._dateAdapterFactory`, a `QRL` factory — reading a still-pending `useComputed$` throws
+  // the in-flight promise, which Qwik's renderer catches and retries, blocking SSR until resolved
+  // and re-suspending the client the same way on its first read after a resume).
+  const mountValue = useSignal(() => picker.value.value);
+  const mountLocale = useSignal(() => picker._locale.value);
+  const initialDisplay = useComputed$(() => {
+    if (mountValue.value == null) return '';
+    return resolveDateAdapter(picker._dateAdapterFactory, mountLocale.value).then(a =>
+      formatTimeWithAdapter(a, picker._dateFormats, mountValue.value),
+    );
+  });
 
   const handleFocus$ = $((event: FocusEvent) => {
     if (!picker.disabled.value && formField) {

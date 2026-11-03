@@ -338,8 +338,10 @@ async function resolveAdapterForTimepicker<D>(
 }
 
 /** Formats `value` for display with the GIVEN adapter/formats — shared by every custom-adapter-
- *  aware call site below. */
-function formatTimeWithAdapter<D>(a: DateAdapter<D>, f: MatDateFormats, value: D | null): string {
+ *  aware call site below, and exported so `mat-timepicker-input.tsx` can compute its own
+ *  SSR-correct, ADAPTER-AWARE initial `.value` snapshot (mirrors `datepicker-runtime.ts`'s
+ *  identically-shaped `formatDateWithAdapter()`, and its own usage in `mat-datepicker-input.tsx`). */
+export function formatTimeWithAdapter<D>(a: DateAdapter<D>, f: MatDateFormats, value: D | null): string {
   const valid = value != null && a.isValid(value) ? value : null;
   return valid == null ? '' : a.format(valid, f.display.timeInput);
 }
