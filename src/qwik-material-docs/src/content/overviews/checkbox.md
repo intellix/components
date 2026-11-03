@@ -25,6 +25,33 @@ pass `checked`/`indeterminate` as props and read changes back through `onChange$
 </MatCheckbox>
 ```
 
+A form library can still drive the `ng-touched`/`ng-untouched`, `ng-pristine`/`ng-dirty`,
+`ng-valid`/`ng-invalid` classes Angular's `NgControlStatus` would add to `<mat-checkbox
+formControlName="...">` — pass `formBound` plus `touched`/`dirty`/`invalid` (booleans you
+compute yourself) and `onTouched$` (called on blur, same timing as upstream's `_onTouched()`):
+
+```tsx
+<MatCheckbox
+  checked={field.checked.value}
+  formBound
+  touched={field.touched.value}
+  dirty={field.dirty.value}
+  invalid={field.invalid.value}
+  onChange$={e => {
+    field.dirty.value = true;
+    field.checked.value = e.checked;
+  }}
+  onTouched$={() => (field.touched.value = true)}
+>
+  I agree to the terms
+</MatCheckbox>
+```
+
+See [Using with Formisch](/guide/using-with-formisch/) for a worked example with a real form
+library.
+
+<!-- example(checkbox-reactive-forms) -->
+
 ### Indeterminate state
 
 `<MatCheckbox>` supports an `indeterminate` state, similar to the native
@@ -85,7 +112,11 @@ Additionally, `<MatCheckbox>` supports the following accessibility props:
 ## Angular → Qwik notes
 
 - **No Angular Forms integration.** `ControlValueAccessor`/`Validator` have no Qwik equivalent;
-  `required` is reflected as a plain attribute only, with no validation behavior.
+  `required` is reflected as a plain attribute only, with no validation behavior. `formBound`/
+  `touched`/`dirty`/`invalid`/`onTouched$` mirror upstream's `NgControlStatus` host classes +
+  `_onBlur()` → `_onTouched()` timing (see "Use with forms" above) — but `invalid` is always a
+  plain boolean YOU compute, never derived from a real validator the way upstream's `Validator`
+  interface would.
 - **Hybrid controlled/uncontrolled `checked`/`indeterminate`.** A parent that keeps rebinding the
   prop (`checked={checked.value}` + `onChange$`) stays in sync every render; a parent that omits
   the prop entirely gets a fully self-managed checkbox, matching upstream's "no `[checked]`

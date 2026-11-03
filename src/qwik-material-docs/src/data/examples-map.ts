@@ -58,9 +58,13 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
       upstreamId: 'button-toggle-appearance',
       pkg: 'button-toggle',
     },
+    {route: 'button-toggle-forms', upstreamId: 'button-toggle-forms', pkg: 'button-toggle'},
   ],
   'mat-card': [{route: 'example', upstreamId: 'card-overview', pkg: 'card'}],
-  'mat-checkbox': [{route: 'example', upstreamId: 'checkbox-overview', pkg: 'checkbox'}],
+  'mat-checkbox': [
+    {route: 'example', upstreamId: 'checkbox-overview', pkg: 'checkbox'},
+    {route: 'checkbox-reactive-forms', upstreamId: 'checkbox-reactive-forms', pkg: 'checkbox'},
+  ],
   'mat-chips': [
     {route: 'example', upstreamId: 'chips-overview', pkg: 'chips'},
     {route: 'chips-input', upstreamId: 'chips-input', pkg: 'chips'},
@@ -143,7 +147,10 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
   'mat-progress-spinner': [
     {route: 'example', upstreamId: 'progress-spinner-overview', pkg: 'progress-spinner'},
   ],
-  'mat-radio': [{route: 'example', upstreamId: 'radio-overview', pkg: 'radio'}],
+  'mat-radio': [
+    {route: 'example', upstreamId: 'radio-overview', pkg: 'radio'},
+    {route: 'radio-ng-model', upstreamId: 'radio-ng-model', pkg: 'radio'},
+  ],
   'mat-select': [
     {route: 'example', upstreamId: 'select-overview', pkg: 'select'},
     {route: 'select-value-binding', upstreamId: 'select-value-binding', pkg: 'select'},
@@ -168,7 +175,10 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
     {route: 'sidenav-fixed', upstreamId: 'sidenav-fixed', pkg: 'sidenav'},
     {route: 'sidenav-responsive', upstreamId: 'sidenav-responsive', pkg: 'sidenav'},
   ],
-  'mat-slide-toggle': [{route: 'example', upstreamId: 'slide-toggle-overview', pkg: 'slide-toggle'}],
+  'mat-slide-toggle': [
+    {route: 'example', upstreamId: 'slide-toggle-overview', pkg: 'slide-toggle'},
+    {route: 'slide-toggle-forms', upstreamId: 'slide-toggle-forms', pkg: 'slide-toggle'},
+  ],
   'mat-slider': [
     {route: 'example', upstreamId: 'slider-overview', pkg: 'slider'},
     {route: 'slider-range', upstreamId: 'slider-range', pkg: 'slider'},

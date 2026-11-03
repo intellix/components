@@ -17,6 +17,34 @@ specify an appropriate label.
 There is no Angular Forms integration in this port — see
 [Angular → Qwik notes](#angular-qwik-notes) below for the controlled-component replacement.
 
+A form library can still drive the `ng-touched`/`ng-untouched`, `ng-pristine`/`ng-dirty`,
+`ng-valid`/`ng-invalid` classes Angular's `NgControlStatus` would add to `<mat-slide-toggle
+formControlName="...">` — pass `formBound` plus `touched`/`dirty`/`invalid` (booleans you
+compute yourself) and `onTouched$` (called on blur of the inner button, same timing as
+upstream's `_onTouched()`):
+
+```tsx
+<MatSlideToggle
+  checked={field.checked.value}
+  formBound
+  touched={field.touched.value}
+  dirty={field.dirty.value}
+  invalid={field.invalid.value}
+  onChange$={next => {
+    field.dirty.value = true;
+    field.checked.value = next;
+  }}
+  onTouched$={() => (field.touched.value = true)}
+>
+  Send me the monthly newsletter
+</MatSlideToggle>
+```
+
+See [Using with Formisch](/guide/using-with-formisch/) for a worked example with a real form
+library.
+
+<!-- example(slide-toggle-forms) -->
+
 ### Accessibility
 
 `<MatSlideToggle>` uses an internal `<button role="switch">` to provide an accessible experience.
@@ -37,7 +65,9 @@ without descriptive text content.
   (`NG_VALUE_ACCESSOR`/`NG_VALIDATORS`) have no Qwik equivalent — replaced by the
   controlled-component pattern: the consumer owns `checked` via a signal and passes it as a
   prop, reading changes back through `onChange$`/`onToggleChange$` QRL props (no `.emit()`
-  `EventEmitter` API).
+  `EventEmitter` API). `formBound`/`touched`/`dirty`/`invalid`/`onTouched$` mirror upstream's
+  `NgControlStatus` host classes + the `FocusMonitor`-driven `_onTouched()` timing (see "Use
+  with forms" above), but `invalid` is always a plain boolean YOU compute.
 - **No imperative `focus()`/`toggle()` methods** — Qwik has no exported component-instance
   handle; drive all interaction through real clicks/Tab/Space.
 - **`required` only drives `aria-required`** on the inner button — there's no native

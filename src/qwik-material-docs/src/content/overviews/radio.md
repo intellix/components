@@ -34,6 +34,36 @@ pass `value` as a prop and read changes back through `onChange$`.
 </MatRadioGroup>
 ```
 
+A form library can still drive the `ng-touched`/`ng-untouched`, `ng-pristine`/`ng-dirty`,
+`ng-valid`/`ng-invalid` classes Angular's `NgControlStatus` would add to `<mat-radio-group
+formControlName="...">` — pass `formBound` plus `touched`/`dirty`/`invalid` (booleans you
+compute yourself) and `onTouched$`. `onTouched$` fires on blur of ANY radio in the group,
+matching upstream's own per-button `FocusMonitor` subscription — including when focus just moves
+to another radio in the same group:
+
+```tsx
+<MatRadioGroup
+  value={field.value.value}
+  formBound
+  touched={field.touched.value}
+  dirty={field.dirty.value}
+  invalid={field.invalid.value}
+  onChange$={v => {
+    field.dirty.value = true;
+    field.value.value = v;
+  }}
+  onTouched$={() => (field.touched.value = true)}
+>
+  <MatRadioButton value="1">Option 1</MatRadioButton>
+  <MatRadioButton value="2">Option 2</MatRadioButton>
+</MatRadioGroup>
+```
+
+See [Using with Formisch](/guide/using-with-formisch/) for a worked example with a real form
+library.
+
+<!-- example(radio-ng-model) -->
+
 ### Accessibility
 
 `<MatRadioButton>` uses an internal `<input type="radio">` to provide an accessible experience.
@@ -63,6 +93,9 @@ You should provide an accessible label for all `<MatRadioGroup>` elements via `a
   Qwik-native shape of the same cross-component notice upstream's dispatcher provided.
 - **No Angular Forms integration.** `ControlValueAccessor`/`NG_VALUE_ACCESSOR`/`ngModel`/
   `FormControl` have no Qwik equivalent — replaced by the controlled-component pattern above.
+  `formBound`/`touched`/`dirty`/`invalid`/`onTouched$` mirror upstream's `NgControlStatus` host
+  classes (on the GROUP, never an individual button — matching upstream exactly) and `_touch()`
+  timing (see "Use with forms" above), but `invalid` is always a plain boolean YOU compute.
 - **`EventEmitter` `change` removed from both the group and the button** — replaced by
   `onChange$` QRL props, no `MatRadioChange` event object (the payload is just the new value).
 - **`checked` is a live DOM property, not an attribute** — same category of SSR-vs-CSR gap as
