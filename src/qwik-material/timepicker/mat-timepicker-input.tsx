@@ -1,4 +1,4 @@
-import {$, component$, useComputed$, useContext, useSignal, type QRL} from '@qwik.dev/core';
+import {$, component$, useComputed$, useContext, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import {
   type MatFormFieldControlProps,
   useOptionalFormFieldConnectedOrigin,
@@ -15,7 +15,13 @@ import {
 } from './timepicker-runtime';
 import {resolveDateAdapter} from '../core/datetime/use-date-adapter';
 import type {MatTimepickerHandle} from './use-mat-timepicker';
-import {useMatFormSubmitted} from '../core/mat-form';
+import {useMatFormState} from '../core/mat-form';
+import {
+  MAT_ERROR_STATE_MATCHER,
+  MAT_ERROR_STATE_MATCHER_DEFAULT,
+  resolveErrorStateSync,
+  type MatErrorStateSnapshot,
+} from '../core/error-state-matcher';
 import {composeRef, type HostRef} from '../core/host-props';
 
 type NativeInputElement = HTMLInputElement;
@@ -165,11 +171,42 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
   // confirmed live: a disabled timepicker's input never carries `ng-valid`/`ng-invalid`, only
   // `ng-pristine ng-untouched`.
   const showValidityClass = !picker.disabled.value;
-  // Mirrors the DEFAULT `ErrorStateMatcher` (`control.invalid && control.touched`) — gates
-  // `aria-invalid`, same formula `mat-input.tsx`'s own `errorState` uses.
-  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
-  const formSubmitted = useMatFormSubmitted();
-  const errorState = invalid && (touched || formSubmitted);
+  // `ErrorStateMatcher` — see `core/error-state-matcher.ts`'s own doc comment and `select/
+  // SYNC.md`'s `compareWith` section (same `useSignal`+`useTask$` resolution pattern) for the
+  // full design. No `formBound` gate here — unlike `MatInput`'s own, matching this control's
+  // pre-existing behavior: `[matTimepicker]` always provides an implicit value-model (see this
+  // file's own header comment), so `touched`/`dirty`/`invalid` always come from `picker.*`
+  // directly, never from a props-based "standalone, unbound" fallback.
+  const formState = useMatFormState();
+  const errorMatcherConfig = useContext(MAT_ERROR_STATE_MATCHER, MAT_ERROR_STATE_MATCHER_DEFAULT);
+  const errorMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+  const errorStateSignal = useSignal(() =>
+    typeof errorMatcher === 'string'
+      ? resolveErrorStateSync(
+          {invalid, touched, dirty, submitted: formState.submitted},
+          errorMatcher,
+        )
+      : false,
+  );
+  useTask$(({track}) => {
+    const snapshot: MatErrorStateSnapshot = {
+      invalid: track(
+        () => picker.parseError.value || picker.minError.value || picker.maxError.value,
+      ),
+      touched: track(() => picker.touched.value),
+      dirty: track(() => picker.dirty.value),
+      submitted: track(() => formState.submitted),
+    };
+    const currentMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+    if (typeof currentMatcher === 'string') {
+      errorStateSignal.value = resolveErrorStateSync(snapshot, currentMatcher);
+      return;
+    }
+    return currentMatcher.resolve().then(fn => {
+      errorStateSignal.value = !!fn(snapshot);
+    });
+  });
+  const errorState = errorStateSignal.value;
 
   const id = formField ? formField.assignedId : props.id;
   const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];

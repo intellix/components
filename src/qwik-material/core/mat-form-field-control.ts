@@ -1,4 +1,5 @@
 import {createContextId, useContext, type JSXOutput, type Signal} from '@qwik.dev/core';
+import type {MatErrorStateMatcher} from './error-state-matcher';
 
 /** Mirrors `form-field/form-field-config.ts`'s `MatFormFieldColor` — redeclared
  *  here (rather than imported) so `core/` (the lower-level package) never
@@ -188,6 +189,14 @@ export interface MatFormFieldControlProps {
    * `core/mat-form-control.ts`). Only meaningful when `formBound` is true.
    */
   invalid?: boolean;
+  /**
+   * Mirrors upstream's per-control `[errorStateMatcher]` — see `core/error-state-matcher.ts`'s
+   * own doc comment for the full design. Falls back to `<QwikMaterialProvider
+   * errorStateMatcher={...}>`'s app-wide default (mirrors `{provide: ErrorStateMatcher, useClass:
+   * ...}`), then upstream's own default (`'touched'`, i.e. `invalid && (touched || submitted)`).
+   * Only meaningful when `formBound` is true.
+   */
+  errorStateMatcher?: MatErrorStateMatcher;
 }
 
 /**

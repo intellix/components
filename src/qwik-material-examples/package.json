@@ -69,6 +69,7 @@
     "./form-field/form-field-label": "./form-field/form-field-label/index.tsx",
     "./form-field/form-field-hint": "./form-field/form-field-hint/index.tsx",
     "./form-field/form-field-error": "./form-field/form-field-error/index.tsx",
+    "./form-field/input-error-state-matcher": "./form-field/input-error-state-matcher/index.tsx",
     "./form-field/form-field-prefix-suffix": "./form-field/form-field-prefix-suffix/index.tsx",
     "./grid-list/example": "./grid-list/example/index.tsx",
     "./icon/example": "./icon/example/index.tsx",

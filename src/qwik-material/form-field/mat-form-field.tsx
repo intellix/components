@@ -27,7 +27,13 @@ import {
   type MatFormFieldSubscriptSizing,
 } from './form-field-config';
 import {MatIdScope} from './id-scope';
-import {useMatFormSubmitted} from '../core/mat-form';
+import {useMatFormState} from '../core/mat-form';
+import {
+  MAT_ERROR_STATE_MATCHER,
+  MAT_ERROR_STATE_MATCHER_DEFAULT,
+  resolveErrorStateSync,
+  type MatErrorStateSnapshot,
+} from '../core/error-state-matcher';
 
 /**
  * Props for `<MatFormField>`. See `SYNC.md` for the full architecture
@@ -324,8 +330,36 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // core/mat-form.tsx) is a SEPARATE concept that drives
   // mat-form-field-invalid/mdc-text-field--invalid/visible `<mat-error>`
   // — never the plain `ng-valid`/`ng-invalid` classes above.
-  const formSubmitted = useMatFormSubmitted();
-  const errorState = formBound && invalid && (touched || formSubmitted);
+  // `ErrorStateMatcher` — see `core/error-state-matcher.ts`'s own doc comment and `select/
+  // SYNC.md`'s `compareWith` section (same `useSignal`+`useTask$` resolution pattern) for the
+  // full design. `errorStateMatcher` itself is read from `controlProps` (the frozen, one-time
+  // `control`-prop snapshot) rather than a top-level `MatFormField` prop — consistent with
+  // `controlType`/`disableAutomaticLabeling` above: a consumer sets a control's matcher once, at
+  // JSX-authoring time, and no scenario needs to swap it dynamically after mount.
+  const formState = useMatFormState();
+  const errorMatcherConfig = useContext(MAT_ERROR_STATE_MATCHER, MAT_ERROR_STATE_MATCHER_DEFAULT);
+  const errorMatcher = controlProps?.errorStateMatcher ?? errorMatcherConfig;
+  const errorStateSignal = useSignal(() =>
+    typeof errorMatcher === 'string'
+      ? resolveErrorStateSync({invalid, touched, dirty, submitted: formState.submitted}, errorMatcher)
+      : false,
+  );
+  useTask$(({track}) => {
+    const snapshot: MatErrorStateSnapshot = {
+      invalid: track(() => props.invalid ?? controlProps?.invalid ?? false),
+      touched: track(() => props.touched ?? controlProps?.touched ?? false),
+      dirty: track(() => props.dirty ?? controlProps?.dirty ?? false),
+      submitted: track(() => formState.submitted),
+    };
+    if (typeof errorMatcher === 'string') {
+      errorStateSignal.value = resolveErrorStateSync(snapshot, errorMatcher);
+      return;
+    }
+    return errorMatcher.resolve().then(fn => {
+      errorStateSignal.value = !!fn(snapshot);
+    });
+  });
+  const errorState = formBound && errorStateSignal.value;
   const initialEmpty = !controlProps?.value;
   // Control's OWN shouldLabelFloat (upstream's `MatInput.shouldLabelFloat`
   // getter): `(focused && !disabled) || !empty`. `focused` is always false

@@ -69,6 +69,8 @@ import {
 } from '../bottom-sheet/mat-bottom-sheet-tokens';
 import type {MatFormFieldConfig} from '../form-field/form-field-config';
 import {MAT_FORM_FIELD_CONFIG} from '../form-field/form-field-config';
+import type {MatErrorStateMatcher} from '../core/error-state-matcher';
+import {MAT_ERROR_STATE_MATCHER, MAT_ERROR_STATE_MATCHER_DEFAULT} from '../core/error-state-matcher';
 import type {MatInputConfig} from '../input/input-config';
 import {MAT_INPUT_CONFIG} from '../input/input-config';
 import type {StepperOptions} from '@angular-community/qwik-cdk/stepper';
@@ -148,6 +150,12 @@ export interface QwikMaterialProviderProps {
   matFormFieldConfig?: MatFormFieldConfig;
   /** Defaults applied to every MatInput in this subtree. */
   matInputConfig?: MatInputConfig;
+  /** App-wide default `ErrorStateMatcher` for every form-field-bound control in this subtree —
+   *  mirrors upstream's `{provide: ErrorStateMatcher, useClass: ShowOnDirtyErrorStateMatcher}`.
+   *  See `core/error-state-matcher.ts`'s own doc comment. Defaults to `'touched'` (upstream's
+   *  own `ErrorStateMatcher` default). Overridable per-control via `errorStateMatcher` on
+   *  `MatInput`/`MatSelect`/`MatAutocomplete`/the datepicker+timepicker inputs. */
+  errorStateMatcher?: MatErrorStateMatcher;
   /** Qwik-context equivalent of `@angular/cdk/stepper`'s `STEPPER_GLOBAL_OPTIONS`
    *  — applies to every MatStepper in this subtree. */
   stepperGlobalOptions?: StepperOptions;
@@ -311,6 +319,10 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // `false` fallback declared in MatInput; providing an empty object is
   // equivalent to accepting that default.
   useContextProvider(MAT_INPUT_CONFIG, props.matInputConfig ?? {});
+  // MatErrorStateMatcher is either a plain string literal or a QRL — both are safe to provide
+  // directly (a QRL is natively serializable; see core/error-state-matcher.ts). Controls outside
+  // a provider get MAT_ERROR_STATE_MATCHER_DEFAULT (upstream's own ErrorStateMatcher default).
+  useContextProvider(MAT_ERROR_STATE_MATCHER, props.errorStateMatcher ?? MAT_ERROR_STATE_MATCHER_DEFAULT);
   // StepperOptions is a plain object with primitive fields — no noSerialize
   // needed. Steppers outside a provider get {} (upstream's own un-provided
   // STEPPER_GLOBAL_OPTIONS default: showError falls back to per-step
@@ -443,6 +455,7 @@ const QWIK_MATERIAL_CONTEXT_IDS: readonly ContextId<unknown>[] = [
   MAT_PAGINATOR_INTL,
   MAT_AUTOCOMPLETE_CONFIG,
   MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+  MAT_ERROR_STATE_MATCHER,
 ];
 
 /**

@@ -1,4 +1,4 @@
-import {$, component$, useComputed$, useContext, useSignal, type QRL} from '@qwik.dev/core';
+import {$, component$, useComputed$, useContext, useSignal, useTask$, type QRL} from '@qwik.dev/core';
 import {
   type MatFormFieldControlProps,
   useOptionalFormFieldConnectedOrigin,
@@ -15,7 +15,13 @@ import {
   openDatepickerPanel,
 } from './datepicker-runtime';
 import type {MatDatepickerHandle} from './use-mat-datepicker';
-import {useMatFormSubmitted} from '../core/mat-form';
+import {useMatFormState} from '../core/mat-form';
+import {
+  MAT_ERROR_STATE_MATCHER,
+  MAT_ERROR_STATE_MATCHER_DEFAULT,
+  resolveErrorStateSync,
+  type MatErrorStateSnapshot,
+} from '../core/error-state-matcher';
 import {composeRef, type HostRef} from '../core/host-props';
 
 type NativeInputElement = HTMLInputElement;
@@ -95,9 +101,37 @@ export const MatDatepickerInput = component$<MatDatepickerInputProps>(props => {
   const touched = isInFormField ? formField.touched : picker.touched.value;
   const dirty = isInFormField ? formField.dirty : picker.dirty.value;
   const invalid = isInFormField ? formField.invalid : picker.parseError.value;
-  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
-  const formSubmitted = useMatFormSubmitted();
-  const errorState = formBound && invalid && (touched || formSubmitted);
+  // `ErrorStateMatcher` — see `core/error-state-matcher.ts`'s own doc comment and `select/
+  // SYNC.md`'s `compareWith` section (same `useSignal`+`useTask$` resolution pattern) for the
+  // full design.
+  const formState = useMatFormState();
+  const errorMatcherConfig = useContext(MAT_ERROR_STATE_MATCHER, MAT_ERROR_STATE_MATCHER_DEFAULT);
+  const errorMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+  const errorStateSignal = useSignal(() =>
+    typeof errorMatcher === 'string'
+      ? resolveErrorStateSync(
+          {invalid, touched, dirty, submitted: formState.submitted},
+          errorMatcher,
+        )
+      : false,
+  );
+  useTask$(({track}) => {
+    const snapshot: MatErrorStateSnapshot = {
+      invalid: track(() => (isInFormField ? formField.invalid : picker.parseError.value)),
+      touched: track(() => (isInFormField ? formField.touched : picker.touched.value)),
+      dirty: track(() => (isInFormField ? formField.dirty : picker.dirty.value)),
+      submitted: track(() => formState.submitted),
+    };
+    const currentMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+    if (typeof currentMatcher === 'string') {
+      errorStateSignal.value = resolveErrorStateSync(snapshot, currentMatcher);
+      return;
+    }
+    return currentMatcher.resolve().then(fn => {
+      errorStateSignal.value = !!fn(snapshot);
+    });
+  });
+  const errorState = formBound && errorStateSignal.value;
 
   const id = formField ? formField.assignedId : props.id;
   const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];

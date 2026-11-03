@@ -541,3 +541,54 @@ distinguishes "sentinel came back" from "a real value came back" is unaffected (
 reference works for that; `Symbol` was never required). `pnpm -C src/qwik-material test` still
 783/783 after the change; `pnpm -C src/qwik-material-docs build && pnpm exec playwright test
 specs/docs-site` confirmed the crash gone.
+
+## `ErrorStateMatcher` (2026-11-03, new entry point: `error-state-matcher.ts`)
+
+Ports upstream's `ErrorStateMatcher`/`ShowOnDirtyErrorStateMatcher` pair (`src/material/core/
+error/error-options.ts`) + the `[errorStateMatcher]` per-control `@Input()`/app-wide DI override
+every real control honours. Qwik has no DI container and no class-instance injection (see
+`mat-form-control.ts`'s own doc comment for why a plain class instance — or any plain function —
+can't cross this port's component/serialization boundaries the way it does upstream), so this is
+a plain, serializable union instead: `MatErrorStateMatcher = 'touched' | 'dirty' |
+QRL<(state: MatErrorStateSnapshot) => boolean>` — `'touched'` mirrors upstream's DEFAULT
+`ErrorStateMatcher` (`invalid && (touched || submitted)`), `'dirty'` mirrors
+`ShowOnDirtyErrorStateMatcher` (`invalid && (dirty || submitted)`), and the QRL form mirrors a
+custom `isErrorState(control, form)` override — see that file's own doc comment for the full
+design, including why the two string modes are evaluated synchronously (`resolveErrorStateSync`)
+but a QRL needs a `useSignal`+`useTask$` pair in every CONSUMING control (the SAME pattern
+`qwik-material/select/mat-select.tsx`'s `triggerLabel`/`compareWith$` and
+`qwik-material/datepicker/mat-month-view.tsx`'s `dateFilter`/`dateClass` resolution already
+establish).
+
+`MAT_ERROR_STATE_MATCHER` is the app-wide context id, wired into `<QwikMaterialProvider
+errorStateMatcher={...}>` (`qwik-material/dialog/qwik-material-provider.tsx`) — added to
+`QWIK_MATERIAL_CONTEXT_IDS` so it's automatically forwarded to dialogs/bottom-sheets rendered
+outside the normal component tree, same as every other config context. `MatFormFieldControlProps`
+(`mat-form-field-control.ts`) gained an `errorStateMatcher?: MatErrorStateMatcher` field so every
+control sharing that contract (`MatInput`/`MatSelect`/`MatAutocomplete`/the datepicker+timepicker
+inputs) gets the per-control override for free.
+
+`core/mat-form.tsx` gained `useMatFormState()` (returns the live `MatFormState` STORE itself,
+not just `useMatFormSubmitted()`'s already-unwrapped boolean) — needed so a consuming control's
+`useTask$` can `track()` `submitted` LIVE (`track()` only establishes a subscription when it
+reads a signal/store property directly inside its own callback; tracking an already-dereferenced
+plain boolean captured in a closure does not).
+
+Wired into every control that participates in `mat-form-field` error state: `MatInput`,
+`MatSelect`, `MatAutocomplete`, `MatDatepickerInput`, `MatTimepickerInput`, and `MatFormField`'s
+own independent `errorState` copy — see each one's own SYNC.md entry (`input/SYNC.md`'s is the
+fullest write-up; the others are short pointers to it, since the mechanism is identical
+everywhere). **Not wired:** `MatChipGrid` (`qwik-material/chips`) has no `touched`/`dirty`/
+`invalid`/error-state concept at all today (`aria-invalid="false"` is hardcoded) — out of scope
+for this change, a pre-existing gap independent of it; `MatDateRangeInput` has no `formBound`
+concept of its own either (a separate, already-documented gap — see `specs/examples-forms/
+angular-parity.spec.ts`'s `date-range-picker-forms` `EXPECTED_FAILURES` entry) and delegates to
+two inner date inputs rather than computing its own error state.
+
+First real consumer: `input-error-state-matcher` (material.angular.dev's docs example — the
+upstream `MyErrorStateMatcher` class ported as a QRL, the first real exercise of the custom-
+matcher path end-to-end through resume). Default-mode parity covered incidentally by every
+existing `formBound` scenario across every wired control (unchanged behavior — `'touched'`
+reproduces the exact formula each control hardcoded before this change). `'dirty'` mode + the
+provider-level app-wide default vs. a per-control override are covered by a bespoke
+`specs/material-form-field/error-state-matcher-modes.spec.ts`.

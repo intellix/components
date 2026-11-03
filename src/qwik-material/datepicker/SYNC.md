@@ -797,3 +797,14 @@ outside-click dispatcher, so the backdrop dismissal still fires too, correctly).
   `specs/material-timepicker/angular-parity.spec.ts`: 6/7 (the one pre-existing, unrelated
   `min-max` failure this project's baseline already carries — see `qwik-port-21.2`'s own baseline,
   578/579).
+
+## `ErrorStateMatcher` (2026-11-03)
+
+`MatDatepickerInput`'s own `errorState` previously hardcoded the default formula directly. Now
+reads `props.errorStateMatcher ?? <QwikMaterialProvider errorStateMatcher> ?? 'touched'` via the
+same `useSignal`+`useTask$` resolution pair every other control now shares — see
+`core/error-state-matcher.ts`'s doc comment for the full design and `input/SYNC.md`'s own
+`ErrorStateMatcher` section for the shared write-up and the scenarios covering it. `touched`/
+`dirty`/`invalid` themselves are unaffected — still sourced from `picker.touched.value`/
+`picker.dirty.value`/`picker.parseError.value` (or the owning `MatFormField`'s context store)
+exactly as before; only the formula combining them with `submitted` into `errorState` changed.
