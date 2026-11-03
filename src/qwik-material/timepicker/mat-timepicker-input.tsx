@@ -198,7 +198,9 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
       // out of order on their first-ever invocation. `handleTimepickerBlur`/`empty`/
       // `shouldLabelFloat` above are deliberately NOT guarded — a blur that bounces right back
       // is still a REAL blur for "touched"/value-reformatting purposes (matches upstream).
-      if (document.activeElement !== picker._inputRef.value) formField.focused = false;
+      if ((picker._inputRef.value?.ownerDocument.activeElement ?? null) !== picker._inputRef.value) {
+        formField.focused = false;
+      }
       formField.empty = liveEmpty;
       formField.shouldLabelFloat = !liveEmpty;
     }

@@ -437,7 +437,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
     // handler's CODE actually runs, the DOM's real focus state may have already moved on past
     // the stale event that queued it — checking it directly (not trusting "a blur event fired,
     // so we must be blurred") avoids clobbering a focus state that's already correct.
-    if (document.activeElement !== hostRef.value) focused.value = false;
+    if ((hostRef.value?.ownerDocument.activeElement ?? null) !== hostRef.value) focused.value = false;
     keyManager.value?.cancelTypeahead();
     if (!disabled && !panelOpen.value) {
       props.onTouched$?.();
