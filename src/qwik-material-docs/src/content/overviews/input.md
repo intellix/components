@@ -32,12 +32,10 @@ Set it via the `placeholder` prop.
 
 ### Changing when error messages are shown
 
-Not ported — see [Migrating from Angular Material](/guide/migrating-from-angular-material/) and
-the [select overview](/components/select/overview/)'s identical note on `errorStateMatcher`.
-`<MatFormField>`'s error visibility uses a single, fixed formula (`invalid && touched`, see its
-own Angular → Qwik notes) with no pluggable matcher — a consumer that needs errors to show
-immediately, regardless of `touched`, can simply pass a permanently-`true` `touched` value of
-their own instead.
+Pass `errorStateMatcher` to `<MatInput>` to control when its error state (and thus
+`<MatFormField>`'s visible `<mat-error>`) is shown — see
+[Form field → Error messages](/components/form-field/overview/#error-messages) for the full
+`'touched'`/`'dirty'`/custom-`QRL` API.
 
 ### Auto-resizing `<textarea>` elements
 
@@ -65,12 +63,13 @@ When conveying an error, don't rely solely on color — use an icon or text (e.g
 
 ## Angular → Qwik notes
 
-- **No `ControlValueAccessor`/`NgControl`/`ErrorStateMatcher`.** Qwik has no forms system —
+- **No `ControlValueAccessor`/`NgControl`.** Qwik has no forms system —
   `touched`/`dirty`/`invalid`/`required` are plain boolean props you compute yourself (see
   [useMatFormControl()](/components/form-field/api/) for a small built-in helper, or
-  [Using with Formisch](/guide/using-with-formisch/) for a real form library). The default
-  `ErrorStateMatcher` formula (`invalid && touched`) is hardcoded; `errorStateMatcher` itself
-  isn't ported.
+  [Using with Formisch](/guide/using-with-formisch/) for a real form library).
+  **`ErrorStateMatcher` IS ported** (as `errorStateMatcher` — see "Changing when error messages
+  are shown" above) — `'touched'`/`'dirty'` string modes for the two upstream built-in matchers,
+  or a `QRL<(state) => boolean>` for a custom one (never a class instance).
 - **No native `<select>` mode.** `as` only offers `'input'`/`'textarea'` — a form field with a
   native `<select>` needs its own small control implementing `MatFormFieldControlProps` (see
   [Form Field → Custom form field controls](/components/form-field/overview/#custom-form-field-controls);

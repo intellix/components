@@ -87,6 +87,25 @@ this port needs the panel anchored anywhere but the input itself).
 | <kbd>Alt</kbd> + <kbd>Up Arrow</kbd> | Close the autocomplete panel. |
 | <kbd>Alt</kbd> + <kbd>Down Arrow</kbd> | Open the autocomplete panel if there are any matching options. |
 
+### Reacting to selection, activation, and open/close
+
+`onOptionSelected$` fires only when the user actually picks an option (a click, or Enter on the
+highlighted option) — never while typing, unlike `onValueChange$`/`onInput$`. Its event carries
+`{option: {value, label, id}}` (a plain-data stand-in for upstream's `MatOption` — this port has
+no component-instance handle to give out, so `source` is dropped). `onOptionActivated$` fires
+whenever the highlighted (not selected) option changes while the panel is open — arrow-key
+navigation, and the auto-active-first-option/reset-to-none that runs on every open or refilter.
+`onOpened$`/`onClosed$` are argument-less equivalents of the existing combined `onOpenedChange$`
+(kept for backward compatibility; both fire at the same point):
+
+```tsx
+<MatAutocomplete
+  options={filteredFruits}
+  onOptionSelected$={(event) => console.log('picked', event.option.value)}
+  onOptionActivated$={(event) => console.log('highlighted', event.option?.value)}
+/>
+```
+
 ### Option groups
 
 Give an `options` entry its own `options` array (instead of a `value`) to render it as a group —

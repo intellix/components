@@ -22,15 +22,26 @@ import {
   useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import {MAT_SELECT_CONFIG, MAT_SELECT_SCROLL_STRATEGY, type MatSelectConfig} from './select-config';
-import {resolveSelectOptions, type MatSelectEntryDef} from './select-option-resolver';
+import {
+  resolveSelectOptions,
+  type MatSelectEntryDef,
+  type ResolvedSelectOption,
+} from './select-option-resolver';
 import {
   handleSelectKeydown,
   openSelectPanel,
+  STRICT_EQUALS,
   type KeyManagerItem,
   type SelectRuntimeConfig,
   type SelectRuntimeSignals,
 } from './select-runtime';
-import {useMatFormSubmitted} from '../core/mat-form';
+import {useMatFormState} from '../core/mat-form';
+import {
+  MAT_ERROR_STATE_MATCHER,
+  MAT_ERROR_STATE_MATCHER_DEFAULT,
+  resolveErrorStateSync,
+  type MatErrorStateSnapshot,
+} from '../core/error-state-matcher';
 
 const MAT_SELECT_CONFIG_DEFAULTS: MatSelectConfig = {};
 
@@ -134,6 +145,13 @@ export interface MatSelectProps<T = unknown> extends Omit<MatFormFieldControlPro
   onTouched$?: QRL<() => void>;
   /** Mirrors `(openedChange)`. */
   onOpenedChange$?: QRL<(open: boolean) => void>;
+  /** Mirrors upstream `MatSelect.compareWith` — `(o1, o2) => boolean`, `o1` an option's value,
+   *  `o2` the value being matched against it (upstream: `this._compareWith(option.value,
+   *  value)`). Used for both single- and `multiple`-mode selection, and on every value
+   *  write/initial selection — see `select/SYNC.md`'s dedicated section for the full "why a QRL,
+   *  and how it stays correct on the very first SSR paint" write-up. Defaults to upstream's own
+   *  strict `o1 === o2`. */
+  compareWith$?: QRL<(o1: T, o2: T) => boolean>;
   /** Mirrors `[multiple]`. Cannot be changed dynamically — matches upstream's
    *  own `getMatSelectDynamicMultipleError()` guard (not enforced here, but
    *  no scenario relies on dynamic toggling either). */
@@ -149,6 +167,11 @@ export interface MatSelectProps<T = unknown> extends Omit<MatFormFieldControlPro
   /** Mirrors `[hideSingleSelectionIndicator]`. Falls back to
    *  `MAT_SELECT_CONFIG.hideSingleSelectionIndicator`, then `false`. */
   hideSingleSelectionIndicator?: boolean;
+  /** Mirrors `[disableOptionCentering]`. Accepted for API parity — a genuine upstream
+   *  no-op in Material 21.2 (see `select-config.ts`'s `MatSelectConfig.disableOptionCentering`
+   *  doc comment for the verification). Falls back to `MAT_SELECT_CONFIG.disableOptionCentering`,
+   *  then `false`, matching upstream's own field initializer — neither value has any effect. */
+  disableOptionCentering?: boolean;
   /** Mirrors `[panelClass]` — merged onto the LISTBOX div
    *  (`.mat-mdc-select-panel`), not the overlay pane. Supports the same
    *  shapes as `ngClass` minus `Set`/record-of-booleans (no scenario needs
@@ -193,6 +216,31 @@ function triggerAriaLabelledby(
   if (ariaLabelledby) value += ' ' + ariaLabelledby;
   if (!value) value = valueId;
   return value;
+}
+
+/** Mirrors the trigger's own label-resolution half of `_getTriggerValue()`/`viewValue` — finds
+ *  the label of whichever option(s) `compareFn` (upstream `_compareWith`) says match `value`.
+ *  A pure, synchronous function so it can be called BOTH from the one-time `useSignal`
+ *  initializer (the SSR-correct-even-before-any-task-runs fallback) and from the `useTask$`
+ *  below once a real `compareWith$` has resolved — see that task's own doc comment. */
+function computeTriggerLabel(
+  multiple: boolean,
+  value: unknown,
+  flat: readonly ResolvedSelectOption[],
+  compareFn: (o1: unknown, o2: unknown) => boolean,
+): string {
+  const empty = multiple
+    ? !(Array.isArray(value) && (value as unknown[]).length)
+    : value == null || value === '';
+  if (empty) return '';
+  if (multiple) {
+    const vals = Array.isArray(value) ? (value as unknown[]) : [];
+    return vals
+      .map(v => flat.find(o => compareFn(o.value, v))?.label ?? '')
+      .filter(Boolean)
+      .join(', ');
+  }
+  return flat.find(o => compareFn(o.value, value))?.label ?? '';
 }
 
 function panelAriaLabelledby(
@@ -307,12 +355,66 @@ export const MatSelect = component$<MatSelectProps>(props => {
   const resolved = useSignal(() => resolveSelectOptions(props.options, idGen));
   const {flat, tree} = resolved.value;
 
+  // Resolves `compareWith$` into a plain, synchronous comparator and recomputes the trigger's
+  // label whenever `value.value` changes — see `select/SYNC.md`'s dedicated `compareWith`
+  // section. `useSignal`'s own initializer runs synchronously, BEFORE this `useTask$` ever gets
+  // a chance to (it can only resolve a real `compareWith$` asynchronously), covering the very
+  // first render with upstream's own strict-`===` default; the `useTask$` below — which has NO
+  // `useVisibleTask$`-style browser-only strategy, so Qwik awaits it and re-renders before
+  // finalizing SSR output, exactly like `qwik-material/datepicker/mat-month-view.tsx`'s
+  // identical `dateFilter`-resolution pattern (see that file's own doc comment) — then
+  // overwrites it with the REAL, `compareWith$`-aware label before any HTML is ever serialized,
+  // so an object-valued `compareWith$`-matched initial selection is already correct on the very
+  // first paint, not just after a later client-side re-render.
+  const triggerLabel = useSignal(() => computeTriggerLabel(multiple, value.value, flat, STRICT_EQUALS));
+  useTask$(({track}) => {
+    const currentValue = track(() => value.value);
+    const compareWith$ = props.compareWith$ as
+      | QRL<(o1: unknown, o2: unknown) => boolean>
+      | undefined;
+    if (!compareWith$) {
+      triggerLabel.value = computeTriggerLabel(multiple, currentValue, flat, STRICT_EQUALS);
+      return;
+    }
+    return compareWith$.resolve().then(compareFn => {
+      triggerLabel.value = computeTriggerLabel(multiple, currentValue, flat, compareFn);
+    });
+  });
+
   const touched = isInFormField ? formField.touched : (props.touched ?? false);
   const dirty = isInFormField ? formField.dirty : (props.dirty ?? false);
   const invalid = isInFormField ? formField.invalid : (props.invalid ?? false);
-  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
-  const formSubmitted = useMatFormSubmitted();
-  const errorState = formBound && invalid && (touched || formSubmitted);
+  // `ErrorStateMatcher` — see `core/error-state-matcher.ts`'s own doc comment and `select/
+  // SYNC.md`'s `compareWith` section (same `useSignal`+`useTask$` resolution pattern) for the
+  // full design.
+  const formState = useMatFormState();
+  const errorMatcherConfig = useContext(MAT_ERROR_STATE_MATCHER, MAT_ERROR_STATE_MATCHER_DEFAULT);
+  const errorMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+  const errorStateSignal = useSignal(() =>
+    typeof errorMatcher === 'string'
+      ? resolveErrorStateSync(
+          {invalid, touched, dirty, submitted: formState.submitted},
+          errorMatcher,
+        )
+      : false,
+  );
+  useTask$(({track}) => {
+    const snapshot: MatErrorStateSnapshot = {
+      invalid: track(() => (isInFormField ? formField.invalid : (props.invalid ?? false))),
+      touched: track(() => (isInFormField ? formField.touched : (props.touched ?? false))),
+      dirty: track(() => (isInFormField ? formField.dirty : (props.dirty ?? false))),
+      submitted: track(() => formState.submitted),
+    };
+    const currentMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+    if (typeof currentMatcher === 'string') {
+      errorStateSignal.value = resolveErrorStateSync(snapshot, currentMatcher);
+      return;
+    }
+    return currentMatcher.resolve().then(fn => {
+      errorStateSignal.value = !!fn(snapshot);
+    });
+  });
+  const errorState = formBound && errorStateSignal.value;
 
   const empty = multiple
     ? !(Array.isArray(value.value) && (value.value as unknown[]).length)
@@ -332,18 +434,6 @@ export const MatSelect = component$<MatSelectProps>(props => {
 
   const ariaDescribedBy = formField ? formField.assignedDescribedBy : props['aria-describedby'];
   const formFieldLabelId = formField?.labelId;
-
-  const triggerValue = (() => {
-    if (empty) return '';
-    if (multiple) {
-      const vals = Array.isArray(value.value) ? (value.value as unknown[]) : [];
-      return vals
-        .map(v => flat.find(o => o.value === v)?.label ?? '')
-        .filter(Boolean)
-        .join(', ');
-    }
-    return flat.find(o => o.value === value.value)?.label ?? '';
-  })();
 
   const panelClassList = (
     Array.isArray(props.panelClass) ? props.panelClass : props.panelClass ? [props.panelClass] : []
@@ -394,6 +484,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
     onValueChange$: props.onValueChange$,
     onTouched$: props.onTouched$,
     onOpenedChange$: props.onOpenedChange$,
+    compareWith$: props.compareWith$ as QRL<(o1: unknown, o2: unknown) => boolean> | undefined,
     scrollStrategyDescriptor,
   };
 
@@ -529,7 +620,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
               {props.customTrigger ? (
                 <mat-select-trigger>{props.customTrigger}</mat-select-trigger>
               ) : (
-                <span class="mat-mdc-select-min-line">{triggerValue}</span>
+                <span class="mat-mdc-select-min-line">{triggerLabel.value}</span>
               )}
             </span>
           )}

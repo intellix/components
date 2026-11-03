@@ -41,3 +41,10 @@ export {
   type MatValidationErrors,
 } from '../core/mat-form-control';
 export type {MatFormFieldControlProps} from '../core/mat-form-field-control';
+export {
+  MAT_ERROR_STATE_MATCHER,
+  MAT_ERROR_STATE_MATCHER_DEFAULT,
+  resolveErrorStateSync,
+  type MatErrorStateMatcher,
+  type MatErrorStateSnapshot,
+} from '../core/error-state-matcher';

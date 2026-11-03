@@ -21,12 +21,27 @@ export const MAT_FORM = createContextId<MatFormState>('qwikMaterial/form');
 const NO_FORM: MatFormState = {submitted: false};
 
 /**
+ * The nearest enclosing {@link MatForm}'s state store itself (not just the unwrapped
+ * `.submitted` boolean {@link useMatFormSubmitted} returns) — needed by anything that must
+ * `track()` `submitted` LIVE from inside a `useTask$` (e.g. `core/error-state-matcher.ts`'s
+ * consumers, resolving a custom `ErrorStateMatcher` QRL): `track()` only establishes a live
+ * subscription when it reads a signal/store property DIRECTLY inside its own callback —
+ * tracking a plain, already-dereferenced boolean captured in a closure (what
+ * `useMatFormSubmitted()` returns) does not. Returns the `NO_FORM` fallback store (a plain,
+ * literal object — already safe to serialize, unlike a `Symbol` sentinel) outside any
+ * {@link MatForm}/{@link MatFormSubmittedProvider} ancestor.
+ */
+export function useMatFormState(): MatFormState {
+  return useContext(MAT_FORM, NO_FORM);
+}
+
+/**
  * Whether the nearest enclosing {@link MatForm} has been submitted (`false` outside one). Part
  * of upstream's default `ErrorStateMatcher`: `control.invalid && (control.touched ||
  * form.submitted)`. Reactive when read during render.
  */
 export function useMatFormSubmitted(): boolean {
-  return useContext(MAT_FORM, NO_FORM).submitted;
+  return useMatFormState().submitted;
 }
 
 export interface MatFormProps {

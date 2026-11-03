@@ -31,9 +31,9 @@ control every one of the 16 form-field scenarios renders).
 
 ## Deviations from upstream
 
-1. **`ControlValueAccessor`/`NgControl`/`_ErrorStateTracker`/`ErrorStateMatcher`
-   removed entirely.** Qwik has no forms system. Replaced by
-   `core/mat-form-control.ts`'s `useMatFormControl()` + pure validator
+1. **`ControlValueAccessor`/`NgControl`/`_ErrorStateTracker` removed entirely** (but
+   `ErrorStateMatcher` itself IS now ported — see the dedicated section below). Qwik has no
+   forms system. Replaced by `core/mat-form-control.ts`'s `useMatFormControl()` + pure validator
    functions, which the CONSUMER calls directly and feeds into `MatInput` as
    plain `formBound`/`touched`/`dirty`/`invalid`/`required` boolean props —
    see that module's own doc comment for the full reasoning (in short:
@@ -41,11 +41,34 @@ control every one of the 16 form-field scenarios renders).
    a prop across a Qwik component boundary the way a `useStore()`'s plain
    data fields and QRL methods are, so the computation that NEEDS the
    validator functions happens once, in the consumer's own render, and only
-   the RESULT — plain data — crosses into `MatInput`/`MatFormField`). This
-   port hardcodes the DEFAULT `ErrorStateMatcher`'s formula
-   (`invalid && touched`) directly in both `MatInput` and `MatFormField`
-   (each computes its own independent copy, since each renders its own
-   classes/attributes off it); no scenario needs a custom matcher.
+   the RESULT — plain data — crosses into `MatInput`/`MatFormField`).
+
+## `ErrorStateMatcher` (2026-11-03)
+
+Previously this port hardcoded the DEFAULT `ErrorStateMatcher`'s formula (`invalid && touched`,
+missing even upstream's own `|| form.submitted` half) directly in `MatInput` — no way to
+override it at all, app-wide or per-control. Now a real port — see `core/error-state-matcher.ts`'s
+own doc comment for the full design (the `'touched'`/`'dirty'` built-in string modes, the custom
+`QRL<(state) => boolean>` escape hatch, and why BOTH need resolving via a `useSignal`+`useTask$`
+pair even though only the QRL case is genuinely async).
+
+`MatInput` reads `props.errorStateMatcher ?? <QwikMaterialProvider errorStateMatcher> ??
+'touched'` (upstream's own default), computing `errorState` via the SAME `useSignal`/`useTask$`
+pair `qwik-material/select/mat-select.tsx`'s `triggerLabel` (`compareWith$`) already establishes
+— see that file's own SYNC.md `compareWith` section for the shared "why a `useTask$`, and how it
+stays correct on the very first SSR paint" write-up; `qwik-material/core/mat-form.tsx` gained a
+new `useMatFormState()` export (returns the live `MatFormState` STORE, not just the already-
+unwrapped `useMatFormSubmitted()` boolean) so the task can `track()` `submitted` live.
+
+First real consumer: `input-error-state-matcher` (material.angular.dev's docs example, ported to
+`qwik-material-examples/form-field/input-error-state-matcher/` + the matching dev-app route +
+`specs/examples-forms/angular-parity.spec.ts` entry + `specs/examples-forms/
+error-state-matcher.spec.ts`'s Qwik-only functional spec) — a custom matcher that shows the error
+the moment the field is `dirty`, before any blur, proving the QRL path survives resume end-to-end
+(fresh `page.goto`, type a character, see the error with no blur ever happening). The two
+built-in string modes (plus the provider-level app-wide default vs. a per-control override) are
+covered by a separate bespoke scenario, `specs/material-form-field/
+error-state-matcher-modes.spec.ts` (`mat-form-field/error-state-matcher-modes`).
 
 2. **`value` is deliberately NOT a plain reactive JSX prop.** The parity
    harness's own comment (`src/qwik-cdk-parity-tests/lib/material-parity.ts`)

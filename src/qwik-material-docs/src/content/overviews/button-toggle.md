@@ -27,6 +27,22 @@ component, same as `<MatRadioGroup>`.
 ### Orientation
 There is no `vertical` prop in this port — see [Angular → Qwik notes](#angular-qwik-notes).
 
+### Hiding the selection indicator
+
+By default, every grouped toggle (single- or multiple-selection) renders a checkmark indicator.
+`<MatButtonToggleGroup hideSingleSelectionIndicator>` hides it for single-selection groups;
+`hideMultipleSelectionIndicator` hides it for multiple-selection groups — each only affects the
+mode it names (a single-selection group ignores `hideMultipleSelectionIndicator`, and vice
+versa), matching upstream exactly. Both are also configurable app-wide via
+`<QwikMaterialProvider matButtonToggleConfig={{hideSingleSelectionIndicator: true}}>`.
+
+```tsx
+<MatButtonToggleGroup hideSingleSelectionIndicator value={style.value} onChange$={...}>
+  <MatButtonToggle value="bold">Bold</MatButtonToggle>
+  <MatButtonToggle value="italic">Italic</MatButtonToggle>
+</MatButtonToggleGroup>
+```
+
 ### Accessibility
 `<MatButtonToggle>` internally uses native `<button>` elements with `aria-pressed` to convey
 toggle state. If a toggle contains only an icon, you should specify a meaningful label via the
@@ -54,9 +70,8 @@ styles".
   toggle renders the modern (M3) "standard" appearance only.
 - **No `vertical` prop.** The synced SCSS's `.mat-button-toggle-vertical` rules are unreachable
   dead code in this port's output.
-- **No `hideSingleSelectionIndicator` / `hideMultipleSelectionIndicator` props.** Both always
-  behave as upstream's own default (`false`) — the pseudo-checkbox selection indicator is
-  unconditionally rendered on every grouped toggle.
+- **`hideSingleSelectionIndicator` / `hideMultipleSelectionIndicator` are ported** — see "Hiding
+  the selection indicator" above.
 - **No `disabledInteractive` prop.** A disabled toggle's inner `<button>` always gets the native
   `disabled` attribute; there's no focusable-but-inert variant.
 - **No RTL support.** Arrow-key navigation is LTR-only.

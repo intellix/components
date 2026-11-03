@@ -34,6 +34,7 @@ const EXAMPLES: string[] = [
   'form-field-hint',
   'form-field-error',
   'form-field-prefix-suffix',
+  'input-error-state-matcher',
   // autocomplete (mat-autocomplete) — autocomplete-simple itself is the headline, covered by
   // specs/examples/.
   'autocomplete-filter',

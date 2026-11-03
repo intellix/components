@@ -5,8 +5,14 @@ import {
   useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import {MAT_INPUT_CONFIG, MAT_INPUT_CONFIG_DEFAULTS} from './input-config';
-import {useMatFormSubmitted} from '../core/mat-form';
+import {useMatFormState} from '../core/mat-form';
 import {composeRef, type HostRef} from '../core/host-props';
+import {
+  MAT_ERROR_STATE_MATCHER,
+  MAT_ERROR_STATE_MATCHER_DEFAULT,
+  resolveErrorStateSync,
+  type MatErrorStateSnapshot,
+} from '../core/error-state-matcher';
 
 type NativeControlElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -95,12 +101,41 @@ export const MatInput = component$<MatInputProps>(props => {
   // `errorState` below, which gates `aria-invalid`/visible errors by
   // touched too).
   const invalid = isInFormField ? formField.invalid : (props.invalid ?? false);
-  // Mirrors the DEFAULT `ErrorStateMatcher` exactly (same formula as
-  // `MatFormField`'s own independent copy — see that file's comment; each
-  // renders its own classes/attributes off this value).
-  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
-  const formSubmitted = useMatFormSubmitted();
-  const errorState = formBound && invalid && (touched || formSubmitted);
+  // `ErrorStateMatcher` — see `core/error-state-matcher.ts`'s own doc comment for the full
+  // design (app-wide default via `<QwikMaterialProvider errorStateMatcher={...}>`, per-control
+  // override via `props.errorStateMatcher`, built-in `'touched'`/`'dirty'` modes computed
+  // synchronously, a custom QRL resolved via the `useTask$` below). Same pattern
+  // `qwik-material/select/mat-select.tsx`'s `triggerLabel` (`compareWith$`) and
+  // `qwik-material/datepicker/mat-month-view.tsx`'s `dateFilter`/`dateClass` resolution already
+  // establish — see `select/SYNC.md`'s `compareWith` section for the full "why" write-up.
+  const formState = useMatFormState();
+  const errorMatcherConfig = useContext(MAT_ERROR_STATE_MATCHER, MAT_ERROR_STATE_MATCHER_DEFAULT);
+  const errorMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+  const errorStateSignal = useSignal(() =>
+    typeof errorMatcher === 'string'
+      ? resolveErrorStateSync(
+          {invalid, touched, dirty, submitted: formState.submitted},
+          errorMatcher,
+        )
+      : false,
+  );
+  useTask$(({track}) => {
+    const snapshot: MatErrorStateSnapshot = {
+      invalid: track(() => (isInFormField ? formField.invalid : (props.invalid ?? false))),
+      touched: track(() => (isInFormField ? formField.touched : (props.touched ?? false))),
+      dirty: track(() => (isInFormField ? formField.dirty : (props.dirty ?? false))),
+      submitted: track(() => formState.submitted),
+    };
+    const currentMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+    if (typeof currentMatcher === 'string') {
+      errorStateSignal.value = resolveErrorStateSync(snapshot, currentMatcher);
+      return;
+    }
+    return currentMatcher.resolve().then(fn => {
+      errorStateSignal.value = !!fn(snapshot);
+    });
+  });
+  const errorState = formBound && errorStateSignal.value;
   // Live "is this control empty" — seeded from `props.value` for first paint. Kept live
   // thereafter two ways: (1) `handleInput$` below has direct access to the live DOM element via
   // `inputRef` and updates this signal itself on every real keystroke — entirely within this

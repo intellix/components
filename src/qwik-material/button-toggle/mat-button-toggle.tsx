@@ -212,7 +212,14 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
         onTouchEnd$={rippleEvent$}
         onTouchCancel$={rippleEvent$}
       >
-        {!isStandalone && (
+        {/* Mirrors `button-toggle.html`'s own `@if`: `buttonToggleGroup && (
+            (!multiple && !hideSingleSelectionIndicator) || (multiple && !hideMultipleSelectionIndicator))`.
+            A standalone toggle (`!buttonToggleGroup`) never renders this, regardless of either
+            flag — matches upstream exactly (the condition's outer `buttonToggleGroup &&` guard). */}
+        {!isStandalone &&
+          (state.mode === 'single'
+            ? !state.hideSingleSelectionIndicator
+            : !state.hideMultipleSelectionIndicator) && (
           <div class="mat-button-toggle-checkbox-wrapper">
             {/* state is ALWAYS "checked" here, even when this toggle isn't
                 — matches upstream's literal `state="checked"` (not a

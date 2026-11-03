@@ -176,6 +176,13 @@ export interface SelectRuntimeConfig {
   onValueChange$: QRL<(value: unknown) => void> | undefined;
   onTouched$: QRL<() => void> | undefined;
   onOpenedChange$: QRL<(open: boolean) => void> | undefined;
+  /** Mirrors upstream `MatSelect.compareWith` (`(o1, o2) => o1 === o2` default) — see
+   *  `select/SYNC.md`'s dedicated section for why this is a `QRL`, resolved ONCE per
+   *  async entry point (`openSelectPanel`/`handleOpenKeydown`) into a plain,
+   *  synchronously-callable comparator, rather than called as a QRL on every
+   *  individual option comparison. `undefined` ⇒ every call site below falls back to
+   *  strict `===`, matching upstream's own default. */
+  compareWith$: QRL<(o1: unknown, o2: unknown) => boolean> | undefined;
   /** Mirrors upstream `MAT_SELECT_SCROLL_STRATEGY` — a plain, serializable
    *  descriptor, not a function factory. Defaults to `{type: 'reposition'}`
    *  (see `openSelectPanel()`). */
@@ -340,11 +347,27 @@ function scrollOptionIntoView(
   );
 }
 
-function isSelected(value: unknown, option: ResolvedSelectOption, multiple: boolean): boolean {
+/** Mirrors upstream `_compareWith`'s own default (`(o1, o2) => o1 === o2`). Exported so
+ *  `mat-select.tsx`'s own trigger-label computation (which needs the exact same default,
+ *  outside any of this file's other functions) doesn't duplicate it. */
+export const STRICT_EQUALS = (o1: unknown, o2: unknown): boolean => o1 === o2;
+
+/** Mirrors `_selectOptionByValue`'s own comparator usage — `compareFn`'s first argument is
+ *  always an OPTION's value, the second the value being matched against (upstream:
+ *  `this._compareWith(option.value, value)`), matching {@link STRICT_EQUALS}'s own doc comment
+ *  on `MatSelect.compareWith`. Resolved ONCE per async entry point (see that type's own doc
+ *  comment) and threaded through as a plain, synchronous function — never re-resolved per
+ *  option/call. */
+function isSelected(
+  value: unknown,
+  option: ResolvedSelectOption,
+  multiple: boolean,
+  compareFn: (o1: unknown, o2: unknown) => boolean = STRICT_EQUALS,
+): boolean {
   if (multiple) {
-    return Array.isArray(value) && value.some(v => v === option.value);
+    return Array.isArray(value) && value.some(v => compareFn(option.value, v));
   }
-  return value === option.value;
+  return compareFn(option.value, value);
 }
 
 /** Mirrors `_highlightCorrectOption()`. */
@@ -352,6 +375,7 @@ function highlightCorrectOption(
   flat: readonly ResolvedSelectOption[],
   cfg: SelectRuntimeConfig,
   signals: SelectRuntimeSignals,
+  compareFn: (o1: unknown, o2: unknown) => boolean = STRICT_EQUALS,
 ): void {
   const manager = getKeyManager(flat, cfg, signals);
   const value = signals.value.value;
@@ -363,7 +387,7 @@ function highlightCorrectOption(
     const firstEnabled = flat.findIndex(o => !o.ownDisabled && !o.disabled);
     manager.setActiveItem(firstEnabled);
   } else {
-    const selectedIndex = flat.findIndex(o => isSelected(value, o, cfg.multiple));
+    const selectedIndex = flat.findIndex(o => isSelected(value, o, cfg.multiple, compareFn));
     manager.setActiveItem(selectedIndex);
   }
 }
@@ -425,6 +449,12 @@ export async function openSelectPanel(
   const resolvedScrollStrategy = await resolveScrollStrategyDescriptor(
     cfg.scrollStrategyDescriptor,
   );
+  // Resolved ONCE per open session — see `compareWith$`'s own doc comment (`SelectRuntimeConfig`)
+  // for why a QRL is resolved into a plain function here rather than called per-option.
+  // `MatSelectPanel` is created and consumed entirely client-side via `overlay.create()` (this
+  // function already returns above when `!isBrowser`), so handing it a plain (non-`$()`) function
+  // prop is safe — same established precedent as `onOptionSelect` immediately below.
+  const compareFn = cfg.compareWith$ ? await cfg.compareWith$.resolve() : undefined;
 
   const overlayRef = overlay.create(
     MatSelectPanel,
@@ -443,8 +473,9 @@ export async function openSelectPanel(
       ariaLabelledby: cfg.panelAriaLabelledby,
       animationsDisabled: cfg.animationsDisabled,
       panelRef: signals.panelEl,
+      compareFn,
       onOptionSelect: (option: ResolvedSelectOption) => {
-        selectOption(option, true, flat, cfg, signals);
+        selectOption(option, true, flat, cfg, signals, compareFn);
       },
     },
     {
@@ -484,7 +515,7 @@ export async function openSelectPanel(
     flat.map(option => ({option, disabled: option.disabled, getLabel: () => option.label})),
   );
   manager.withHorizontalOrientation(null);
-  highlightCorrectOption(flat, cfg, signals);
+  highlightCorrectOption(flat, cfg, signals, compareFn);
   if (signals.activeIndex.value >= 0)
     scrollOptionIntoView(signals.activeIndex.value, flat, signals);
 
@@ -551,17 +582,27 @@ function selectOption(
   flat: readonly ResolvedSelectOption[],
   cfg: SelectRuntimeConfig,
   signals: SelectRuntimeSignals,
+  compareFn: (o1: unknown, o2: unknown) => boolean = STRICT_EQUALS,
 ): void {
   if (option.disabled) return;
 
   if (cfg.multiple) {
     const current = Array.isArray(signals.value.value) ? (signals.value.value as unknown[]) : [];
-    const next = current.includes(option.value)
-      ? current.filter(v => v !== option.value)
+    const isIncluded = current.some(v => compareFn(option.value, v));
+    const next = isIncluded
+      ? current.filter(v => !compareFn(option.value, v))
       : [...current, option.value];
     // Mirrors `_sortValues()`: order follows panel (document) order, not
-    // click order.
-    const indexOf = (v: unknown) => flat.findIndex(o => o.value === v);
+    // click order. Uses `compareFn` (not `===`) for the SAME reason the
+    // membership check above does — a pre-existing entry in `current` is
+    // whatever the CONSUMER's own state holds (e.g. an object with the same
+    // `compareWith` key but a different reference than any `flat` option's
+    // `value`), so a strict-equality `indexOf` would silently fail to find
+    // it, leaving every entry at `-1` and the whole sort a no-op (confirmed
+    // live via `specs/material-select/compare-with.spec.ts`'s multi-select
+    // toggle case, which surfaced this before `compareFn` was threaded
+    // through here too).
+    const indexOf = (v: unknown) => flat.findIndex(o => compareFn(o.value, v));
     next.sort((a, b) => indexOf(a) - indexOf(b));
     signals.value.value = next;
     if (isUserInput) {
@@ -640,13 +681,20 @@ export function handleClosedKeydown(
 /** Mirrors `MatSelect._handleOpenKeydown()`. Escape is handled separately,
  *  by the overlay keyboard dispatcher wired in `openSelectPanel` — see that
  *  function's `keyboardDispatcher.add` call and select.ts's own header note
- *  on why TWO independent Escape paths exist upstream. */
-export function handleOpenKeydown(
+ *  on why TWO independent Escape paths exist upstream.
+ *
+ *  `async` ONLY to resolve `cfg.compareWith$` for the two branches that need a comparator
+ *  (Enter/Space selection, Ctrl+A select-all) — see `SelectRuntimeConfig.compareWith$`'s own
+ *  doc comment. Every `event.preventDefault()` call below still runs SYNCHRONOUSLY, before any
+ *  `await` in the same branch — a `.resolve()` call is only ever reached after it, so this stays
+ *  safe to call from a real keyboard event handler despite being `async` overall (same ordering
+ *  discipline `autocomplete-runtime.ts`'s `selectAutocompleteOption` already establishes). */
+export async function handleOpenKeydown(
   event: KeyboardEvent,
   flat: readonly ResolvedSelectOption[],
   cfg: SelectRuntimeConfig,
   signals: SelectRuntimeSignals,
-): void {
+): Promise<void> {
   const manager = getKeyManager(flat, cfg, signals);
   const isArrowKey = event.keyCode === DOWN_ARROW || event.keyCode === UP_ARROW;
   const isTyping = manager.isTyping();
@@ -661,10 +709,14 @@ export function handleOpenKeydown(
     !hasModifierKey(event)
   ) {
     event.preventDefault();
-    selectOption(manager.activeItem.option, true, flat, cfg, signals);
+    const compareFn = cfg.compareWith$ ? await cfg.compareWith$.resolve() : undefined;
+    selectOption(manager.activeItem.option, true, flat, cfg, signals, compareFn);
   } else if (!isTyping && cfg.multiple && event.keyCode === A && event.ctrlKey) {
     event.preventDefault();
-    const hasDeselected = flat.some(o => !o.disabled && !isSelected(signals.value.value, o, true));
+    const compareFn = cfg.compareWith$ ? await cfg.compareWith$.resolve() : undefined;
+    const hasDeselected = flat.some(
+      o => !o.disabled && !isSelected(signals.value.value, o, true, compareFn),
+    );
     const next = hasDeselected ? flat.filter(o => !o.disabled).map(o => o.value) : [];
     signals.value.value = next;
     cfg.onValueChange$?.(next);

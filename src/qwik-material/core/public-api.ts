@@ -25,6 +25,14 @@ export {
 } from './mat-form-field-control';
 
 export {
+  MAT_ERROR_STATE_MATCHER,
+  MAT_ERROR_STATE_MATCHER_DEFAULT,
+  resolveErrorStateSync,
+  type MatErrorStateMatcher,
+  type MatErrorStateSnapshot,
+} from './error-state-matcher';
+
+export {
   useMatFormControl,
   matRequiredValidator,
   matEmailValidator,

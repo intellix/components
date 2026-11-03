@@ -74,11 +74,12 @@ Pass a start hint via the `hintLabel` prop, or via the `hintStart`/`hintEnd` pro
 
 Error messages can be shown under the form field underline via the `errors` prop (one or more
 `<MatError>` elements). Errors are hidden initially and are only actually rendered once the
-control's `touched` and `invalid` props both hold — the consumer still decides *what* to show
-(e.g. picking a message based on which validator failed), same as Angular's own
-`@if (control.invalid) { <mat-error>...</mat-error> }` pattern. `useMatFormControl()` (a small
-built-in `value`/`touched`/`dirty` store — no validators of its own) pairs with the standalone
-`matControlInvalid()`/`matRequiredValidator` helpers to compute `invalid`:
+control's error state holds (by default, `invalid` and `touched`, or the form has been
+submitted) — the consumer still decides *what* to show (e.g. picking a message based on which
+validator failed), same as Angular's own `@if (control.invalid) { <mat-error>...</mat-error> }`
+pattern. `useMatFormControl()` (a small built-in `value`/`touched`/`dirty` store — no validators
+of its own) pairs with the standalone `matControlInvalid()`/`matRequiredValidator` helpers to
+compute `invalid`:
 
 ```tsx
 import {useMatFormControl, matControlInvalid, matRequiredValidator} from '@angular-community/qwik-material/form-field';
@@ -112,6 +113,36 @@ shown. Multiple error messages can be rendered at once if desired, but `<MatForm
 reserves enough space to display one error message at a time.
 
 <!-- example(form-field-error) -->
+
+#### Changing when error messages are shown
+
+By default, a control's error message is shown when the control is invalid and either the user
+has interacted with it (`touched`) or the enclosing form has been submitted. This is the
+`ErrorStateMatcher` — upstream's `invalid && (touched || form.submitted)`. Override it:
+
+- **App-wide**, via `<QwikMaterialProvider errorStateMatcher="dirty">` — upstream's
+  `ShowOnDirtyErrorStateMatcher` (`invalid && (dirty || submitted)`), shows errors as soon as the
+  value has changed, without waiting for blur.
+- **Per control**, via `errorStateMatcher` directly on `<MatInput>`/`<MatSelect>`/
+  `<MatAutocomplete>` — overrides the app-wide default for that one control. Accepts `'touched'`,
+  `'dirty'`, or a `QRL<(state: MatErrorStateSnapshot) => boolean>` for a fully custom matcher
+  (`state` is `{invalid, touched, dirty, submitted}` — the plain-data equivalent of upstream's
+  `control`/`form` arguments; there is no class-instance `ErrorStateMatcher` to implement, since a
+  plain function value can't cross this port's component boundaries the way a class instance
+  does upstream — wrap it in `$(...)` instead):
+
+```tsx
+import {$} from '@qwik.dev/core';
+import type {MatErrorStateSnapshot} from '@angular-community/qwik-material/form-field';
+
+const myMatcher = $(
+  (state: MatErrorStateSnapshot) => state.invalid && (state.dirty || state.touched || state.submitted),
+);
+
+<MatInput errorStateMatcher={myMatcher} ... />;
+```
+
+<!-- example(input-error-state-matcher) -->
 
 ### Prefix & suffix
 

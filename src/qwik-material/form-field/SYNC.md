@@ -574,3 +574,21 @@ project's currently-shipped routes exercises `useAssignedId()`'s standalone path
 SSR build, so this was a preemptive fix (same latent bug, not yet observed crashing anything),
 unlike `NO_FORM_FIELD`/`NO_CONNECTED_ORIGIN`, which crashed `qwik-material-docs`'s real
 `/components/autocomplete/overview/` page for real.
+
+## `ErrorStateMatcher` (2026-11-03)
+
+`MatFormField`'s own independent `errorState` copy (drives `mat-form-field-invalid`/
+`mdc-text-field--invalid`/the visible `<mat-error>` wrapper — see the architecture section's
+"why form-field doesn't know about validators" discussion above, and `core/mat-form-control.ts`'s
+own doc comment) previously hardcoded the same formula every control did
+(`invalid && (touched || formSubmitted)`). Now reads `controlProps?.errorStateMatcher ??
+<QwikMaterialProvider errorStateMatcher> ?? 'touched'` — `controlProps` is the frozen, one-time
+`control`-prop snapshot (deviation 9/12 above), consistent with how `controlType`/
+`disableAutomaticLabeling` are already read from it: a consumer sets a control's matcher once,
+at JSX-authoring time, and no scenario needs to swap it dynamically after mount. Computed via
+the same `useSignal`+`useTask$` pair every control now shares — see `core/error-state-matcher.ts`'s
+doc comment for the full design and `input/SYNC.md`'s own `ErrorStateMatcher` section for the
+scenarios exercising it (`input-error-state-matcher`, `error-state-matcher.spec.ts`,
+`error-state-matcher-modes.spec.ts`). `touched`/`dirty`/`invalid` themselves are unaffected —
+still read exactly as deviation 9's own "why `touched`/`dirty`/`invalid` are BOTH a `control`-prop
+field AND a top-level `MatFormField` prop" section describes.

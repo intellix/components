@@ -31,6 +31,14 @@ export interface MatButtonToggleGroupState {
    *  child's own (upstream `MatButtonToggle._isRippleDisabled()`:
    *  `this.disableRipple || this.buttonToggleGroup?.disableRipple`). */
   disableRipple: boolean;
+  /** Mirrors upstream `MatButtonToggleGroup.hideSingleSelectionIndicator` — governs
+   *  whether a SINGLE-select child renders its `.mat-button-toggle-checkbox-wrapper`
+   *  (`button-toggle.html`'s `@if` condition — see mat-button-toggle.tsx). Read by every
+   *  child only when `mode === 'single'`. */
+  hideSingleSelectionIndicator: boolean;
+  /** Mirrors upstream `MatButtonToggleGroup.hideMultipleSelectionIndicator` — same as
+   *  `hideSingleSelectionIndicator` above, but for `mode === 'multi'` groups. */
+  hideMultipleSelectionIndicator: boolean;
   /** Form-control name, mirrored onto the inner `<button>` of every
    *  single-select child (upstream `_getButtonName()`). Always a real
    *  string — auto-generated via the id generator when the consumer doesn't
@@ -107,6 +115,8 @@ export const MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS: MatButtonToggleGroupState =
   values: [],
   disabled: false,
   disableRipple: false,
+  hideSingleSelectionIndicator: false,
+  hideMultipleSelectionIndicator: false,
   name: '',
   onToggle: $((_value: unknown, _checked: boolean) => {
     // No-op — standalone toggle owns its own local state via useSignal.

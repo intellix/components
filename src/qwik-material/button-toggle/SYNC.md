@@ -42,9 +42,50 @@ Two upstream-DOM corrections found only by running the Angular-vs-Qwik diff
 
 Still intentionally unported (no parity scenario exercises them, and they
 are independent of DOM-parity concerns the rest of this remediation targets):
-`appearance: 'legacy'`, `vertical`, `hideSingleSelectionIndicator`/
-`hideMultipleSelectionIndicator`, `disabledInteractive`, RTL (`Directionality`).
+`appearance: 'legacy'`, `vertical`, `disabledInteractive`, RTL (`Directionality`).
 See deviations below.
+
+## `hideSingleSelectionIndicator` / `hideMultipleSelectionIndicator` (2026-11-03)
+
+Implemented — previously always `false` (checkmark always shown), now wired end-to-end per
+upstream's actual template condition (`button-toggle.html`):
+
+```
+@if (buttonToggleGroup && (
+  !buttonToggleGroup.multiple && !buttonToggleGroup.hideSingleSelectionIndicator ||
+  buttonToggleGroup.multiple && !buttonToggleGroup.hideMultipleSelectionIndicator)
+) { <div class="mat-button-toggle-checkbox-wrapper">...</div> }
+```
+
+- `MatButtonToggleConfig` (`button-toggle-config.ts`) gained both fields, mirroring upstream's
+  `MatButtonToggleDefaultOptions`/`MAT_BUTTON_TOGGLE_DEFAULT_OPTIONS` factory default (`{
+  hideSingleSelectionIndicator: false, hideMultipleSelectionIndicator: false }`, exported as
+  `MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS`) — threaded through the existing
+  `<QwikMaterialProvider matButtonToggleConfig={…}>` channel (upstream provides this via DI;
+  this port already has the equivalent per-subtree config context).
+- `MatButtonToggleGroupProps` gained both as per-group overrides (`props.x ?? config.x ??
+  MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS.x`, the established per-field-fallback convention), mirroring
+  upstream's own `@Input()` pair on `MatButtonToggleGroup` (there is no per-TOGGLE override
+  upstream either — both flags are GROUP-level only, read by each child via
+  `buttonToggleGroup.hideSingleSelectionIndicator`/`.hideMultipleSelectionIndicator`).
+- `MatButtonToggleGroupState` carries both resolved booleans; `MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS`
+  sets both `false` (irrelevant for standalone toggles either way — see below).
+- `mat-button-toggle.tsx`'s checkbox-wrapper render condition is now `!isStandalone &&
+  (state.mode === 'single' ? !state.hideSingleSelectionIndicator :
+  !state.hideMultipleSelectionIndicator)` — exactly upstream's `@if`, including the outer
+  `buttonToggleGroup &&` guard (a standalone toggle, which has no group, NEVER renders the
+  checkbox wrapper regardless of either flag — upstream's condition short-circuits on the same
+  `buttonToggleGroup &&` before ever reaching either indicator check).
+
+No parity scenario previously exercised a `true` value for either flag; `mat-button-toggle-
+scenarios.spec.tsx` gained unit coverage, and `specs/material-button-toggle/
+hide-selection-indicator.spec.ts` (Playwright, fresh `page.goto` — covers single-mode
+`hideSingleSelectionIndicator`, multi-mode `hideMultipleSelectionIndicator`, and the cross-flag
+case: a single-mode group with `hideMultipleSelectionIndicator` set but NOT
+`hideSingleSelectionIndicator` still shows the checkbox, matching upstream's per-mode-only
+condition) pins the new DOM shape against the real Angular app. Zero behavior change for every
+pre-existing scenario (`props.hideSingleSelectionIndicator`/`.hideMultipleSelectionIndicator`
+default `undefined`, resolving to upstream's own `false` default either way).
 
 ## Upstream sync state
 
@@ -93,8 +134,10 @@ exactly where upstream renders it).
 6. **Deprecated appearance variants + niche flags still unported** (no parity scenario exercises any of them — distinct from a deliberate scope cut):
    - `appearance: 'legacy'` — deprecated upstream; port ships `'standard'` only.
    - `vertical` prop — dropped; the synced SCSS's `.mat-button-toggle-vertical` rules are simply unreachable dead code in this port's output.
-   - `hideSingleSelectionIndicator` / `hideMultipleSelectionIndicator` — both always false (upstream default), so the pseudo-checkbox is unconditionally rendered on every grouped toggle, matching upstream's actual default-configuration behavior.
    - `disabledInteractive` — dropped; always false, so the inner button's native `disabled` attribute is the only disabled signal (upstream's `aria-disabled` path only fires when `disabledInteractive` is true).
+
+   ~~`hideSingleSelectionIndicator` / `hideMultipleSelectionIndicator` always false.~~ **Fixed
+   2026-11-03** — see the dedicated section above.
 
 7. ~~Ripple system + `MatRipple` element removed.~~ **Fixed 2026-10-27 (static container) / 2026-10-30 (animation, `core/ripple/` remediation)** — the static `<span matripple class="mat-ripple mat-button-toggle-ripple">` container is rendered, and now ALSO receives real `.mat-ripple-element` spans on pointer events: `core/ripple/ripple-dom.ts`'s `handleRippleEvent()` wired to `onMouseDown$`/`onMouseUp$`/`onMouseLeave$`/`onTouchStart$`/`onTouchEnd$`/`onTouchCancel$` on the inner `<button>` (upstream's `[matRippleTrigger]="button"` — the span is a SIBLING of the button, not an ancestor/descendant). `disableRipple` is a NEW prop (both per-instance on `MatButtonToggle` and group-level on `MatButtonToggleGroup`/`MatButtonToggleGroupState`) — upstream's `MatButtonToggle._isRippleDisabled()` is `this.disableRipple || this.buttonToggleGroup?.disableRipple`; neither had any Qwik-side representation before this pass since nothing needed it until real ripple-disabling did.
 

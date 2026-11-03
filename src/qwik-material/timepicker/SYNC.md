@@ -578,3 +578,16 @@ change for every existing (always form-field-nested) scenario.
 `JSXOutput` a second time, which Qwik v2 corrupts: the `<mat-icon>` came back empty. Wrapped in
 `cloneJsxForReuse()` (`core/jsx-reuse.ts`), as `MatMenuItem` already does for its `icon`. Guarded by
 `qwik-cdk-parity-tests/specs/examples-rerender/`, which hovers and focuses every example.
+
+## `ErrorStateMatcher` (2026-11-03)
+
+`MatTimepickerInput`'s own `errorState` previously hardcoded `invalid && (touched ||
+formSubmitted)` directly (no `formBound` gate — this control is always implicitly bound, see its
+own header comment). Now reads `props.errorStateMatcher ?? <QwikMaterialProvider
+errorStateMatcher> ?? 'touched'` via the same `useSignal`+`useTask$` resolution pair every other
+control now shares — see `core/error-state-matcher.ts`'s doc comment for the full design and
+`input/SYNC.md`'s own `ErrorStateMatcher` section for the shared write-up. `touched`/`dirty`/
+`invalid` are still sourced the same way (always `picker.*`, never a props-based standalone
+fallback) — only the formula combining them with `submitted` changed, and still has no
+`formBound` gate (matching this control's pre-existing, documented deviation from `MatInput`'s
+own).

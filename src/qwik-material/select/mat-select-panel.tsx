@@ -44,13 +44,25 @@ export interface MatSelectPanelProps {
   animationsDisabled: boolean;
   panelRef: Signal<Element | undefined>;
   onOptionSelect: (option: ResolvedSelectOption) => void;
+  /** Mirrors upstream `MatSelect.compareWith` — a PLAIN, already-resolved comparator (never a
+   *  QRL): `select-runtime.ts`'s `openSelectPanel` resolves `SelectRuntimeConfig.compareWith$`
+   *  exactly once per open session before creating this component, since `MatSelectPanel` is
+   *  created and consumed entirely client-side via `overlay.create()` — the same "plain function
+   *  prop is safe here" precedent `onOptionSelect` above already establishes. `undefined` ⇒
+   *  strict `===` (upstream's own default). */
+  compareFn?: (o1: unknown, o2: unknown) => boolean;
 }
 
-function isSelected(value: unknown, option: ResolvedSelectOption, multiple: boolean): boolean {
+function isSelected(
+  value: unknown,
+  option: ResolvedSelectOption,
+  multiple: boolean,
+  compareFn: (o1: unknown, o2: unknown) => boolean = (o1, o2) => o1 === o2,
+): boolean {
   if (multiple) {
-    return Array.isArray(value) && value.some(v => v === option.value);
+    return Array.isArray(value) && value.some(v => compareFn(option.value, v));
   }
-  return value === option.value;
+  return compareFn(option.value, value);
 }
 
 export const MatSelectPanel = component$<MatSelectPanelProps>(props => {
@@ -74,7 +86,7 @@ export const MatSelectPanel = component$<MatSelectPanelProps>(props => {
       value={option.value}
       echoValueAttr={option.echoValueAttr}
       disabled={option.disabled}
-      selected={isSelected(props.value.value, option, props.multiple)}
+      selected={isSelected(props.value.value, option, props.multiple, props.compareFn)}
       active={!props.activeOptionHidden.value && props.activeIndex.value === option.index}
       multiple={props.multiple}
       hideSingleSelectionIndicator={props.hideSingleSelectionIndicator}

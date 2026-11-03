@@ -111,6 +111,11 @@ export const PORTED_EXAMPLES: Record<string, PortedExample[]> = {
     {route: 'form-field-hint', upstreamId: 'form-field-hint', pkg: 'form-field'},
     {route: 'form-field-error', upstreamId: 'form-field-error', pkg: 'form-field'},
     {route: 'form-field-prefix-suffix', upstreamId: 'form-field-prefix-suffix', pkg: 'form-field'},
+    {
+      route: 'input-error-state-matcher',
+      upstreamId: 'input-error-state-matcher',
+      pkg: 'form-field',
+    },
   ],
   'mat-grid-list': [{route: 'example', upstreamId: 'grid-list-overview', pkg: 'grid-list'}],
   'mat-icon': [

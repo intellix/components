@@ -2,7 +2,7 @@
 // See docs/superpowers/specs/2026-08-11-qwik-material-button-toggle-port-design.md §3.
 
 export type {MatButtonToggleConfig} from './button-toggle-config';
-export {MAT_BUTTON_TOGGLE_CONFIG} from './button-toggle-config';
+export {MAT_BUTTON_TOGGLE_CONFIG, MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS} from './button-toggle-config';
 
 export type {
   MatButtonToggleGroupState,
