@@ -14,7 +14,7 @@ import {focusVia, useIdGenerator, type FocusOrigin} from '@angular-community/qwi
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MAT_FORM_FIELD_CONTROL_STATE} from '../core/mat-form-field-control';
 import {MAT_CHIPS_CONFIG, MAT_CHIPS_CONFIG_DEFAULTS} from './tokens';
-import {MatChipRow} from './mat-chip-row';
+import {MatChipRow, type MatChipEditButtonDef} from './mat-chip-row';
 import type {MatChipRemoveButtonDef} from './mat-chip';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
 
@@ -35,6 +35,15 @@ export interface MatChipRowDef {
   removeButton?: MatChipRemoveButtonDef;
   onRemoved$?: QRL<() => void>;
   class?: string | ReadonlyArray<string>;
+  /** Mirrors `[editable]` — see `mat-chip-row.tsx`'s module doc comment. */
+  editable?: boolean;
+  /** Mirrors the `[matChipEdit]` leading icon/button — see `mat-chip-row.tsx`'s own
+   *  `MatChipEditButtonDef` doc comment. */
+  editIcon?: MatChipEditButtonDef;
+  /** Mirrors `(edited)`. */
+  onEdited$?: QRL<(value: string) => void>;
+  'aria-label'?: string;
+  'aria-description'?: string;
   /**
    * Set by the CONSUMER (not computed locally) on any row added after the initial mount —
    * see `fixupRippleDisabled$`'s own doc comment for why this has to be the consumer's own,
@@ -65,6 +74,13 @@ export interface MatChipGridInputDef {
    *  `clear()` empties the input — call it from the handler, same as
    *  upstream's `event.chipInput.clear()`. */
   onTokenEnd$?: QRL<(value: string, clear: () => void) => void>;
+  /** Mirrors upstream's `[matChipInputAddOnBlur]`. Default `false`. When `true`, losing focus
+   *  on the input fires `onTokenEnd$` unconditionally (current value, even if empty) — same
+   *  callback a separator key triggers, with no `KeyboardEvent` involved (upstream's own
+   *  `_blur()`/`_emitChipEnd()` with no event argument, which skips the separator-key/`repeat`
+   *  check entirely). The input is NOT cleared automatically — call `clear()` from the handler,
+   *  same as the separator-key path. */
+  addOnBlur?: boolean;
 }
 
 /**
@@ -265,6 +281,11 @@ const ChipGridRows = component$<ChipGridRowsProps>(props => {
             removeButton={def.removeButton}
             onRemoved$={wrappedRemoved$}
             class={def.class}
+            editable={def.editable}
+            editIcon={def.editIcon}
+            onEdited$={def.onEdited$}
+            aria-label={def['aria-label']}
+            aria-description={def['aria-description']}
           >
             {cloneJsxForReuse(def.content)}
           </MatChipRow>
@@ -341,6 +362,23 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
       });
       props.input?.onTokenEnd$?.(value, clear);
     }
+  });
+
+  // Mirrors upstream's `MatChipInput._blur()`: fires `onTokenEnd$` unconditionally when
+  // `addOnBlur` is set — the INPUT's own native blur, not the whole grid's (a chip within this
+  // same grid stealing focus still blurs the input, and still commits, even though the grid
+  // itself stays focused — see the `useOn('focusout', ...)` below for the DIFFERENT, grid-wide
+  // "did focus leave the whole control" concern that one guards instead).
+  const handleInputBlur$ = $(() => {
+    if (!props.input?.addOnBlur) return;
+    const el = inputRef.value as HTMLInputElement | undefined;
+    const value = el?.value ?? '';
+    const clear = $(() => {
+      const liveEl = inputRef.value as HTMLInputElement | undefined;
+      if (liveEl) liveEl.value = '';
+      inputEmpty.value = true;
+    });
+    props.input?.onTokenEnd$?.(value, clear);
   });
 
   // Mirrors `MatChipGrid.focus()` — fires only when the GRID HOST ITSELF receives DOM focus
@@ -510,6 +548,7 @@ export const MatChipGrid = component$<MatChipGridProps>(props => {
           disabled={inputDisabled || undefined}
           onInput$={handleInputInput$}
           onKeyDown$={handleInputKeydown$}
+          onBlur$={handleInputBlur$}
         />
       </div>
     </mat-chip-grid>

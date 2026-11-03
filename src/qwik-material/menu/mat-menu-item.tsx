@@ -15,6 +15,7 @@ import type {OverlayRef, ScrollStrategyDescriptor} from '@angular-community/qwik
 import {useFocusOrigin, focusVia, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_MENU_DEFAULT_OPTIONS, MAT_MENU_SCROLL_STRATEGY} from './mat-menu-tokens';
 import type {MatMenuRef} from './menu-ref';
 import {openMenu, type MenuRuntimeSignals} from './menu-runtime';
@@ -76,6 +77,7 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
     scrollThrottle: 20,
   } as ScrollStrategyDescriptor);
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
   const focusOrigin = useFocusOrigin();
 
   const hasSubmenu = !!props.menu;
@@ -100,10 +102,15 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
   // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
   // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
   const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: !!(props.disableRipple || props.disabled),
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: !!(props.disableRipple || props.disabled),
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   const signals: MenuRuntimeSignals = {overlayRef, isOpen, panelId, pendingReason};

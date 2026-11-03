@@ -1,0 +1,105 @@
+// AUTO-GENERATED — do not hand-edit.
+// Regenerate with: node scripts/generate-typography-elevation-prebuilt.mjs (from src/qwik-material/)
+//
+// Compiled from upstream's real .scss sources (src/material/core/typography/_typography.scss's
+// `mat.typography-hierarchy()` mixin) via the Sass entry below — see
+// generate-typography-elevation-prebuilt.mjs for the full explanation:
+//
+//   @use '@angular/material' as mat;
+//
+//   $theme: mat.define-theme((
+//     color: (primary: mat.$azure-palette, tertiary: mat.$azure-palette, theme-type: color-scheme),
+//     typography: (plain-family: Roboto, use-system-variables: true),
+//     density: (scale: 0),
+//   ));
+//
+//   @include mat.typography-hierarchy($theme, '.mat-typography', true);
+//
+// Ships as the opt-in `typography-prebuilt.css` export (see package.json `exports` and the
+// Theming guide) — NOT included in core-prebuilt.css, matching upstream's own "typography classes
+// are opt-in" contract (`mat.typography-hierarchy()` is never called by `mat.theme()` itself).
+
+.mat-display-large, .mat-typography .mat-display-large, .mat-typography h1, .mat-h1, .mat-typography .mat-h1, .mat-headline-1, .mat-typography .mat-headline-1 {
+  font: var(--mat-sys-display-large);
+  letter-spacing: var(--mat-sys-display-large-tracking);
+  margin: 0 0 0.5em;
+}
+
+.mat-display-medium, .mat-typography .mat-display-medium, .mat-typography h2, .mat-h2, .mat-typography .mat-h2, .mat-headline-2, .mat-typography .mat-headline-2 {
+  font: var(--mat-sys-display-medium);
+  letter-spacing: var(--mat-sys-display-medium-tracking);
+  margin: 0 0 0.5em;
+}
+
+.mat-display-small, .mat-typography .mat-display-small, .mat-typography h3, .mat-h3, .mat-typography .mat-h3, .mat-headline-3, .mat-typography .mat-headline-3 {
+  font: var(--mat-sys-display-small);
+  letter-spacing: var(--mat-sys-display-small-tracking);
+  margin: 0 0 0.5em;
+}
+
+.mat-headline-large, .mat-typography .mat-headline-large, .mat-typography h4, .mat-h4, .mat-typography .mat-h4, .mat-headline-4, .mat-typography .mat-headline-4 {
+  font: var(--mat-sys-headline-large);
+  letter-spacing: var(--mat-sys-headline-large-tracking);
+  margin: 0 0 0.5em;
+}
+
+.mat-headline-medium, .mat-typography .mat-headline-medium, .mat-typography h5, .mat-h5, .mat-typography .mat-h5, .mat-headline-5, .mat-typography .mat-headline-5 {
+  font: var(--mat-sys-headline-medium);
+  letter-spacing: var(--mat-sys-headline-medium-tracking);
+  margin: 0 0 0.5em;
+}
+
+.mat-headline-small, .mat-typography .mat-headline-small, .mat-typography h6, .mat-h6, .mat-typography .mat-h6, .mat-headline-6, .mat-typography .mat-headline-6 {
+  font: var(--mat-sys-headline-small);
+  letter-spacing: var(--mat-sys-headline-small-tracking);
+  margin: 0 0 0.5em;
+}
+
+.mat-title-large, .mat-typography .mat-title-large, .mat-subtitle-1, .mat-typography .mat-subtitle-1 {
+  font: var(--mat-sys-title-large);
+  letter-spacing: var(--mat-sys-title-large-tracking);
+}
+
+.mat-title-medium, .mat-typography .mat-title-medium, .mat-subtitle-2, .mat-typography .mat-subtitle-2 {
+  font: var(--mat-sys-title-medium);
+  letter-spacing: var(--mat-sys-title-medium-tracking);
+}
+
+.mat-title-small, .mat-typography .mat-title-small {
+  font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
+}
+
+.mat-body-large, .mat-typography .mat-body-large, .mat-typography, .mat-body, .mat-typography .mat-body, .mat-body-strong, .mat-typography .mat-body-strong, .mat-body-2, .mat-typography .mat-body-2 {
+  font: var(--mat-sys-body-large);
+  letter-spacing: var(--mat-sys-body-large-tracking);
+}
+
+.mat-body-large p, .mat-typography .mat-body-large p, .mat-typography p, .mat-body p, .mat-typography .mat-body p, .mat-body-strong p, .mat-typography .mat-body-strong p, .mat-body-2 p, .mat-typography .mat-body-2 p {
+  margin: 0 0 0.75em;
+}
+
+.mat-body-medium, .mat-typography .mat-body-medium {
+  font: var(--mat-sys-body-medium);
+  letter-spacing: var(--mat-sys-body-medium-tracking);
+}
+
+.mat-body-small, .mat-typography .mat-body-small {
+  font: var(--mat-sys-body-small);
+  letter-spacing: var(--mat-sys-body-small-tracking);
+}
+
+.mat-label-large, .mat-typography .mat-label-large {
+  font: var(--mat-sys-label-large);
+  letter-spacing: var(--mat-sys-label-large-tracking);
+}
+
+.mat-label-medium, .mat-typography .mat-label-medium {
+  font: var(--mat-sys-label-medium);
+  letter-spacing: var(--mat-sys-label-medium-tracking);
+}
+
+.mat-label-small, .mat-typography .mat-label-small, .mat-small, .mat-typography .mat-small, .mat-caption, .mat-typography .mat-caption {
+  font: var(--mat-sys-label-small);
+  letter-spacing: var(--mat-sys-label-small-tracking);
+}

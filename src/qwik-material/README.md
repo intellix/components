@@ -115,6 +115,30 @@ A few rules of thumb:
   `<MatBadge>`, `<MatStepperNext>`/`<MatStepperPrevious>` are thin wrappers around these same
   hooks, for whenever you don't need to compose with another directive.
 
+### Standalone ripples (`matRipple`)
+
+`useMatRipple()` is the same directive-hook pattern applied to upstream's `[mat-ripple]`/
+`[matRipple]` directive — give ANY element (not just a qwik-material component) a ripple:
+
+```tsx
+import {useMatRipple} from '@angular-community/qwik-material/core';
+
+const ripple = useMatRipple({centered: false, unbounded: false, color: 'rgba(0,0,0,.1)'});
+return <div {...ripple.hostProps} class="my-surface">Click me</div>;
+```
+
+`<MatRipple as="div">` (from the same `/core` entry point) is a thin wrapper around the hook for
+when you don't need to compose it with another directive. `ripple.launch$(x, y)`/`ripple.launch$
+(config)`, `ripple.fadeOutAll$()`, and `ripple.fadeOutAllNonPersistent$()` mirror upstream's
+imperative `MatRipple.launch()`/`fadeOutAll()`/`fadeOutAllNonPersistent()` — call them from your
+own `onClick$`/etc. handlers the same way you'd call `useMatDialog().open$(...)`.
+
+Every built-in component's own ripple (buttons, checkboxes, radios, chips, menu items, options,
+slide toggles, tab labels/links) ALSO honours app-wide ripple defaults — upstream's
+`MAT_RIPPLE_GLOBAL_OPTIONS` — via `<QwikMaterialProvider matRippleConfig={{disabled: false,
+animation: {enterDuration: 225, exitDuration: 150}, terminateOnPointerUp: false}}>` (see
+`dialog/qwik-material-provider.tsx`). Omit any field you don't want to override.
+
 See `core/host-props.ts` for the full `HostProps`/`mergeHostProps()` API and its rationale, and
 `docs/superpowers/specs/2026-10-31-qwik-material-directive-hooks-design.md` for the overall
 design (including why this doesn't use Qwik's `useOn()` the way other lazy-interaction hooks in

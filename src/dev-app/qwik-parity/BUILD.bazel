@@ -8,6 +8,9 @@ package(default_visibility = ["//visibility:public"])
 ng_project(
     name = "qwik-parity",
     srcs = glob(["**/*.ts"]),
+    # Plain-CSS `styleUrl`s referenced by component TS here (core.ts, for the typography/
+    # elevation parity mirror) need to be visible to the Angular compiler's own file resolution.
+    assets = glob(["**/*.css"]),
     deps = [
         "//:node_modules/@angular/common",
         "//:node_modules/@angular/core",

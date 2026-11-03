@@ -3,6 +3,7 @@ import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_SLIDE_TOGGLE_CONFIG, type MatSlideToggleConfig} from './slide-toggle-config';
 
 /**
@@ -97,6 +98,7 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
   // render via the shared hook (dialog/progress-bar/progress-spinner/
   // pseudo-checkbox all read the same context).
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
 
   // Upstream `ngAfterContentInit(): this._focusMonitor.monitor(this._elementRef,
   // true)`. `useFocusOrigin()` is the lazy, useOn()-based replacement (see
@@ -197,10 +199,15 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
   // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
   // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
   const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: !!(props.disableRipple || props.disabled),
-      rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: !!(props.disableRipple || props.disabled),
+        rippleConfig: {centered: true, animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   const onButtonClick$ = $(async () => {

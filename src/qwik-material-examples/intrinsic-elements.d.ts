@@ -12,6 +12,7 @@ declare module '@qwik.dev/core' {
       'autocomplete-simple-example': QwikIntrinsicElements['div'];
       'badge-overview-example': QwikIntrinsicElements['div'];
       'bottom-sheet-overview-example': QwikIntrinsicElements['div'];
+      'ripple-overview-example': QwikIntrinsicElements['div'];
       'button-overview-example': QwikIntrinsicElements['div'];
       'button-toggle-overview-example': QwikIntrinsicElements['div'];
       'card-overview-example': QwikIntrinsicElements['div'];

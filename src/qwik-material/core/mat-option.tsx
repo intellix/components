@@ -4,6 +4,7 @@ import {createIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {MatPseudoCheckbox} from './mat-pseudo-checkbox';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from './ripple/ripple-dom';
+import {useRippleGlobalOptions} from './ripple/ripple-global-options';
 
 /**
  * Fallback id generator, mirroring the SAME "simplified singleton" pattern
@@ -99,6 +100,7 @@ export const MatOption = component$<MatOptionProps>(props => {
   const hideSingleSelectionIndicator = props.hideSingleSelectionIndicator ?? false;
   const id = props.id ?? fallbackIdGen.getId('mat-option-');
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
   const hostRef = useSignal<HTMLElement>();
   const rippleContainerRef = useSignal<HTMLElement>();
 
@@ -108,10 +110,15 @@ export const MatOption = component$<MatOptionProps>(props => {
   // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
   // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
   const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: disabled || (props.disableRipple ?? false),
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: disabled || (props.disableRipple ?? false),
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   const classes = [

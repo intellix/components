@@ -1,6 +1,7 @@
 import type {RippleAnimationConfig, RippleConfig} from './ripple-ref';
 import {getRippleRenderer} from './ripple-registry';
 import type {RippleTarget} from './ripple-renderer';
+import type {RippleGlobalOptions} from './ripple-global-options';
 
 /**
  * The Qwik-facing half of this port — called from inside a component's own
@@ -32,22 +33,51 @@ import type {RippleTarget} from './ripple-renderer';
  * (never-loaded-before) chunk.
  */
 
-/** `target.rippleDisabled` is checked by the renderer itself, so a null/undefined/disabled
- *  container is simply a no-op call (mirrors every ripple-bearing component's own `[matRippleDisabled]`
- *  check already happening *inside* `RippleRenderer`, not at each call site). */
+/**
+ * `target.rippleDisabled` is checked by the renderer itself, so a null/undefined/disabled
+ * container is simply a no-op call (mirrors every ripple-bearing component's own `[matRippleDisabled]`
+ * check already happening *inside* `RippleRenderer`, not at each call site).
+ *
+ * `globalOptions` (optional, 4th arg) is `MAT_RIPPLE_GLOBAL_OPTIONS`'s resolved value — pass the
+ * result of `useRippleGlobalOptions()` (captured during the caller's own render, same as
+ * `useAnimationsDisabled()` is already captured) to fold app-wide ripple options into THIS call,
+ * exactly matching upstream `MatRipple`'s `rippleConfig`/`rippleDisabled` getters:
+ * `rippleDisabled = target.rippleDisabled || globalOptions.disabled`, and `animation` spreads in
+ * upstream's own order — `{...globalOptions.animation, ...target.rippleConfig.animation}` — so a
+ * caller's own `rippleAnimationConfig(animationsDisabled, overrides)` result (itself already
+ * `{...disabledForcedZero, ...overrides}`) wins over the global default exactly like upstream's
+ * `{...this._globalOptions.animation, ...(disabled ? zero : {}), ...this.animation}` chain.
+ * `terminateOnPointerUp` is ONLY ever a global option upstream (no per-component input exists for
+ * it), so it's taken from `globalOptions` outright. Every one of this port's existing internal
+ * ripple call sites (button/checkbox/radio/chips/menu-item/mat-option/slide-toggle/tabs) passes
+ * this; omitting it (the pre-2026-11-03 call shape) behaves exactly as before — fully backward
+ * compatible.
+ */
 export function handleRippleEvent(
   event: MouseEvent | TouchEvent,
   container: Element | null | undefined,
   target: RippleTarget,
+  globalOptions?: RippleGlobalOptions,
 ): void {
   if (!container) return;
   const renderer = getRippleRenderer(container);
+  const effectiveTarget: RippleTarget = globalOptions
+    ? {
+        rippleDisabled: target.rippleDisabled || !!globalOptions.disabled,
+        rippleConfig: {
+          ...target.rippleConfig,
+          animation: {...globalOptions.animation, ...target.rippleConfig.animation},
+          terminateOnPointerUp:
+            globalOptions.terminateOnPointerUp ?? target.rippleConfig.terminateOnPointerUp,
+        },
+      }
+    : target;
   switch (event.type) {
     case 'mousedown':
-      renderer.handleMouseDown(event as MouseEvent, target);
+      renderer.handleMouseDown(event as MouseEvent, effectiveTarget);
       break;
     case 'touchstart':
-      renderer.handleTouchStart(event as TouchEvent, target);
+      renderer.handleTouchStart(event as TouchEvent, effectiveTarget);
       break;
     case 'mouseup':
     case 'mouseleave':

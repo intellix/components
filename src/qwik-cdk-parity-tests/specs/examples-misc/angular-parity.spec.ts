@@ -43,6 +43,7 @@ const EXAMPLE_IDS = [
   'chips-autocomplete',
   'chips-avatar',
   'chips-stacked',
+  'ripple-overview',
 ];
 
 /**
@@ -195,9 +196,17 @@ const EXPECTED_FAILURES: Record<string, string> = {
     "legacy group (no mat-pseudo-checkbox, different ripple-trigger wiring, a separate CSS class " +
     'ladder) — a real, large unported feature, not a fixable bug.',
   'chips-input':
-    "this port's MatChipRow/MatChipRowDef have no editable/matChipEdit inline-editing feature " +
-    'at all (see qwik-material/chips/mat-chip-row.tsx), so the per-chip edit button and its ' +
-    'aria-description are not rendered — a real, documented unported feature, not a fixable bug.',
+    'upstream writes the real example\'s <input [matChipInputFor]="chipGrid"> as a SIBLING of ' +
+    '<mat-chip-grid>, both children of <mat-form-field> — valid either way in real Angular (the ' +
+    'directive just looks up its grid via a template reference, regardless of DOM position), but ' +
+    'this port\'s <MatChipGrid> deliberately renders the input ITSELF, nested one level inside ' +
+    "its own chip-set div, so a form-field's `for` and the input's `id` always agree without " +
+    'the consumer having to coordinate them (see mat-chip-grid.tsx\'s own module doc comment for ' +
+    'the full rationale) — a real, deliberate, pre-existing structural difference (2 child-count ' +
+    'mismatches at the form-field-infix/chip-set levels), not something editable/addOnBlur work ' +
+    'should change. Every editable-chip/edit-icon/aria-description DOM this example actually ' +
+    'exists to exercise now matches exactly (confirmed: removing this entry leaves ONLY the two ' +
+    'child-count diffs above, zero class/attribute/content mismatches anywhere in the tree).',
   'chips-reactive-form':
     "upstream binds [formControl] directly to <mat-chip-grid>, so Angular's NgControlStatus " +
     'adds ng-pristine/ng-untouched/ng-valid to the real host from the first render; unlike ' +
@@ -231,6 +240,16 @@ const EXPECTED_FAILURES: Record<string, string> = {
     '(confirmed live: all 4 real chips render aria-selected="true" simultaneously, even though ' +
     'the listbox has no `multiple` attribute); this port only ever reflects ONE of them as ' +
     'selected. A real fix would need a different initial-selection model, not a small change.',
+  'ripple-overview':
+    "upstream's ripple-overview-example.html binds all three checkboxes via [(ngModel)] " +
+    "(FormsModule), which attaches Angular's NgControlStatus directive to each real " +
+    '<mat-checkbox> host from the very first render (ng-pristine/ng-untouched/ng-valid ' +
+    'classes); MatCheckboxProps has no touched/dirty/formBound-style fields at all (confirmed ' +
+    'against mat-checkbox.tsx) to reproduce that triad on a checkbox host — same category of ' +
+    'gap as the chips-reactive-form/chips-template-form entries above, not something ripple ' +
+    'work itself should fix. The ripple directive/classes/DOM this example actually exists to ' +
+    'exercise (mat-ripple, mat-ripple-unbounded, the two mat-form-field inputs) match exactly; ' +
+    'only the three checkbox hosts carry the extra classes.',
 };
 
 test.describe('qwik-material-examples (non-headline) — Angular DOM parity', () => {

@@ -2,6 +2,7 @@ import {$, component$, useSignal, useTask$, type JSXOutput, type QRL} from '@qwi
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
 
 /**
@@ -50,6 +51,7 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
   // `FocusMonitor`-driven `cdk-focused`/`cdk-keyboard-focused`/etc classes).
   const focusOrigin = useFocusOrigin();
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
   const rippleContainerRef = useSignal<HTMLElement>();
   const hostRef = useSignal<HTMLElement>();
 
@@ -118,10 +120,15 @@ export const MatTabLabelItem = component$<MatTabLabelItemProps>(props => {
   // doc comment for why that's required, not just tidy (cross-chunk QRL
   // ordering on a cold chunk).
   const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: props.rippleDisabled,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: props.rippleDisabled,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   const classes = [

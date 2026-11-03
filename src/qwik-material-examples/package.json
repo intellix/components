@@ -35,6 +35,7 @@
     "./button/button-disabled-interactive": "./button/button-disabled-interactive/index.tsx",
     "./card/example": "./card/example/index.tsx",
     "./checkbox/example": "./checkbox/example/index.tsx",
+    "./core/ripple-overview": "./core/ripple-overview/index.tsx",
     "./chips/example": "./chips/example/index.tsx",
     "./chips/chips-input": "./chips/chips-input/index.tsx",
     "./chips/chips-template-form": "./chips/chips-template-form/index.tsx",

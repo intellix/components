@@ -92,6 +92,8 @@ export default defineConfig({
           ['scss/paginator/paginator-prebuilt.scss', 'dist/paginator-prebuilt.css'],
           ['scss/autocomplete/autocomplete-prebuilt.scss', 'dist/autocomplete-prebuilt.css'],
           ['scss/datepicker/datepicker-prebuilt.scss', 'dist/datepicker-prebuilt.css'],
+          ['scss/core/typography-prebuilt.scss', 'dist/typography-prebuilt.css'],
+          ['scss/core/elevation-prebuilt.scss', 'dist/elevation-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
           const srcAbs = path.resolve(__dirname, src);

@@ -12,6 +12,7 @@ import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatInternalFormField} from '../core/mat-internal-form-field';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import type {MatRadioColor} from './radio-color';
 import {MAT_RADIO_CONFIG, MAT_RADIO_CONFIG_DEFAULTS} from './radio-config';
 import {MAT_RADIO_GROUP_STATE, MAT_RADIO_GROUP_STATE_DEFAULTS} from './radio-group-state';
@@ -159,7 +160,9 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
   // change) or `localChecked.value`/`props.value` changes — never merely
   // because `focusOrigin` did — so a `focusin`-triggered render can no
   // longer write a stale value over a native toggle that just happened.
-  const checkedSig = useSignal(() => standalone ? localChecked.value : state.value === props.value);
+  const checkedSig = useSignal(() =>
+    standalone ? localChecked.value : state.value === props.value,
+  );
   useTask$(({track}) => {
     const live = track(() => stateSignal.value);
     const local = track(() => localChecked.value);
@@ -179,6 +182,7 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
   const effectiveName = standalone ? props.name : state.name;
 
   const noopAnimations = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
   // Upstream `ngAfterViewInit(): this._focusMonitor.monitor(this._elementRef,
   // true)` — monitors the HOST element (`<mat-radio-button>`), not the inner
   // input; `focusin` bubbles from the input up to this host for free. See
@@ -240,10 +244,15 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
   // ordering on a cold chunk).
   const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
     const live = stateSignal.value;
-    handleRippleEvent(event, rippleContainerRef.value, {
-      rippleDisabled: !!((props.disabled ?? false) || live.disabled),
-      rippleConfig: {centered: true, animation: rippleAnimationConfig(noopAnimations.value)},
-    });
+    handleRippleEvent(
+      event,
+      rippleContainerRef.value,
+      {
+        rippleDisabled: !!((props.disabled ?? false) || live.disabled),
+        rippleConfig: {centered: true, animation: rippleAnimationConfig(noopAnimations.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   // Companion to the comment on `localChecked` above: when this is a

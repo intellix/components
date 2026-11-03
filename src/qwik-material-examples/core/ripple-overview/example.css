@@ -1,0 +1,29 @@
+/* Copy of src/components-examples/material/core/ripple-overview/ripple-overview-example.css,
+   applied scoped to this route's own host tag (see specs/examples-css and e.g.
+   badge/example/example.css's identical header comment) — Angular's emulated view
+   encapsulation only ever matches the SAME host element; a plain CSS import here is global
+   otherwise. Properties unchanged. */
+ripple-overview-example .example-ripple-container {
+  cursor: pointer;
+  text-align: center;
+
+  width: 300px;
+  height: 300px;
+  line-height: 300px;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/** Styles to make the demo look better. */
+ripple-overview-example .example-ripple-checkbox {
+  margin: 6px 12px 6px 0;
+}
+
+ripple-overview-example .example-ripple-form-field {
+  margin: 0 12px 0 0;
+}

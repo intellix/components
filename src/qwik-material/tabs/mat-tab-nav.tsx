@@ -2,6 +2,7 @@ import {$, component$, Slot, useContext, useContextProvider, useSignal} from '@q
 import {focusVia} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_TABS_CONFIG, type MatTabsConfig} from './tab-config';
 import {computeNextTabFocusIndex, type TabFocusKey} from './tab-group-keyboard';
 import {usePaginatedHeader} from './use-paginated-header';
@@ -47,6 +48,7 @@ function normalizeDuration(value: string | number): string {
 export const MatTabNav = component$<MatTabNavProps>(props => {
   const config = useContext(MAT_TABS_CONFIG, CONFIG_DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
+  const rippleGlobalOptions = useRippleGlobalOptions();
 
   const disablePagination = props.disablePagination ?? config.disablePagination ?? false;
   const headerRootRef = useSignal<HTMLElement>();
@@ -109,16 +111,26 @@ export const MatTabNav = component$<MatTabNavProps>(props => {
   // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
   // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
   const paginationBeforeRippleEvent$ = $((event: MouseEvent | TouchEvent, element: Element) => {
-    handleRippleEvent(event, element, {
-      rippleDisabled: pagination.disableScrollBefore.value || navState.disableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      element,
+      {
+        rippleDisabled: pagination.disableScrollBefore.value || navState.disableRipple,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
   const paginationAfterRippleEvent$ = $((event: MouseEvent | TouchEvent, element: Element) => {
-    handleRippleEvent(event, element, {
-      rippleDisabled: pagination.disableScrollAfter.value || navState.disableRipple,
-      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-    });
+    handleRippleEvent(
+      event,
+      element,
+      {
+        rippleDisabled: pagination.disableScrollAfter.value || navState.disableRipple,
+        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+      },
+      rippleGlobalOptions,
+    );
   });
 
   const navAnimationDuration =

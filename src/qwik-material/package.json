@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint:no-ssr-leaks": "node ./scripts/lint-no-ssr-leaks.mjs",
-    "generate-default-theme": "node ./scripts/generate-default-theme.mjs"
+    "generate-default-theme": "node ./scripts/generate-default-theme.mjs",
+    "generate-typography-elevation-prebuilt": "node ./scripts/generate-typography-elevation-prebuilt.mjs",
+    "check-generated-scss": "node ./scripts/check-generated-scss.mjs"
   },
   "peerDependencies": {
     "@angular-community/qwik-cdk": "workspace:*",
@@ -250,6 +252,8 @@
     "./paginator-prebuilt.css": "./dist/paginator-prebuilt.css",
     "./autocomplete-prebuilt.css": "./dist/autocomplete-prebuilt.css",
     "./datepicker-prebuilt.css": "./dist/datepicker-prebuilt.css",
+    "./typography-prebuilt.css": "./dist/typography-prebuilt.css",
+    "./elevation-prebuilt.css": "./dist/elevation-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
