@@ -151,3 +151,56 @@ or running when the host is less contended, resolves it.
 `indeterminate` prop starts `true` now sets the property once on load (`useVisibleTask$` with
 `document-ready`, called only for those instances), so upstream's `:indeterminate` styles (mixed
 mark, filled background) apply before any interaction. Found by the computed-style parity check.
+
+## Form state (`formBound`/`touched`/`dirty`/`invalid`/`onTouched$`) (2026-11-03)
+
+Ported upstream's `NgControlStatus` host classes + `_onBlur()` → `_onTouched()` timing, mirroring
+the contract `MatInput`/`MatSelect` already established via `core/mat-form-field-control.ts`'s
+`MatFormFieldControlProps` — except declared LOCALLY on `MatCheckboxProps` rather than inherited
+from that shared interface: `MatCheckbox` is never nested in a `<MatFormField>` (upstream's own
+`MatCheckbox` isn't a `MatFormFieldControl` either — it has no floating label, no hint/error
+wrapper, nothing `MatFormField` would manage), so there is no `MAT_FORM_FIELD_CONTROL_STATE`
+context store to read these from, and none of `MatInput`'s "frozen inside another component's
+prop" complexity applies: `touched`/`dirty`/`invalid` are read straight off `props` every render,
+same as the ONE pattern `MatInput`'s own doc comment calls out as safe without the context-store
+detour (a prop that sits directly on an element THIS component returns from its own render, never
+forwarded through an intermediate component's prop the way `MatFormField`'s `control` prop is).
+
+- **`formBound`/`touched`/`dirty`/`invalid`**: new props, default `false`/unset. `ng-touched`/
+  `ng-untouched`, `ng-pristine`/`ng-dirty`, `ng-valid`/`ng-invalid` are appended to the HOST
+  (`<mat-checkbox>`) class list — gated entirely behind `formBound` (upstream: `NgControlStatus`'s
+  selector `[formControlName],[ngModel],[formControl]` simply isn't present on an unbound
+  checkbox, so none of these classes exist at all, not merely "false" — confirmed in
+  `mat-form-field`'s own identical gate and `angular-parity.spec.ts`'s big comment there). No
+  `pending`/`ng-pending` — same as every other control in this port (no async validators anywhere
+  in this project to ever make it true; see `input/SYNC.md`'s identical omission).
+- **`onTouched$`**: new prop, mirrors upstream's `_onTouched()` CVA callback. Upstream calls it
+  from `_onBlur()` (`checkbox.html`'s `(blur)="_onBlur()"` on the native `<input>`), deferred one
+  tick via `Promise.resolve().then(...)` purely to dodge an Angular change-detection "changed
+  after checked" error (`#17793`) — irrelevant in Qwik (no such constraint), so this port's
+  `onInputBlur$` fires it synchronously, straight off the native input's own `onBlur$`.
+- **No `required`/`aria-invalid`/`aria-required` changes** — upstream's checkbox has no
+  `aria-required` at all (confirmed in `checkbox.html`), and its `required` was ALREADY reflected
+  as a plain attribute on the native input only, "no forms validation" (this file's own prior
+  doc comment, unchanged). Nothing to add here.
+- **No `MatForm`/submitted integration** — upstream shows no visible error state for a checkbox
+  at all (no `ErrorStateMatcher`, no error-message slot); `ng-submitted` lands on the `<form>`
+  element itself (`MatForm`'s own class), never forwarded to individual controls. So there is
+  nothing for `MatCheckbox` to read from `useMatFormState()`/`MatForm` — `invalid`/`touched`/
+  `dirty` are the consumer's own pre-computed booleans, same as every other prop here.
+
+First real consumers: `core/ripple-overview`'s three `[(ngModel)]`-bound checkboxes (closes the
+gap `specs/examples-misc/angular-parity.spec.ts`'s `EXPECTED_FAILURES['ripple-overview']` entry
+documented — now removed) and the Formisch "account" example's `terms` checkbox
+(`src/qwik-cdk-dev-app/src/routes/formisch/account/`, see that route's own `formisch-bindings.ts`
+— `matCheckboxBindings()` now wires this directly instead of the old `ngStatusClasses()`
+consumer-side class-composition workaround). Qwik-only functional coverage:
+`specs/material-checkbox/form-state.spec.ts` (dirty-on-change, touched-on-blur, invalid toggle,
+and the unbound checkbox's total absence of these classes).
+
+Found (and documented, NOT fixed — out of scope for this work) while wiring `ripple-overview`:
+a pre-existing, unrelated gap where clicking any of that example's three checkboxes doesn't
+visually update its OWN host class at all (confirmed to reproduce even on the file's state BEFORE
+this `formBound` work) — see `qwik-material-examples/core/ripple-overview/index.tsx`'s own "Known
+gap" doc comment for the root-cause write-up (a missed re-render when the same click's `onChange$`
+also writes a signal `useMatRipple()` reads as a sibling hook argument).

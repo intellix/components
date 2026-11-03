@@ -123,25 +123,6 @@ export function matFieldErrors(field: AnyField): readonly string[] {
   return field.errors.value ?? [];
 }
 
-/**
- * The `ng-touched`/`ng-untouched`, `ng-pristine`/`ng-dirty`, `ng-valid`/`ng-invalid` trio
- * Angular's `NgControlStatus` directive (selector `[formControlName],[ngModel],[formControl]`)
- * puts directly on a bound control's OWN host element. `MatInput`/`MatSelect`/
- * `MatDatepickerInput` already compute this themselves from `formBound`+`touched`/`dirty`/
- * `invalid` (see each one's own `classes` array) — but `MatCheckbox`/`MatRadioGroup`/
- * `MatSlideToggle` have no such built-in support (they were never designed with a forms
- * binding in mind), so for an Angular mirror written as `<mat-checkbox formControlName="terms">`
- * to match byte-for-byte, THIS binding file computes the same three classes and the call site
- * passes them through the ordinary `class` prop every qwik-material component already accepts
- * — no library change needed, just consumer-level composition. */
-export function ngStatusClasses(field: AnyField): string[] {
-  return [
-    field.isTouched.value ? 'ng-touched' : 'ng-untouched',
-    field.isDirty.value ? 'ng-dirty' : 'ng-pristine',
-    field.isValid.value ? 'ng-valid' : 'ng-invalid',
-  ];
-}
-
 /** Whether to show a field's error message right now — the same default `ErrorStateMatcher`
  *  formula every qwik-material form control already uses internally (`invalid && (touched ||
  *  form.submitted)`, see `core/mat-form.tsx`), exposed here for controls with no built-in error
@@ -212,48 +193,77 @@ export function matSelectBindings(field: AnyField): MatFieldState & {
   };
 }
 
-/** `MatRadioGroup` bindings — controlled `value` + `onChange$`, same "custom control" pattern as
- *  `matSelectBindings`. No separate "touched without changing" case (there's no way to interact
- *  with a radio group without selecting something).
+/**
+ * `MatRadioGroup` bindings — controlled `value` + `onChange$`, same "custom control" pattern as
+ * `matSelectBindings`, now ALSO wiring the group's own `formBound`/`touched`/`dirty`/`invalid`/
+ * `onTouched$` contract directly (`qwik-material/radio/SYNC.md`'s "Form state" section — no
+ * longer the consumer-side `ngStatusClasses()` class-composition workaround this file used to
+ * need; `MatRadioGroup` has real, built-in support for this now). `onTouched$` uses
+ * `matMarkTouched` the same way `matSelectBindings` does — upstream's own `_touch()` has no
+ * "touched without changing" case for a radio group either (there's no way to interact with one
+ * without selecting something), but wiring it anyway closes a real, narrow gap: tabbing INTO a
+ * radio group and back OUT without ever pressing Space/Enter never fires `onInput`, yet upstream
+ * (via each button's own `FocusMonitor`) still marks the group touched on that blur alone.
  *
- *  `value` falls back to `undefined`, NEVER `''` — confirmed live (an Angular-vs-Qwik parity
- *  diff on this exact page): `MatRadioGroup`'s roving-tabindex formula
- *  (`radio/mat-radio-button.tsx`'s `hasGroupSelection`) treats ANY non-`null`/`undefined` group
- *  value, including `''`, as "a selection exists, it just doesn't match this button" — giving
- *  EVERY button `tabIndex={-1}` instead of the correct "nothing selected yet, each button keeps
- *  its own default tabIndex (0)". Every other scenario in this port already seeds an unselected
- *  group with `undefined` (never `''`); this is the first consumer whose underlying state
- *  (Formisch's own empty-string default for an unset required string field) needed an explicit
- *  conversion at the wiring boundary. */
-export function matRadioGroupBindings(field: AnyField): {
+ * `value` falls back to `undefined`, NEVER `''` — confirmed live (an Angular-vs-Qwik parity
+ * diff on this exact page): `MatRadioGroup`'s roving-tabindex formula
+ * (`radio/mat-radio-button.tsx`'s `hasGroupSelection`) treats ANY non-`null`/`undefined` group
+ * value, including `''`, as "a selection exists, it just doesn't match this button" — giving
+ * EVERY button `tabIndex={-1}` instead of the correct "nothing selected yet, each button keeps
+ * its own default tabIndex (0)". Every other scenario in this port already seeds an unselected
+ * group with `undefined` (never `''`); this is the first consumer whose underlying state
+ * (Formisch's own empty-string default for an unset required string field) needed an explicit
+ * conversion at the wiring boundary.
+ */
+export function matRadioGroupBindings(field: AnyField): MatFieldState & {
+  formBound: true;
   value: string | undefined;
   onChange$: QRL<(value: unknown) => void>;
+  onTouched$: QRL<() => void>;
 } {
   return {
+    formBound: true,
+    ...matFieldState(field),
     value: (field.input.value as string | undefined) || undefined,
     onChange$: $((value: unknown) => field.onInput(value as string)),
+    onTouched$: matMarkTouched(field),
   };
 }
 
-/** `MatCheckbox` bindings. */
-export function matCheckboxBindings(field: AnyField): {
+/** `MatCheckbox` bindings — now ALSO wiring `formBound`/`touched`/`dirty`/`invalid`/`onTouched$`
+ *  directly (`qwik-material/checkbox/SYNC.md`'s "Form state" section), same as `matRadioGroup
+ *  Bindings` above. `onTouched$` fires on blur of the native `<input>` (`MatCheckbox`'s own
+ *  mirror of upstream `_onBlur()`) — mark Formisch's field touched the same way. */
+export function matCheckboxBindings(field: AnyField): MatFieldState & {
+  formBound: true;
   checked: boolean;
   onChange$: QRL<(event: MatCheckboxChangeEvent) => void>;
+  onTouched$: QRL<() => void>;
 } {
   return {
+    formBound: true,
+    ...matFieldState(field),
     checked: (field.input.value as boolean | undefined) ?? false,
     onChange$: $((event: MatCheckboxChangeEvent) => field.onInput(event.checked)),
+    onTouched$: matMarkTouched(field),
   };
 }
 
-/** `MatSlideToggle` bindings. */
-export function matSlideToggleBindings(field: AnyField): {
+/** `MatSlideToggle` bindings — now ALSO wiring `formBound`/`touched`/`dirty`/`invalid`/
+ *  `onTouched$` directly (`qwik-material/slide-toggle/SYNC.md`'s "Form state" section), same as
+ *  `matCheckboxBindings` above. `onTouched$` fires on blur of the inner `<button>`. */
+export function matSlideToggleBindings(field: AnyField): MatFieldState & {
+  formBound: true;
   checked: boolean;
   onChange$: QRL<(checked: boolean) => void>;
+  onTouched$: QRL<() => void>;
 } {
   return {
+    formBound: true,
+    ...matFieldState(field),
     checked: (field.input.value as boolean | undefined) ?? false,
     onChange$: $((checked: boolean) => field.onInput(checked)),
+    onTouched$: matMarkTouched(field),
   };
 }
 

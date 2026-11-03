@@ -66,6 +66,27 @@ export interface MatSlideToggleProps {
    */
   onToggleChange$?: QRL<() => void>;
   class?: string | ReadonlyArray<string>;
+  /**
+   * Whether this toggle is bound to a reactive-forms-like primitive (`useMatFormControl()` or
+   * equivalent) — mirrors upstream's `ngControl !== null` gate for `NgControlStatus`'s `ng-*`
+   * classes, same contract as `MatCheckboxProps.formBound`. Plain, uncontrolled toggles leave
+   * this `false`/undefined. See slide-toggle/SYNC.md's "Form state" section.
+   */
+  formBound?: boolean;
+  /** Mirrors `NgControlStatus`'s touched (only meaningful when `formBound` is true). */
+  touched?: boolean;
+  /** Mirrors `NgControlStatus`'s dirty (only meaningful when `formBound` is true). */
+  dirty?: boolean;
+  /** Mirrors `NgControlStatus`'s validity (only meaningful when `formBound` is true).
+   *  Pre-computed by the consumer. */
+  invalid?: boolean;
+  /**
+   * Fires when this toggle becomes "touched" — mirrors upstream's `_onTouched()` CVA callback,
+   * invoked from the `FocusMonitor` subscription (`ngAfterContentInit`) once focus origin goes
+   * to `null`, i.e. on blur of the inner `<button>`. A form library calls this to mark its own
+   * field touched.
+   */
+  onTouched$?: QRL<() => void>;
 }
 
 const CONFIG_DEFAULTS: MatSlideToggleConfig = {
@@ -138,6 +159,11 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
     // `[class]="color ? 'mat-' + color : ''"` — color always resolves
     // truthy here (see `color` above), so this is unconditional in practice.
     color && `mat-${color}`,
+    // Mirrors `NgControlStatus` — only present when bound to a reactive-forms-like control. See
+    // `MatSlideToggleProps.formBound`'s own doc comment.
+    (props.formBound ?? false) && ((props.touched ?? false) ? 'ng-touched' : 'ng-untouched'),
+    (props.formBound ?? false) && ((props.dirty ?? false) ? 'ng-dirty' : 'ng-pristine'),
+    (props.formBound ?? false) && ((props.invalid ?? false) ? 'ng-invalid' : 'ng-valid'),
     // FocusMonitor's `_setClasses` toggles these on the monitored element
     // (here, this same host) for ANY origin, independent of the
     // component-specific `mat-mdc-slide-toggle-focused` class above.
@@ -220,6 +246,16 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
     }
   });
 
+  // Mirrors upstream's `FocusMonitor.monitor(this._elementRef, true)` subscription
+  // (`ngAfterContentInit`): the `!focusOrigin` branch (deferred one tick upstream purely to
+  // dodge an Angular change-detection "changed after checked" error — irrelevant here) calls
+  // `_onTouched()`. Attached directly to the inner `<button>`'s native blur (the only focusable
+  // element this component renders), rather than a `FocusMonitor`-equivalent hook, since nothing
+  // else needs the richer "which origin" information here — see `onTouched$`'s own doc comment.
+  const onButtonBlur$ = $(() => {
+    props.onTouched$?.();
+  });
+
   // Upstream: "Clicking on the label will trigger another click event from
   // the button [a native `<label for>` referencing a labelable element like
   // `<button>` forwards its click]. Stop propagation here so other listeners
@@ -246,6 +282,7 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
           aria-checked={checked ? 'true' : 'false'}
           aria-disabled={disabled && disabledInteractive ? 'true' : undefined}
           onClick$={onButtonClick$}
+          onBlur$={onButtonBlur$}
           onMouseDown$={rippleEvent$}
           onMouseUp$={rippleEvent$}
           onMouseLeave$={rippleEvent$}

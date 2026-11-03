@@ -81,9 +81,15 @@ describe('MatCheckbox surface — sanity', () => {
       onChange$: undefined,
       onIndeterminateChange$: undefined,
       class: 'my-class',
+      formBound: true,
+      touched: true,
+      dirty: true,
+      invalid: false,
+      onTouched$: undefined,
     };
     expect(props.checked).toBe(true);
     expect(props.labelPosition).toBe('before');
+    expect(props.formBound).toBe(true);
   });
 
   it('MatCheckboxChangeEvent carries a `checked` boolean (no `source` — no class instance to hand back)', () => {

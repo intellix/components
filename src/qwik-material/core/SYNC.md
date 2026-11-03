@@ -690,3 +690,27 @@ introduces no visual change for the handful of PRE-EXISTING examples that alread
 `mat-elevation-z*` classes (`table-*`, `tab-group-dynamic-height`, `ripple-overview`): the newly-
 available rule computes to the same `box-shadow: none` those elements already had with no rule at
 all.
+
+## Fixed: `MatForm`'s `noValidate` corrupted to the literal string `"true"` after any later re-render (2026-11-03)
+
+Found porting `slide-toggle-forms` (`qwik-material-examples/slide-toggle/slide-toggle-forms/`,
+the first `<MatForm noValidate>` usage whose `class` prop is genuinely LIVE — reflecting
+touched/dirty/invalid state from signals that change after mount, unlike every earlier `<form
+noValidate>` usage in this project, which is a plain, hardcoded-forever string, e.g.
+`select-form`'s own documented precedent). Confirmed live: `<form noValidate={props.noValidate}
+class={[...]}>` renders the correct `novalidate=""` (mirroring upstream's `NgNoValidate`
+directive's own `'[attr.novalidate]': "''"` host binding — ALWAYS a literal empty string, never
+the word "true") on the very first SSR paint, but the INSTANT this component's own render
+re-executes for an unrelated reason (here: `props.class` changing after a click, since it
+carries the caller's live touched/dirty/invalid classes), Qwik's client-side prop-diffing
+re-applies the SAME, unchanged `noValidate={true}` boolean prop as the literal attribute STRING
+`"true"` instead of re-affirming the correct empty-string boolean-attribute form.
+
+Fixed the same way `qwik-material/input`'s own `readonly`/`value` attributes already do (see that
+file's SYNC.md): rendered via a plain, LOWERCASE attribute spread (`...{novalidate: props.
+noValidate ? '' : undefined}`) rather than the camelCase `noValidate` JSX boolean prop — this
+forces a literal `setAttribute`/attribute-removal path on every render, sidestepping whatever
+Qwik-internal diffing shortcut mishandles the boolean form specifically on a later, unrelated
+re-render. Zero effect on every existing `<MatForm>` consumer (`formisch/account`'s own `<Form>`
+doesn't use `<MatForm>` at all — see `MatFormSubmittedProvider`'s own doc comment — and no other
+scenario passes `noValidate` with a live `class`).

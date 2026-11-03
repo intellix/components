@@ -104,10 +104,16 @@ describe('MatButtonToggle surface — sanity', () => {
       class: 'my-group',
       id: 'style-group',
       hideSingleSelectionIndicator: true,
+      formBound: true,
+      touched: true,
+      dirty: true,
+      invalid: false,
+      onTouched$: undefined,
     };
     expect(props.value).toBe('bold');
     expect(props.multiple).toBe(false);
     expect(props.hideSingleSelectionIndicator).toBe(true);
+    expect(props.formBound).toBe(true);
   });
 
   it('MatButtonToggleGroupProps accepts multi-mode surface + MatButtonToggleProps accepts full surface', () => {

@@ -24,6 +24,39 @@ This port only implements the modern (M3) appearance — there is no `appearance
 There is no Angular Forms integration in this port — `<MatButtonToggleGroup>` is a controlled
 component, same as `<MatRadioGroup>`.
 
+A form library can still drive the `ng-touched`/`ng-untouched`, `ng-pristine`/`ng-dirty`,
+`ng-valid`/`ng-invalid` classes Angular's `NgControlStatus` would add to `<mat-button-toggle-group
+formControlName="...">` — pass `formBound` plus `touched`/`dirty`/`invalid` (booleans you
+compute yourself) and `onTouched$`. Unlike checkbox/radio/slide-toggle, `onTouched$` here is
+**click-driven, not blur-driven** — matching upstream's own `_onButtonClick()` exactly: it fires
+only when a click actually changes a toggle's own selection state. In single-select mode,
+clicking the already-selected toggle again is a complete no-op (never fires); clicking a
+different toggle does. In multi-select mode, every non-disabled click always flips that toggle's
+own state, so it fires unconditionally.
+
+```tsx
+<MatButtonToggleGroup
+  value={field.value.value}
+  formBound
+  touched={field.touched.value}
+  dirty={field.dirty.value}
+  invalid={field.invalid.value}
+  onChange$={v => {
+    field.dirty.value = true;
+    field.value.value = v;
+  }}
+  onTouched$={() => (field.touched.value = true)}
+>
+  <MatButtonToggle value="bold">Bold</MatButtonToggle>
+  <MatButtonToggle value="italic">Italic</MatButtonToggle>
+</MatButtonToggleGroup>
+```
+
+Note there is no `required` prop at all here — upstream's own `MatButtonToggleGroup` has no
+`required`/validator concept either.
+
+<!-- example(button-toggle-forms) -->
+
 ### Orientation
 There is no `vertical` prop in this port — see [Angular → Qwik notes](#angular-qwik-notes).
 
@@ -66,6 +99,9 @@ styles".
 - **No Angular Forms integration.** `ControlValueAccessor`/`NG_VALUE_ACCESSOR` have no Qwik
   equivalent — replaced by the controlled-component pattern (the group takes `value`/`values` +
   `onChange$`/`onValuesChange$` QRLs; no `.emit()` `EventEmitter` API, no `SelectionModel`).
+  `formBound`/`touched`/`dirty`/`invalid`/`onTouched$` mirror upstream's `NgControlStatus` host
+  classes + `_onTouched()`'s click-driven (not blur-driven) timing (see "Use with forms" above),
+  but `invalid` is always a plain boolean YOU compute.
 - **No `appearance` prop — the deprecated "legacy" visual variant isn't ported.** Every group/
   toggle renders the modern (M3) "standard" appearance only.
 - **No `vertical` prop.** The synced SCSS's `.mat-button-toggle-vertical` rules are unreachable

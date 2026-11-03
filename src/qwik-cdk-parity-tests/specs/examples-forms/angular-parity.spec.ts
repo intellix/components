@@ -66,6 +66,14 @@ const EXAMPLES: string[] = [
   'datepicker-inline-calendar',
   'datepicker-date-class',
   'datepicker-locale',
+  // checkbox/radio/slide-toggle/button-toggle form-state batch — each component's own `-overview`
+  // example is the headline, covered by specs/examples/. Exercises `formBound`/`touched`/`dirty`/
+  // `invalid`/`onTouched$` (see each component's own `qwik-material/*/SYNC.md` "Form state"
+  // section) end to end against a REAL, unmodified upstream example.
+  'checkbox-reactive-forms',
+  'radio-ng-model',
+  'slide-toggle-forms',
+  'button-toggle-forms',
 ];
 
 /** `timepicker-forms`'s initial value is `new Date()` ("today", at 12:30) — deterministic only
@@ -189,6 +197,46 @@ const openDatepickerInRoot: ParityStep = {
  * on both sides at first render) and stays a real regression check.
  */
 
+/** `radio-ng-model`: clicks a radio by its accessible name within `[data-parity-root]`, then
+ *  blurs it — exercises `MatRadioGroup`'s `formBound`/`touched`/`dirty` contract (see
+ *  `qwik-material/radio/SYNC.md`'s "Form state" section). */
+const clickAndBlurRadioByName = (name: string): ParityStep => ({
+  name: `click radio "${name}" + blur`,
+  run: async (page: Page) => {
+    const radio = page.locator('[data-parity-root]').getByRole('radio', {name, exact: true});
+    await radio.click();
+    await radio.blur();
+  },
+});
+
+/** `slide-toggle-forms`: clicks the Nth `button.mdc-switch` within `[data-parity-root]`, then
+ *  blurs it — exercises `MatSlideToggle`'s `formBound`/`touched`/`dirty` contract (and, for the
+ *  two toggles inside a `<form>`, the GROUP-level aggregate classes computed by hand in that
+ *  example — see its own module doc comment). */
+const clickAndBlurToggleIndex = (index: number): ParityStep => ({
+  name: `click + blur toggle ${index}`,
+  run: async (page: Page) => {
+    const toggle = page.locator('[data-parity-root] button.mdc-switch').nth(index);
+    await toggle.click();
+    await toggle.blur();
+  },
+});
+
+/** `button-toggle-forms`: clicks a button-toggle by its accessible name within the Nth
+ *  `<mat-button-toggle-group>` — exercises `MatButtonToggleGroup`'s CLICK-driven (not
+ *  blur-driven) `onTouched$` timing (see `qwik-material/button-toggle/SYNC.md`'s "Form state"
+ *  section) — no blur needed, unlike the other three controls in this batch. */
+const clickButtonToggleInGroup = (groupIndex: number, name: string): ParityStep => ({
+  name: `click button-toggle "${name}" in group ${groupIndex}`,
+  run: async (page: Page) => {
+    await page
+      .locator('[data-parity-root] mat-button-toggle-group')
+      .nth(groupIndex)
+      .getByRole('radio', {name, exact: true})
+      .click();
+  },
+});
+
 const EXAMPLE_STEPS: Record<
   string,
   {steps: ParityStep[]; rootSelector?: string; clockDate?: Date | number | string}[]
@@ -214,6 +262,13 @@ const EXAMPLE_STEPS: Record<
   // available). Dropped rather than left flaky; the default (non-interaction) render already
   // covers this example's main DOM contract (error hidden until touched, `ng-invalid` from
   // first render).
+  // checkbox-reactive-forms: no interaction step — the whole scenario is already a `test.fail`
+  // (see EXPECTED_FAILURES, a structural <p>/<div> gap unrelated to forms), so there's nothing a
+  // click/blur step would usefully prove here; the touched/dirty MECHANICS themselves are
+  // thoroughly covered by `specs/material-checkbox/form-state.spec.ts` instead.
+  'radio-ng-model': [{steps: [clickAndBlurRadioByName('Winter')]}],
+  'slide-toggle-forms': [{steps: [clickAndBlurToggleIndex(0)]}, {steps: [clickAndBlurToggleIndex(1)]}],
+  'button-toggle-forms': [{steps: [clickButtonToggleInGroup(0, 'Bold')]}],
 };
 
 /**
@@ -262,6 +317,22 @@ const EXAMPLE_STEPS: Record<
  * - `datepicker-start-view`: `<mat-datepicker startView="year" [startAt]="startDate">` echoes
  *   `startview` (bare, unlike the bound `startAt`).
  * - `datepicker-touch`: `<mat-datepicker touchUi #picker>` echoes `touchui` the same way.
+ * - `slide-toggle-forms`: `<mat-slide-toggle ngModel name="acceptTerms" required>` — BOTH
+ *   `required` AND a bare (unbracketed) `ngModel` attribute together activate Angular's
+ *   `RequiredValidator` directive (`@angular/forms`, selector `:not([type=checkbox])[required]
+ *   [ngModel],...` — matches ANY element, same real quirk already documented in
+ *   `src/dev-app/qwik-parity/formisch.ts`'s own comment for `<mat-checkbox required
+ *   formControlName>`), whose own host binding reflects a literal `required=""` attribute onto
+ *   `<mat-slide-toggle>` itself — this port's `MatSlideToggle` has no mechanism to add a bare
+ *   `required` attribute to its own host (only `aria-required` on the inner button). See this
+ *   example's own module doc comment for the full write-up. The bare `ngModel` attribute itself
+ *   (both toggles in that same template-driven form) and `ngNativeValidate` (the reactive form's
+ *   `<form ... ngNativeValidate>`, opting out of Angular's automatic `novalidate`) are the same
+ *   generic "bare directive-selector attribute, echoed verbatim" category as every other entry
+ *   here — `ngmodel`/`ngnativevalidate`.
+ * - `button-toggle-forms`: `<mat-button-toggle value="bold">` etc. echo `value` the same way
+ *   `form-field-label`'s `<mat-radio-button value="auto">` already does above (same genericity
+ *   concern — too generic a word to ignore globally).
  */
 const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'select-form': ['name'],
@@ -281,6 +352,8 @@ const EXAMPLE_IGNORE_ATTRS: Record<string, string[]> = {
   'datepicker-custom-icon': ['matdatepickertoggleicon'],
   'datepicker-start-view': ['startview'],
   'datepicker-touch': ['touchui'],
+  'slide-toggle-forms': ['required', 'ngmodel', 'ngnativevalidate'],
+  'button-toggle-forms': ['value'],
 };
 
 /**
@@ -331,6 +404,9 @@ const EXPECTED_FAILURES: Record<string, string> = {
     'EXAMPLE_IGNORE_ATTRS — that half is attribute-only and fixable that way; the class ' +
     'difference found afterward is not). A real, accepted architectural simplification, not a ' +
     'small fix.',
+  'checkbox-reactive-forms':
+    'the example wraps each <mat-checkbox> in <p> (same shape as select-disabled above), and ' +
+    SLIDE_TOGGLE_P_DIV_NOTE,
 };
 
 test.describe('qwik-material-examples (docs Phase 2, forms batch) — Angular DOM parity', () => {

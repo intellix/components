@@ -220,3 +220,56 @@ Fixed two ways, both in `mat-button-toggle-group.tsx`'s `onToggle`:
   suspenders for a scenario where a newer click's write races ahead of an older round trip's
   feedback; did not end up being the actual fix for THIS bug (the real fix was the `props.values`
   read above), but is strictly safer than the unconditional version either way.
+
+## Form state (`formBound`/`touched`/`dirty`/`invalid`/`onTouched$`) (2026-11-03)
+
+Ported upstream's `NgControlStatus` host classes + `_onTouched()` timing — same contract shape
+`qwik-material/checkbox`'s own identical section documents (read that first; `MatButtonToggleGroup`
+is never nested in a `<MatFormField>` either).
+
+- **`formBound`/`touched`/`dirty`/`invalid`**: new props on `MatButtonToggleGroupProps`, appended
+  to the HOST (`<mat-button-toggle-group>`) class list, gated behind `formBound`. `NgControlStatus`
+  attaches to whatever element carries `[formControlName]`/`[ngModel]`/`[formControl]` — for this
+  control that's the GROUP's own host (never an individual `<mat-button-toggle>`).
+- **No `required` prop at all** — confirmed in upstream `button-toggle.ts`: there is no `@Input()
+  required` anywhere in the file (unlike checkbox/radio/slide-toggle, all of which have one).
+  `MatButtonToggleGroupProps` therefore gets no matching `required` prop either — not an
+  oversight, a faithful absence.
+- **`onTouched$`**: new prop. Mirrors upstream's `_onTouched()` — **confirmed live, a genuine,
+  surprising difference from checkbox/radio/slide-toggle**: this is CLICK-driven, not
+  blur-driven. `button-toggle.ts` has NO `FocusMonitor.monitor(...).subscribe(...)` call on the
+  group at all (the toggle's own `_focusMonitor.monitor(this._elementRef, true)` in
+  `ngAfterViewInit` has no `.subscribe()` attached — it's used purely for the `cdk-*-focused` CSS
+  classes, already ported via `useFocusOrigin()`). The ONLY `_onTouched()` call site in the
+  entire file is inside `MatButtonToggle._onButtonClick()`:
+  ```
+  const newChecked = this.isSingleSelector() ? true : !this._checked;
+  if (newChecked !== this._checked) {
+    this._checked = newChecked;
+    if (this.buttonToggleGroup) {
+      this.buttonToggleGroup._syncButtonToggle(this, this._checked, true);
+      this.buttonToggleGroup._onTouched();
+    }
+  }
+  ```
+  i.e. it fires once per click, but ONLY when the CLICKED toggle's own checked state actually
+  changes. Concretely: in single-select mode, clicking the ALREADY-selected toggle is a complete
+  no-op upstream (`newChecked` is always `true` there, same as the already-`true` `_checked`, so
+  the whole `if` body — sync AND touch — never runs, no `change` either); clicking any OTHER
+  toggle (now becoming the new selection) fires it. In multi-select mode, every non-disabled
+  click always flips THAT toggle's own checked state (`!this._checked`), so it's unconditional.
+  Ported in `mat-button-toggle-group.tsx`'s `onToggle` directly (not routed through a per-child
+  state field the way checkbox/radio/slide-toggle's blur-based version is — there's nothing for
+  a CHILD to read back here, the group's own click-routing closure already has everything it
+  needs): single mode computes `wasAlreadySelected = props.value === itemValue` BEFORE awaiting/
+  mutating anything, and skips the `onTouched$` call when true; multi mode calls it
+  unconditionally. Verified against the exact upstream gate with a dedicated test matrix (not
+  just "fires on click") — see `specs/material-button-toggle/form-state.spec.ts`'s three groups
+  (fresh selection, re-click-already-selected no-op, multi-select unconditional).
+- **No `MatForm`/submitted integration** — same reasoning as checkbox's identical section.
+
+First real consumer: none yet in the Formisch "account" example (that form has no button-toggle
+field) — the guide (`using-with-formisch.md`) documents the wiring pattern
+(`matButtonToggleGroupBindings()`-shaped) for a future consumer, same shape as
+`matRadioGroupBindings()`. Qwik-only functional coverage:
+`specs/material-button-toggle/form-state.spec.ts`.
