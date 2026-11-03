@@ -158,6 +158,33 @@ fix, not a component fix: the Angular mirror
 `data-mat-icon-name="home"`. The Qwik route previously passed an anonymous
 literal with no name; it now mirrors the Angular registration.
 
+**2026-11-03 SVG icon registry routes.** New `/mat-icon/*` scenarios, each a
+functional (Qwik-only, no Angular comparison) spec target —
+`specs/material-icon/svg-icon-registry.spec.ts`:
+- `svg-icon-url/` — registers an icon by URL (`/mat-icon/assets/home.svg/
+  index.ts`, a plain `onGet` request handler serving a tiny real SVG — this
+  app has no `public/` dir) and renders it via `svgIcon`. The URL is built
+  absolute from the current request inside a `routeLoader$`
+  (`new URL('/mat-icon/assets/home.svg', requestEvent.url)`) — see
+  deviation #17's "no router dependency" note for why that's necessary.
+  `specs/material-icon/svg-icon-registry.spec.ts`'s first case fetches this
+  route with Playwright's `request.get()` (a plain HTTP fetch, no browser/JS
+  at all) and asserts the resolved `<svg>` is already in the raw response body.
+- `svg-icon-namespace/` — one icon SET, two `<symbol>`s, registered in the
+  `animals` namespace; both resolved via `svgIcon="animals:cat"`/`"animals:dog"`.
+- `svg-icon-literal/` — a single `addSvgIconLiteral`-equivalent registration
+  (via the provider's `icons` seed), resolved via `svgIcon` — the registry
+  literal path, distinct from the pre-existing `svg-literal/` route (which
+  tests the OLD, still-separate `svgLiteral` PROP, no registry involved).
+- `svg-icon-switch/` — a button flips `svgIcon` between two registered
+  names after resume, proving client-side re-resolution (not just an
+  SSR-only effect).
+- `svg-icon-missing/` — `svgIcon` names nothing registered; proves the
+  error path renders an empty host instead of throwing/crashing SSR.
+
+None of these five need `mat-icon/layout.tsx`'s font-set provider (they're
+all SVG mode) — plain routes, no extra layout wiring.
+
 ## Stub inventory delta
 
 No new stubs — the icon SCSS chain does NOT reference `@angular/cdk` (unlike badge/toolbar/dialog port SCSS which did). Zero additions to `scss/cdk-stub/_cdk-stub.scss` or any other stub file.
