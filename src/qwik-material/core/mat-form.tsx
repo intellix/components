@@ -70,8 +70,19 @@ export const MatForm = component$<MatFormProps>(props => {
 
   return (
     <form
-      noValidate={props.noValidate}
       class={[props.class, state.submitted && 'ng-submitted']}
+      // Mirrors Angular's own `NgNoValidate` directive (`'[attr.novalidate]': "''"` — ALWAYS a
+      // literal EMPTY STRING attribute, never the word "true"). Rendered via a plain, LOWERCASE
+      // attribute spread rather than the camelCase `noValidate` JSX boolean prop — confirmed
+      // live: the camelCase prop renders correctly (`novalidate=""`) on the very first SSR
+      // paint, but once this component's OWN render re-executes for an unrelated reason (e.g.
+      // `props.class` changing after mount — `slide-toggle-forms`'s own two `<MatForm>` usages,
+      // whose `class` array reflects live touched/dirty/invalid state, hit this on literally the
+      // first click), Qwik's client-side prop-diffing re-applies it as the literal STRING
+      // `"true"` instead of re-affirming the boolean-attribute empty-string form — same category
+      // of fix `qwik-material/input`'s own `readonly`/`value` attribute spreads already
+      // establish (see that file's SYNC.md).
+      {...{novalidate: props.noValidate ? '' : undefined}}
       preventdefault:submit
       onSubmit$={onSubmit$}
     >
