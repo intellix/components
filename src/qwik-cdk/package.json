@@ -108,8 +108,14 @@
       "types": "./dist/clipboard/index.d.ts",
       "import": "./dist/clipboard/index.js"
     },
+    "./text-field": {
+      "qwik": "./text-field/index.ts",
+      "types": "./dist/text-field/index.d.ts",
+      "import": "./dist/text-field/index.js"
+    },
     "./overlay-prebuilt.css": "./dist/overlay-prebuilt.css",
     "./a11y-prebuilt.css": "./dist/a11y-prebuilt.css",
+    "./text-field-prebuilt.css": "./dist/text-field-prebuilt.css",
     "./scss/*": "./scss/*"
   },
   "files": [
