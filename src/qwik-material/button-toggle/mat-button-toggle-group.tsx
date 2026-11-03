@@ -71,6 +71,31 @@ export interface MatButtonToggleGroupProps {
   'aria-describedby'?: string;
   class?: string | ReadonlyArray<string>;
   id?: string;
+  /**
+   * Whether this group is bound to a reactive-forms-like primitive (`useMatFormControl()` or
+   * equivalent) — mirrors upstream's `ngControl !== null` gate for `NgControlStatus`'s `ng-*`
+   * classes, same contract as `MatCheckboxProps.formBound`. `NgControlStatus` attaches to
+   * whatever element carries `[formControlName]`/`[ngModel]`/`[formControl]` — for a button
+   * toggle group, that's this directive's own host, `<mat-button-toggle-group>` (never an
+   * individual `<mat-button-toggle>`). Plain, uncontrolled groups leave this `false`/undefined.
+   * Upstream has no `required`/validator concept for this control at all (no `@Input() required`
+   * anywhere in `button-toggle.ts`), so there is no matching `required` prop here either — see
+   * button-toggle/SYNC.md's "Form state" section.
+   */
+  formBound?: boolean;
+  /** Mirrors `NgControlStatus`'s touched (only meaningful when `formBound` is true). */
+  touched?: boolean;
+  /** Mirrors `NgControlStatus`'s dirty (only meaningful when `formBound` is true). */
+  dirty?: boolean;
+  /** Mirrors `NgControlStatus`'s validity (only meaningful when `formBound` is true).
+   *  Pre-computed by the consumer. */
+  invalid?: boolean;
+  /**
+   * Fires when the group becomes "touched" — mirrors upstream's `_onTouched()`. See
+   * button-toggle-group-state.ts's `onTouched$` doc comment for the exact (click-driven, NOT
+   * blur-driven) timing. A form library calls this to mark its own field touched.
+   */
+  onTouched$?: QRL<() => void>;
 }
 
 const CONFIG_DEFAULTS: MatButtonToggleConfig = {};
@@ -176,6 +201,11 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
 
   const onToggle = $(async (itemValue: unknown, checked: boolean, at?: number) => {
     if (mode === 'single') {
+      // Upstream `_onButtonClick`: `_onTouched()` fires only when the CLICKED toggle's own
+      // checked state actually changes — re-clicking the already-selected toggle is a complete
+      // no-op (never fires it). Computed from `props.value` (the live prop) BEFORE anything
+      // below awaits/mutates it — see button-toggle-group-state.ts's `onTouched$` doc comment.
+      const wasAlreadySelected = props.value === itemValue;
       // Clicks can resume out of order while chunks load; the latest click
       // (by event time) wins, as it would with upstream's synchronous model.
       await onChange$?.resolve();
@@ -188,7 +218,12 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
       // re-clicking the already-selected toggle in single mode is a no-op,
       // it never deselects). `checked` is passed through defensively.
       onChange$?.(checked ? itemValue : undefined);
+      if (!wasAlreadySelected) props.onTouched$?.();
     } else {
+      // Upstream: every non-disabled click in multi-select mode always flips that toggle's own
+      // checked state, so `_onTouched()` fires unconditionally (the caller already guards
+      // disabled before ever invoking `onToggle` — see mat-button-toggle.tsx's `onClick$`).
+      props.onTouched$?.();
       // Read-compute-write `pendingValues` BEFORE any `await` — Qwik v2
       // regression: this used to `await onValuesChange$?.resolve()` FIRST
       // (see the removed comment's reasoning below), but under v2 every
@@ -278,6 +313,11 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
   const classes = [
     'mat-button-toggle-group',
     'mat-button-toggle-group-appearance-standard',
+    // Mirrors `NgControlStatus` — only present when bound to a reactive-forms-like control. See
+    // `MatButtonToggleGroupProps.formBound`'s own doc comment.
+    (props.formBound ?? false) && ((props.touched ?? false) ? 'ng-touched' : 'ng-untouched'),
+    (props.formBound ?? false) && ((props.dirty ?? false) ? 'ng-dirty' : 'ng-pristine'),
+    (props.formBound ?? false) && ((props.invalid ?? false) ? 'ng-invalid' : 'ng-valid'),
     props.class,
   ].filter(Boolean) as string[];
 

@@ -65,6 +65,36 @@ export interface MatCheckboxProps {
   onChange$?: QRL<(event: MatCheckboxChangeEvent) => void>;
   /** Fires whenever `indeterminate` is cleared as a result of user interaction. */
   onIndeterminateChange$?: QRL<(indeterminate: boolean) => void>;
+  /**
+   * Whether this checkbox is bound to a reactive-forms-like primitive (`useMatFormControl()` or
+   * equivalent) — mirrors upstream's `ngControl !== null` gate for `NgControlStatus`'s `ng-*`
+   * classes, same contract as `core/mat-form-field-control.ts`'s `MatFormFieldControlProps.
+   * formBound` (`MatInput`/`MatSelect`), just declared locally rather than inherited: this
+   * component is never nested in a `<MatFormField>` (upstream's `MatCheckbox` isn't a
+   * `MatFormFieldControl` either), so there's no shared context store to read these from — they
+   * are plain, always-live top-level props here, read straight off `props` every render (no
+   * "frozen inside another component's prop" hazard `MatInput`'s own doc comment documents,
+   * since nothing forwards THIS element's props through an intermediate component the way
+   * `MatFormField` does for its `control` prop). Plain, uncontrolled checkboxes leave this
+   * `false`/undefined. See checkbox/SYNC.md's "Form state (`formBound`/`touched`/`dirty`/
+   * `invalid`)" section.
+   */
+  formBound?: boolean;
+  /** Mirrors `NgControlStatus`'s touched (only meaningful when `formBound` is true). */
+  touched?: boolean;
+  /** Mirrors `NgControlStatus`'s dirty (only meaningful when `formBound` is true). */
+  dirty?: boolean;
+  /** Mirrors `NgControlStatus`'s validity (`ng-valid`/`ng-invalid` — only meaningful when
+   *  `formBound` is true). Pre-computed by the consumer; this component has no validator of its
+   *  own to run (same contract as `MatInput`'s `invalid` prop). */
+  invalid?: boolean;
+  /**
+   * Fires when this checkbox becomes "touched" — mirrors upstream's `_onTouched()` CVA callback,
+   * invoked from `_onBlur()` (`checkbox.ts`): blurring the native `<input>`. A form library
+   * calls this to mark its own field touched (same naming/shape as `MatSelect`'s/
+   * `MatAutocomplete`'s `onTouched$`).
+   */
+  onTouched$?: QRL<() => void>;
   class?: string | ReadonlyArray<string>;
 }
 
@@ -146,6 +176,10 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
   const required = props.required ?? false;
   const labelPosition = props.labelPosition ?? 'after';
   const tabIndexProp = props.tabIndex ?? 0;
+  const formBound = props.formBound ?? false;
+  const touched = props.touched ?? false;
+  const dirty = props.dirty ?? false;
+  const invalid = props.invalid ?? false;
 
   // Hybrid controlled/uncontrolled `checked`/`indeterminate` — mirrors
   // upstream's @Input setters, which ALWAYS write into the same internal
@@ -322,6 +356,15 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
     }
   });
 
+  // Mirrors upstream's `_onBlur()` (`checkbox.html`'s `(blur)="_onBlur()"` on the native
+  // `<input>`): fires `onTouched$` so a form library can mark its own field touched. Upstream
+  // defers this one tick (`Promise.resolve().then(...)`) purely to dodge an Angular change-
+  // detection "changed after checked" error — irrelevant here (Qwik has no such constraint), so
+  // this fires synchronously.
+  const onInputBlur$ = $(() => {
+    props.onTouched$?.();
+  });
+
   const onTouchTargetClick$ = $(async () => {
     await handleInputClick$();
     if (!(props.disabled ?? false)) {
@@ -351,6 +394,12 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
     disabled && 'mat-mdc-checkbox-disabled',
     checked.value && 'mat-mdc-checkbox-checked',
     disabledInteractive && 'mat-mdc-checkbox-disabled-interactive',
+    // Mirrors `NgControlStatus` (`[formControl],[ngModel],[formControlName]`) — only present at
+    // all when bound to a reactive-forms-like control, same gate `MatInput`'s own `classes`
+    // array uses. See this prop's own doc comment above.
+    formBound && (touched ? 'ng-touched' : 'ng-untouched'),
+    formBound && (dirty ? 'ng-dirty' : 'ng-pristine'),
+    formBound && (invalid ? 'ng-invalid' : 'ng-valid'),
     props.class,
   ].filter(Boolean) as string[];
 
@@ -406,6 +455,7 @@ export const MatCheckbox = component$<MatCheckboxProps>(props => {
             required={required || undefined}
             tabIndex={disabled && !disabledInteractive ? -1 : tabIndexProp}
             onClick$={handleInputClick$}
+            onBlur$={onInputBlur$}
           />
           <div class="mdc-checkbox__ripple" aria-hidden="true" />
           <div class="mdc-checkbox__background" aria-hidden="true">

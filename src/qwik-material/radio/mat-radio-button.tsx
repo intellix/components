@@ -309,6 +309,16 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
     props.onChange$?.(props.value);
   });
 
+  // Mirrors upstream's `FocusMonitor.monitor(this._elementRef, true)` subscription
+  // (`ngAfterViewInit`): `if (!focusOrigin && this.radioGroup) this.radioGroup._touch();` — i.e.
+  // blur of THIS radio's native input (focus leaving it, including moving to another radio in
+  // the same group — the blur of the first one fires before the second one's focus lands) marks
+  // the owning group touched. No-op for a standalone button (the context's
+  // `MAT_RADIO_GROUP_STATE_DEFAULTS.onTouched$` is itself a no-op).
+  const onInputBlur$ = $(() => {
+    stateSignal.value.onTouched$();
+  });
+
   // Upstream `_onInputClick`: when disabled-but-interactive, prevent the
   // native click's default action (which would otherwise check the input —
   // its `disabled` *attribute* is deliberately withheld in this mode) so
@@ -388,6 +398,7 @@ export const MatRadioButton = component$<MatRadioButtonProps>(props => {
             tabIndex={tabIndexValue}
             preventdefault:click={preventClickDefault}
             onChange$={onNativeChange$}
+            onBlur$={onInputBlur$}
           />
           <div class="mdc-radio__background" aria-hidden="true">
             <div class="mdc-radio__outer-circle" />

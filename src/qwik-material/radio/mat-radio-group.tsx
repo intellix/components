@@ -45,6 +45,30 @@ export interface MatRadioGroupProps {
   'aria-describedby'?: string;
   class?: string | ReadonlyArray<string>;
   id?: string;
+  /**
+   * Whether this group is bound to a reactive-forms-like primitive (`useMatFormControl()` or
+   * equivalent) — mirrors upstream's `ngControl !== null` gate for `NgControlStatus`'s `ng-*`
+   * classes, same contract as `MatCheckboxProps.formBound`/`core/mat-form-field-control.ts`'s
+   * `MatFormFieldControlProps.formBound`. `NgControlStatus` attaches to whatever element carries
+   * `[formControlName]`/`[ngModel]`/`[formControl]` — for a radio group, that's this directive's
+   * own host, `<mat-radio-group>` (never an individual `<mat-radio-button>`), so these classes
+   * land here and nowhere else. Plain, uncontrolled groups leave this `false`/undefined. See
+   * radio/SYNC.md's "Form state" section.
+   */
+  formBound?: boolean;
+  /** Mirrors `NgControlStatus`'s touched (only meaningful when `formBound` is true). */
+  touched?: boolean;
+  /** Mirrors `NgControlStatus`'s dirty (only meaningful when `formBound` is true). */
+  dirty?: boolean;
+  /** Mirrors `NgControlStatus`'s validity (only meaningful when `formBound` is true).
+   *  Pre-computed by the consumer. */
+  invalid?: boolean;
+  /**
+   * Fires when the group becomes "touched" — mirrors upstream's `_touch()`, called from any
+   * child radio's blur (see radio-group-state.ts's `onTouched$` doc comment for the exact
+   * timing). A form library calls this to mark its own field touched.
+   */
+  onTouched$?: QRL<() => void>;
 }
 
 export const MatRadioGroup = component$<MatRadioGroupProps>(props => {
@@ -74,6 +98,14 @@ export const MatRadioGroup = component$<MatRadioGroupProps>(props => {
     consumerOnChange$?.(value);
   });
 
+  // Live-read via `props` (not a destructured outer-scope const) inside the QRL below — this
+  // closure can run long after the render that created it (see radio-group-state.ts's
+  // `onTouched$` doc comment and the project-wide "stale capture" precedent documented
+  // throughout checkbox/slide-toggle/button-toggle's own click handlers).
+  const routeTouched$ = $(() => {
+    props.onTouched$?.();
+  });
+
   const nextState: MatRadioGroupState = {
     value: props.value,
     name,
@@ -83,6 +115,7 @@ export const MatRadioGroup = component$<MatRadioGroupProps>(props => {
     labelPosition: props.labelPosition === 'before' ? 'before' : 'after',
     color: props.color,
     onChange$: routeChange$,
+    onTouched$: routeTouched$,
     standalone: false,
   };
   // Published via a Signal (not a plain object) — see radio-group-state.ts
@@ -102,7 +135,18 @@ export const MatRadioGroup = component$<MatRadioGroupProps>(props => {
   return (
     <mat-radio-group
       id={props.id}
-      class={['mat-mdc-radio-group', props.class].filter(Boolean) as string[]}
+      class={
+        [
+          'mat-mdc-radio-group',
+          // Mirrors `NgControlStatus` — only present when bound to a reactive-forms-like
+          // control. See `MatRadioGroupProps.formBound`'s own doc comment.
+          (props.formBound ?? false) &&
+            ((props.touched ?? false) ? 'ng-touched' : 'ng-untouched'),
+          (props.formBound ?? false) && ((props.dirty ?? false) ? 'ng-dirty' : 'ng-pristine'),
+          (props.formBound ?? false) && ((props.invalid ?? false) ? 'ng-invalid' : 'ng-valid'),
+          props.class,
+        ].filter(Boolean) as string[]
+      }
       role="radiogroup"
       aria-label={props['aria-label']}
       aria-labelledby={props['aria-labelledby']}

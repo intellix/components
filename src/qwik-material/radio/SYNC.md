@@ -153,3 +153,50 @@ the native input's *live* `tabindex` attribute to gate a decision the way
 render might still momentarily write is cosmetic — it self-corrects the
 moment the real selection-change render lands (recomputed from the same
 `checked`/`state.value` in that same pass).
+
+## Form state (`formBound`/`touched`/`dirty`/`invalid`/`onTouched$`) (2026-11-03)
+
+Ported upstream's `NgControlStatus` host classes + `_touch()` timing — same contract shape
+`qwik-material/checkbox`'s own identical section documents (read that first for the full
+"why local props, not `MatFormFieldControlProps`" rationale; it applies here unchanged —
+`MatRadioGroup` is never nested in a `<MatFormField>` either).
+
+- **`formBound`/`touched`/`dirty`/`invalid`**: new props on `MatRadioGroupProps`. `NgControlStatus`
+  (selector `[formControlName],[ngModel],[formControl]`) attaches to whatever element carries one
+  of those attributes — for a radio group that's the GROUP's own host, `<mat-radio-group>`, never
+  an individual `<mat-radio-button>` (confirmed in `radio.ts`: `MatRadioButton`'s own host
+  bindings have no `ng-*` classes at all, and its `aria-label`/`aria-labelledby`/`aria-describedby`
+  host bindings are explicitly nulled out — see that component's own host metadata). So these
+  classes land ONLY on `<mat-radio-group>`.
+- **`onTouched$`**: new prop. Mirrors upstream's `_touch()` — "Mark this group as being touched
+  ... Meant to be called by the contained radio buttons upon their blur" — itself invoked from
+  EACH `<MatRadioButton>`'s own `FocusMonitor.monitor(this._elementRef, true).subscribe(focusOrigin
+  => { if (!focusOrigin && this.radioGroup) this.radioGroup._touch(); })` (`ngAfterViewInit`).
+  Ported as a plain native `onBlur$` on each radio's own `<input>` (`mat-radio-button.tsx`'s new
+  `onInputBlur$`), calling `stateSignal.value.onTouched$()` (routed through
+  `radio-group-state.ts`'s new `onTouched$` field, itself routed to the group's own `onTouched$`
+  prop via `mat-radio-group.tsx`'s `routeTouched$`). **Confirmed-live nuance** (matches upstream
+  exactly, verified with a real keyboard-arrow-navigation test — see
+  `specs/material-radio/form-state.spec.ts`): this fires on blur of ANY radio in the group,
+  INCLUDING when focus moves to ANOTHER radio in the SAME group (arrow-key navigation) — the
+  first radio's blur still fires before the second one's focus lands, exactly as upstream's own
+  `FocusMonitor` subscription does per-element, independent of where focus goes next. The group
+  does NOT need "focus has left the group entirely" semantics — any member blurring is enough.
+  Standalone `<MatRadioButton>` usage (no `<MatRadioGroup>` ancestor) calls the context defaults'
+  own no-op `onTouched$` — harmless, matches upstream (a standalone radio button has no group to
+  touch; `formBound`/`touched`/`dirty`/`invalid` aren't even exposed on `MatRadioButtonProps`,
+  only on `MatRadioGroupProps` — upstream's `NgControlStatus` selector only ever matches the
+  GROUP in this port's supported usage, never an individual button, since nothing in this
+  project binds `[ngModel]`/`[formControl]` directly to a bare `<mat-radio-button>`).
+- **No `required`/`aria-invalid`/`aria-required` changes** — radio's own `aria-invalid="false"`
+  (static, on every `<input>`, for the screen-reader reason `radio.html`'s own comment documents)
+  and `required` (a plain attribute, OR'd from the button's own prop and the group's) were
+  already correct and are untouched; upstream has no `aria-required` on radio at all.
+- **No `MatForm`/submitted integration** — same reasoning as checkbox's identical section:
+  upstream shows no visible error state for a radio group by default (no `ErrorStateMatcher`);
+  `invalid` is the consumer's own pre-computed boolean.
+
+First real consumer: the Formisch "account" example's `contactPreference` radio group
+(`matRadioGroupBindings()` in `formisch-bindings.ts` now wires this directly instead of the old
+`ngStatusClasses()` consumer-side workaround). Qwik-only functional coverage:
+`specs/material-radio/form-state.spec.ts`.

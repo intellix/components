@@ -43,6 +43,16 @@ export interface MatRadioGroupState {
    * still loading) resolve by event time — see mat-radio-group.tsx.
    */
   onChange$: QRL<(value: unknown, at: number) => void>;
+  /**
+   * Fires when the group becomes "touched" — mirrors upstream's `_touch()` (`radio.ts`:
+   * "Mark this group as being touched (for ngModel). Meant to be called by the contained radio
+   * buttons upon their blur."), itself called from each `<MatRadioButton>`'s own `FocusMonitor`
+   * subscription whenever ITS focus origin goes to `null` (i.e. on blur of ANY radio in the
+   * group, including moving focus to ANOTHER radio in the same group — the blur of the first
+   * one still fires before the second one's focus lands). Each `<MatRadioButton>` calls this
+   * directly from its native input's own `onBlur$` — see mat-radio-button.tsx.
+   */
+  onTouched$: QRL<() => void>;
   /** True only for MAT_RADIO_GROUP_STATE_DEFAULTS (no real <MatRadioGroup>
    *  ancestor). <MatRadioButton> reads this boolean to detect standalone
    *  usage, exactly like button-toggle's analogous field — see
@@ -89,6 +99,9 @@ export const MAT_RADIO_GROUP_STATE_DEFAULTS: MatRadioGroupState = {
   color: undefined,
   onChange$: $((_value: unknown, _at: number) => {
     // No-op — standalone button owns its own local state via useSignal.
+  }),
+  onTouched$: $(() => {
+    // No-op — no <MatRadioGroup> ancestor to mark touched.
   }),
   standalone: true,
 };

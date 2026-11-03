@@ -47,7 +47,7 @@ describe('MatRadio surface — sanity', () => {
     expect(cfg).toBeDefined();
   });
 
-  it('MAT_RADIO_GROUP_STATE carries expected id + DEFAULTS has all 9 fields', () => {
+  it('MAT_RADIO_GROUP_STATE carries expected id + DEFAULTS has all 10 fields', () => {
     expect(MAT_RADIO_GROUP_STATE.id).toBe('qwik-material/radio-group-state');
     expect(MAT_RADIO_GROUP_STATE_DEFAULTS).toEqual({
       value: undefined,
@@ -58,13 +58,19 @@ describe('MatRadio surface — sanity', () => {
       labelPosition: 'after',
       color: undefined,
       onChange$: MAT_RADIO_GROUP_STATE_DEFAULTS.onChange$,
+      onTouched$: MAT_RADIO_GROUP_STATE_DEFAULTS.onTouched$,
       standalone: true,
     });
     expect(typeof MAT_RADIO_GROUP_STATE_DEFAULTS.onChange$).toBe('function');
+    expect(typeof MAT_RADIO_GROUP_STATE_DEFAULTS.onTouched$).toBe('function');
   });
 
   it('DEFAULTS.onChange$ is a no-op that does not throw when invoked', async () => {
     await expect(MAT_RADIO_GROUP_STATE_DEFAULTS.onChange$('foo', 1)).resolves.toBeUndefined();
+  });
+
+  it('DEFAULTS.onTouched$ is a no-op that does not throw when invoked', async () => {
+    await expect(MAT_RADIO_GROUP_STATE_DEFAULTS.onTouched$()).resolves.toBeUndefined();
   });
 
   it('MatRadioGroupProps accepts the full surface', () => {
@@ -83,9 +89,16 @@ describe('MatRadio surface — sanity', () => {
       'aria-describedby': 'desc',
       class: 'my-group',
       id: 'season-group',
+      formBound: true,
+      touched: true,
+      dirty: true,
+      invalid: false,
+      onTouched$:
+        MAT_RADIO_GROUP_STATE_DEFAULTS.onTouched$ as unknown as MatRadioGroupProps['onTouched$'],
     };
     expect(props.value).toBe('a');
     expect(props.color).toBe('primary');
+    expect(props.formBound).toBe(true);
   });
 
   it('MatRadioButtonProps accepts the full surface', () => {

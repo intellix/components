@@ -45,8 +45,21 @@ export interface MatButtonToggleGroupState {
    *  provide one, matching upstream's `_name = inject(_IdGenerator).getId(...)`
    *  field initializer. */
   name: string;
-  /** Child's click handler. Group routes to onChange$ (single mode) or
-   *  onValuesChange$ (multi mode) internally. */
+  /**
+   * Child's click handler. Group routes to onChange$ (single mode) or onValuesChange$ (multi
+   * mode) internally — and, from THIS SAME closure (not a separate state field: nothing about
+   * `_onTouched()` needs to be read back by a child), fires the group's own `onTouched$` prop
+   * when appropriate. Mirrors upstream's `_onTouched()`, called from
+   * `MatButtonToggle._onButtonClick()` ONLY when the clicked toggle's own checked state actually
+   * changed (`newChecked !== this._checked`): in single-select mode, clicking the ALREADY-
+   * selected toggle again is a complete no-op upstream (never fires); clicking any OTHER toggle
+   * fires it. In multi-select mode, every non-disabled click always flips that toggle's own
+   * checked state, so it fires unconditionally. See mat-button-toggle-group.tsx's `onToggle` for
+   * where this is computed — NOT tied to blur/focus at all (unlike checkbox/radio/slide-toggle),
+   * a real, confirmed-live upstream difference (`button-toggle.ts` has no
+   * `FocusMonitor.monitor(...).subscribe(...)` call at all; its only `_onTouched()` call site is
+   * inside `_onButtonClick()`).
+   */
   onToggle: QRL<(itemValue: unknown, checked: boolean, at?: number) => void>;
   /** True only for MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS (no real
    *  <MatButtonToggleGroup> ancestor). <MatButtonToggle> reads this boolean

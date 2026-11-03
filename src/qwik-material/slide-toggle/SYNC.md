@@ -131,3 +131,32 @@ upstream unit-test precedent instead:
   configuration".
 - `config-default-color.spec.ts` — upstream "should be able to change the
   default color".
+
+## Form state (`formBound`/`touched`/`dirty`/`invalid`/`onTouched$`) (2026-11-03)
+
+Ported upstream's `NgControlStatus` host classes + `_onTouched()` timing — same contract shape
+`qwik-material/checkbox`'s own identical section documents (read that first; `MatSlideToggle` is
+never nested in a `<MatFormField>` either, so the same "local props, no context store" reasoning
+applies unchanged).
+
+- **`formBound`/`touched`/`dirty`/`invalid`**: new props on `MatSlideToggleProps`, appended to
+  the HOST (`<mat-slide-toggle>`) class list, gated behind `formBound`.
+- **`onTouched$`**: new prop. Mirrors upstream's `_onTouched()`, called from the `FocusMonitor`
+  subscription (`ngAfterContentInit`: `this._focusMonitor.monitor(this._elementRef, true)
+  .subscribe(focusOrigin => { ... else if (!focusOrigin) { ...; this._onTouched(); ... } })`) —
+  deferred one tick upstream (`Promise.resolve().then(...)`, the same Angular change-detection
+  workaround checkbox's identical callback needs — irrelevant here). Ported as a plain native
+  `onBlur$` on the inner `<button class="mdc-switch">` (the only focusable element this component
+  renders), firing synchronously.
+- **`aria-required` already correct, unchanged** — this port already rendered
+  `aria-required={required ? 'true' : undefined}`, matching upstream's `[attr.aria-required]=
+  "required || null"` EXACTLY (a literal attribute-stringification quirk: upstream's binding
+  stringifies `true` but OMITS the attribute entirely for `false`/`null`, unlike `MatInput`'s own
+  `aria-required`, which is ALWAYS present as `"true"`/`"false"` — confirmed by reading `slide-
+  toggle.html` directly; do not copy `MatInput`'s pattern here).
+- **No `MatForm`/submitted integration** — same reasoning as checkbox's identical section.
+
+First real consumer: the Formisch "account" example's `newsletter` toggle (`matSlideToggle
+Bindings()` in `formisch-bindings.ts` now wires this directly instead of the old
+`ngStatusClasses()` consumer-side workaround). Qwik-only functional coverage:
+`specs/material-slide-toggle/form-state.spec.ts`.
