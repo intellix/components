@@ -66,6 +66,7 @@ import {
   type OverlayEntry,
   type OverlayRef,
   type OverlayRegistry,
+  type ScrollStrategy,
 } from '@angular-community/qwik-cdk/overlay';
 import {
   createListKeyManager,
@@ -184,6 +185,9 @@ export interface AutocompleteRuntimeConfig {
   onValueChange$: QRL<(value: unknown) => void> | undefined;
   onTouched$: QRL<() => void> | undefined;
   onOpenedChange$: QRL<(open: boolean) => void> | undefined;
+  /** Mirrors upstream `MAT_AUTOCOMPLETE_SCROLL_STRATEGY`. Falls back to
+   *  `createRepositionScrollStrategy()` when absent. */
+  scrollStrategyFactory: NoSerialize<() => ScrollStrategy> | undefined;
 }
 
 function makeIdGen(ctx: QwikCdkInternals) {
@@ -343,7 +347,11 @@ export function openAutocompletePanel(
       {
         direction: cfg.isRtl ? 'rtl' : 'ltr',
         positionStrategy: strategy,
-        scrollStrategy: createRepositionScrollStrategy(),
+        // Mirrors upstream MAT_AUTOCOMPLETE_SCROLL_STRATEGY: configurable
+        // via <QwikMaterialProvider matAutocompleteScrollStrategyFactory=
+        // {...}>, falling back to the previously hard-coded reposition
+        // strategy.
+        scrollStrategy: (cfg.scrollStrategyFactory ?? createRepositionScrollStrategy)(),
         hasBackdrop: cfg.hasBackdrop,
         backdropClass: cfg.backdropClass ?? 'cdk-overlay-transparent-backdrop',
         panelClass: cfg.overlayPanelClass,

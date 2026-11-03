@@ -1,4 +1,5 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, type NoSerialize} from '@qwik.dev/core';
+import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 
 /**
  * Defaults applied to every `MatSelect` in a subtree that doesn't set its
@@ -36,3 +37,21 @@ export interface MatSelectConfig {
  * publicly and MUST remain stable across releases.
  */
 export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwikMaterial/selectConfig');
+
+/**
+ * Factory that returns the default `ScrollStrategy` for a `MatSelect`
+ * panel that doesn't specify one — mirrors upstream's
+ * `MAT_SELECT_SCROLL_STRATEGY` injection token. Provided by
+ * `<QwikMaterialProvider matSelectScrollStrategyFactory={…}>`. Default:
+ * `createRepositionScrollStrategy()` (this port's pre-existing,
+ * previously hard-coded behaviour).
+ *
+ * KNOWN GAP — see `select/SYNC.md`'s "scroll-strategy configuration"
+ * entry: a CUSTOM factory does not survive a real SSR→CSR resume
+ * boundary before `openSelectPanel()` actually reads it, so it's
+ * silently ignored on every select opened after a genuine page load. The
+ * default (unconfigured) case is unaffected.
+ */
+export const MAT_SELECT_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
+  'qwikMaterial/selectScrollStrategy',
+);

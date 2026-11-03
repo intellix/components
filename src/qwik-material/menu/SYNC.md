@@ -370,3 +370,65 @@ Verified: `specs/examples-data-nav/angular-parity.spec.ts`'s `menu-icons` (base 
 interactions) 3/3, run 3x. `specs/material-menu/angular-parity.spec.ts` + `qwik-only.spec.ts`
 still 21/21 (regression check — no existing scenario passes a JSXOutput `icon`, so this is a
 no-op for all of them, confirmed by the unchanged pass count).
+
+## Scroll-strategy configuration; "scroll strategy lost after resume" bug found (2026-11-03)
+
+Added `MAT_MENU_SCROLL_STRATEGY` (mirrors upstream's `MAT_MENU_SCROLL_STRATEGY` injection token) +
+`<QwikMaterialProvider matMenuScrollStrategyFactory={…}>`, threaded through `OpenMenuOptions.
+scrollStrategyFactory` into `openMenu()`'s overlay config (previously hard-coded to
+`createRepositionScrollStrategy({scrollThrottle: 20})`, both call sites — `mat-menu-item.tsx`'s
+submenu trigger and `use-mat-menu-trigger.ts`'s top-level trigger).
+
+**Found a real, cross-cutting bug while wiring this up — confirmed it ALSO pre-exists for
+`qwik-material/dialog`'s `MatDialogConfig.scrollStrategy` default and `qwik-material/bottom-
+sheet`'s equivalent (NOT just this new menu feature):**
+
+A value read via `useContext()` during a component's/hook's OWN render, then captured directly
+in a `$()`-wrapped QRL defined at that same point (e.g. `useMatMenuTrigger()`'s `open$`,
+`useMatDialog()`'s `open$`) does NOT survive into that QRL once it's actually invoked after a
+REAL SSR→CSR resume boundary — which every genuine page load goes through. Confirmed live,
+twice: capturing a plain (non-noSerialize) object this way fails SSR serialization outright
+(`Code(Q34)` — see `qwik-cdk/overlay/SYNC.md`'s `useOverlay()` entry, a separate instance of the
+exact same root cause); capturing a `noSerialize()`-wrapped one (which this scroll-strategy
+factory already is, same as every function-valued qwik-material config) avoids the crash but the
+QRL reads back `undefined` after resume regardless — `noSerialize()`'s own doc comment says
+exactly this ("the value of this object will be `undefined`" after resume), it just wasn't
+obvious this applies to a value plucked out via `useContext()` and captured in a *different*
+QRL's closure, not only to a store/signal field.
+
+There is NO cheap workaround: `useContext()` itself cannot be called again from inside the
+already-invoked QRL to re-fetch a fresh value — confirmed live, this throws `Code(Q10)`. The
+`ensureCdkDispatchers()` pattern (`qwik-cdk/internals/ensure-dispatchers.ts`) sidesteps the whole
+problem for the keyboard/outside-click/navigation dispatchers because those have no
+app-configurable parameters — they're lazily (re)created FRESH, on demand, from inside the QRL,
+with nothing to lose across resume. A scroll-strategy factory supplied via `<QwikMaterialProvider
+matMenuScrollStrategyFactory={…}>` is inherently app-specific data, not something that can be
+recreated from nothing the same way.
+
+**Impact and what's actually fixed vs. still broken:**
+
+- `openMenu()`'s OWN inline fallback (`options.scrollStrategyFactory ?? (() =>
+  createRepositionScrollStrategy({scrollThrottle: 20}))`) always runs regardless, so a menu
+  opened with NO custom factory configured keeps working exactly as before — **no regression**.
+  Confirmed via `specs/material-menu/scroll-strategy.spec.ts`'s first case.
+- A CUSTOM `matMenuScrollStrategyFactory` is silently ignored after a real page load — the menu
+  keeps using `reposition` regardless. Confirmed via that same spec file's second, `test.skip`'d
+  case (kept skipped rather than deleted, with the reason inline, so it's ready to un-skip once
+  fixed).
+- The PRE-EXISTING `qwik-material/dialog`/`qwik-material/bottom-sheet` scroll-strategy-factory
+  context has NO such inline fallback inside `useMatDialog()`/`useMatBottomSheet()`'s own `open$`
+  — so before this pass's fix (see those packages' own SYNC.md entries), EVERY dialog/bottom
+  sheet opened after a real page load had `scrollStrategy: undefined` entirely (background
+  scroll never blocked at all, not even with the default, unconfigured factory) — a real,
+  previously-unnoticed regression from upstream's actual default behavior, now fixed for the
+  default case there (customization is still the same documented gap).
+
+A proper fix for the *customization* gap (here and in dialog/bottom-sheet) needs the factory
+represented as a `QRL<() => ScrollStrategy>` (Qwik's actual resumable function reference,
+matching every other config callback in this port — `onBackdropClick$`, `onKeydown$`, …) and
+`openMenu()`/`openSelectPanel()`/`openAutocompletePanel()`/`useMatDialog().open$`/
+`useMatBottomSheet().open$` becoming (or stayin) `async` to `await` it. That touches 5 contexts
+and ~10 call sites across 3 packages — left as a known, documented gap rather than risked under
+time pressure, consistent with the task's own "skip and report if it grows large" allowance for
+this item. The plumbing (context ids, provider props, config fields) is already in place for
+whoever picks this up next.

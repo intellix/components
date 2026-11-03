@@ -1,4 +1,5 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, type NoSerialize} from '@qwik.dev/core';
+import type {ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
 
 /**
  * Defaults applied to every `MatAutocomplete` in a subtree that doesn't set
@@ -38,4 +39,22 @@ export interface MatAutocompleteConfig {
  */
 export const MAT_AUTOCOMPLETE_CONFIG = createContextId<MatAutocompleteConfig>(
   'qwikMaterial/autocompleteConfig',
+);
+
+/**
+ * Factory that returns the default `ScrollStrategy` for a `MatAutocomplete`
+ * panel that doesn't specify one — mirrors upstream's
+ * `MAT_AUTOCOMPLETE_SCROLL_STRATEGY` injection token. Provided by
+ * `<QwikMaterialProvider matAutocompleteScrollStrategyFactory={…}>`.
+ * Default: `createRepositionScrollStrategy()` (pre-existing, previously
+ * hard-coded behaviour).
+ *
+ * KNOWN GAP — see `autocomplete/SYNC.md`'s "scroll-strategy
+ * configuration" entry: a CUSTOM factory does not survive a real SSR→CSR
+ * resume boundary before `openAutocompletePanel()` actually reads it, so
+ * it's silently ignored on every autocomplete opened after a genuine
+ * page load. The default (unconfigured) case is unaffected.
+ */
+export const MAT_AUTOCOMPLETE_SCROLL_STRATEGY = createContextId<NoSerialize<() => ScrollStrategy>>(
+  'qwikMaterial/autocompleteScrollStrategy',
 );

@@ -21,7 +21,7 @@ import {
   useOptionalFormFieldConnectedOrigin,
   useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
-import {MAT_SELECT_CONFIG, type MatSelectConfig} from './select-config';
+import {MAT_SELECT_CONFIG, MAT_SELECT_SCROLL_STRATEGY, type MatSelectConfig} from './select-config';
 import {resolveSelectOptions, type MatSelectEntryDef} from './select-option-resolver';
 import {
   handleSelectKeydown,
@@ -208,6 +208,10 @@ function panelAriaLabelledby(
 
 export const MatSelect = component$<MatSelectProps>(props => {
   const config = useContext(MAT_SELECT_CONFIG, MAT_SELECT_CONFIG_DEFAULTS);
+  // `null` (not a function, not `undefined`) is the safe useContext default
+  // sentinel — see useMatDialog()'s identical pattern for the two Qwik
+  // `useContext()` pitfalls a function-typed default would otherwise hit.
+  const scrollStrategyFactory = useContext(MAT_SELECT_SCROLL_STRATEGY, null as any);
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();
@@ -385,6 +389,7 @@ export const MatSelect = component$<MatSelectProps>(props => {
     onValueChange$: props.onValueChange$,
     onTouched$: props.onTouched$,
     onOpenedChange$: props.onOpenedChange$,
+    scrollStrategyFactory: scrollStrategyFactory ?? undefined,
   };
 
   // `ctx` is passed to `select-runtime.ts`'s functions as its OWN top-level

@@ -5,7 +5,7 @@ import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import type {FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import type {HostProps} from '../core/host-props';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import {MAT_MENU_DEFAULT_OPTIONS} from './mat-menu-tokens';
+import {MAT_MENU_DEFAULT_OPTIONS, MAT_MENU_SCROLL_STRATEGY} from './mat-menu-tokens';
 import type {MatMenuRef} from './menu-ref';
 import {openMenu, closeMenu, type MenuRuntimeSignals} from './menu-runtime';
 import type {MenuCloseReason} from './menu-close-reason';
@@ -59,6 +59,9 @@ export interface MatMenuTriggerHook {
 export function useMatMenuTrigger(props: UseMatMenuTriggerProps): MatMenuTriggerHook {
   const ctx = useContext(QWIK_CDK);
   const defaults = useContext(MAT_MENU_DEFAULT_OPTIONS, {});
+  // `null` (not a function, not `undefined`) is the safe useContext default
+  // sentinel — see useMatDialog()'s identical pattern.
+  const scrollStrategyFactory = useContext(MAT_MENU_SCROLL_STRATEGY, null as any);
   const animationsDisabled = useAnimationsDisabled();
 
   const overlayRef = useSignal<NoSerialize<OverlayRef>>();
@@ -94,6 +97,7 @@ export function useMatMenuTrigger(props: UseMatMenuTriggerProps): MatMenuTrigger
         openedBy.value = null;
         props.onMenuClosed$?.();
       },
+      scrollStrategyFactory: scrollStrategyFactory ?? undefined,
     });
     props.onMenuOpened$?.();
   });

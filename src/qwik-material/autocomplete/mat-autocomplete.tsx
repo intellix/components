@@ -24,7 +24,11 @@ import {
   useOptionalFormFieldControlState,
 } from '../core/mat-form-field-control';
 import {composeRef, type HostRef} from '../core/host-props';
-import {MAT_AUTOCOMPLETE_CONFIG, type MatAutocompleteConfig} from './autocomplete-config';
+import {
+  MAT_AUTOCOMPLETE_CONFIG,
+  MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+  type MatAutocompleteConfig,
+} from './autocomplete-config';
 import {
   resolveAutocompleteOptions,
   type MatAutocompleteEntryDef,
@@ -248,6 +252,9 @@ export interface MatAutocompleteProps extends Omit<MatFormFieldControlProps, 'va
 
 export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   const config = useContext(MAT_AUTOCOMPLETE_CONFIG, MAT_AUTOCOMPLETE_CONFIG_DEFAULTS);
+  // `null` (not a function, not `undefined`) is the safe useContext default
+  // sentinel — see useMatDialog()'s identical pattern.
+  const scrollStrategyFactory = useContext(MAT_AUTOCOMPLETE_SCROLL_STRATEGY, null as any);
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();
@@ -339,6 +346,7 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
     onValueChange$: props.onValueChange$,
     onTouched$: props.onTouched$,
     onOpenedChange$: props.onOpenedChange$,
+    scrollStrategyFactory: scrollStrategyFactory ?? undefined,
   };
 
   // Reactively re-syncs the ALREADY-OPEN panel whenever `props.options`

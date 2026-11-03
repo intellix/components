@@ -448,3 +448,18 @@ call sites was switched to call them instead of the broken raw `useContext(..., 
 Zero behavior change when a `<MatFormField>` ancestor exists (confirmed: `pnpm -C src/qwik-material
 test` 783/783, full `src/qwik-cdk-parity-tests` suite unaffected) — only the previously-crashing
 standalone case now works.
+
+## Scroll-strategy configuration (2026-11-03)
+
+Added `MAT_AUTOCOMPLETE_SCROLL_STRATEGY` (mirrors upstream's `MAT_AUTOCOMPLETE_SCROLL_STRATEGY`
+injection token) + `<QwikMaterialProvider matAutocompleteScrollStrategyFactory={…}>`, threaded
+through `AutocompleteRuntimeConfig.scrollStrategyFactory` into `openAutocompletePanel()`'s
+overlay config (previously hard-coded to `createRepositionScrollStrategy()`).
+
+Same "scroll strategy lost after resume" gap as `qwik-material/menu`'s identical addition — see
+that package's SYNC.md entry of the same name for the full root-cause write-up. For
+autocomplete: `openAutocompletePanel()`'s own inline fallback
+(`cfg.scrollStrategyFactory ?? createRepositionScrollStrategy`) always runs regardless, so the
+default (unconfigured) case is unaffected — no regression; a CUSTOM
+`matAutocompleteScrollStrategyFactory` is silently ignored after a real page load (known,
+documented gap, same fix direction as menu's).

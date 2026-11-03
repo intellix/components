@@ -8,7 +8,10 @@ import {
   type ContextId,
 } from '@qwik.dev/core';
 import type {OverlayContextOverride, ScrollStrategy} from '@angular-community/qwik-cdk/overlay';
-import {createBlockScrollStrategy} from '@angular-community/qwik-cdk/overlay';
+import {
+  createBlockScrollStrategy,
+  createRepositionScrollStrategy,
+} from '@angular-community/qwik-cdk/overlay';
 import type {MatDialogConfig} from './mat-dialog-config';
 import {
   MAT_ANIMATIONS_DISABLED,
@@ -67,9 +70,9 @@ import {MAT_CHIPS_CONFIG} from '../chips/tokens';
 import type {MatTooltipDefaultOptions} from '../tooltip/mat-tooltip-tokens';
 import {MAT_TOOLTIP_DEFAULT_OPTIONS} from '../tooltip/mat-tooltip-tokens';
 import type {MatSelectConfig} from '../select/select-config';
-import {MAT_SELECT_CONFIG} from '../select/select-config';
+import {MAT_SELECT_CONFIG, MAT_SELECT_SCROLL_STRATEGY} from '../select/select-config';
 import type {MatMenuDefaultOptions} from '../menu/mat-menu-tokens';
-import {MAT_MENU_DEFAULT_OPTIONS} from '../menu/mat-menu-tokens';
+import {MAT_MENU_DEFAULT_OPTIONS, MAT_MENU_SCROLL_STRATEGY} from '../menu/mat-menu-tokens';
 import type {MatTimepickerConfig} from '../timepicker/timepicker-config';
 import {MAT_TIMEPICKER_CONFIG} from '../timepicker/timepicker-config';
 import type {MatPaginatorConfig} from '../paginator/paginator-config';
@@ -77,7 +80,10 @@ import {MAT_PAGINATOR_CONFIG} from '../paginator/paginator-config';
 import type {MatPaginatorIntl} from '../paginator/paginator-intl';
 import {MAT_PAGINATOR_INTL, DEFAULT_PAGINATOR_INTL} from '../paginator/paginator-intl';
 import type {MatAutocompleteConfig} from '../autocomplete/autocomplete-config';
-import {MAT_AUTOCOMPLETE_CONFIG} from '../autocomplete/autocomplete-config';
+import {
+  MAT_AUTOCOMPLETE_CONFIG,
+  MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+} from '../autocomplete/autocomplete-config';
 
 export interface QwikMaterialProviderProps {
   /** Defaults merged into every MatDialog open() config. */
@@ -140,8 +146,14 @@ export interface QwikMaterialProviderProps {
   matTooltipDefaults?: MatTooltipDefaultOptions;
   /** Defaults applied to every MatSelect in this subtree. */
   matSelectConfig?: MatSelectConfig;
+  /** Factory returning the default ScrollStrategy for MatSelect panels. Defaults to
+   *  createRepositionScrollStrategy() (this port's pre-existing hard-coded behaviour). */
+  matSelectScrollStrategyFactory?: () => ScrollStrategy;
   /** Defaults merged into every `createMatMenu()`'s resolved config in this subtree. */
   matMenuDefaults?: MatMenuDefaultOptions;
+  /** Factory returning the default ScrollStrategy for menu panels. Defaults to
+   *  createRepositionScrollStrategy({scrollThrottle: 20}) (pre-existing hard-coded behaviour). */
+  matMenuScrollStrategyFactory?: () => ScrollStrategy;
   /** Defaults applied to every `useMatTimepicker()` / `<MatTimepickerToggle>` in this subtree. */
   matTimepickerConfig?: MatTimepickerConfig;
   /** Defaults applied to every MatPaginator in this subtree (field-by-field fallback, like
@@ -153,6 +165,9 @@ export interface QwikMaterialProviderProps {
   matPaginatorIntl?: MatPaginatorIntl;
   /** Defaults applied to every MatAutocomplete in this subtree. */
   matAutocompleteConfig?: MatAutocompleteConfig;
+  /** Factory returning the default ScrollStrategy for MatAutocomplete panels. Defaults to
+   *  createRepositionScrollStrategy() (pre-existing hard-coded behaviour). */
+  matAutocompleteScrollStrategyFactory?: () => ScrollStrategy;
 }
 
 export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props => {
@@ -291,12 +306,25 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // defaults declared in mat-select.tsx's own prop resolution; providing an
   // empty object here is equivalent to accepting all of them.
   useContextProvider(MAT_SELECT_CONFIG, props.matSelectConfig ?? {});
+  // The scroll-strategy factory is a plain function; wrap in noSerialize
+  // (same reasoning as MAT_DIALOG_SCROLL_STRATEGY above).
+  useContextProvider(
+    MAT_SELECT_SCROLL_STRATEGY,
+    noSerialize(props.matSelectScrollStrategyFactory ?? (() => createRepositionScrollStrategy())),
+  );
   // MatMenuDefaultOptions is a plain object with primitive fields — no
   // noSerialize needed. Menus outside a provider get the hardcoded
   // MAT_MENU_DEFAULT_OPTIONS_FACTORY fallbacks declared in
   // menu-runtime.ts's `resolveMenuConfig`; providing an empty object here
   // is equivalent to accepting all of them.
   useContextProvider(MAT_MENU_DEFAULT_OPTIONS, props.matMenuDefaults ?? {});
+  useContextProvider(
+    MAT_MENU_SCROLL_STRATEGY,
+    noSerialize(
+      props.matMenuScrollStrategyFactory ??
+        (() => createRepositionScrollStrategy({scrollThrottle: 20})),
+    ),
+  );
   // MatTimepickerConfig is a plain object with primitive fields — no
   // noSerialize needed. Timepickers outside a provider get the hardcoded
   // defaults declared in use-mat-timepicker.ts's own option resolution;
@@ -316,6 +344,12 @@ export const QwikMaterialProvider = component$<QwikMaterialProviderProps>(props 
   // defaults declared in mat-autocomplete.tsx's own prop resolution;
   // providing an empty object here is equivalent to accepting all of them.
   useContextProvider(MAT_AUTOCOMPLETE_CONFIG, props.matAutocompleteConfig ?? {});
+  useContextProvider(
+    MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+    noSerialize(
+      props.matAutocompleteScrollStrategyFactory ?? (() => createRepositionScrollStrategy()),
+    ),
+  );
 
   return <Slot />;
 });
@@ -357,11 +391,14 @@ const QWIK_MATERIAL_CONTEXT_IDS: readonly ContextId<unknown>[] = [
   MAT_CHIPS_CONFIG,
   MAT_TOOLTIP_DEFAULT_OPTIONS,
   MAT_SELECT_CONFIG,
+  MAT_SELECT_SCROLL_STRATEGY,
   MAT_MENU_DEFAULT_OPTIONS,
+  MAT_MENU_SCROLL_STRATEGY,
   MAT_TIMEPICKER_CONFIG,
   MAT_PAGINATOR_CONFIG,
   MAT_PAGINATOR_INTL,
   MAT_AUTOCOMPLETE_CONFIG,
+  MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
 ];
 
 /**

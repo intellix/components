@@ -15,7 +15,7 @@ import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {useFocusOrigin, focusVia, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
-import {MAT_MENU_DEFAULT_OPTIONS} from './mat-menu-tokens';
+import {MAT_MENU_DEFAULT_OPTIONS, MAT_MENU_SCROLL_STRATEGY} from './mat-menu-tokens';
 import type {MatMenuRef} from './menu-ref';
 import {openMenu, type MenuRuntimeSignals} from './menu-runtime';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
@@ -68,6 +68,9 @@ export interface MatMenuItemProps {
 export const MatMenuItem = component$<MatMenuItemProps>(props => {
   const ctx = useContext(QWIK_CDK);
   const defaults = useContext(MAT_MENU_DEFAULT_OPTIONS, {});
+  // `null` (not a function, not `undefined`) is the safe useContext default
+  // sentinel — see useMatDialog()'s identical pattern.
+  const scrollStrategyFactory = useContext(MAT_MENU_SCROLL_STRATEGY, null as any);
   const animationsDisabled = useAnimationsDisabled();
   const focusOrigin = useFocusOrigin();
 
@@ -177,6 +180,7 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
       onClosed: () => {
         openedBy.value = null;
       },
+      scrollStrategyFactory: scrollStrategyFactory ?? undefined,
     });
   });
 

@@ -622,3 +622,21 @@ control.ts`'s new `useOptionalFormFieldControlState()`/`useOptionalFormFieldConn
 `Code(Q8)` crash whenever this component is used with no `<MatFormField>` ancestor at all, found
 porting `qwik-material/autocomplete`'s `autocomplete-plain-input` docs example). Zero behavior
 change for every existing (always form-field-nested) scenario.
+
+## Scroll-strategy configuration (2026-11-03)
+
+Added `MAT_SELECT_SCROLL_STRATEGY` (mirrors upstream's `MAT_SELECT_SCROLL_STRATEGY` injection
+token) + `<QwikMaterialProvider matSelectScrollStrategyFactory={…}>`, threaded through
+`SelectRuntimeConfig.scrollStrategyFactory` into `openSelectPanel()`'s overlay config (previously
+hard-coded to `createRepositionScrollStrategy()`).
+
+Same "scroll strategy lost after resume" gap as `qwik-material/menu`'s identical addition — see
+that package's SYNC.md entry of the same name for the full root-cause write-up (a value read via
+`useContext()` during `MatSelect`'s render does not survive into the later-invoked `open$`-style
+QRL after a real SSR→CSR resume boundary; confirmed to also pre-exist for
+`qwik-material/dialog`/`bottom-sheet`'s own scroll-strategy factory, now fixed THERE for the
+default case). For select: `openSelectPanel()`'s own inline fallback
+(`cfg.scrollStrategyFactory ?? createRepositionScrollStrategy`) always runs regardless, so the
+default (unconfigured) case is unaffected — no regression; a CUSTOM
+`matSelectScrollStrategyFactory` is silently ignored after a real page load (known, documented
+gap, same fix direction as menu's).

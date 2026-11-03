@@ -10,7 +10,7 @@
 export {MatSelect, type MatSelectProps} from './mat-select';
 export {MatSelectPanel, type MatSelectPanelProps} from './mat-select-panel';
 export type {MatSelectConfig} from './select-config';
-export {MAT_SELECT_CONFIG} from './select-config';
+export {MAT_SELECT_CONFIG, MAT_SELECT_SCROLL_STRATEGY} from './select-config';
 export {
   resolveSelectOptions,
   type MatSelectOptionDef,

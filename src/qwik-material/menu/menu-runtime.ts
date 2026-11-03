@@ -34,6 +34,7 @@ import {
   type OverlayEntry,
   type OverlayRef,
   type OverlayRegistry,
+  type ScrollStrategy,
 } from '@angular-community/qwik-cdk/overlay';
 import {MenuPanel} from './menu-panel';
 import type {MenuCloseReason} from './menu-close-reason';
@@ -229,6 +230,9 @@ export interface OpenMenuOptions {
   restoreFocusTo: (origin: FocusOrigin) => void;
   /** Called once the overlay has fully detached (after the exit animation). */
   onClosed: (reason: MenuCloseReason | undefined) => void;
+  /** Mirrors upstream `MAT_MENU_SCROLL_STRATEGY`. Falls back to
+   *  `createRepositionScrollStrategy({scrollThrottle: 20})` when absent. */
+  scrollStrategyFactory?: NoSerialize<() => ScrollStrategy>;
 }
 
 /**
@@ -331,7 +335,13 @@ export function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): void {
       hasBackdrop,
       direction: options.direction,
       disableAnimations: options.animationsDisabled,
-      scrollStrategy: createRepositionScrollStrategy({scrollThrottle: 20}),
+      // Mirrors upstream MAT_MENU_SCROLL_STRATEGY: configurable via
+      // <QwikMaterialProvider matMenuScrollStrategyFactory={...}>, falling
+      // back to the previously hard-coded reposition strategy.
+      scrollStrategy: (
+        options.scrollStrategyFactory ??
+        (() => createRepositionScrollStrategy({scrollThrottle: 20}))
+      )(),
     },
   );
 
