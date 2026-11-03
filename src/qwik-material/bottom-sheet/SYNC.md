@@ -88,12 +88,11 @@ near-triviality):
   `Dialog`/`DialogRef` machinery those streams came from entirely (same as `useMatDialog()`
   bypasses qwik-cdk's `useDialog()`), so there is no `DialogRef.backdropClick`/`keydownEvents`
   to subscribe to in the first place. No DOM-visible difference.
-- `ref.disableClose` is a plain field consumers COULD mutate at runtime (matching upstream's
-  type), but — unlike upstream, where `MatBottomSheetRef`'s own constructor reads the LIVE
-  `this.disableClose` field on every backdrop/keydown event — this port's dispatcher closures
-  (registered once in `open$`) close over the merged `config.disableClose` value captured at
-  open time. Mutating `ref.disableClose` after open has no effect on close-on-escape/backdrop
-  behavior. No scenario in `angular-parity.spec.ts` exercises mutating it after open.
+- ~~`ref.disableClose` is a plain field consumers COULD mutate at runtime… mutating it after open
+  has no effect~~ — **fixed 2026-11-03**: `useMatBottomSheet().open$`'s Escape/backdrop-click
+  dispatcher closures now read `matRef.disableClose` live (not `merged.disableClose`, a one-time
+  snapshot), matching upstream's own `MatBottomSheetRef` constructor exactly. Covered by
+  `specs/material-bottom-sheet/backdrop-click-always.spec.ts`'s "mutating … after open" case.
 - Hierarchical "currently open sheet" tracking (`MatBottomSheet._parentBottomSheet` /
   `_openedBottomSheetRef` per-injector-level) collapsed to one flat registry per
   `QwikCdkRoot` instance (a `WeakMap` keyed by the shared `QWIK_CDK` context object — see
@@ -203,6 +202,19 @@ constructors are `create*` factories. Verified by:
   `matBottomSheetDefaults`/`matBottomSheetScrollStrategyFactory` props, following the exact
   established pattern of every other entry point's config props living there (same file already
   holds `matTabsConfig`, `matSidenavConfig`, etc.).
+
+## `backdropClick` fires regardless of `disableClose`; `componentProps`/`setInput` (2026-11-03)
+
+Same fixes as `qwik-material/dialog` (see its SYNC.md entry of the same name) ported here:
+
+- `useMatBottomSheet().open$`'s outside-click handler now fires `onBackdropClick$` whenever
+  there's a backdrop and the click is outside the sheet, unconditionally — previously nested
+  inside the same `!disableClose` check gating `dismiss()`. Only the actual `dismiss()` call stays
+  gated.
+- `MatBottomSheetConfig.componentProps?: Record<string, unknown>` (seeds initial props on the
+  opened component) and `MatBottomSheetRef.setInput(name, value)` (reactive update after open),
+  built on `OverlayRef.updateProps()` — see `qwik-cdk/overlay/SYNC.md`. `contentProps` was
+  previously hard-coded to `{}`. `MAT_BOTTOM_SHEET_DATA` is unaffected.
 
 ## Pipeline
 

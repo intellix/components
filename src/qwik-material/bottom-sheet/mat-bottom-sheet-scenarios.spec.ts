@@ -266,7 +266,7 @@ describe('MatBottomSheet scenarios', () => {
 
     it.skip('should prevent closing via the escape key (DOM-render — deferred to Playwright)', () => {});
 
-    it.skip('should allow for the disableClose option to be updated while open (DOM-render — also a known deviation: this port reads config.disableClose once at open() time inside the keyboard/outside-click dispatcher closures, not from a live ref.disableClose field — see SYNC.md)', () => {});
+    it.skip('should allow for the disableClose option to be updated while open (DOM-render — deferred to Playwright; fixed 2026-11-03, dispatcher closures now read the live matBottomSheetRef.disableClose field — see SYNC.md and specs/material-bottom-sheet/backdrop-and-escape.spec.ts)', () => {});
 
     it('disableClose defaults to config.disableClose on the ref', () => {
       const {service} = makeService();

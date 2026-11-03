@@ -65,6 +65,14 @@ export interface MatBottomSheetRef<R = unknown, T = unknown> {
   /** Dismisses the bottom sheet. */
   dismiss(result?: R): void;
 
+  /**
+   * Updates a single prop on the opened component, merging it into the
+   * props bag seeded by `config.componentProps` and pushing the result
+   * through the underlying overlay so the component reactively re-renders
+   * — the Qwik equivalent of upstream `ComponentRef.setInput(name, value)`.
+   */
+  setInput(name: string, value: unknown): MatBottomSheetRef<R, T>;
+
   /** @internal */
   [MARK_OPENED](): void;
   /** @internal */
@@ -87,6 +95,8 @@ export function createMatBottomSheetRef<R = unknown, T = unknown>(deps: {
     dispose(): void;
     /** Optional: detaches the backdrop independently of the pane's exit animation. */
     detachBackdrop?(): void;
+    /** Optional: pushes updated content-component props through the overlay. */
+    updateProps?(partial: Record<string, unknown>): void;
   };
   config: MatBottomSheetConfig;
   instance: Signal<T | null>;
@@ -128,6 +138,11 @@ export function createMatBottomSheetRef<R = unknown, T = unknown>(deps: {
   // `[REGISTER_ANIMATION_HANDLERS]` runs, instead of silently dropping it.
   let enterRequested = false;
   let exitRequested = false;
+  // Local mutable copy of config.componentProps: setInput() merges into
+  // this, then pushes the result through deps.cdkRef.updateProps —
+  // 'contentProps' matches the prop name MatBottomSheetWrapper forwards
+  // onto the opened component (see useMatBottomSheet().open$).
+  let componentProps: Record<string, unknown> = {...(deps.config.componentProps ?? {})};
 
   if (deps.ssr) {
     resolveOpened();
@@ -158,6 +173,12 @@ export function createMatBottomSheetRef<R = unknown, T = unknown>(deps: {
       fallbackTimer = setTimeout(() => ref[MARK_CLOSED](), 500);
       if (exitFn) exitFn();
       else exitRequested = true;
+    },
+
+    setInput(name, value) {
+      componentProps = {...componentProps, [name]: value};
+      deps.cdkRef.updateProps?.({contentProps: componentProps});
+      return ref;
     },
 
     [MARK_OPENED]() {

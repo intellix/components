@@ -159,6 +159,40 @@ describe('createMatBottomSheetRef', () => {
     expect(ref.disableClose).toBe(true);
   });
 
+  it('disableClose is independently mutable after creation (mirrors upstream MatBottomSheetRef.disableClose)', () => {
+    const ref = createMatBottomSheetRef({
+      cdkRef: makeCdkRefStub(),
+      config: {disableClose: true},
+      instance: makeSignal(null),
+      id: 'x',
+    });
+    ref.disableClose = false;
+    expect(ref.disableClose).toBe(false);
+    // Matches upstream: a separate constructor-time copy, not a live alias
+    // of config.disableClose.
+    expect(ref.config.disableClose).toBe(true);
+  });
+
+  it('setInput merges onto config.componentProps and pushes the result via cdkRef.updateProps', () => {
+    const updateCalls: Record<string, unknown>[] = [];
+    const cdkRef = {
+      ...makeCdkRefStub(),
+      updateProps: (p: Record<string, unknown>) => updateCalls.push(p),
+    };
+    const ref = createMatBottomSheetRef({
+      cdkRef,
+      config: {componentProps: {a: 1}},
+      instance: makeSignal(null),
+      id: 'x',
+    });
+
+    expect(ref.setInput('b', 2)).toBe(ref);
+    expect(updateCalls).toEqual([{contentProps: {a: 1, b: 2}}]);
+
+    ref.setInput('a', 99);
+    expect(updateCalls).toEqual([{contentProps: {a: 1, b: 2}}, {contentProps: {a: 99, b: 2}}]);
+  });
+
   it('SSR no-op (ssr: true) resolves afterOpened/afterDismissed immediately', async () => {
     const ref = createMatBottomSheetRef<string>({
       cdkRef: makeCdkRefStub(),

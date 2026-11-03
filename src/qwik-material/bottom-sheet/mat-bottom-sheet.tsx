@@ -173,7 +173,7 @@ export function useMatBottomSheet(): MatBottomSheet {
       if (typeof document === 'undefined') {
         const instance = {value: null} as Signal<C | null>;
         const ref = createMatBottomSheetRef<R, C>({
-          cdkRef: {dispose() {}, detachBackdrop() {}},
+          cdkRef: {dispose() {}, detachBackdrop() {}, updateProps() {}},
           config: merged,
           instance,
           id: 'cdk-dialog-ssr-noop',
@@ -205,7 +205,7 @@ export function useMatBottomSheet(): MatBottomSheet {
         },
         get: id => ctx.entries.value.find((x: OverlayEntry) => x.id === id),
       };
-      const overlay = createOverlayService(registry, idGen);
+      const overlay = createOverlayService(registry, idGen, ctx.overlayDefaultConfig);
 
       // Mirrors upstream: `MatBottomSheetConfig` has no `id` field — the
       // underlying `Dialog.open()` always mints one (`cdk-dialog-` prefix)
@@ -239,11 +239,15 @@ export function useMatBottomSheet(): MatBottomSheet {
         real: OverlayRef | null;
         dispose(): void;
         detachBackdrop(): void;
+        updateProps(p: Record<string, unknown>): void;
       }
       const overlayShim: OverlayShim = {
         real: null,
         dispose() {
           this.real?.dispose();
+        },
+        updateProps(p) {
+          this.real?.updateProps(p);
         },
         detachBackdrop() {
           this.real?.detachBackdrop();
@@ -270,7 +274,7 @@ export function useMatBottomSheet(): MatBottomSheet {
           id,
           config: {...merged},
           ContentComponent: component,
-          contentProps: {},
+          contentProps: {...(merged.componentProps ?? {})},
           matBottomSheetRef: wrapped,
         },
         overlayConfig,
@@ -286,7 +290,13 @@ export function useMatBottomSheet(): MatBottomSheet {
         onKeydown(e) {
           if (merged.onKeydown$) merged.onKeydown$(e);
           const isModifierPressed = e.shiftKey || e.ctrlKey || e.altKey || e.metaKey;
-          if (e.key === 'Escape' && !merged.disableClose && !isModifierPressed) {
+          // Mirrors upstream MatBottomSheetRef: `disableClose` is read LIVE
+          // off the ref's own `disableClose` field (not `merged.disableClose`,
+          // which was only ever a one-time snapshot never re-read after
+          // open) — so mutating `matBottomSheetRef.disableClose` after open
+          // takes effect immediately. Fixes the gap this port's SYNC.md
+          // previously documented as a known deviation.
+          if (e.key === 'Escape' && !matRef.disableClose && !isModifierPressed) {
             matRef.dismiss();
           }
         },
@@ -294,12 +304,16 @@ export function useMatBottomSheet(): MatBottomSheet {
 
       // Wire close-on-backdrop-click via outside-click dispatcher (mirrors
       // upstream `MatBottomSheetRef`'s own `backdropClick()` subscription).
+      // `onBackdropClick$` fires for every backdrop click REGARDLESS of
+      // `disableClose` (matching upstream's `backdropClick()` Observable,
+      // which is independent of the ref's own disableClose-gated dismiss
+      // logic) — only the actual `dismiss()` call is gated.
       outsideClickDispatcher.add(overlayRef, {
         onOutsideClick(e) {
           if (merged.onOutsidePointer$) merged.onOutsidePointer$(e);
-          if (merged.hasBackdrop !== false && !merged.disableClose) {
+          if (merged.hasBackdrop !== false) {
             if (merged.onBackdropClick$) merged.onBackdropClick$(e);
-            matRef.dismiss();
+            if (!matRef.disableClose) matRef.dismiss();
           }
         },
       });
@@ -386,7 +400,7 @@ export function createMatBottomSheetService(
           id,
           config: {...merged},
           ContentComponent: component,
-          contentProps: {},
+          contentProps: {...(merged.componentProps ?? {})},
           matBottomSheetRef: undefined,
         },
         {} as OverlayConfig,

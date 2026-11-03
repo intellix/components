@@ -23,6 +23,13 @@ export interface MatBottomSheetConfig<D = unknown> {
   direction?: 'ltr' | 'rtl';
   /** Data being injected into the content component via MAT_BOTTOM_SHEET_DATA. */
   data?: D | null;
+  /**
+   * Initial props passed to the opened component (Qwik's idiomatic
+   * replacement for upstream's `bindings`/`ComponentRef.setInput`, which
+   * don't apply to a Qwik `component$`). Updatable after open via
+   * `MatBottomSheetRef.setInput`.
+   */
+  componentProps?: Record<string, unknown>;
   /** Whether the bottom sheet has a backdrop. Default true. */
   hasBackdrop?: boolean;
   /** Custom class for the backdrop. */
