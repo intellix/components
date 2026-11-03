@@ -108,6 +108,41 @@ function toKeyManagerItem(option: ResolvedAutocompleteOption): KeyManagerItem {
   return {option, disabled: option.disabled, getLabel: () => option.label};
 }
 
+/**
+ * Plain-data stand-in for upstream `MatOption` in an emitted event payload. Mirrors the fields a
+ * consumer could actually need (`value`/`label`/`id`) — see `MatAutocompleteOptionSelectedEvent`'s
+ * own doc comment for why this port cannot hand out a real `MatOption`/`MatAutocomplete` component
+ * instance the way upstream's `MatAutocompleteSelectedEvent`/`MatAutocompleteActivatedEvent.source`
+ * do.
+ */
+export interface MatAutocompleteOptionInfo {
+  value: unknown;
+  label: string;
+  id: string;
+}
+
+/** Mirrors upstream `MatAutocompleteSelectedEvent {source, option}`
+ *  (`src/material/autocomplete/autocomplete.ts`) — `source` (a reference to the
+ *  `MatAutocomplete` component instance) is dropped: this port has no component-instance
+ *  handle to give out (same category of simplification as `button-toggle/SYNC.md`'s
+ *  `MatButtonToggleChange` removal), and `option` is `MatOption` upstream (a full component
+ *  instance with imperative methods) — here it's the plain-data {@link MatAutocompleteOptionInfo}
+ *  instead. See `autocomplete/SYNC.md`'s dedicated section. */
+export interface MatAutocompleteOptionSelectedEvent {
+  option: MatAutocompleteOptionInfo;
+}
+
+/** Mirrors upstream `MatAutocompleteActivatedEvent {source, option}` — same `source`/`option`
+ *  deviation as {@link MatAutocompleteOptionSelectedEvent}. `option` is `null` when the active
+ *  item is cleared (mirrors upstream's own `this.options.toArray()[index] || null`). */
+export interface MatAutocompleteOptionActivatedEvent {
+  option: MatAutocompleteOptionInfo | null;
+}
+
+function toOptionInfo(option: ResolvedAutocompleteOption): MatAutocompleteOptionInfo {
+  return {value: option.value, label: option.label, id: option.id};
+}
+
 /** All of the reactive signals `MatAutocomplete` owns and threads through
  *  every runtime function here. See the module doc comment for why `tree`
  *  specifically must be a `Signal`. */
@@ -185,6 +220,19 @@ export interface AutocompleteRuntimeConfig {
   onValueChange$: QRL<(value: unknown) => void> | undefined;
   onTouched$: QRL<() => void> | undefined;
   onOpenedChange$: QRL<(open: boolean) => void> | undefined;
+  /** Mirrors upstream `(opened)`/`(closed)` as genuinely separate, argument-less
+   *  callbacks — see `mat-autocomplete.tsx`'s doc comment for why both these AND
+   *  the pre-existing combined `onOpenedChange$` are kept. */
+  onOpened$: QRL<() => void> | undefined;
+  onClosed$: QRL<() => void> | undefined;
+  /** Mirrors upstream `(optionSelected)` — fires ONLY when the user actually picks
+   *  an option (click or Enter), never on typing. See `mat-autocomplete.tsx`'s doc
+   *  comment for the event-shape deviation (no `source`). */
+  onOptionSelected$: QRL<(event: MatAutocompleteOptionSelectedEvent) => void> | undefined;
+  /** Mirrors upstream `(optionActivated)` — fires whenever the active (highlighted,
+   *  not selected) option changes while the panel is open (arrow-key nav, or the
+   *  auto-active-first-option/reset-to-none that runs on every open/refilter). */
+  onOptionActivated$: QRL<(event: MatAutocompleteOptionActivatedEvent) => void> | undefined;
   /**
    * Mirrors upstream `MAT_AUTOCOMPLETE_SCROLL_STRATEGY`. A plain,
    * serializable `ScrollStrategyDescriptor` (string/object, or a `QRL`
@@ -278,11 +326,38 @@ function resetActiveItem(
   signals: AutocompleteRuntimeSignals,
 ): void {
   const manager = getKeyManager(flat, signals);
+  const previousIndex = signals.activeIndex.value;
   if (cfg.autoActiveFirstOption) {
     manager.setActiveItem(flat.findIndex(o => !o.disabled));
   } else {
     manager.setActiveItem(-1);
   }
+  emitOptionActivatedIfChanged(flat, cfg, signals, previousIndex);
+}
+
+/** Mirrors upstream `ngAfterContentInit`'s `_keyManager.change.subscribe(index => { if
+ *  (this.isOpen) { this.optionActivated.emit(...) } })` — fires whenever `setActiveItem`
+ *  actually changed the active item (upstream's `ListKeyManager` only notifies subscribers on a
+ *  real change too — see `list-key-manager.ts`'s own `setActiveItem`), gated on the panel
+ *  actually being open (`isOpen` ≈ `overlayAttached && flat.length > 0`, same derivation
+ *  `mat-autocomplete.tsx`'s own `panelOpen` uses). Called from every call site that invokes
+ *  `manager.setActiveItem()`/`.onKeydown()` directly (`resetActiveItem` above,
+ *  `handleAutocompleteKeydown`'s arrow-key branch below) rather than from inside
+ *  `buildKeyManager`'s own cached `onChange` closure — that closure is built ONCE per component
+ *  instance and cached (see `getKeyManager`), so capturing `cfg`/`flat` there would hit the exact
+ *  stale-closure hazard this file's own module doc comment already documents for `onTabOut`;
+ *  every caller here already has the CURRENT `cfg`/`flat` in scope. */
+function emitOptionActivatedIfChanged(
+  flat: readonly ResolvedAutocompleteOption[],
+  cfg: AutocompleteRuntimeConfig,
+  signals: AutocompleteRuntimeSignals,
+  previousIndex: number,
+): void {
+  if (!cfg.onOptionActivated$) return;
+  if (signals.activeIndex.value === previousIndex) return;
+  if (!(signals.overlayAttached.value && flat.length > 0)) return;
+  const option = flat[signals.activeIndex.value];
+  cfg.onOptionActivated$({option: option ? toOptionInfo(option) : null});
 }
 
 /** Mirrors `_destroyPanel()`/the detach half of `closePanel()` — the
@@ -410,6 +485,7 @@ export async function openAutocompletePanel(
   resetActiveItem(flat, cfg, signals);
 
   cfg.onOpenedChange$?.(true);
+  cfg.onOpened$?.();
 }
 
 /** Mirrors the `_subscribeToClosingActions()` "option list changed while
@@ -445,6 +521,12 @@ export async function selectAutocompleteOption(
     : displayValueSync(option.value);
   if (inputEl) inputEl.value = display;
   cfg.onValueChange$?.(option.value);
+  // Mirrors `_setValueAndClose()`'s own order — `_onChange(toSelect.value)` THEN
+  // `panel._emitSelectEvent(toSelect)` THEN `.focus()` — i.e. `optionSelected` fires
+  // AFTER the value-change callback but BEFORE the refocus/close below. Only fires for
+  // a REAL selection (this function's only caller is a click/Enter commit, never typing
+  // — see `mat-autocomplete.tsx`'s `MatAutocompleteOptionSelectedEvent` doc comment).
+  cfg.onOptionSelected$?.({option: toOptionInfo(option)});
   // Mirrors `_setValueAndClose()`'s EXACT order — `focus()` BEFORE
   // `closePanel()`, not after. This is load-bearing, not cosmetic:
   // clicking an option (unlike pressing Enter) genuinely blurs the input
@@ -468,6 +550,7 @@ export async function selectAutocompleteOption(
   inputEl?.focus();
   detachOverlay(signals);
   cfg.onOpenedChange$?.(false);
+  cfg.onClosed$?.();
 }
 
 /** Mirrors `closePanel()` + `_setValueAndClose()`'s "no selection" branch
@@ -513,6 +596,7 @@ export function closeAutocompletePanelWithResetCheck(
   }
   detachOverlay(signals);
   cfg.onOpenedChange$?.(false);
+  cfg.onClosed$?.();
 }
 
 /** Mirrors `_handleInput()`. `rawValue` is the native input's live
@@ -622,7 +706,9 @@ export function handleAutocompleteKeydown(
   }
 
   if (isArrowKey && !hasModifier && panelOpen) {
+    const previousIndex = signals.activeIndex.value;
     manager.onKeydown(event);
+    emitOptionActivatedIfChanged(flat, cfg, signals, previousIndex);
   } else if (isArrowKey) {
     openAutocompletePanel(flat, tree, ctx, cfg, signals);
   }

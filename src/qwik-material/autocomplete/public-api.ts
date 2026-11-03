@@ -22,7 +22,12 @@ export {
   type ResolvedAutocompleteNode,
   type ResolvedAutocompleteOptions,
 } from './autocomplete-option-resolver';
-export {AUTOCOMPLETE_POSITIONS} from './autocomplete-runtime';
+export {
+  AUTOCOMPLETE_POSITIONS,
+  type MatAutocompleteOptionInfo,
+  type MatAutocompleteOptionSelectedEvent,
+  type MatAutocompleteOptionActivatedEvent,
+} from './autocomplete-runtime';
 
 export {MatOption, type MatOptionProps} from '../core/mat-option';
 export {MatOptgroup, type MatOptgroupProps} from '../core/mat-optgroup';

@@ -43,8 +43,16 @@ import {
   type AutocompleteRuntimeConfig,
   type AutocompleteRuntimeSignals,
   type KeyManagerItem,
+  type MatAutocompleteOptionActivatedEvent,
+  type MatAutocompleteOptionSelectedEvent,
 } from './autocomplete-runtime';
-import {useMatFormSubmitted} from '../core/mat-form';
+import {useMatFormState} from '../core/mat-form';
+import {
+  MAT_ERROR_STATE_MATCHER,
+  MAT_ERROR_STATE_MATCHER_DEFAULT,
+  resolveErrorStateSync,
+  type MatErrorStateSnapshot,
+} from '../core/error-state-matcher';
 
 const MAT_AUTOCOMPLETE_CONFIG_DEFAULTS: MatAutocompleteConfig = {};
 
@@ -200,8 +208,34 @@ export interface MatAutocompleteProps extends Omit<MatFormFieldControlProps, 'va
   /** Mirrors `_onTouched()` (the autocomplete's own CVA touched callback —
    *  fires unconditionally on native `blur`, regardless of panel state). */
   onTouched$?: QRL<() => void>;
-  /** Mirrors `(opened)`/`(closed)`, collapsed into one boolean callback. */
+  /** Mirrors `(opened)`/`(closed)`, collapsed into one boolean callback. Kept for
+   *  backward compatibility alongside the separate `onOpened$`/`onClosed$` below
+   *  (both fire at the same point this one does — see that pair's own doc comment). */
   onOpenedChange$?: QRL<(open: boolean) => void>;
+  /** Mirrors upstream `(opened)` — a genuinely separate, argument-less callback, fired
+   *  at the same point `onOpenedChange$(true)` already is. Upstream additionally gates
+   *  this on a genuine closed→open TRANSITION of the options-aware `panelOpen` getter
+   *  (`wasOpen !== this.panelOpen`, so a refilter of an already-open panel, or a fresh
+   *  attach that still has zero options, doesn't re-fire it) — this port fires it on
+   *  every `openPanel()`-equivalent call instead, the same simplification
+   *  `onOpenedChange$` already made; see `autocomplete/SYNC.md`. */
+  onOpened$?: QRL<() => void>;
+  /** Mirrors upstream `(closed)` — see `onOpened$`'s doc comment for the shared
+   *  simplification (fires on every `closePanel()`-equivalent call, not gated on a
+   *  genuine open→closed transition the way upstream's `panelOpen` getter is). */
+  onClosed$?: QRL<() => void>;
+  /** Mirrors upstream `(optionSelected)` — fires ONLY when the user actually picks an
+   *  option (click or Enter), never while typing (that's `onValueChange$`/`onInput$`'s
+   *  job — see the module doc comment's "why onValueChange$ doesn't fire on every
+   *  keystroke" section). See {@link MatAutocompleteOptionSelectedEvent}'s own doc
+   *  comment for the one shape deviation from upstream (`source` dropped). */
+  onOptionSelected$?: QRL<(event: MatAutocompleteOptionSelectedEvent) => void>;
+  /** Mirrors upstream `(optionActivated)` — fires whenever the highlighted (not
+   *  selected) option changes while the panel is open: arrow-key navigation, and the
+   *  auto-active-first-option/reset-to-none that runs on every open or refilter. See
+   *  {@link MatAutocompleteOptionActivatedEvent}'s own doc comment for the shape
+   *  deviation. */
+  onOptionActivated$?: QRL<(event: MatAutocompleteOptionActivatedEvent) => void>;
   /** Fires on the native `input` event with the live element — the
    *  CONSUMER's own filtering hook. Mirrors `MatInput.onInput$`. */
   onInput$?: QRL<(event: Event, el: HTMLInputElement) => void>;
@@ -291,9 +325,37 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
   const touched = isInFormField ? formField.touched : (props.touched ?? false);
   const dirty = isInFormField ? formField.dirty : (props.dirty ?? false);
   const invalid = isInFormField ? formField.invalid : (props.invalid ?? false);
-  // Default ErrorStateMatcher: `invalid && (touched || form.submitted)` — see core/mat-form.tsx.
-  const formSubmitted = useMatFormSubmitted();
-  const errorState = formBound && invalid && (touched || formSubmitted);
+  // `ErrorStateMatcher` — see `core/error-state-matcher.ts`'s own doc comment and `select/
+  // SYNC.md`'s `compareWith` section (same `useSignal`+`useTask$` resolution pattern) for the
+  // full design.
+  const formState = useMatFormState();
+  const errorMatcherConfig = useContext(MAT_ERROR_STATE_MATCHER, MAT_ERROR_STATE_MATCHER_DEFAULT);
+  const errorMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+  const errorStateSignal = useSignal(() =>
+    typeof errorMatcher === 'string'
+      ? resolveErrorStateSync(
+          {invalid, touched, dirty, submitted: formState.submitted},
+          errorMatcher,
+        )
+      : false,
+  );
+  useTask$(({track}) => {
+    const snapshot: MatErrorStateSnapshot = {
+      invalid: track(() => (isInFormField ? formField.invalid : (props.invalid ?? false))),
+      touched: track(() => (isInFormField ? formField.touched : (props.touched ?? false))),
+      dirty: track(() => (isInFormField ? formField.dirty : (props.dirty ?? false))),
+      submitted: track(() => formState.submitted),
+    };
+    const currentMatcher = props.errorStateMatcher ?? errorMatcherConfig;
+    if (typeof currentMatcher === 'string') {
+      errorStateSignal.value = resolveErrorStateSync(snapshot, currentMatcher);
+      return;
+    }
+    return currentMatcher.resolve().then(fn => {
+      errorStateSignal.value = !!fn(snapshot);
+    });
+  });
+  const errorState = formBound && errorStateSignal.value;
   const emptySignal = useSignal(() => !props.value);
 
   // Runtime state — see `autocomplete-runtime.ts`'s own doc comments.
@@ -352,6 +414,10 @@ export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
     onValueChange$: props.onValueChange$,
     onTouched$: props.onTouched$,
     onOpenedChange$: props.onOpenedChange$,
+    onOpened$: props.onOpened$,
+    onClosed$: props.onClosed$,
+    onOptionSelected$: props.onOptionSelected$,
+    onOptionActivated$: props.onOptionActivated$,
     scrollStrategyDescriptor,
   };
 

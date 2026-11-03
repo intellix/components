@@ -449,6 +449,78 @@ Zero behavior change when a `<MatFormField>` ancestor exists (confirmed: `pnpm -
 test` 783/783, full `src/qwik-cdk-parity-tests` suite unaffected) — only the previously-crashing
 standalone case now works.
 
+## `optionSelected`/`opened`/`closed`/`optionActivated` events (2026-11-03)
+
+Previously this port had only `onValueChange$` (which, matching upstream's own CVA `_onChange`,
+fires on every keystroke too when `requireSelection` is unset — see "Why `onValueChange$` doesn't
+fire on every keystroke..." above) and a single combined `onOpenedChange$`. Four upstream
+`@Output()`s were genuinely missing: `optionSelected` (fires ONLY on a real click/Enter
+selection commit, never on typing, regardless of `requireSelection`), `opened`/`closed`
+(argument-less), and `optionActivated` (fires on every highlighted-option change while open).
+
+- **New props** on `MatAutocompleteProps` (`mat-autocomplete.tsx`): `onOptionSelected$`,
+  `onOptionActivated$`, `onOpened$`, `onClosed$`. `onOpenedChange$` is KEPT unchanged (not
+  removed) for backward compatibility — both it and the new `onOpened$`/`onClosed$` fire at the
+  same point.
+- **Event-shape deviation (both new option events):** upstream's `MatAutocompleteSelectedEvent`/
+  `MatAutocompleteActivatedEvent` are `{source: MatAutocomplete, option: MatOption}` — both
+  fields are real Angular component INSTANCES (imperative methods, DI-injected refs). This port
+  has no component-instance handle to give out for either (same category of simplification as
+  `button-toggle/SYNC.md`'s `MatButtonToggleChange` class removal) — `source` is dropped
+  entirely, and `option` becomes the plain-data `MatAutocompleteOptionInfo`
+  (`{value, label, id}, autocomplete-runtime.ts`) instead of a `MatOption` instance.
+  `optionActivated`'s `option` is `null` when the active item is cleared, matching upstream's own
+  `this.options.toArray()[index] || null`.
+- **`optionSelected` fires from `selectAutocompleteOption()`** (`autocomplete-runtime.ts`) —
+  the ONLY function that commits a real selection (a click or Enter on an option; never typing) —
+  right after `cfg.onValueChange$?.(option.value)`, mirroring upstream `_setValueAndClose`'s own
+  order (`_onChange()` then `panel._emitSelectEvent()`), and BEFORE the focus/close that follows
+  (see that function's own big doc comment on why focus must run before detach).
+- **`optionActivated` fires from a new `emitOptionActivatedIfChanged()` helper**, called from
+  every call site that invokes `manager.setActiveItem()`/`.onKeydown()` directly
+  (`resetActiveItem()` — every open/refilter — and `handleAutocompleteKeydown`'s arrow-key
+  branch), NOT from inside `buildKeyManager`'s own cached `onChange` closure. That closure is
+  built ONCE per component instance and cached (`getKeyManager`'s `if (!signals.keyManager.value)`
+  check) — capturing `cfg`/`flat` there would hit the exact stale-closure hazard this file's own
+  module doc comment already documents for why `onTabOut` isn't wired into the key manager either;
+  every caller of `emitOptionActivatedIfChanged` already has the CURRENT `cfg`/`flat` in scope.
+  Gated on (a) the active index actually having changed (mirrors `ListKeyManager.setActiveItem`'s
+  own "only notify on a real change" check) and (b) the panel actually being open
+  (`overlayAttached && flat.length > 0`, the same `isOpen`/`panelOpen` derivation used elsewhere
+  in this file) — matches upstream's `_keyManager.change.subscribe(index => { if (this.isOpen)
+  {...} })` guard.
+- **`opened`/`closed` simplification, inherited from the pre-existing `onOpenedChange$`:**
+  upstream only fires `opened` on a genuine closed→open TRANSITION of the OPTIONS-AWARE
+  `panelOpen` getter (`_attachOverlay`'s own `if (this.panelOpen && wasOpen !== this.panelOpen)`
+  — so a refilter of an already-open panel, or a fresh attach that still has zero options, does
+  NOT re-fire it) — this port fires `onOpened$`/`onClosed$` at the same (less precise) points
+  `onOpenedChange$(true/false)` already did, every time `openAutocompletePanel`/
+  `selectAutocompleteOption`/`closeAutocompletePanelWithResetCheck` run, regardless of whether
+  the panel was already open/closed. No scenario in this suite calls `openPanel()` on an
+  already-open panel in a way that would observably double-fire this (every open path goes
+  through a genuine closed→open transition), so this is a latent, not-yet-exercised simplification
+  — flagged here rather than silently diverging further from upstream.
+
+No upstream docs example exercises these 4 outputs directly (material.angular.dev's autocomplete
+examples only ever bind `[formControl]`/`(input)`/`(optionSelected)`-as-a-trivial-logger in a way
+this port's existing scenarios already cover functionally) — covered instead by
+`mat-autocomplete-scenarios.spec.tsx` (prop-shape sanity) and
+`specs/material-autocomplete/option-events.spec.ts` (Playwright, fresh `page.goto` per test):
+`optionSelected` fires once per click/Enter pick (never per keystroke, confirmed against a
+`requireSelection={false}` scenario where typing alone would otherwise look indistinguishable
+from a pick if this port still conflated the two), `optionActivated` fires on arrow-key nav and
+on open (auto-active-first-option), and `opened`/`closed` fire once per open/close cycle.
+
+## `ErrorStateMatcher` (2026-11-03)
+
+Previously hardcoded the default formula (`invalid && (touched || formSubmitted)`) directly, with
+no way to override it. Now reads `props.errorStateMatcher ?? <QwikMaterialProvider
+errorStateMatcher> ?? 'touched'` via the same `useSignal`+`useTask$` resolution pair
+`qwik-material/select/mat-select.tsx`'s `triggerLabel` (`compareWith$`) establishes — see
+`core/error-state-matcher.ts`'s doc comment for the full design and `input/SYNC.md`'s own
+`ErrorStateMatcher` section for the shared write-up and the scenarios covering it. No scenario
+here needed a dedicated one — the mechanism is identical across every control.
+
 ## Scroll-strategy configuration (2026-11-03)
 
 Added `MAT_AUTOCOMPLETE_SCROLL_STRATEGY` (mirrors upstream's `MAT_AUTOCOMPLETE_SCROLL_STRATEGY`
