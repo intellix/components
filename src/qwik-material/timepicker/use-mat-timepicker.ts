@@ -46,6 +46,9 @@ import {useContext, useSignal, type NoSerialize, type QRL, type Signal} from '@q
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {ListKeyManager, ListKeyManagerOption} from '@angular-community/qwik-cdk/a11y';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
+import type {DateAdapter} from '../core/datetime/date-adapter';
+import type {MatDateFormats} from '../core/datetime/date-formats';
+import {useDateAdapterFactory, useDateFormats, useDateLocale} from '../core/datetime/use-date-adapter';
 import {parseInterval, type MatTimepickerOption} from './timepicker-util';
 import {MAT_TIMEPICKER_CONFIG, type MatTimepickerConfig} from './timepicker-config';
 
@@ -171,6 +174,15 @@ export interface MatTimepickerHandle<D> {
    *  `MatTimepickerInput._lastValidDate`, used to restore a previously-valid DATE while only
    *  replacing its time-of-day (see `assignUserSelection` in `timepicker-runtime.ts`). */
   _lastValidValue: Signal<D | null>;
+
+  /** @internal The `DateAdapter` factory resolved once, at hook-creation time, from
+   *  `MAT_DATE_ADAPTER_FACTORY` context — see `use-mat-datepicker.ts`'s identical field for the
+   *  full rationale (a QRL, never a live instance). */
+  _dateAdapterFactory: QRL<(locale: string) => DateAdapter<D>>;
+  /** @internal The `MatDateFormats` bag resolved once from `MAT_DATE_FORMATS` context. */
+  _dateFormats: MatDateFormats;
+  /** @internal The locale resolved from `MAT_DATE_LOCALE` context. */
+  _locale: Signal<string>;
 }
 
 function toClassList(value: string | readonly string[] | undefined): readonly string[] {
@@ -199,6 +211,11 @@ export function useMatTimepicker<D>(
   const config = useContext(MAT_TIMEPICKER_CONFIG, {} as MatTimepickerConfig);
   const idGen = useIdGenerator();
   const panelId = useSignal(() => idGen.getId('mat-timepicker-panel-')).value;
+  // Resolved ONCE here, render-legal — see `MatTimepickerHandle`'s own `_dateAdapterFactory`/
+  // `_dateFormats`/`_locale` doc comments and `use-mat-datepicker.ts`'s identical pattern.
+  const dateAdapterFactory = useDateAdapterFactory() as QRL<(locale: string) => DateAdapter<D>>;
+  const dateFormats = useDateFormats();
+  const locale = useDateLocale();
 
   const isOpen = useSignal(false);
   const disabled = useSignal(options.disabled ?? false);
@@ -283,5 +300,8 @@ export function useMatTimepicker<D>(
     _panelEl: panelEl,
     _exiting: exiting,
     _lastValidValue: lastValidValue,
+    _dateAdapterFactory: dateAdapterFactory,
+    _dateFormats: dateFormats,
+    _locale: locale,
   };
 }

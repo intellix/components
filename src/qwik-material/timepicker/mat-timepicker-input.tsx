@@ -186,8 +186,8 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
     props.onFocus$?.(event, picker._inputRef.value as NativeInputElement);
   });
 
-  const handleBlur$ = $((event: FocusEvent) => {
-    handleTimepickerBlur(picker);
+  const handleBlur$ = $(async (event: FocusEvent) => {
+    await handleTimepickerBlur(picker);
     const liveEmpty = !picker._inputRef.value?.value;
     if (formField) {
       // Qwik v2 regression guard, `focused` only — see `qwik-material/select/mat-select.tsx`'s
@@ -205,8 +205,8 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
     props.onBlur$?.(event, picker._inputRef.value as NativeInputElement);
   });
 
-  const handleInput$ = $((event: Event) => {
-    handleTimepickerInput(event, picker);
+  const handleInput$ = $(async (event: Event) => {
+    await handleTimepickerInput(event, picker);
     props.onInput$?.(event, picker._inputRef.value as NativeInputElement);
   });
 
