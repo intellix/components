@@ -37,6 +37,8 @@ import '@angular-community/qwik-material/tree-prebuilt.css';
 import '@angular-community/qwik-material/paginator-prebuilt.css';
 import '@angular-community/qwik-material/autocomplete-prebuilt.css';
 import '@angular-community/qwik-material/datepicker-prebuilt.css';
+import '@angular-community/qwik-material/typography-prebuilt.css';
+import '@angular-community/qwik-material/elevation-prebuilt.css';
 
 export default component$(() => {
   // v2: `useQwikRouter()` replaces the v1 `<QwikCityProvider>` wrapper

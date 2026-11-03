@@ -36,6 +36,7 @@ import {TREE_SCENARIOS} from './tree';
 import {TIMEPICKER_SCENARIOS} from './timepicker';
 import {DATEPICKER_SCENARIOS} from './datepicker';
 import {FORMISCH_SCENARIOS} from './formisch';
+import {CORE_SCENARIOS} from './core';
 import {EXAMPLE_ROUTES} from './examples';
 
 /** Keys match the qwik dev-app route segments: /qwik-parity/<key>/<scenario>. */
@@ -76,6 +77,7 @@ const SCENARIOS: Record<string, Record<string, Type<unknown>>> = {
   'mat-timepicker': TIMEPICKER_SCENARIOS,
   'mat-datepicker': DATEPICKER_SCENARIOS,
   'formisch': FORMISCH_SCENARIOS,
+  'mat-core': CORE_SCENARIOS,
 };
 
 export const QWIK_PARITY_ROUTES: Routes = [
