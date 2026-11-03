@@ -58,6 +58,7 @@ import Ex_form_field_error from '@angular-community/qwik-material-examples/form-
 import Ex_form_field_prefix_suffix from '@angular-community/qwik-material-examples/form-field/form-field-prefix-suffix';
 import Ex_grid_list_example from '@angular-community/qwik-material-examples/grid-list/example';
 import Ex_icon_example from '@angular-community/qwik-material-examples/icon/example';
+import Ex_icon_icon_svg from '@angular-community/qwik-material-examples/icon/icon-svg';
 import Ex_list_example from '@angular-community/qwik-material-examples/list/example';
 import Ex_menu_example from '@angular-community/qwik-material-examples/menu/example';
 import Ex_menu_icons from '@angular-community/qwik-material-examples/menu/menu-icons';
@@ -240,6 +241,7 @@ export const EXAMPLE_COMPONENTS: Record<string, Component<Record<string, never>>
   'form-field/form-field-prefix-suffix': Ex_form_field_prefix_suffix,
   'grid-list/example': Ex_grid_list_example,
   'icon/example': Ex_icon_example,
+  'icon/icon-svg': Ex_icon_icon_svg,
   'list/example': Ex_list_example,
   'menu/example': Ex_menu_example,
   'menu/menu-icons': Ex_menu_icons,

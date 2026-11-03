@@ -26,14 +26,25 @@ const ICON_SVG_ATTRS: ReadonlyArray<readonly [name: string, value: string]> = [
   ['focusable', 'false'],
 ];
 
-/** Applies the upstream `_setSvgAttributes` attribute set to a raw SVG string's root `<svg>` tag. */
-export function withIconSvgAttributes(svgLiteral: string): string {
-  return svgLiteral.replace(/<svg\b([^>]*)>/, (_match, attrs: string) => {
-    let rest = attrs;
-    for (const [name] of ICON_SVG_ATTRS) {
+/**
+ * Applies the upstream `_setSvgAttributes` attribute set to a raw SVG
+ * string's root `<svg>` tag. `viewBox`, when given, reproduces that same
+ * method's `if (options && options.viewBox) svg.setAttribute('viewBox',
+ * options.viewBox)` — the registry's `IconOptions.viewBox` override, applied
+ * ONLY by the registry path (`icon-registry.ts`); the standalone
+ * `svgLiteral` prop never had an options bag to carry one, so that call
+ * site keeps passing no override, same as before this parameter existed.
+ */
+export function withIconSvgAttributes(svgLiteral: string, viewBox?: string): string {
+  const attrs: ReadonlyArray<readonly [name: string, value: string]> = viewBox
+    ? [...ICON_SVG_ATTRS, ['viewBox', viewBox]]
+    : ICON_SVG_ATTRS;
+  return svgLiteral.replace(/<svg\b([^>]*)>/, (_match, rawAttrs: string) => {
+    let rest = rawAttrs;
+    for (const [name] of attrs) {
       rest = rest.replace(new RegExp(`\\s+${name}\\s*=\\s*("[^"]*"|'[^']*')`, 'i'), '');
     }
-    const appended = ICON_SVG_ATTRS.map(([name, value]) => ` ${name}="${value}"`).join('');
+    const appended = attrs.map(([name, value]) => ` ${name}="${value}"`).join('');
     return `<svg${rest}${appended}>`;
   });
 }

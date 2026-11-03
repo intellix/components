@@ -5,8 +5,48 @@ icon fonts and SVG icons, but not bitmap-based formats (png, jpg, etc.).
 
 ### Registering icons
 
-There is no `MatIconRegistry` service in this port — see
-[Angular → Qwik notes](#angular-qwik-notes) below.
+`useMatIconRegistry()` (or the `<MatIconRegistryProvider>` component built on top of it) creates
+an icon registry and provides it to every `<MatIcon>` in its subtree, letting you associate names
+with SVG URLs or HTML strings. Its functions are discussed below.
+
+```tsx
+import {MatIconRegistryProvider, trustIconResourceUrl} from '@angular-community/qwik-material/icon';
+
+export default component$(() => (
+  <MatIconRegistryProvider icons={[{name: 'thumbs-up', url: trustIconResourceUrl('/icons/thumb-up.svg')}]}>
+    <Slot />
+  </MatIconRegistryProvider>
+));
+```
+
+Icons registered at app startup from data loaded at runtime (e.g. a list fetched from an API inside
+a `routeLoader$`) work the same way — build the `icons`/`iconSets` array from that data:
+
+```tsx
+export const useIcons = routeLoader$(async () => {
+  const icons = await fetch('https://api.example.com/icons').then(r => r.json());
+  return icons as Array<{name: string; url: string}>;
+});
+
+export default component$(() => {
+  const icons = useIcons();
+  return (
+    <MatIconRegistryProvider
+      icons={icons.value.map(i => ({name: i.name, url: trustIconResourceUrl(i.url)}))}
+    >
+      <Slot />
+    </MatIconRegistryProvider>
+  );
+});
+```
+
+For imperative registration from elsewhere in the tree, call the registry functions directly
+against the store `useOptionalIconRegistry()` returns:
+
+```tsx
+const registry = useOptionalIconRegistry();
+if (registry) addSvgIcon(registry, 'thumbs-up', trustIconResourceUrl('/icons/thumb-up.svg'));
+```
 
 ### Font icons with ligatures
 
@@ -42,20 +82,57 @@ class for the specific icon to show.
 ### SVG icons
 
 `<MatIcon>` displays SVG icons by directly inlining the SVG content into the DOM as a child of
-itself, via the `svgLiteral` prop (a raw SVG string). This approach offers an advantage over an
-`<img>` tag or a CSS `background-image` because it allows styling the SVG with CSS. For example,
-the default color of the SVG content is the CSS
+itself. This approach offers an advantage over an `<img>` tag or a CSS `background-image` because
+it allows styling the SVG with CSS. For example, the default color of the SVG content is the CSS
 [currentColor](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value#currentColor_keyword)
 value. This makes SVG icons by default have the same color as surrounding text, and allows you to
 change the color by setting the `color` style on the `<MatIcon>` element.
 
+Two ways to provide the SVG content:
+
 ```tsx
+{/* 1. svgLiteral — a raw SVG string, trusted verbatim, no registry involved. */}
 <MatIcon svgLiteral={thumbUpSvgString} svgName="thumb-up" />
+
+{/* 2. svgIcon — resolved by name from a MAT_ICON_REGISTRY ancestor (see "Registering icons"
+      above). Works at SSR time (the server HTML already contains the resolved <svg> — no
+      flash, no client JS needed) and re-resolves on the client if the name changes later. */}
+<MatIcon svgIcon="thumbs-up" />
+<MatIcon svgIcon="animals:cat" /> {/* namespaced */}
 ```
 
-`svgLiteral` is trusted verbatim (no `DomSanitizer` step) — pre-bundle or otherwise validate any
-SVG string before passing it. There is no URL-fetching or named-icon-registry path; resolve the
-SVG string yourself (e.g. a static import) and pass it directly.
+In order to guard against XSS vulnerabilities, any SVG URL or HTML string registered with the
+icon registry must be marked as trusted using `trustIconResourceUrl()`/`trustIconHtml()` —
+this port's equivalent of Angular's `DomSanitizer` (see
+[Angular → Qwik notes](#angular-qwik-notes) below). `svgLiteral` has no such wrapper — it's
+trusted verbatim, so pre-bundle or otherwise validate any SVG string before passing it directly.
+
+The registry fetches remote SVG icons via the platform `fetch()` (not `HttpClient`/`XMLHttpRequest`
+— see [Angular → Qwik notes](#angular-qwik-notes)), subject to the same
+[same-origin policy](https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy).
+Concurrent requests for the same URL are deduplicated, and a successful fetch is cached.
+
+#### Named icons
+
+To associate a name with an icon URL, use `addSvgIcon`, `addSvgIconInNamespace`,
+`addSvgIconLiteral`, or `addSvgIconLiteralInNamespace` (or the `icons` prop on
+`<MatIconRegistryProvider>`, which calls these for you). After registering an icon, it can be
+displayed by setting the `svgIcon` prop. For an icon in the default namespace, use the name
+directly. For a non-default namespace, use the format `[namespace]:[name]`.
+
+#### Icon sets
+
+Icon sets allow grouping multiple icons into a single SVG file. This is done by creating a single
+root `<svg>` tag that contains multiple nested elements (typically `<symbol>`), each identified
+with an `id` attribute. This `id` is used as the name of the icon.
+
+Icon sets are registered using `addSvgIconSet`, `addSvgIconSetInNamespace`,
+`addSvgIconSetLiteral`, or `addSvgIconSetLiteralInNamespace` (or the `iconSets` prop on
+`<MatIconRegistryProvider>`). After an icon set is registered, each of its embedded icons can be
+accessed by their `id` attributes, the same way as for individually registered icons.
+
+Multiple icon sets can be registered in the same namespace. Requesting an icon whose id appears in
+more than one icon set, the icon from the most recently registered set will be used.
 
 ### Accessibility
 
@@ -105,16 +182,33 @@ class.
 
 ## Angular → Qwik notes
 
-- **No `MatIconRegistry` service.** No XHR SVG loader, no `addSvgIcon*`/`addSvgIconSet*`, no
-  named-icon or icon-set lookup, no `HttpClient` dependency. Consumers who need registry-style
-  lookup pre-bundle SVG strings themselves and pass the resolved string as `svgLiteral`.
-- **`svgIcon: string` (single prop, colon-split namespace magic) → `svgLiteral` + `svgName` +
-  `svgNamespace`** (three explicit props, no registry lookup, no `DomSanitizer`).
-- **`registerFontClassAlias`/`setDefaultFontSetClass` methods omitted; the *effect* of the
-  latter is preserved as a config fallback.** `MatIconConfig.fontSet` (set via
-  `QwikMaterialProvider`) falls back to upstream's own built-in default font-set class ladder
-  (`material-icons mat-ligature-font`) when neither the prop nor the config is set, instead of
-  applying no class at all.
+- **No `MatIconRegistry` *class*, but the same capabilities.** No `@Injectable`, no Angular DI —
+  `useMatIconRegistry()`/`<MatIconRegistryProvider>` create a plain data store (provided via
+  context) and `addSvgIcon`/`getNamedSvgIcon`/etc. are plain functions that take it as their
+  first argument (`addSvgIcon(registry, name, url)`, not `registry.addSvgIcon(name, url)`).
+- **No `HttpClient`/`XMLHttpRequest`.** The registry fetches icon URLs with the platform
+  `fetch()` directly. This package has no router dependency, so it can't resolve a root-relative
+  URL (`/icons/home.svg`) against the current request's origin during SSR — register an
+  absolute URL, or resolve one to absolute yourself (e.g. inside a `routeLoader$`, which has the
+  request URL) before calling `addSvgIcon`.
+- **No `DomSanitizer`.** `trustIconResourceUrl(url)`/`trustIconHtml(html)` (`icon-trusted.ts`) are
+  the explicit "I trust this" opt-in every `addSvgIcon*`/`addSvgIconSet*` function requires
+  instead — the same one-line bypass Angular's `sanitizer.bypassSecurityTrustResourceUrl()`/
+  `bypassSecurityTrustHtml()` is, and the same warning applies: it does not sanitize anything,
+  so only use it with content your app fully controls.
+- **`addSvgIconResolver`'s resolvers are process-global, not per-registry.** A resolver is a
+  plain function, which can't live inside the (serializable) registry store — register resolvers
+  once, at module-evaluation time, not conditionally per request.
+- **`registerFontClassAlias`/`classNameForFontAlias`/`setDefaultFontSetClass`/
+  `getDefaultFontSetClass` exist on the registry for API-surface completeness, but `<MatIcon>`'s
+  font-mode rendering does NOT consult them.** The *effect* `setDefaultFontSetClass` has
+  upstream is still the separate, pre-existing `MatIconConfig.fontSet` mechanism:
+  `MatIconConfig.fontSet` (set via `QwikMaterialProvider`) falls back to upstream's own built-in
+  default font-set class ladder (`material-icons mat-ligature-font`) when neither the prop nor
+  the config is set, instead of applying no class at all.
+- **`color` accepts any string, not just `'primary' | 'accent' | 'warn'`** — matches upstream's
+  own `color` setter type (`string | null | undefined`); the three palette names are still
+  suggested by autocomplete.
 - **`aria-label` is a declared prop on `<MatIcon>`** (pair with `aria-hidden={false}` for a
   labeled, interactive-icon-as-control usage) — not spread as an arbitrary attribute.
 - **`hostContent` prop** renders extra content as `<MatIcon>`'s real last child (font mode only)
