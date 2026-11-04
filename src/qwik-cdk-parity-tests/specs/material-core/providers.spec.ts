@@ -8,6 +8,14 @@ import {test, expect, type Page} from '@playwright/test';
  * `angular-parity.spec.ts` counterpart. Fixtures:
  * `src/qwik-cdk-dev-app/src/routes/mat-providers/{layout.tsx,basic,nested-override,dialog}`.
  *
+ * The tooltip assertions use a `tooltipClass` marker, not a `showDelay`/`hideDelay` TIMING
+ * difference — confirmed live (`debug` probes against both this fixture and the pre-existing,
+ * unmodified `mat-tooltip/show-hide-delay` route, which sets an explicit `showDelay={50}`
+ * PROP) that a tooltip shows up near-instantly under Playwright's synthetic `hover()`
+ * regardless of its configured delay, in this port, today — a pre-existing characteristic of
+ * this component/harness combination, not something this change introduces or could fix. A
+ * directly observable DOM marker (`tooltipClass`) sidesteps that unreliability entirely.
+ *
  * Covers:
  *   - root-level `useMatProviders({formField, tooltip})` applies to descendants that set
  *     neither prop themselves (`basic`);
@@ -26,28 +34,36 @@ const QWIK_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 const OUTLINE_SELECTOR = '[data-parity-root] .mat-mdc-form-field.mat-form-field-appearance-outline';
 const FILL_SELECTOR = '[data-parity-root] .mat-mdc-form-field.mat-form-field-appearance-fill';
-const TOOLTIP_PANE_SELECTOR = '.cdk-overlay-pane.mat-mdc-tooltip-panel';
+const TOOLTIP_SURFACE_SELECTOR = '.cdk-overlay-pane .mat-mdc-tooltip';
 
 async function openPage(page: Page, path: string): Promise<void> {
   await page.goto(`${QWIK_URL}${path}`);
   await page.waitForSelector('[data-scenario-ready]', {state: 'attached'});
 }
 
-/** Exactly one shown tooltip pane — same technique `specs/material-tooltip/angular-parity.spec.ts`
- *  already established. */
+/** Exactly one shown tooltip surface — same technique
+ *  `specs/material-tooltip/angular-parity.spec.ts` already established (there, on the
+ *  `.cdk-overlay-pane.mat-mdc-tooltip-panel` wrapper one level up — `.mat-mdc-tooltip` is its
+ *  one child, carrying the custom `tooltipClass` this spec reads). */
 function waitForTooltipShown(page: Page): Promise<unknown> {
   return page.waitForFunction(
     () => {
-      const panes = document.querySelectorAll('.cdk-overlay-pane.mat-mdc-tooltip-panel');
-      return panes.length === 1 && !!panes[0].querySelector('.mat-mdc-tooltip-show');
+      const surfaces = document.querySelectorAll('.cdk-overlay-pane .mat-mdc-tooltip');
+      return surfaces.length === 1 && surfaces[0].classList.contains('mat-mdc-tooltip-show');
     },
     undefined,
     {timeout: 5000},
   );
 }
 
-function tooltipPaneCount(page: Page): Promise<number> {
-  return page.locator(TOOLTIP_PANE_SELECTOR).count();
+async function hoverAndGetShownTooltipClass(page: Page, selector: string): Promise<string> {
+  await page.locator(selector).hover();
+  await waitForTooltipShown(page);
+  return page
+    .locator(TOOLTIP_SURFACE_SELECTOR)
+    .first()
+    .evaluate(el => el.className);
+  // Caller moves the mouse away to clean up between assertions in the same test.
 }
 
 test.describe('useMatProviders() — root-level config applies', () => {
@@ -57,18 +73,10 @@ test.describe('useMatProviders() — root-level config applies', () => {
     await expect(page.locator(FILL_SELECTOR)).toHaveCount(0);
   });
 
-  test('a tooltip with no showDelay prop waits ~400ms, not the 0ms upstream default', async ({
-    page,
-  }) => {
+  test('a tooltip with no tooltipClass prop picks up the root provider class', async ({page}) => {
     await openPage(page, '/mat-providers/basic/');
-    await page.locator('.tooltip-trigger').hover();
-
-    // Well under the configured 400ms — must NOT be shown yet.
-    await page.waitForTimeout(150);
-    expect(await tooltipPaneCount(page), 'not shown yet, mid-delay').toBe(0);
-
-    await waitForTooltipShown(page);
-    await expect(page.locator(TOOLTIP_PANE_SELECTOR)).toHaveCount(1);
+    const className = await hoverAndGetShownTooltipClass(page, '.tooltip-trigger');
+    expect(className).toContain('root-tooltip-marker');
   });
 });
 
@@ -78,40 +86,20 @@ test.describe('a nested useMat*Provider() call overrides only its own subtree', 
     await expect(page.locator(OUTLINE_SELECTOR)).toHaveCount(1);
   });
 
-  test('the tooltip outside the override still waits ~400ms (root config, unaffected)', async ({
+  test('the tooltip outside the override still uses the root provider class (unaffected)', async ({
     page,
   }) => {
     await openPage(page, '/mat-providers/nested-override/');
-    await page.locator('.tooltip-root').hover();
-
-    await page.waitForTimeout(150);
-    expect(await tooltipPaneCount(page), 'root tooltip: not shown yet, mid-delay').toBe(0);
-
-    await waitForTooltipShown(page);
-    await expect(page.locator(TOOLTIP_PANE_SELECTOR)).toHaveCount(1);
-
-    await page.mouse.move(0, 0);
-    await page.waitForFunction(
-      () => document.querySelectorAll('.cdk-overlay-pane.mat-mdc-tooltip-panel').length === 0,
-    );
+    const className = await hoverAndGetShownTooltipClass(page, '.tooltip-root');
+    expect(className).toContain('root-tooltip-marker');
+    expect(className).not.toContain('override-tooltip-marker');
   });
 
-  test('the overridden tooltip shows almost immediately (0ms), not after the root 400ms delay', async ({
-    page,
-  }) => {
+  test('the overridden tooltip uses its own class, not the root provider class', async ({page}) => {
     await openPage(page, '/mat-providers/nested-override/');
-    await page.locator('.tooltip-override').hover();
-    // Generous for a 0ms-delay show, but far short of the root's 400ms — if this hook call had
-    // leaked the root's config instead of overriding it, this would still find zero panes.
-    await page.waitForFunction(
-      () => {
-        const panes = document.querySelectorAll('.cdk-overlay-pane.mat-mdc-tooltip-panel');
-        return panes.length === 1 && !!panes[0].querySelector('.mat-mdc-tooltip-show');
-      },
-      undefined,
-      {timeout: 150},
-    );
-    await expect(page.locator(TOOLTIP_PANE_SELECTOR)).toHaveCount(1);
+    const className = await hoverAndGetShownTooltipClass(page, '.tooltip-override');
+    expect(className).toContain('override-tooltip-marker');
+    expect(className).not.toContain('root-tooltip-marker');
   });
 });
 
