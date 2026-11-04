@@ -1,8 +1,8 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every MatSlideToggle in a subtree. Consumers provide
- * this via <QwikMaterialProvider matSlideToggleConfig={...}>. Mirrors
+ * this via `useMatSlideToggleProvider(...)`. Mirrors
  * upstream's `MatSlideToggleDefaultOptions`
  * (`src/material/slide-toggle/slide-toggle-config.ts`).
  */
@@ -34,3 +34,15 @@ export interface MatSlideToggleConfig {
 export const MAT_SLIDE_TOGGLE_CONFIG = createContextId<MatSlideToggleConfig>(
   'qwikMaterial/slideToggleConfig',
 );
+
+/**
+ * Provides {@link MAT_SLIDE_TOGGLE_CONFIG} for this subtree — call once near the root (or anywhere
+ * deeper, to override just that part of the tree) so every MatSlideToggle
+ * descendant resolves its defaults from `config` instead of its own hardcoded fallback.
+ * Only this one context is provided; every other qwik-material configuration context
+ * stays whatever an ancestor (or nothing) already provided — see README.md's
+ * "Configuring the library" section.
+ */
+export function useMatSlideToggleProvider(config?: MatSlideToggleConfig): void {
+  useContextProvider(MAT_SLIDE_TOGGLE_CONFIG, config ?? {});
+}

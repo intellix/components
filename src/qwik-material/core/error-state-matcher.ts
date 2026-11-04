@@ -1,4 +1,4 @@
-import {createContextId, type QRL} from '@qwik.dev/core';
+import {createContextId, useContextProvider, type QRL} from '@qwik.dev/core';
 
 /**
  * The Qwik port's equivalent of upstream `ErrorStateMatcher.isErrorState(control, form)`'s two
@@ -34,7 +34,7 @@ export interface MatErrorStateSnapshot {
  *   synchronously but a QRL needs a `useTask$`/signal in every consuming control).
  *
  * Settable in two places, exactly mirroring upstream's two injection sites:
- * - App-wide default: `<QwikMaterialProvider errorStateMatcher={...}>` (mirrors `{provide:
+ * - App-wide default: `useMatErrorStateMatcherProvider({...})` (mirrors `{provide:
  *   ErrorStateMatcher, useClass: ShowOnDirtyErrorStateMatcher}` at the root/module level) — read
  *   via {@link MAT_ERROR_STATE_MATCHER}.
  * - Per-control override: `<MatInput errorStateMatcher={...}>` /
@@ -42,7 +42,10 @@ export interface MatErrorStateSnapshot {
  *   `MatFormFieldControlProps` (`core/mat-form-field-control.ts`), always preferred over the
  *   app-wide default when set.
  */
-export type MatErrorStateMatcher = 'touched' | 'dirty' | QRL<(state: MatErrorStateSnapshot) => boolean>;
+export type MatErrorStateMatcher =
+  | 'touched'
+  | 'dirty'
+  | QRL<(state: MatErrorStateSnapshot) => boolean>;
 
 /** Upstream's own default (`ErrorStateMatcher`, not `ShowOnDirtyErrorStateMatcher`) — matches
  *  every control's PREVIOUS hardcoded formula exactly, so leaving this unset changes nothing. */
@@ -81,4 +84,16 @@ export function resolveErrorStateSync(
   return mode === 'dirty'
     ? snapshot.invalid && (snapshot.dirty || snapshot.submitted)
     : snapshot.invalid && (snapshot.touched || snapshot.submitted);
+}
+
+/**
+ * Provides {@link MAT_ERROR_STATE_MATCHER} for this subtree — call once near the root (or
+ * anywhere deeper, to override just that part of the tree) to set the app-wide default
+ * `ErrorStateMatcher` every form-field-bound control falls back to when it doesn't set its own
+ * per-control `errorStateMatcher` prop. Only this one context is provided; every other
+ * qwik-material configuration context stays whatever an ancestor (or nothing) already
+ * provided. Defaults to {@link MAT_ERROR_STATE_MATCHER_DEFAULT} when `matcher` is omitted.
+ */
+export function useMatErrorStateMatcherProvider(matcher?: MatErrorStateMatcher): void {
+  useContextProvider(MAT_ERROR_STATE_MATCHER, matcher ?? MAT_ERROR_STATE_MATCHER_DEFAULT);
 }

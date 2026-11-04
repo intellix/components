@@ -1,11 +1,11 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 import type {MatBadgeColor} from './badge-color';
 import type {MatBadgePosition} from './badge-position';
 import type {MatBadgeSize} from './badge-size';
 
 /**
  * Object that can be used to configure default options for every MatBadge
- * rendered inside a <QwikMaterialProvider matBadgeConfig={…}> subtree.
+ * rendered inside a `useMatBadgeProvider(...)` subtree.
  *
  * See design spec §2.1 and §2.3 for full field semantics.
  */
@@ -28,7 +28,19 @@ export interface MatBadgeConfig {
 
 /**
  * Context token that installs default MatBadge options in a subtree.
- * Provided by <QwikMaterialProvider matBadgeConfig={…}>. Consumed by
+ * Provided by `useMatBadgeProvider(...)`. Consumed by
  * MatBadge via `useContext(MAT_BADGE_CONFIG, DEFAULTS)`.
  */
 export const MAT_BADGE_CONFIG = createContextId<MatBadgeConfig>('qwikMaterial/badgeConfig');
+
+/**
+ * Provides {@link MAT_BADGE_CONFIG} for this subtree — call once near the root (or anywhere
+ * deeper, to override just that part of the tree) so every MatBadge
+ * descendant resolves its defaults from `config` instead of its own hardcoded fallback.
+ * Only this one context is provided; every other qwik-material configuration context
+ * stays whatever an ancestor (or nothing) already provided — see README.md's
+ * "Configuring the library" section.
+ */
+export function useMatBadgeProvider(config?: MatBadgeConfig): void {
+  useContextProvider(MAT_BADGE_CONFIG, config ?? {});
+}

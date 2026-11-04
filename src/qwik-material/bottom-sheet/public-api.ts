@@ -21,3 +21,7 @@ export {
   MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
   MAT_BOTTOM_SHEET_REF,
 } from './mat-bottom-sheet-tokens';
+export {
+  useMatBottomSheetProvider,
+  type MatBottomSheetProviderConfig,
+} from './use-mat-bottom-sheet-provider';

@@ -1,9 +1,9 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 import type {MatIconColor} from './icon-color';
 
 /**
  * Defaults applied to every <MatIcon> in a subtree. Consumers provide this via
- * <QwikMaterialProvider matIconConfig={...}>. Mirrors upstream
+ * `useMatIconProvider(...)`. Mirrors upstream
  * MatIconDefaultOptions (src/material/icon/icon.ts:31-42) for `color`, and
  * MatIconRegistry's app-wide `setDefaultFontSetClass` /
  * `getDefaultFontSetClass` (src/material/icon/icon-registry.ts) for `fontSet`
@@ -39,3 +39,15 @@ export const MAT_ICON_DEFAULT_FONT_SET_CLASS = 'material-icons mat-ligature-font
  * directly in advanced scenarios.
  */
 export const MAT_ICON_CONFIG = createContextId<MatIconConfig>('qwikMaterial/iconConfig');
+
+/**
+ * Provides {@link MAT_ICON_CONFIG} for this subtree — call once near the root (or anywhere
+ * deeper, to override just that part of the tree) so every MatIcon
+ * descendant resolves its defaults from `config` instead of its own hardcoded fallback.
+ * Only this one context is provided; every other qwik-material configuration context
+ * stays whatever an ancestor (or nothing) already provided — see README.md's
+ * "Configuring the library" section.
+ */
+export function useMatIconProvider(config?: MatIconConfig): void {
+  useContextProvider(MAT_ICON_CONFIG, config ?? {});
+}

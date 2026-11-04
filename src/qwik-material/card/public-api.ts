@@ -3,7 +3,7 @@
 
 export type {MatCardAppearance} from './card-appearance';
 export type {MatCardConfig} from './card-config';
-export {MAT_CARD_CONFIG} from './card-config';
+export {MAT_CARD_CONFIG, useMatCardProvider} from './card-config';
 
 export {MatCard, type MatCardProps} from './mat-card';
 export {MatCardHeader, type MatCardHeaderProps} from './mat-card-header';

@@ -40,6 +40,10 @@ const entries = [
   'paginator',
   'autocomplete',
   'datepicker',
+  // Aggregator entry point — imports from every entry point ABOVE via this package's own
+  // `exports` map (never the reverse, to avoid a cycle); see providers/public-api.ts's module
+  // doc comment and providers/SYNC.md.
+  'providers',
 ];
 
 export default defineConfig({

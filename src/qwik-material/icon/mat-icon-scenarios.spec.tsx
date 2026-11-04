@@ -30,7 +30,7 @@ import {
   MAT_ICON_CONFIG,
   MAT_ICON_REGISTRY,
   MatIcon,
-  MatIconRegistryProvider,
+  useMatIconRegistryProvider,
   trustIconHtml,
   trustIconResourceUrl,
   type MatIconColor,
@@ -117,9 +117,9 @@ describe('MatIcon — sanity', () => {
     expect(MAT_ICON_REGISTRY.id).toBe('qwik-material/icon-registry');
   });
 
-  it('MatIconRegistryProvider is exported and is a function', () => {
-    expect(MatIconRegistryProvider).toBeDefined();
-    expect(typeof MatIconRegistryProvider).toBe('function');
+  it('useMatIconRegistryProvider is exported and is a function', () => {
+    expect(useMatIconRegistryProvider).toBeDefined();
+    expect(typeof useMatIconRegistryProvider).toBe('function');
   });
 
   it('trustIconResourceUrl / trustIconHtml wrap a string into a branded trusted value', () => {

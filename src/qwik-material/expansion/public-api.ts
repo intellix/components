@@ -4,7 +4,7 @@
 // @angular-community/qwik-cdk/accordion.
 
 export type {MatExpansionConfig} from './expansion-config';
-export {MAT_EXPANSION_CONFIG} from './expansion-config';
+export {MAT_EXPANSION_CONFIG, useMatExpansionProvider} from './expansion-config';
 
 export type {MatAccordionDisplayMode, MatAccordionTogglePosition} from './accordion-state';
 

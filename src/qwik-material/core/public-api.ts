@@ -28,6 +28,7 @@ export {
   MAT_ERROR_STATE_MATCHER,
   MAT_ERROR_STATE_MATCHER_DEFAULT,
   resolveErrorStateSync,
+  useMatErrorStateMatcherProvider,
   type MatErrorStateMatcher,
   type MatErrorStateSnapshot,
 } from './error-state-matcher';
@@ -77,7 +78,9 @@ export {
   useDateAdapterFactory,
   useDateFormats,
   useDateLocale,
+  useMatDateAdapterProvider,
   resolveDateAdapter,
+  type MatDateAdapterProviderConfig,
 } from './datetime/use-date-adapter';
 export {
   MAT_FORM,
@@ -114,7 +117,13 @@ export {MatRipple, type MatRippleProps} from './ripple/mat-ripple';
 export {
   MAT_RIPPLE_GLOBAL_OPTIONS,
   useRippleGlobalOptions,
+  useMatRippleProvider,
   type RippleGlobalOptions,
 } from './ripple/ripple-global-options';
 export {launchRipple, fadeOutAllRipples, fadeOutAllNonPersistentRipples} from './ripple/ripple-dom';
 export type {RippleConfig, RippleAnimationConfig, RippleRef} from './ripple/ripple-ref';
+
+// Dialog/bottom-sheet/overlay context forwarding — see mat-context-snapshot.ts's own doc
+// comment. Renamed/relocated here (from `dialog/qwik-material-provider.tsx`) when the single
+// `<QwikMaterialProvider>` component was replaced by one provider hook per setting.
+export {MAT_CONTEXT_IDS, useMatContextSnapshot} from './mat-context-snapshot';

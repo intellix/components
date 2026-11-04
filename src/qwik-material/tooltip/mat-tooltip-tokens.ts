@@ -1,4 +1,4 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 import type {TooltipPosition, TooltipTouchGestures} from './tooltip-position';
 
 /**
@@ -56,9 +56,20 @@ export const MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY: Required<
 
 /**
  * Context token that installs default `MatTooltip` options in a subtree.
- * Provided by `<QwikMaterialProvider matTooltipDefaults={…}>`. Consumed by
+ * Provided by `useMatTooltipProvider({…})`. Consumed by
  * `MatTooltip` via `useContext(MAT_TOOLTIP_DEFAULT_OPTIONS, {})`.
  */
 export const MAT_TOOLTIP_DEFAULT_OPTIONS = createContextId<MatTooltipDefaultOptions>(
   'qwikMaterial/tooltipDefaultOptions',
 );
+
+/**
+ * Provides {@link MAT_TOOLTIP_DEFAULT_OPTIONS} for this subtree — call once near the root (or
+ * anywhere deeper, to override just that part of the tree) so every `MatTooltip` descendant
+ * resolves its defaults from `defaults` instead of {@link MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY}.
+ * Only this one context is provided; every other qwik-material configuration context stays
+ * whatever an ancestor (or nothing) already provided.
+ */
+export function useMatTooltipProvider(defaults?: MatTooltipDefaultOptions): void {
+  useContextProvider(MAT_TOOLTIP_DEFAULT_OPTIONS, defaults ?? {});
+}

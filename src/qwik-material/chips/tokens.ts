@@ -1,4 +1,4 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 
 /** A separator key with required modifiers — mirrors upstream's `SeparatorKey`. */
 export interface SeparatorKey {
@@ -9,7 +9,7 @@ export interface SeparatorKey {
 /**
  * Qwik-port equivalent of upstream's `MAT_CHIPS_DEFAULT_OPTIONS` injection
  * token (`src/material/chips/tokens.ts`). Consumers provide this via
- * `<QwikMaterialProvider matChipsConfig={...}>`.
+ * `useMatChipsProvider(...)`.
  */
 export interface MatChipsConfig {
   /**
@@ -34,6 +34,18 @@ export const MAT_CHIPS_CONFIG_DEFAULTS: MatChipsConfig = {
 
 /**
  * Context id used by MatChipListbox / MatChipInput (via MatChipGrid) to read config.
- * Provided by `<QwikMaterialProvider matChipsConfig={...}>`.
+ * Provided by `useMatChipsProvider(...)`.
  */
 export const MAT_CHIPS_CONFIG = createContextId<MatChipsConfig>('qwikMaterial/chipsConfig');
+
+/**
+ * Provides {@link MAT_CHIPS_CONFIG} for this subtree — call once near the root (or anywhere
+ * deeper, to override just that part of the tree) so every MatChip family component
+ * descendant resolves its defaults from `config` instead of its own hardcoded fallback.
+ * Only this one context is provided; every other qwik-material configuration context
+ * stays whatever an ancestor (or nothing) already provided — see README.md's
+ * "Configuring the library" section.
+ */
+export function useMatChipsProvider(config?: MatChipsConfig): void {
+  useContextProvider(MAT_CHIPS_CONFIG, config ?? {});
+}

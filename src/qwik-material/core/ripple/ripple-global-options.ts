@@ -1,14 +1,13 @@
-import {createContextId, useContext} from '@qwik.dev/core';
+import {createContextId, useContext, useContextProvider} from '@qwik.dev/core';
 import type {RippleAnimationConfig} from './ripple-ref';
 
 /**
  * Qwik port of upstream's `RippleGlobalOptions`/`MAT_RIPPLE_GLOBAL_OPTIONS`
  * (`src/material/core/ripple/ripple.ts`). Provided app-wide via
- * `<QwikMaterialProvider matRippleConfig={...}>` (see
- * `dialog/qwik-material-provider.tsx`'s `matRippleConfig` prop), read by
- * every ripple-bearing consumer — the standalone `useMatRipple()` hook AND
- * every built-in component that already renders a ripple through
- * `handleRippleEvent()` (`ripple-dom.ts`) — via {@link useRippleGlobalOptions}.
+ * `useMatRippleProvider({...})`, read by every ripple-bearing consumer — the
+ * standalone `useMatRipple()` hook AND every built-in component that already
+ * renders a ripple through `handleRippleEvent()` (`ripple-dom.ts`) — via
+ * {@link useRippleGlobalOptions}.
  *
  * Dropped relative to upstream: `namespace` (`RippleGlobalOptions.namespace`)
  * — upstream's own doc comment says it exists only so `MatRippleLoader`'s
@@ -60,4 +59,16 @@ export const MAT_RIPPLE_GLOBAL_OPTIONS = createContextId<RippleGlobalOptions>(
  */
 export function useRippleGlobalOptions(): RippleGlobalOptions {
   return useContext(MAT_RIPPLE_GLOBAL_OPTIONS, {});
+}
+
+/**
+ * Provides {@link MAT_RIPPLE_GLOBAL_OPTIONS} for this subtree — call once near the root (or
+ * anywhere deeper, to override just that part of the tree) so every ripple-bearing consumer
+ * (the standalone `useMatRipple()`/`<MatRipple>` AND every built-in component's own internal
+ * ripple) resolves its options from `options` instead of the "no provider" `{}` default. Only
+ * this one context is provided; every other qwik-material configuration context stays
+ * whatever an ancestor (or nothing) already provided.
+ */
+export function useMatRippleProvider(options?: RippleGlobalOptions): void {
+  useContextProvider(MAT_RIPPLE_GLOBAL_OPTIONS, options ?? {});
 }

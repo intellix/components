@@ -12,7 +12,7 @@ export const MAT_BOTTOM_SHEET_DATA = createContextId<unknown>('qwikMaterial/bott
 
 /**
  * Default options merged into every open() config. Provided by
- * <QwikMaterialProvider matBottomSheetDefaults={…}>. Optional; defaults to {}.
+ * `useMatBottomSheetProvider({defaults: …})`. Optional; defaults to {}.
  */
 export const MAT_BOTTOM_SHEET_DEFAULT_OPTIONS = createContextId<Partial<MatBottomSheetConfig>>(
   'qwikMaterial/bottomSheetDefaultOptions',
@@ -20,9 +20,8 @@ export const MAT_BOTTOM_SHEET_DEFAULT_OPTIONS = createContextId<Partial<MatBotto
 
 /**
  * Default `ScrollStrategy` descriptor for bottom sheets that don't specify
- * their own. Provided by `<QwikMaterialProvider
- * matBottomSheetScrollStrategy={…}>`. Default: `'block'` (matches upstream
- * `MatBottomSheet.open()`'s own default).
+ * their own. Provided by `useMatBottomSheetProvider({scrollStrategy: …})`.
+ * Default: `'block'` (matches upstream `MatBottomSheet.open()`'s own default).
  *
  * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
  * factory; see `qwik-material/dialog/mat-dialog-tokens.ts`'s

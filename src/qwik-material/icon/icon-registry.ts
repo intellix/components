@@ -14,7 +14,7 @@
  *   - **Data** — the name/namespace → icon-or-icon-set registrations, font
  *     aliases, default font-set class — lives in a plain, JSON-shaped
  *     `MatIconRegistryStore`, created with `useStore()` by
- *     {@link useMatIconRegistry} and provided through {@link MAT_ICON_REGISTRY}
+ *     {@link useMatIconRegistryProvider} and provided through {@link MAT_ICON_REGISTRY}
  *     context, exactly like every `Mat*Config` this port already threads
  *     through `QwikMaterialProvider`. This is the part that's genuinely
  *     request/app-tree-scoped (so concurrent SSR requests registering
@@ -87,7 +87,7 @@ export type IconResolver = (
  * The registry's serializable data: name/namespace → icon-or-icon-set
  * registrations, font-class aliases, and the default font-set class.
  * Created with `useStore()`, never constructed directly by consumers — see
- * {@link useMatIconRegistry}.
+ * {@link useMatIconRegistryProvider}.
  */
 export interface MatIconRegistryStore {
   /** `"${namespace}:${name}"` → registration. */
@@ -127,7 +127,7 @@ export function createIconRegistryStore(): MatIconRegistryStore {
 
 /**
  * Context id a `<MatIconRegistryProvider>` (or any ancestor calling
- * {@link useMatIconRegistry}) provides. The id string is exposed publicly
+ * {@link useMatIconRegistryProvider}) provides. The id string is exposed publicly
  * and MUST remain stable across releases, same convention as every other
  * `MAT_*` context id in this port.
  */
@@ -144,7 +144,7 @@ const NO_REGISTRY: unknown = Object.freeze({});
 /**
  * Reads the `MAT_ICON_REGISTRY` context, or `undefined` when `<MatIcon
  * svgIcon="...">` is used with no `<MatIconRegistryProvider>` (or
- * `useMatIconRegistry()`-calling) ancestor at all. `<MatIcon>` itself treats
+ * `useMatIconRegistryProvider()`-calling) ancestor at all. `<MatIcon>` itself treats
  * `undefined` as a resolution error (mirrors upstream's "no HttpClient" /
  * "icon not found" failure shape — logged, renders nothing) rather than
  * throwing synchronously, since a font-mode-only app with no SVG icons at
@@ -174,7 +174,7 @@ export interface MatIconRegistrySeedIconSet {
 }
 
 /**
- * Initial registrations for {@link useMatIconRegistry}/
+ * Initial registrations for {@link useMatIconRegistryProvider}/
  * {@link MatIconRegistryProvider} — the shape that makes "register icons at
  * app startup from data loaded at runtime" (e.g. a `routeLoader$`'s
  * `{name, url}[]` response) a one-line `<MatIconRegistryProvider
@@ -223,11 +223,35 @@ function buildStoreFromSeed(seed: MatIconRegistrySeed | undefined): MatIconRegis
  * {@link MatIconRegistrySeed}) and provides it via {@link MAT_ICON_REGISTRY}
  * context to this component's descendants. Returns the store so the SAME
  * component can also register more icons imperatively
- * (`addSvgIcon(registry, ...)`) or read it back later. Most apps won't call
- * this directly — see {@link MatIconRegistryProvider} for the component
- * form, which is the one normally placed at (or near) the app root.
+ * (`addSvgIcon(registry, ...)`) or read it back later.
+ *
+ * Call once near the (or any) root — e.g.
+ *
+ * ```tsx
+ * export const useIcons = routeLoader$(async () => {
+ *   const icons = await fetch('https://api.example.com/icons').then(r => r.json());
+ *   return icons as Array<{name: string; url: string}>;
+ * });
+ *
+ * export default component$(() => {
+ *   const icons = useIcons();
+ *   useMatIconRegistryProvider({
+ *     icons: icons.value.map(i => ({name: i.name, url: trustIconResourceUrl(i.url)})),
+ *   });
+ *   return <Slot />;
+ * });
+ * ```
+ *
+ * `icons`/`iconSets` seed the registry ONCE, at this call's first render — see
+ * {@link MatIconRegistrySeed}'s doc comment. To register more icons later from elsewhere in
+ * the tree, call {@link addSvgIcon} (etc.) directly against the store returned by
+ * {@link useOptionalIconRegistry}.
+ *
+ * Only this one context is provided; every other qwik-material configuration context stays
+ * whatever an ancestor (or nothing) already provided — an app that registers no icons at all
+ * never needs to call this.
  */
-export function useMatIconRegistry(seed?: MatIconRegistrySeed): MatIconRegistryStore {
+export function useMatIconRegistryProvider(seed?: MatIconRegistrySeed): MatIconRegistryStore {
   const store = useStore<MatIconRegistryStore>(() => buildStoreFromSeed(seed));
   useContextProvider(MAT_ICON_REGISTRY, store);
   return store;
@@ -307,7 +331,9 @@ export function addSvgIconSetInNamespace(
   options?: IconOptions,
 ): void {
   if (!isTrustedResourceUrl(url)) {
-    throw new Error('addSvgIconSet(InNamespace) requires a TrustedResourceUrl — call trustIconResourceUrl(url) first.');
+    throw new Error(
+      'addSvgIconSet(InNamespace) requires a TrustedResourceUrl — call trustIconResourceUrl(url) first.',
+    );
   }
   pushIconSet(registry, namespace, {kind: 'url', value: url.url, options});
 }
@@ -329,7 +355,9 @@ export function addSvgIconSetLiteralInNamespace(
   options?: IconOptions,
 ): void {
   if (!isTrustedHtml(literal)) {
-    throw new Error('addSvgIconSetLiteral(InNamespace) requires a TrustedHtml — call trustIconHtml(html) first.');
+    throw new Error(
+      'addSvgIconSetLiteral(InNamespace) requires a TrustedHtml — call trustIconHtml(html) first.',
+    );
   }
   pushIconSet(registry, namespace, {kind: 'literal', value: literal.html, options});
 }
@@ -404,7 +432,10 @@ export function classNameForFontAlias(registry: MatIconRegistryStore, alias: str
 }
 
 /** Mirrors `setDefaultFontSetClass`. */
-export function setDefaultFontSetClass(registry: MatIconRegistryStore, ...classNames: string[]): void {
+export function setDefaultFontSetClass(
+  registry: MatIconRegistryStore,
+  ...classNames: string[]
+): void {
   registry.defaultFontSetClass = classNames;
 }
 
@@ -462,7 +493,10 @@ async function resolveEntry(entry: IconEntry): Promise<string> {
  * `svgIcon` change (or any other prop/signal that reruns the computed) will
  * see the current store state correctly.
  */
-export async function getNamedSvgIcon(registry: MatIconRegistryStore, rawName: string): Promise<string> {
+export async function getNamedSvgIcon(
+  registry: MatIconRegistryStore,
+  rawName: string,
+): Promise<string> {
   const [namespace, name] = splitIconName(rawName);
   const key = iconKey(namespace, name);
 
@@ -501,7 +535,9 @@ export async function getSvgIconFromUrl(
   options?: IconOptions,
 ): Promise<string> {
   if (!isTrustedResourceUrl(url)) {
-    throw new Error('getSvgIconFromUrl requires a TrustedResourceUrl — call trustIconResourceUrl(url) first.');
+    throw new Error(
+      'getSvgIconFromUrl requires a TrustedResourceUrl — call trustIconResourceUrl(url) first.',
+    );
   }
   const text = await fetchIconText(url.url);
   return withIconSvgAttributes(text, options?.viewBox);

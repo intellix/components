@@ -4,7 +4,7 @@ import {createContextId} from '@qwik.dev/core';
  * Qwik-port equivalent of upstream `MatPaginatorIntl` (`src/material/paginator/paginator-intl.ts`).
  * Upstream is an injectable `@Service()` class a consumer overrides via
  * `providers: [{provide: MatPaginatorIntl, useClass: MyIntl}]`; this port uses a context instead
- * (`MAT_PAGINATOR_INTL`, provided via `<QwikMaterialProvider matPaginatorIntl={...}>`) — same
+ * (`MAT_PAGINATOR_INTL`, provided via `useMatPaginatorProvider({intl: {...}})`) — same
  * pattern as every other per-component config in this project. Unlike most of those configs, this
  * one is NOT merged field-by-field with a fallback default (upstream's `providers` entry replaces
  * the WHOLE service instance, not individual fields) — a consumer supplying `matPaginatorIntl`
@@ -63,7 +63,7 @@ export const DEFAULT_PAGINATOR_INTL: MatPaginatorIntl = {
 };
 
 /**
- * Context id a consumer provides via `<QwikMaterialProvider matPaginatorIntl={...}>` to override
+ * Context id a consumer provides via `useMatPaginatorProvider({intl: {...}})` to override
  * every `MatPaginator` in that subtree's strings — see this file's module doc comment. Falls back
  * to {@link DEFAULT_PAGINATOR_INTL} when nothing provides it.
  */

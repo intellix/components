@@ -24,7 +24,7 @@ import type {MatDialogConfig} from './mat-dialog-config';
 import {createMatDialogRef, MatDialogState, type MatDialogRef} from './mat-dialog-ref';
 import {MatDialogContainer} from './mat-dialog-container';
 import {MAT_DIALOG_DEFAULT_OPTIONS, MAT_DIALOG_SCROLL_STRATEGY} from './mat-dialog-tokens';
-import {useQwikMaterialContextSnapshot} from './qwik-material-provider';
+import {useMatContextSnapshot} from '../core/mat-context-snapshot';
 
 /**
  * Internal wrapper component that MatDialog opens via the cdk overlay. It
@@ -97,14 +97,14 @@ export function useMatDialog(): MatDialog {
   // point useMatDialog() is called (inside the opener's own render) — see
   // OverlayConfig.context's doc comment for why the dialog's content,
   // rendered elsewhere under <QwikCdkRoot>, can't see them on its own.
-  const inheritedContext = useQwikMaterialContextSnapshot();
+  const inheritedContext = useMatContextSnapshot();
   // `MAT_DIALOG_SCROLL_STRATEGY` is a plain, serializable
   // `ScrollStrategyDescriptor` (string/object, or a `QRL` escape hatch) —
   // NOT a function factory, so neither of `useContext()`'s two
   // function-typed-default pitfalls apply here (no lazy-initializer
   // invocation, and a plain string default is never confused with "no
   // default"). A plain `'block'` fallback covers calling this hook from a
-  // component with no `<QwikMaterialProvider>` ancestor at all (the
+  // component with no `useMatDialogProvider()` ancestor call at all (the
   // `replace-sheet`-style edge case — see `useMatBottomSheet()`'s
   // identical comment).
   const scrollStrategyDescriptor = useContext(

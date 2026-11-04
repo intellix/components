@@ -4,7 +4,7 @@
 
 export type {MatIconColor} from './icon-color';
 export type {MatIconConfig} from './icon-config';
-export {MAT_ICON_CONFIG} from './icon-config';
+export {MAT_ICON_CONFIG, useMatIconProvider} from './icon-config';
 export {MatIcon, type MatIconProps} from './mat-icon';
 
 export {
@@ -33,7 +33,7 @@ export {
   registerFontClassAlias,
   setDefaultFontSetClass,
   splitIconName,
-  useMatIconRegistry,
+  useMatIconRegistryProvider,
   useOptionalIconRegistry,
   type IconOptions,
   type IconResolver,
@@ -42,5 +42,3 @@ export {
   type MatIconRegistrySeedIconSet,
   type MatIconRegistryStore,
 } from './icon-registry';
-
-export {MatIconRegistryProvider} from './mat-icon-registry-provider';

@@ -18,4 +18,9 @@ export {
   type MatChipGridProps,
   type MatChipGridInputDef,
 } from './mat-chip-grid';
-export {MAT_CHIPS_CONFIG, type MatChipsConfig, type SeparatorKey} from './tokens';
+export {
+  MAT_CHIPS_CONFIG,
+  useMatChipsProvider,
+  type MatChipsConfig,
+  type SeparatorKey,
+} from './tokens';

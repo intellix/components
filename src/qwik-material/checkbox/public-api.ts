@@ -3,6 +3,10 @@
 // and checkbox/SYNC.md.
 
 export type {MatCheckboxConfig, MatCheckboxClickAction} from './checkbox-config';
-export {MAT_CHECKBOX_CONFIG, MAT_CHECKBOX_CONFIG_DEFAULTS} from './checkbox-config';
+export {
+  MAT_CHECKBOX_CONFIG,
+  MAT_CHECKBOX_CONFIG_DEFAULTS,
+  useMatCheckboxProvider,
+} from './checkbox-config';
 
 export {MatCheckbox, type MatCheckboxProps, type MatCheckboxChangeEvent} from './mat-checkbox';

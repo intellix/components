@@ -2,7 +2,7 @@
 // See docs/superpowers/specs/2026-10-27-qwik-material-dom-parity-remediation-design.md.
 
 export type {MatSidenavConfig} from './sidenav-config';
-export {MAT_SIDENAV_CONFIG} from './sidenav-config';
+export {MAT_SIDENAV_CONFIG, useMatSidenavProvider} from './sidenav-config';
 
 export type {MatDrawerMode, MatDrawerPosition} from './drawer-state';
 
