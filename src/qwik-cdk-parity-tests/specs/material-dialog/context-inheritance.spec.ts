@@ -5,7 +5,7 @@ const QWIK_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 /**
  * Covers context reaching overlay content: qwik-material configuration
  * contexts visible where `useMatDialog()` is called (inside a
- * a `useMat*Provider()` call placed anywhere inside `<QwikCdkRoot>`) are
+ * `useMat*Provider()` call placed anywhere inside `<QwikCdkRoot>`) are
  * automatically carried into the dialog's own content, which otherwise
  * renders as a SIBLING of the opener under `<QwikCdkRoot>`, not a
  * descendant of that provider.
