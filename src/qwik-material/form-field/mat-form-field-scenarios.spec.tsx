@@ -146,7 +146,7 @@ describe.skip('MatFormField DOM-rendered scenarios — verified via Playwright',
   it('iconPrefix/textPrefix/iconSuffix/textSuffix each render inside their own .mat-mdc-form-field-{icon,text}-{prefix,suffix} container; only icon variants add mat-mdc-form-field-has-icon-{prefix,suffix} to the host', () => {});
   it('subscriptSizing="dynamic" adds mat-mdc-form-field-subscript-dynamic-size to the subscript wrapper; "fixed" (default) adds nothing', () => {});
   it('mat-form-field-animations-enabled is added to the host ~300ms after mount, once, regardless of interaction (unless MAT_ANIMATIONS_DISABLED)', () => {});
-  it('MAT_FORM_FIELD_CONFIG (via QwikMaterialProvider matFormFieldConfig) supplies appearance/color/hideRequiredMarker/floatLabel/subscriptSizing defaults; an explicit prop always wins', () => {});
+  it('MAT_FORM_FIELD_CONFIG (via useMatFormFieldProvider) supplies appearance/color/hideRequiredMarker/floatLabel/subscriptSizing defaults; an explicit prop always wins', () => {});
 });
 
 describe.skip('MatFormField — Angular-only / out-of-scope (deferred forever)', () => {

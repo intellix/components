@@ -51,8 +51,8 @@ export const MAT_RIPPLE_GLOBAL_OPTIONS = createContextId<RippleGlobalOptions>(
 /**
  * Reads `MAT_RIPPLE_GLOBAL_OPTIONS`, falling back to `{}` (every field
  * un-set, i.e. upstream's own "no provider" behaviour: `inject(...,
- * {optional: true}) || {}`) when no `<QwikMaterialProvider
- * matRippleConfig={...}>` ancestor provided one. A plain object — safe to
+ * {optional: true}) || {}`) when no `useMatRippleProvider({...})`
+ * ancestor call provided one. A plain object — safe to
  * capture directly into a `$()` event-handler closure (see
  * `use-mat-ripple.ts`'s doc comment), same as every other `MAT_*_CONFIG`
  * this port already threads this way (`MAT_BUTTON_CONFIG`, `MAT_CHIPS_CONFIG`, …).

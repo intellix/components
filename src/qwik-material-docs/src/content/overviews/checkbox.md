@@ -63,12 +63,10 @@ indeterminate regardless of the `checked` value. Any interaction with the checkb
 
 When a user clicks the `<MatCheckbox>`, the default behavior is to toggle the `checked` value and
 set `indeterminate` to `false`. This behavior can be customized with the `clickAction` field of
-`MatCheckboxConfig`, provided through `<QwikMaterialProvider>`:
+`MatCheckboxConfig`, provided through `useMatCheckboxProvider()`:
 
 ```tsx
-<QwikMaterialProvider matCheckboxConfig={{clickAction: 'noop'}}>
-  <App />
-</QwikMaterialProvider>
+useMatCheckboxProvider({clickAction: 'noop'});
 ```
 
 The possible values are:
@@ -130,6 +128,6 @@ Additionally, `<MatCheckbox>` supports the following accessibility props:
   class and `aria-checked="mixed"` attribute are correct from first paint regardless).
 - **`MatCheckboxChange`'s `source` field dropped** — the `onChange$` payload is just
   `{checked: boolean}` (no component-instance handle to hand back).
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_CHECKBOX_DEFAULT_OPTIONS` injection
+- **Global defaults via a hook (`useMatCheckboxProvider()`)**, not an `MAT_CHECKBOX_DEFAULT_OPTIONS` injection
   token.
 - **Harness not ported.**

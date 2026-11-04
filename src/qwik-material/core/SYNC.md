@@ -726,3 +726,44 @@ the `ripple-overview` example, whose checkboxes never showed as checked). Each Q
 once with `useConstant()`, so later renders re-assign an identical value. Guarded by
 `specs/material-form-field/control-rerender.spec.ts` and a click step on `ripple-overview` in
 `specs/examples-misc`.
+
+## `<QwikMaterialProvider>`/`<MatIconRegistryProvider>` removed; one hook per setting instead (2026-11-04)
+
+Per the project owner's decision: provider COMPONENTS add a wrapper "pyramid" and don't match
+Angular DI semantics (providing one token in Angular never resets any other token the injector
+already had — the removed `<QwikMaterialProvider>` always re-provided EVERY context it knew
+about in one component body, so composing two of them for two unrelated settings meant nesting
+them). Both provider components are gone from the public API, with no deprecated aliases:
+
+- `<QwikMaterialProvider>` (`dialog/qwik-material-provider.tsx`) → one `useMat<Thing>Provider()`
+  hook per setting (or a small, documented GROUP of closely-related contexts, e.g.
+  `useMatDialogProvider({defaults?, scrollStrategy?})`), each exported from that setting's own
+  entry point. See each component's own SYNC.md for its specific hook's name — the full list
+  also appears in `providers/SYNC.md`.
+- `<MatIconRegistryProvider>` → `useMatIconRegistryProvider(seed)` (icon registry's own entry
+  point), a straight rename — same store, same seeding-once semantics, just a hook instead of a
+  component wrapping `<Slot/>`.
+- A new convenience entry point, `@angular-community/qwik-material/providers`, exports
+  `useMatProviders(config)` — fans out to the individual hook for each key present in `config`,
+  providing ONLY those keys. See `providers/SYNC.md` for the full design (hook-order/key-freezing
+  rationale, the complete key → hook mapping table).
+- `useQwikMaterialContextSnapshot()`/`QWIK_MATERIAL_CONTEXT_IDS` (`dialog/qwik-material-
+  provider.tsx`) — the mechanism that carries every visible qwik-material configuration context
+  into a dialog/bottom-sheet's overlay-portaled content — relocated here, to
+  `core/mat-context-snapshot.ts`, as `useMatContextSnapshot()`/`MAT_CONTEXT_IDS`, since it no
+  longer has any reason to live inside a specific (now-removed) component's file. The forwarded
+  set now also includes `MAT_ICON_REGISTRY` and the three date-adapter contexts
+  (`MAT_DATE_ADAPTER_FACTORY`/`MAT_DATE_FORMATS`/`MAT_DATE_LOCALE`) — both were previously
+  provided by the old component but, on inspection, were missing from its own forwarded-context
+  list; a dialog/bottom-sheet opened from a subtree with registered icons or a custom date
+  adapter now correctly sees them inside its own content too.
+
+Every consumer-side context read already had a documented "no provider" fallback default
+(`useContext(ID, DEFAULT)` throughout this port, well before this change) — removing the
+always-on provider component changes NO runtime default; an app that calls no provider hook at
+all still behaves exactly as before.
+
+Every caller across the library, dev-app, docs examples, parity tests, and docs site content was
+migrated in the same change — `git grep -n -E "QwikMaterialProvider|MatIconRegistryProvider"`
+returns nothing outside this kind of dated SYNC.md history entry (which intentionally keeps the
+old name, describing what was true at the time).

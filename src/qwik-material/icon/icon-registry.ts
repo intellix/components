@@ -16,7 +16,7 @@
  *     `MatIconRegistryStore`, created with `useStore()` by
  *     {@link useMatIconRegistryProvider} and provided through {@link MAT_ICON_REGISTRY}
  *     context, exactly like every `Mat*Config` this port already threads
- *     through `QwikMaterialProvider`. This is the part that's genuinely
+ *     through its own `useMat*Provider()` hook. This is the part that's genuinely
  *     request/app-tree-scoped (so concurrent SSR requests registering
  *     DIFFERENT icon sets — e.g. per-tenant data loaded in a `routeLoader$`
  *     — never see each other's data, unlike a naive module-level singleton
@@ -126,8 +126,8 @@ export function createIconRegistryStore(): MatIconRegistryStore {
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Context id a `<MatIconRegistryProvider>` (or any ancestor calling
- * {@link useMatIconRegistryProvider}) provides. The id string is exposed publicly
+ * Context id any ancestor calling
+ * {@link useMatIconRegistryProvider} provides. The id string is exposed publicly
  * and MUST remain stable across releases, same convention as every other
  * `MAT_*` context id in this port.
  */
@@ -143,8 +143,8 @@ const NO_REGISTRY: unknown = Object.freeze({});
 
 /**
  * Reads the `MAT_ICON_REGISTRY` context, or `undefined` when `<MatIcon
- * svgIcon="...">` is used with no `<MatIconRegistryProvider>` (or
- * `useMatIconRegistryProvider()`-calling) ancestor at all. `<MatIcon>` itself treats
+ * svgIcon="...">` is used with no
+ * `useMatIconRegistryProvider()`-calling ancestor at all. `<MatIcon>` itself treats
  * `undefined` as a resolution error (mirrors upstream's "no HttpClient" /
  * "icon not found" failure shape — logged, renders nothing) rather than
  * throwing synchronously, since a font-mode-only app with no SVG icons at
@@ -174,20 +174,19 @@ export interface MatIconRegistrySeedIconSet {
 }
 
 /**
- * Initial registrations for {@link useMatIconRegistryProvider}/
- * {@link MatIconRegistryProvider} — the shape that makes "register icons at
- * app startup from data loaded at runtime" (e.g. a `routeLoader$`'s
- * `{name, url}[]` response) a one-line `<MatIconRegistryProvider
- * icons={icons.value.map(i => ({name: i.name, url:
- * trustIconResourceUrl(i.url)}))}>` instead of a manual imperative loop —
+ * Initial registrations for {@link useMatIconRegistryProvider} — the shape that makes
+ * "register icons at app startup from data loaded at runtime" (e.g. a `routeLoader$`'s
+ * `{name, url}[]` response) a one-line `useMatIconRegistryProvider({icons:
+ * icons.value.map(i => ({name: i.name, url:
+ * trustIconResourceUrl(i.url)}))})` instead of a manual imperative loop —
  * though the imperative loop (calling {@link addSvgIcon} etc. directly after
  * {@link useOptionalIconRegistry}) works too and is what this seed is built
  * from internally.
  *
- * Applied ONCE, at this provider's first render — exactly like
- * `QwikMaterialProviderProps.animationsDisabled`'s identical "read the
- * initial prop value into a persistent hook, ignore later prop changes"
- * pattern (`dialog/qwik-material-provider.tsx`). This is for STARTUP
+ * Applied ONCE, at this call's first render — exactly like
+ * `useMatAnimationsProvider`'s identical "read the
+ * initial argument into a persistent hook, ignore later argument changes"
+ * pattern (`dialog/use-animations-disabled.ts`). This is for STARTUP
  * registration; for registering MORE icons later from elsewhere in the
  * tree, call {@link addSvgIcon}/etc. directly on the store returned by
  * {@link useOptionalIconRegistry}.
@@ -385,7 +384,7 @@ function pushIconSet(registry: MatIconRegistryStore, namespace: string, entry: I
  * applies here just as much as it does to class instances). Resolvers
  * registered this way are available to EVERY registry in the process (akin
  * to upstream always having exactly one `MatIconRegistry` instance per
- * Angular app) rather than scoped to one `<MatIconRegistryProvider>` — call
+ * Angular app) rather than scoped to one `useMatIconRegistryProvider()` call — call
  * this at module-evaluation time (e.g. once from a root layout component,
  * same place you'd otherwise call it on an injected service), not
  * conditionally per-request.

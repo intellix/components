@@ -101,7 +101,7 @@ Added 2026-11-03 (see top-of-file note). Quick-start:
 
 ```tsx
 import {routeLoader$} from '@qwik.dev/router';
-import {MatIconRegistryProvider, trustIconResourceUrl} from '@angular-community/qwik-material/icon';
+import {useMatIconRegistryProvider, trustIconResourceUrl} from '@angular-community/qwik-material/icon';
 
 export const useIcons = routeLoader$(async () => {
   const icons = await fetch('https://api.example.com/icons').then(r => r.json());
@@ -110,19 +110,20 @@ export const useIcons = routeLoader$(async () => {
 
 export default component$(() => {
   const icons = useIcons();
+  useMatIconRegistryProvider({
+    icons: icons.value.map(i => ({name: i.name, url: trustIconResourceUrl(i.url)})),
+  });
   return (
-    <MatIconRegistryProvider
-      icons={icons.value.map(i => ({name: i.name, url: trustIconResourceUrl(i.url)}))}
-    >
+    <>
       <MatIcon svgIcon="thumbs-up" />      {/* default namespace */}
       <MatIcon svgIcon="animals:cat" />    {/* namespaced */}
-    </MatIconRegistryProvider>
+    </>
   );
 });
 ```
 
 Imperative registration (e.g. from elsewhere in the tree, after startup) uses
-the same plain functions the provider calls internally:
+the same plain functions the hook calls internally:
 
 ```tsx
 const registry = useOptionalIconRegistry(); // store, or undefined with no provider ancestor

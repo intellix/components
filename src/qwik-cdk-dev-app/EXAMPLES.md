@@ -393,11 +393,10 @@ Angular's icon-registry default, which the Angular dev-app shell sets to
 `m3Enabled` defaults `true`) — confirmed live against `/qwik-parity/
 mat-icon/basic`. `src/qwik-cdk-dev-app/src/routes/mat-icon/layout.tsx`
 already reproduces this for every `/mat-icon/*` scenario via a scoped
-`<QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-
-outlined'}}>`. This route is the first OTHER route tree to render a
-font-mode `<MatIcon>`, so it wraps just its own `<MatTree>` in the SAME
-provider, inline (safe to nest anywhere — the provider renders a bare
-`<Slot/>`, no wrapper DOM). Passing `fontSet` as an explicit PROP instead
+`useMatIconProvider({fontSet: 'material-symbols-outlined'})` call. This
+route is the first OTHER route tree to render a font-mode `<MatIcon>`, so
+it calls the same hook in its own component (safe to call from anywhere —
+it provides a context, not a DOM node). Passing `fontSet` as an explicit PROP instead
 would ALSO render a `data-mat-icon-namespace` attribute Angular's un-bound
 `<mat-icon>` never has — not equivalent, see `qwik-material/icon/SYNC.md`'s
 updated note.
@@ -513,12 +512,12 @@ real default (`material-icons mat-ligature-font`, which `MAT_ICON_DEFAULT_FONT_S
 `<router-outlet>` in `<dev-app-layout>` (`src/dev-app/dev-app.ts`), whose constructor calls
 `MatIconRegistry.setDefaultFontSetClass('material-symbols-outlined')` because `DevAppState`'s
 `m3Enabled` field defaults to `true` (`src/dev-app/dev-app/dev-app-state.ts`) — this reaches every
-route, including the bare `/qwik-parity/*` scenario routes. The `icon-meta` Qwik route now wraps
-its content in `<QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>` to
+route, including the bare `/qwik-parity/*` scenario routes. The `icon-meta` Qwik route now calls
+`useMatIconProvider({fontSet: 'material-symbols-outlined'})` in its own component to
 match — not a `fontSet` PROP directly on `<MatIcon>`, which would additionally emit a
 `data-mat-icon-namespace` attribute that Angular's un-set registry default never adds (see
 `MatIconProps.fontSet`'s doc comment vs. `MatIconConfig.fontSet`'s). Any future scenario that adds
-a bare real `<mat-icon>`/`<MatIcon>` needs the same provider wrapper to stay in parity.
+a bare real `<mat-icon>`/`<MatIcon>` needs the same hook call to stay in parity.
 
 ### mat-badge — all 9 scenarios
 

@@ -109,9 +109,9 @@ export interface MatCalendarProps<D = unknown> {
   /** Overrides the `MAT_DATE_LOCALE` context — needed because this calendar, when opened from
    *  a popup (`<MatDatepicker>`/`<MatDateRangePicker>`), is rendered inside an OVERLAY whose
    *  Qwik component tree is NOT a descendant of wherever the owning `<input matDatepicker>`'s
-   *  own `<QwikMaterialProvider>` sits (confirmed live: `MatCalendar`'s own `useDateLocale()`
-   *  context read, with no override, resolved the WRONG — app-root-level or default — locale
-   *  for a popup opened from a per-subtree provider). `datepicker-runtime.ts` passes
+   *  own `useMatDateAdapterProvider()` call sits (confirmed live: `MatCalendar`'s own
+   *  `useDateLocale()` context read, with no override, resolved the WRONG — app-root-level or
+   *  default — locale for a popup opened from a per-subtree provider call). `datepicker-runtime.ts` passes
    *  `picker._locale.value` here (resolved correctly, at `useMatDatepicker()`'s own hook-call
    *  site, which — unlike the popup's eventual overlay content — genuinely IS a descendant of
    *  whatever provider wraps the consumer). Omitted/`undefined` for the `inline-calendar`
@@ -164,7 +164,7 @@ export const MatCalendar = component$<MatCalendarProps>(props => {
   // comment for why that case can't rely on THIS component's own `useDateLocale()` call) takes
   // priority; otherwise resolved here directly (render-legal; correct for the standalone
   // `inline-calendar` case, a plain descendant of the app's own provider tree) — app-wide or per
-  // subtree (`QwikMaterialProvider`'s `matDateLocale` prop / `MAT_DATE_LOCALE` context), reactive
+  // subtree (`useMatDateAdapterProvider()`'s `locale` key / `MAT_DATE_LOCALE` context), reactive
   // to a runtime locale switch for THAT case (see `datepicker/SYNC.md`). Only LABEL computation
   // (month/weekday/year names, the header's period text) needs this — arithmetic
   // (today()/addCalendarDays/etc.) stays on the hardcoded `DEFAULT_DATE_ADAPTER` singleton

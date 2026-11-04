@@ -78,7 +78,7 @@ If the grid-list is used to present a list of _non-interactive_ content items, t
 - **Header/footer/avatar/line content projection is by component type, not Angular's
   `ng-content select`.** `<MatGridTileHeader>`/`<MatGridTileFooter>` partition their *direct*
   children by component type (`MatGridAvatar`, `MatLine`) instead of a directive-selector match.
-- **Global defaults via `QwikMaterialProvider`**, not a `MAT_GRID_LIST_CONFIG` injection token.
+- **Global defaults via a hook (`useMatGridListProvider()`)**, not an `MAT_GRID_LIST_CONFIG` injection token.
 - **Dev-mode `throw Error()` guards removed** (missing `cols`, invalid ratio, oversized colspan,
   invalid fixed-height CSS) — TypeScript or the browser's own silent-ignore-invalid-CSS behavior
   cover the same ground, except the oversized-colspan throw, which is kept (not dev-mode-gated

@@ -6,7 +6,7 @@ const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
  * Not covered by angular-parity.spec.ts — every contract scenario either
  * omits `color` (falling back to the component's own 'accent' default,
  * matching upstream's hardcoded `checkboxDefaults`) or sets it explicitly; no
- * scenario exercises `<QwikMaterialProvider matCheckboxConfig={...}>`, the
+ * scenario exercises `useMatCheckboxProvider({...})`, the
  * MAT_CHECKBOX_DEFAULT_OPTIONS-equivalent this port adds. Uses the Qwik-only
  * `mat-checkbox/config-defaults` route (no Angular mirror).
  */

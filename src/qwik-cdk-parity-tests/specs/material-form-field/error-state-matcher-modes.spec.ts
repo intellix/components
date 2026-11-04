@@ -4,7 +4,7 @@ const BASE_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 
 /**
  * The two BUILT-IN `ErrorStateMatcher` string modes (`'touched'`/`'dirty'`) plus the app-wide
- * `<QwikMaterialProvider errorStateMatcher={...}>` default vs. a per-control override. See
+ * `useMatErrorStateMatcherProvider({...})` default vs. a per-control override. See
  * `qwik-material/core/error-state-matcher.ts`'s doc comment. No matching upstream docs example
  * (that's `input-error-state-matcher`'s own QRL-custom-matcher case, covered separately by
  * `specs/examples-forms/error-state-matcher.spec.ts`) — bespoke functional spec, fresh

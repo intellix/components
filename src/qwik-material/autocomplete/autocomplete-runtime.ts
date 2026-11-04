@@ -438,7 +438,7 @@ export async function openAutocompletePanel(
         direction: cfg.isRtl ? 'rtl' : 'ltr',
         positionStrategy: strategy,
         // Mirrors upstream MAT_AUTOCOMPLETE_SCROLL_STRATEGY: configurable
-        // via <QwikMaterialProvider matAutocompleteScrollStrategy={...}>,
+        // via useMatAutocompleteProvider({scrollStrategy: ...}),
         // falling back to the previously hard-coded reposition strategy.
         scrollStrategy: resolvedScrollStrategy,
         hasBackdrop: cfg.hasBackdrop,

@@ -63,7 +63,7 @@ export const MatList = component$<MatListProps>(props => {
   // has no fields to resolve. The read pattern is established so future
   // config fields plug in without a component-file rewrite. DEFAULTS
   // fallback is REQUIRED — bare useContext(MAT_LIST_CONFIG) throws
-  // QError_notFoundContext when rendered outside <QwikMaterialProvider>
+  // QError_notFoundContext when rendered with no provider hook ancestor
   // (Progress Bar / Progress Spinner post-mortem).
   useContext(MAT_LIST_CONFIG, CONFIG_DEFAULTS);
   // Plain <mat-list> is non-interactive per upstream MatListBase default.

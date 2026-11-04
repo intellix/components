@@ -67,7 +67,7 @@ By default, every grouped toggle (single- or multiple-selection) renders a check
 `hideMultipleSelectionIndicator` hides it for multiple-selection groups — each only affects the
 mode it names (a single-selection group ignores `hideMultipleSelectionIndicator`, and vice
 versa), matching upstream exactly. Both are also configurable app-wide via
-`<QwikMaterialProvider matButtonToggleConfig={{hideSingleSelectionIndicator: true}}>`.
+`useMatButtonToggleProvider({hideSingleSelectionIndicator: true})`.
 
 ```tsx
 <MatButtonToggleGroup hideSingleSelectionIndicator value={style.value} onChange$={...}>
@@ -111,7 +111,7 @@ styles".
 - **No `disabledInteractive` prop.** A disabled toggle's inner `<button>` always gets the native
   `disabled` attribute; there's no focusable-but-inert variant.
 - **No RTL support.** Arrow-key navigation is LTR-only.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_BUTTON_TOGGLE_DEFAULT_OPTIONS`
+- **Global defaults via a hook (`useMatButtonToggleProvider()`)**, not an `MAT_BUTTON_TOGGLE_DEFAULT_OPTIONS`
   injection token.
 - **Harness not ported.**
 

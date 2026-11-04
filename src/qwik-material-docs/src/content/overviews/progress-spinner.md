@@ -39,7 +39,7 @@ spinner.
   `NgTemplateOutlet`.
 - **`.mat-progress-spinner-reduced-motion` class omitted** — the `@media (prefers-reduced-motion:
   reduce)` CSS rule handles this without a client-side `matchMedia` check.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_PROGRESS_SPINNER_CONFIG` injection
+- **Global defaults via a hook (`useMatProgressSpinnerProvider()`)**, not an `MAT_PROGRESS_SPINNER_CONFIG` injection
   token; no separate `_forceAnimations` escape hatch (`matAnimationsDisabled` context already
   covers it).
 - **Harness not ported.**

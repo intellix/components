@@ -2,10 +2,10 @@
  * Render-time context accessors for `DateAdapter`/`MatDateFormats`/locale — see
  * `date-adapter.ts`'s and `native-date-adapter.ts`'s module doc comments.
  *
- * `QwikMaterialProvider` (`dialog/qwik-material-provider.tsx`) now wires all three contexts
- * below (`matDateAdapterFactory`/`matDateFormats`/`matDateLocale` props), app-wide or per
- * subtree (an inner `<QwikMaterialProvider>` shadows an outer one for its own descendants,
- * exactly like upstream's hierarchical DI and every other `MAT_*_CONFIG` context this project
+ * `useMatDateAdapterProvider()` (below) wires all three contexts
+ * (`factory`/`formats`/`locale` keys), app-wide or per
+ * subtree (an inner call shadows an outer one for its own descendants,
+ * exactly like upstream's hierarchical DI and every other provider hook this project
  * already has) — see `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE /
  * dateClass" section for the full design.
  *

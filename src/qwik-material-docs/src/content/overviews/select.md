@@ -105,7 +105,7 @@ default "joined option labels" text.
 
 `panelClass` adds extra CSS classes to the dropdown panel's listbox element
 (`.mat-mdc-select-panel`). For the surrounding overlay pane instead, set `overlayPanelClass` via
-`<QwikMaterialProvider matSelectConfig={{overlayPanelClass: '...'}}>`.
+`useMatSelectProvider({config: {overlayPanelClass: '...'}})`.
 
 <!-- example(select-panel-class) -->
 

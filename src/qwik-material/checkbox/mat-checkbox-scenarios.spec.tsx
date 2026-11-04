@@ -110,10 +110,10 @@ describe.skip('MatCheckbox DOM-rendered scenarios — verified via Playwright', 
   it('name/value render as plain `name`/`value` attributes on the input when provided, omitted otherwise', () => {});
   it('aria-label/-labelledby/-describedby/-expanded/-controls/-owns all forward onto the INPUT (never the host, which upstream always nulls out) — aria-label falls back to omitted when empty', () => {});
   it('clicking (or Space on a focused input) toggles `checked`, calls onChange$({checked}), and — for the one transition where it applies — adds `mdc-checkbox--anim-<from>-<to>` to the input, removed again after ~1s; the very first transition on an instance that starts checked and targets unchecked adds no class (the "Init-state quirk")', () => {});
-  it('animationsDisabled (via QwikMaterialProvider) adds _mat-animation-noopable to the host and suppresses every mdc-checkbox--anim-* class', () => {});
+  it('animationsDisabled (via useMatAnimationsProvider) adds _mat-animation-noopable to the host and suppresses every mdc-checkbox--anim-* class', () => {});
   it('clicking the touch-target div toggles the checkbox exactly like clicking the input, then focuses the input (unless disabled)', () => {});
   it('clicking the projected <label> text toggles the checkbox exactly once (native for/id forwarding + stopPropagation on the form-field div prevents a double-fire)', () => {});
-  it('MAT_CHECKBOX_CONFIG (via QwikMaterialProvider matCheckboxConfig) supplies color/clickAction/disabledInteractive defaults; an explicit prop always wins', () => {});
+  it('MAT_CHECKBOX_CONFIG (via useMatCheckboxProvider) supplies color/clickAction/disabledInteractive defaults; an explicit prop always wins', () => {});
   it('clickAction "noop" never toggles checked/indeterminate on click; "check" toggles checked but never clears indeterminate', () => {});
 });
 

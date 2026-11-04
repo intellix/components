@@ -76,7 +76,7 @@ without descriptive text content.
 - **`color` kept as a plain `string`**, not a typed `ThemePalette` — matches upstream's own
   comment that the typed version "has no effect in M3 themes" anyway.
 - **No RTL support** — the synced SCSS's `[dir='rtl']` rules are currently unreachable dead code.
-- **Global defaults via `QwikMaterialProvider`**, not a `MAT_SLIDE_TOGGLE_CONFIG` injection
+- **Global defaults via a hook (`useMatSlideToggleProvider()`)**, not an `MAT_SLIDE_TOGGLE_CONFIG` injection
   token.
 - **Harness not ported.**
 

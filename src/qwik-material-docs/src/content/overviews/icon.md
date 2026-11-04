@@ -5,18 +5,19 @@ icon fonts and SVG icons, but not bitmap-based formats (png, jpg, etc.).
 
 ### Registering icons
 
-`useMatIconRegistry()` (or the `<MatIconRegistryProvider>` component built on top of it) creates
-an icon registry and provides it to every `<MatIcon>` in its subtree, letting you associate names
-with SVG URLs or HTML strings. Its functions are discussed below.
+`useMatIconRegistryProvider()` creates an icon registry and provides it to every `<MatIcon>` in
+its subtree, letting you associate names with SVG URLs or HTML strings. Its functions are
+discussed below.
 
 ```tsx
-import {MatIconRegistryProvider, trustIconResourceUrl} from '@angular-community/qwik-material/icon';
+import {useMatIconRegistryProvider, trustIconResourceUrl} from '@angular-community/qwik-material/icon';
 
-export default component$(() => (
-  <MatIconRegistryProvider icons={[{name: 'thumbs-up', url: trustIconResourceUrl('/icons/thumb-up.svg')}]}>
-    <Slot />
-  </MatIconRegistryProvider>
-));
+export default component$(() => {
+  useMatIconRegistryProvider({
+    icons: [{name: 'thumbs-up', url: trustIconResourceUrl('/icons/thumb-up.svg')}],
+  });
+  return <Slot />;
+});
 ```
 
 Icons registered at app startup from data loaded at runtime (e.g. a list fetched from an API inside
@@ -30,13 +31,10 @@ export const useIcons = routeLoader$(async () => {
 
 export default component$(() => {
   const icons = useIcons();
-  return (
-    <MatIconRegistryProvider
-      icons={icons.value.map(i => ({name: i.name, url: trustIconResourceUrl(i.url)}))}
-    >
-      <Slot />
-    </MatIconRegistryProvider>
-  );
+  useMatIconRegistryProvider({
+    icons: icons.value.map(i => ({name: i.name, url: trustIconResourceUrl(i.url)})),
+  });
+  return <Slot />;
 });
 ```
 
@@ -65,7 +63,7 @@ By default, `<MatIcon>` expects the
 You can specify a different font, such as Material's latest icons,
 [Material Symbols](https://fonts.google.com/icons), by setting the `fontSet` prop to the CSS
 class for the desired font. You can set the default for every icon that doesn't specify its own
-`fontSet` through `<QwikMaterialProvider matIconConfig={{fontSet: '...'}}>`.
+`fontSet` through `useMatIconProvider({fontSet: '...'})`.
 
 ### Font icons with CSS
 
@@ -115,8 +113,8 @@ Concurrent requests for the same URL are deduplicated, and a successful fetch is
 #### Named icons
 
 To associate a name with an icon URL, use `addSvgIcon`, `addSvgIconInNamespace`,
-`addSvgIconLiteral`, or `addSvgIconLiteralInNamespace` (or the `icons` prop on
-`<MatIconRegistryProvider>`, which calls these for you). After registering an icon, it can be
+`addSvgIconLiteral`, or `addSvgIconLiteralInNamespace` (or the `icons` key on
+`useMatIconRegistryProvider()`, which calls these for you). After registering an icon, it can be
 displayed by setting the `svgIcon` prop. For an icon in the default namespace, use the name
 directly. For a non-default namespace, use the format `[namespace]:[name]`.
 
@@ -127,8 +125,8 @@ root `<svg>` tag that contains multiple nested elements (typically `<symbol>`), 
 with an `id` attribute. This `id` is used as the name of the icon.
 
 Icon sets are registered using `addSvgIconSet`, `addSvgIconSetInNamespace`,
-`addSvgIconSetLiteral`, or `addSvgIconSetLiteralInNamespace` (or the `iconSets` prop on
-`<MatIconRegistryProvider>`). After an icon set is registered, each of its embedded icons can be
+`addSvgIconSetLiteral`, or `addSvgIconSetLiteralInNamespace` (or the `iconSets` key on
+`useMatIconRegistryProvider()`). After an icon set is registered, each of its embedded icons can be
 accessed by their `id` attributes, the same way as for individually registered icons.
 
 Multiple icon sets can be registered in the same namespace. Requesting an icon whose id appears in
@@ -183,7 +181,7 @@ class.
 ## Angular → Qwik notes
 
 - **No `MatIconRegistry` *class*, but the same capabilities.** No `@Injectable`, no Angular DI —
-  `useMatIconRegistry()`/`<MatIconRegistryProvider>` create a plain data store (provided via
+  `useMatIconRegistryProvider()` creates a plain data store (provided via
   context) and `addSvgIcon`/`getNamedSvgIcon`/etc. are plain functions that take it as their
   first argument (`addSvgIcon(registry, name, url)`, not `registry.addSvgIcon(name, url)`).
 - **No `HttpClient`/`XMLHttpRequest`.** The registry fetches icon URLs with the platform
@@ -203,7 +201,7 @@ class.
   `getDefaultFontSetClass` exist on the registry for API-surface completeness, but `<MatIcon>`'s
   font-mode rendering does NOT consult them.** The *effect* `setDefaultFontSetClass` has
   upstream is still the separate, pre-existing `MatIconConfig.fontSet` mechanism:
-  `MatIconConfig.fontSet` (set via `QwikMaterialProvider`) falls back to upstream's own built-in
+  `MatIconConfig.fontSet` (set via `useMatIconProvider()`) falls back to upstream's own built-in
   default font-set class ladder (`material-icons mat-ligature-font`) when neither the prop nor
   the config is set, instead of applying no class at all.
 - **`color` accepts any string, not just `'primary' | 'accent' | 'warn'`** — matches upstream's
@@ -215,5 +213,5 @@ class.
   — the equivalent of a directive like `[matBadge]` attaching to a consumer's own `<mat-icon>`
   and appending its own element; see [Composing directives](/guide/composing-directives/) and the
   Badge component page.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_ICON_CONFIG` injection token.
+- **Global defaults via a hook (`useMatIconProvider()`)**, not an `MAT_ICON_CONFIG` injection token.
 - **Harness not ported.**

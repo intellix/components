@@ -30,9 +30,11 @@ dependency).
 Every qwik-material component reads shared state (the overlay container, open dialogs, text
 direction, a monotonic id generator) from context that `<QwikCdkRoot>` provides. It must wrap your
 whole app exactly once, near the root — the same role Angular's root injector plays for CDK
-services:
+services. This is the one piece of setup you can't do with a hook (it also renders the overlay
+container element itself, not just context):
 
 ```tsx
+// src/root.tsx
 import {component$} from '@qwik.dev/core';
 import {QwikCdkRoot} from '@angular-community/qwik-cdk';
 
@@ -46,17 +48,51 @@ export default component$(() => (
 `<QwikCdkRoot>` takes a few optional props: `dialogDefaults` (default `MatDialogConfig` overrides),
 `overlayContainer` (where overlay content attaches), `direction` (`'ltr'` | `'rtl'`).
 
-Some components also read defaults from a `<QwikMaterialProvider>` — for example, a site-wide
-default icon font set. It's optional and can be nested anywhere under `<QwikCdkRoot>`, including
-multiple times with different config for different sections of your app:
+Every component-family default (icon font set, dialog/bottom-sheet/select/menu/autocomplete
+config + scroll strategy, the app-wide `ErrorStateMatcher`, ripple options, the date adapter, …)
+is configured with a **hook**, not a wrapper component — there's no single "provider" component
+to reach for. Each hook provides ONLY its own setting, so calling one never resets anything else
+an ancestor already configured — call as many as you need, in a root layout component, right
+under `<QwikCdkRoot>`:
 
 ```tsx
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+// src/routes/layout.tsx
+import {component$, Slot} from '@qwik.dev/core';
+import {useMatProviders} from '@angular-community/qwik-material/providers';
 
-<QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
-  {/* ... */}
-</QwikMaterialProvider>
+export default component$(() => {
+  useMatProviders({
+    icon: {fontSet: 'material-symbols-outlined'},
+    formField: {appearance: 'outline'},
+    errorStateMatcher: 'dirty',
+  });
+  return <Slot />;
+});
 ```
+
+`useMatProviders()` is a convenience that fans out to the individual hook for each key you pass
+(`icon` → `useMatIconProvider()`, `formField` → `useMatFormFieldProvider()`, …) — see its own
+entry point for the full list of keys. The set of keys you pass must stay the same across every
+render of the component that calls it (the VALUES may change freely); pass every setting you
+might ever want to configure up front, even if some start out as `{}`.
+
+A component deeper in the tree that wants to override just ONE setting for its own subtree —
+without touching anything else — calls that setting's own hook directly instead of the combined
+one:
+
+```tsx
+// some nested route, overriding only the tooltip defaults for this page
+import {component$, Slot} from '@qwik.dev/core';
+import {useMatTooltipProvider} from '@angular-community/qwik-material/tooltip';
+
+export default component$(() => {
+  useMatTooltipProvider({showDelay: 500});
+  return <Slot />;
+});
+```
+
+The `formField`/`icon` settings from the root layout above are still inherited here — only the
+tooltip default changed.
 
 ## Fonts and prebuilt CSS
 

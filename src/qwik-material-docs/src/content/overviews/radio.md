@@ -102,6 +102,6 @@ You should provide an accessible label for all `<MatRadioGroup>` elements via `a
   checkbox; handled internally, transparent to consumers.
 - **No imperative `.focus()` on the host element.** The host's `(focus)`-forwarding listener
   isn't ported — no scenario calls `.focus()` on the custom element directly.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_RADIO_DEFAULT_OPTIONS` injection
+- **Global defaults via a hook (`useMatRadioProvider()`)**, not an `MAT_RADIO_DEFAULT_OPTIONS` injection
   token.
 - **Harness not ported.**

@@ -160,21 +160,22 @@ Internationalization of the datepicker is configured via three aspects:
 2.  The date implementation (`DateAdapter`) the datepicker uses to parse/format/compare dates.
 3.  The display and parse formats (`MAT_DATE_FORMATS`) used by the datepicker.
 
-Every piece is provided through `<QwikMaterialProvider>` — app-wide if placed near your app's
-root, or scoped to one subtree if placed deeper (an inner `<QwikMaterialProvider>` shadows an
-outer one for its own descendants, the same way every other `QwikMaterialProvider` config prop
-does). `useMatDatepicker()`/`useMatDateRangePicker()`/`<MatCalendar>`/`<MatTimepickerInput>` all
-read from the SAME provider, so one `<QwikMaterialProvider>` configures the datepicker, the
+All three are provided together by one hook, `useMatDateAdapterProvider()` — call it once
+app-wide near your app's root, or scoped to one subtree if called deeper (an inner call shadows
+an outer one for its own descendants, the same way every other provider hook does).
+`useMatDatepicker()`/`useMatDateRangePicker()`/`<MatCalendar>`/`<MatTimepickerInput>` all read
+from the SAME contexts, so one `useMatDateAdapterProvider()` call configures the datepicker, the
 date-range input, and the timepicker together.
 
 #### Setting the locale
 
-Pass `matDateLocale` to `<QwikMaterialProvider>`:
+Pass `locale` to `useMatDateAdapterProvider()`:
 
 ```tsx
-<QwikMaterialProvider matDateLocale="en-GB">
-  <MyDatepickerPage />
-</QwikMaterialProvider>
+export default component$(() => {
+  useMatDateAdapterProvider({locale: 'en-GB'});
+  return <MyDatepickerPage />;
+});
 ```
 
 It's also possible to change the locale at runtime: read the same signal any date-aware
@@ -208,9 +209,10 @@ for every date-aware component — nothing needs to be provided to use it.
 import {NativeDateAdapter, MAT_NATIVE_DATE_FORMATS} from '@angular-community/qwik-material/core';
 ```
 
-`provideNativeDateAdapter()`'s equivalent here is simply *not providing anything* —
-`<QwikMaterialProvider>` without a `matDateAdapterFactory`/`matDateFormats` prop already resolves
-`NativeDateAdapter`/`MAT_NATIVE_DATE_FORMATS`.
+`provideNativeDateAdapter()`'s equivalent here is simply *not calling*
+`useMatDateAdapterProvider()` at all (or calling it without a `factory`/`formats` key) —
+every date-aware component already resolves `NativeDateAdapter`/`MAT_NATIVE_DATE_FORMATS` with
+no provider.
 
 If you need custom parsing/formatting behavior (for example, an app whose users type dates as
 `dd.mm.yyyy`), subclass `NativeDateAdapter` and override `parse()`/`format()` — every other
@@ -220,8 +222,11 @@ timepicker:
 
 ```tsx
 import {$, component$} from '@qwik.dev/core';
-import {NativeDateAdapter, type MatDateFormats} from '@angular-community/qwik-material/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+import {
+  NativeDateAdapter,
+  useMatDateAdapterProvider,
+  type MatDateFormats,
+} from '@angular-community/qwik-material/core';
 
 class DotDateAdapter extends NativeDateAdapter {
   override parse(value: unknown, parseFormat: unknown): Date | null {
@@ -255,17 +260,16 @@ const DOT_DATE_FORMATS: MatDateFormats = {
   },
 };
 
-export default component$(() => (
-  <QwikMaterialProvider
-    matDateAdapterFactory={$((locale: string) => new DotDateAdapter(locale))}
-    matDateFormats={DOT_DATE_FORMATS}
-  >
-    <MyDatepickerPage />
-  </QwikMaterialProvider>
-));
+export default component$(() => {
+  useMatDateAdapterProvider({
+    factory: $((locale: string) => new DotDateAdapter(locale)),
+    formats: DOT_DATE_FORMATS,
+  });
+  return <MyDatepickerPage />;
+});
 ```
 
-`matDateAdapterFactory` takes a **factory** (`QRL<(locale: string) => DateAdapter<D>>`), never a
+`factory` takes a **factory** (`QRL<(locale: string) => DateAdapter<D>>`), never a
 live adapter instance — a class instance with methods can't be put into Qwik's serializable
 resumable state, so every date-aware component resolves the factory into a fresh instance
 wherever one is actually needed (parsing typed text, formatting a value to display) rather than

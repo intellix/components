@@ -482,7 +482,7 @@ export async function openSelectPanel(
       direction: cfg.isRtl ? 'rtl' : 'ltr',
       positionStrategy: strategy,
       // Mirrors upstream MAT_SELECT_SCROLL_STRATEGY: configurable via
-      // <QwikMaterialProvider matSelectScrollStrategy={...}>, falling
+      // useMatSelectProvider({scrollStrategy: ...}), falling
       // back to the previously hard-coded reposition strategy.
       scrollStrategy: resolvedScrollStrategy,
       hasBackdrop: true,

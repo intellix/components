@@ -53,7 +53,7 @@ the button, and waits two seconds to hide after the user moves the mouse away.
 #### Changing the default delay behavior
 
 You can configure your app's tooltip default show/hide delays through
-`<QwikMaterialProvider matTooltipDefaults={{...}}>`.
+`useMatTooltipProvider({...})`.
 
 <!-- example(tooltip-modified-defaults) -->
 
@@ -99,6 +99,6 @@ mouse and touch users.
 - **A fresh overlay is created on every `show()`**, rather than reusing one `OverlayRef` across
   repeated shows of the same trigger — a performance nuance, not a DOM-visible one.
 - **No scroll-container auto-close.** A parent scrollable clipping the tooltip won't close it.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_TOOLTIP_DEFAULT_OPTIONS` injection
+- **Global defaults via a hook (`useMatTooltipProvider()`)**, not an `MAT_TOOLTIP_DEFAULT_OPTIONS` injection
   token.
 - **Harness not ported.**

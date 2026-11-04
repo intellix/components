@@ -51,7 +51,7 @@ export type MatErrorStateMatcher =
  *  every control's PREVIOUS hardcoded formula exactly, so leaving this unset changes nothing. */
 export const MAT_ERROR_STATE_MATCHER_DEFAULT: MatErrorStateMatcher = 'touched';
 
-/** Context id a `<QwikMaterialProvider errorStateMatcher={...}>` provides for the whole subtree
+/** Context id `useMatErrorStateMatcherProvider({...})` provides for the whole subtree
  *  — the id string is exposed publicly and MUST remain stable across releases. */
 export const MAT_ERROR_STATE_MATCHER = createContextId<MatErrorStateMatcher>(
   'qwikMaterial/errorStateMatcher',

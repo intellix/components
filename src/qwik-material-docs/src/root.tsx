@@ -1,7 +1,7 @@
 import {component$} from '@qwik.dev/core';
 import {RouterOutlet, useQwikRouter} from '@qwik.dev/router';
 import {QwikCdkRoot} from '@angular-community/qwik-cdk';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+import {useMatProviders} from '@angular-community/qwik-material/providers';
 import '@angular-community/qwik-cdk/overlay-prebuilt.css';
 import '@angular-community/qwik-material/core-prebuilt.css';
 import '@angular-community/qwik-material/dialog-prebuilt.css';
@@ -50,11 +50,16 @@ import './styles/docs-shell.css';
  * Also loads the real Roboto + Material Symbols Outlined webfonts (the dev-app only matches the
  * *class name* `material-symbols-outlined` for DOM parity — it never loads the actual glyphs,
  * since the parity harness only diffs DOM/computed-style, not rendered icon glyphs) and sets that
- * as the default `<MatIcon>` font set site-wide via `<QwikMaterialProvider>`, so icons in the
- * site's own chrome (and in rendered examples that use ligature-text icons) show real glyphs.
+ * as the default `<MatIcon>` font set site-wide via the combined `useMatProviders()` hook (see
+ * `@angular-community/qwik-material/providers`), so icons in the site's own chrome (and in
+ * rendered examples that use ligature-text icons) show real glyphs. A real app with more than
+ * one setting to configure would pass more keys to this same call; an individual page that
+ * wants to override just ONE setting for its own subtree calls that setting's own
+ * `useMat*Provider()` hook directly instead (see e.g. a component's overview page).
  */
 export default component$(() => {
   useQwikRouter();
+  useMatProviders({icon: {fontSet: 'material-symbols-outlined'}});
 
   return (
     <>
@@ -79,9 +84,7 @@ export default component$(() => {
       </head>
       <body>
         <QwikCdkRoot>
-          <QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
-            <RouterOutlet />
-          </QwikMaterialProvider>
+          <RouterOutlet />
         </QwikCdkRoot>
       </body>
     </>

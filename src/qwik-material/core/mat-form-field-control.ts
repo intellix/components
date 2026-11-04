@@ -191,7 +191,7 @@ export interface MatFormFieldControlProps {
   invalid?: boolean;
   /**
    * Mirrors upstream's per-control `[errorStateMatcher]` — see `core/error-state-matcher.ts`'s
-   * own doc comment for the full design. Falls back to `<QwikMaterialProvider
+   * own doc comment for the full design. Falls back to `useMatErrorStateMatcherProvider`
    * errorStateMatcher={...}>`'s app-wide default (mirrors `{provide: ErrorStateMatcher, useClass:
    * ...}`), then upstream's own default (`'touched'`, i.e. `invalid && (touched || submitted)`).
    * Only meaningful when `formBound` is true.

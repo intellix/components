@@ -82,7 +82,7 @@ If none of these are used, all the content will be treated as text content.
 
 ### Setting the global configuration defaults
 If you want to override the default snack bar options, provide them through
-`<QwikMaterialProvider matSnackBarConfig={{duration: 2500}}>` at the root of your app.
+`useMatSnackBarProvider({duration: 2500})` at the root of your app.
 
 ### Accessibility
 
@@ -121,6 +121,6 @@ context of the user's workflow.
   `ComponentRef` equivalent exists in Qwik.
 - **No `BreakpointObserver`-driven handset mode.** `qwik-cdk` has no `BreakpointObserver` port
   yet.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_SNACK_BAR_DEFAULT_OPTIONS`
+- **Global defaults via a hook (`useMatSnackBarProvider()`)**, not an `MAT_SNACK_BAR_DEFAULT_OPTIONS`
   injection token.
 - **Harness not ported.**

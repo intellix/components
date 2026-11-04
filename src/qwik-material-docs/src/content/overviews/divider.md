@@ -73,7 +73,7 @@ non-focusable style of separator that distinguishes sections of content.
   `QwikIntrinsicElements['hr']` (the closest semantic HTML element).
 - **`BooleanInput`/`coerceBooleanProperty` coercion omitted.** Qwik JSX passes booleans directly
   (`<MatDivider vertical={true}>` or just `vertical` — no string-attribute coercion needed).
-- **Global defaults via `QwikMaterialProvider`**, not a `MAT_DIVIDER_CONFIG` injection token
+- **Global defaults via a hook (`useMatDividerProvider()`)**, not an `MAT_DIVIDER_CONFIG` injection token
   (currently has no fields; kept for family-shape parity).
 - **Explicit `aria-label` / `aria-labelledby` / `aria-describedby` props** forward straight to
   the host; the decorative default (`role="separator"` + `aria-orientation`) is preserved.
