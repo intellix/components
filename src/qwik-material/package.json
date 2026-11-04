@@ -14,7 +14,8 @@
     "lint:no-ssr-leaks": "node ./scripts/lint-no-ssr-leaks.mjs",
     "generate-default-theme": "node ./scripts/generate-default-theme.mjs",
     "generate-typography-elevation-prebuilt": "node ./scripts/generate-typography-elevation-prebuilt.mjs",
-    "check-generated-scss": "node ./scripts/check-generated-scss.mjs"
+    "check-generated-scss": "node ./scripts/check-generated-scss.mjs",
+    "pack:local": "node ./scripts/pack-local.mjs"
   },
   "peerDependencies": {
     "@angular-community/qwik-cdk": "workspace:*",
