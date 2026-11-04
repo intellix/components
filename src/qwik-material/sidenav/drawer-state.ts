@@ -86,6 +86,17 @@ export interface MatDrawerContainerState {
    * instead of `MatDrawerContent` doing it from its own (empirically non-firing) task.
    */
   contentHostRef: Signal<HTMLElement | undefined>;
+  /**
+   * Which of `margin-left`/`margin-right` `MatDrawerContent`/`MatSidenavContent`'s OWN caller
+   * `style` prop sets — populated by that component in the same mount task that populates
+   * `contentHostRef` above (see that component's doc comment), consulted by every registering
+   * `MatDrawer`/`MatSidenav`'s per-toggle imperative margin sync (`mat-drawer.tsx`) so a caller's
+   * override isn't clobbered back to the computed-only value on the next open/close. Fix for a
+   * review finding (Task 1 fix round 1, homepage-material-parity): without this, the caller-wins
+   * contract documented on `MatDrawerContentProps.style` only held through the very first
+   * SSR/mount render — the FIRST subsequent toggle reverted it.
+   */
+  contentMarginOverrides: Signal<{left: boolean; right: boolean}>;
 }
 
 export const MAT_DRAWER_CONTAINER_STATE = createContextId<MatDrawerContainerState>(

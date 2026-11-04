@@ -267,11 +267,23 @@ function createDrawer(
         // Content margins — mirrors upstream's `updateContentMargins()`. Recomputed from the
         // FULL registry (already reflecting this drawer's own just-written entry above), so it
         // stays correct with two drawers too.
+        //
+        // Fix for a review finding (Task 1 fix round 1, homepage-material-parity): skips
+        // whichever of margin-left/margin-right `MatDrawerContent`/`MatSidenavContent`'s OWN
+        // caller `style` already sets (`contentMarginOverrides`, published by that component —
+        // see drawer-state.ts's doc comment) — otherwise THIS sync, which runs on every
+        // open/close of ANY drawer in the container, unconditionally overwrote a caller's
+        // override back to the computed-only value on the very next toggle.
         const contentEl = containerState.contentHostRef.value;
         if (contentEl) {
           const margins = computeContentMargins(containerState.registry.value);
-          contentEl.style.marginLeft = margins.left != null ? `${margins.left}px` : '';
-          contentEl.style.marginRight = margins.right != null ? `${margins.right}px` : '';
+          const overrides = containerState.contentMarginOverrides.value;
+          if (!overrides.left) {
+            contentEl.style.marginLeft = margins.left != null ? `${margins.left}px` : '';
+          }
+          if (!overrides.right) {
+            contentEl.style.marginRight = margins.right != null ? `${margins.right}px` : '';
+          }
         }
       }
 

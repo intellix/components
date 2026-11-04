@@ -121,6 +121,12 @@ function createContainer(
     // Populated by `MatDrawerContent`/`MatSidenavContent`'s own `ref` directly (not a local
     // signal of its own) — see drawer-state.ts's doc comment on `contentHostRef`.
     const contentHostRef = useSignal<HTMLElement>();
+    // Populated by `MatDrawerContent`/`MatSidenavContent` itself, same task as `contentHostRef`
+    // above — see drawer-state.ts's doc comment on `contentMarginOverrides`.
+    const contentMarginOverrides = useSignal<{left: boolean; right: boolean}>({
+      left: false,
+      right: false,
+    });
 
     useTask$(({track}) => {
       const explicit = track(() => props.hasBackdrop);
@@ -133,6 +139,7 @@ function createContainer(
       transitionsEnabled,
       containerHostRef: hostRef,
       contentHostRef,
+      contentMarginOverrides,
     };
     useContextProvider(MAT_DRAWER_CONTAINER_STATE, containerState);
 

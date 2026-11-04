@@ -25,8 +25,8 @@
  * (the authoritative Angular-vs-Qwik DOM diffing gate).
  */
 import {describe, expect, it} from 'vitest';
-import {component$, useContextProvider, useSignal} from '@qwik.dev/core';
-import {createDOM} from '@qwik.dev/core/testing';
+import {$, component$, useContextProvider, useSignal} from '@qwik.dev/core';
+import {createDOM, trigger} from '@qwik.dev/core/testing';
 import {
   MAT_SIDENAV_CONFIG,
   MatDrawer,
@@ -148,6 +148,7 @@ describe('style passthrough (Task 1)', () => {
       transitionsEnabled: useSignal(false),
       containerHostRef: useSignal<HTMLElement | undefined>(undefined),
       contentHostRef: useSignal<HTMLElement | undefined>(undefined),
+      contentMarginOverrides: useSignal({left: false, right: false}),
     });
     return <MatDrawerContent style={{'padding-top': '64px'}}>content</MatDrawerContent>;
   });
@@ -174,6 +175,75 @@ describe('style passthrough (Task 1)', () => {
     // The computed margin contributed by the registered `side` drawer still applies — the
     // caller's style didn't set margin-left.
     expect(el.style.marginLeft).toBe('180px');
+  });
+});
+
+/**
+ * Task 1 fix round 1 (homepage-material-parity) — review finding: `MatDrawer`'s per-toggle
+ * imperative margin sync (`mat-drawer.tsx`, inside its combined registry/animation task) writes
+ * `contentEl.style.marginLeft`/`marginRight` on EVERY open/close of ANY drawer in the container,
+ * with no awareness of `MatDrawerContent`'s own `style` prop — so a caller's `margin-left`/
+ * `margin-right` override survived the initial SSR/mount render (covered by the tests above) but
+ * was silently reverted to the computed-only value on the very next toggle. Fixed by having
+ * `MatDrawerContent` publish which of those two properties its caller sets
+ * (`contentMarginOverrides` in `drawer-state.ts`), consulted by that same per-toggle sync.
+ *
+ * This needs a real `<MatDrawer>` (not just the context-injection harness above) so its own
+ * per-toggle task actually runs — `MAT_DRAWER_CONTAINER_STATE` is still provided directly
+ * (rather than via a real `<MatDrawerContainer>`) only to avoid the unrelated, environment-
+ * blocked `offsetWidth` measurement (see the `describe` above); the margin VALUE computed from
+ * that is irrelevant here — what's under test is that the sync skips writing to the
+ * caller-overridden property at all, regardless of what it would have computed.
+ */
+describe('style passthrough — margin override survives a drawer toggle (Task 1 fix round 1)', () => {
+  const ToggleHarness = component$(() => {
+    const opened = useSignal(false);
+    useContextProvider(MAT_DRAWER_CONTAINER_STATE, {
+      registry: useSignal<Record<string, DrawerRegistration>>({}),
+      backdropOverride: useSignal<boolean | null>(null),
+      transitionsEnabled: useSignal(false),
+      containerHostRef: useSignal<HTMLElement | undefined>(undefined),
+      contentHostRef: useSignal<HTMLElement | undefined>(undefined),
+      contentMarginOverrides: useSignal({left: false, right: false}),
+    });
+    return (
+      <>
+        <MatDrawer
+          mode="side"
+          opened={opened.value}
+          width="200px"
+          onOpenedChange$={$((v: boolean) => {
+            opened.value = v;
+          })}
+        >
+          drawer
+        </MatDrawer>
+        <MatDrawerContent style={{'margin-left': '12px'}}>content</MatDrawerContent>
+        <button
+          type="button"
+          onClick$={$(() => {
+            opened.value = !opened.value;
+          })}
+        >
+          toggle
+        </button>
+      </>
+    );
+  });
+
+  it('keeps a caller-set margin-left across a drawer open/close toggle', async () => {
+    const {render, screen} = await createDOM();
+    await render(<ToggleHarness />);
+    // Runs both mount tasks — `MatDrawer`'s own (registry registration) and
+    // `MatDrawerContent`'s (publishes `contentMarginOverrides`, sets the host ref).
+    await trigger(screen, 'mat-drawer', 'qvisible');
+    await trigger(screen, 'mat-drawer-content', 'qvisible');
+    const el = screen.querySelector('mat-drawer-content') as HTMLElement;
+    expect(el.style.marginLeft).toBe('12px');
+    // Flips `opened` — re-runs `MatDrawer`'s combined task, hitting the per-toggle margin sync
+    // this fix targets.
+    await trigger(screen, 'button', 'click');
+    expect(el.style.marginLeft).toBe('12px');
   });
 });
 

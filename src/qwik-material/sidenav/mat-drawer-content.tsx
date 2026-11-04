@@ -89,6 +89,15 @@ function createContent(
     // `hostRef`, has no such ordering dependency.
     useVisibleTask$(() => {
       containerState.contentHostRef.value = hostRef.value;
+      // Fix for a review finding (Task 1 fix round 1, homepage-material-parity): published here
+      // so every registering `MatDrawer`/`MatSidenav`'s own per-toggle imperative margin sync
+      // (`mat-drawer.tsx`) can skip whichever of margin-left/margin-right this component's
+      // caller already set — see drawer-state.ts's doc comment on `contentMarginOverrides`.
+      // Without this, the caller-wins contract below only held through this very mount task;
+      // the FIRST subsequent drawer toggle reverted it straight back to the computed-only value.
+      const overrideLeft = hasOwnStyleProperty(props.style, 'margin-left');
+      const overrideRight = hasOwnStyleProperty(props.style, 'margin-right');
+      containerState.contentMarginOverrides.value = {left: overrideLeft, right: overrideRight};
       const el = hostRef.value;
       if (!el) return;
       const m = computeContentMargins(containerState.registry.value);
@@ -96,10 +105,10 @@ function createContent(
       // whichever of margin-left/margin-right the caller's own `style` already sets, so this
       // mount-time re-apply (see this task's OWN doc comment above for why it exists at all)
       // doesn't clobber it straight back to the computed-only value.
-      if (!hasOwnStyleProperty(props.style, 'margin-left')) {
+      if (!overrideLeft) {
         el.style.marginLeft = m.left != null ? `${m.left}px` : '';
       }
-      if (!hasOwnStyleProperty(props.style, 'margin-right')) {
+      if (!overrideRight) {
         el.style.marginRight = m.right != null ? `${m.right}px` : '';
       }
     });
