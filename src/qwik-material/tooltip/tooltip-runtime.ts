@@ -220,6 +220,11 @@ export function showTooltip(
 
   signals.message.value = config.message;
   signals.isVisible.value = false;
+  // Upstream attaches a fresh `TooltipComponent` per show, so its state starts clean. Without this
+  // reset, a pane created after an earlier show/hide cycle rendered with the hide-animation class
+  // straight away, and that animation's end detached it before a `showDelay` of more than ~85ms
+  // elapsed — the tooltip only ever showed on the first hover.
+  signals.everShown.value = false;
   // Fresh pane, no classes applied yet — reset regardless of how the
   // previous overlay (if any) went away, otherwise `syncPositionClass`'s
   // "already applied" check below could skip re-adding a class the NEW

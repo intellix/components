@@ -8,13 +8,9 @@ import {test, expect, type Page} from '@playwright/test';
  * `angular-parity.spec.ts` counterpart. Fixtures:
  * `src/qwik-cdk-dev-app/src/routes/mat-providers/{layout.tsx,basic,nested-override,dialog}`.
  *
- * The tooltip assertions use a `tooltipClass` marker, not a `showDelay`/`hideDelay` TIMING
- * difference — confirmed live (`debug` probes against both this fixture and the pre-existing,
- * unmodified `mat-tooltip/show-hide-delay` route, which sets an explicit `showDelay={50}`
- * PROP) that a tooltip shows up near-instantly under Playwright's synthetic `hover()`
- * regardless of its configured delay, in this port, today — a pre-existing characteristic of
- * this component/harness combination, not something this change introduces or could fix. A
- * directly observable DOM marker (`tooltipClass`) sidesteps that unreliability entirely.
+ * The tooltip assertions use a `tooltipClass` marker rather than timing: the tooltip ELEMENT is
+ * created as soon as the trigger is hovered and only gains `mat-mdc-tooltip-show` after the show
+ * delay (same as upstream), so checking a class is the direct, timing-free signal.
  *
  * Covers:
  *   - root-level `useMatProviders({formField, tooltip})` applies to descendants that set

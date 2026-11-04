@@ -218,3 +218,15 @@ this port exists to satisfy. A workaround confined to `use-mat-tooltip.ts` (e.g.
 considered but not attempted — real behavior risk (every sub-element transition inside the
 button re-fires `mouseover`) for a fix whose root cause lives one layer further down than this
 port's own code, within the time remaining.
+
+## Fixed: tooltips with a show delay only showed on the first hover (2026-11-04)
+
+The trigger's `everShown` flag (which picks the show/hide animation class) was never reset, so the
+pane created on a later hover rendered with the hide-animation class straight away and detached
+when that animation ended, before any `showDelay` longer than the ~85ms hide animation elapsed.
+Upstream attaches a fresh `TooltipComponent` per show, so its state always starts clean;
+`showTooltip()` now resets `everShown` with the rest of the per-pane state. Guarded by
+`specs/material-tooltip/repeat-show-delay.spec.ts` (three hovers, `showDelay: 300`). Verified
+against the Angular reference: `tooltip-delay` (1000/2000ms) shows and hides on both hovers within
+~20ms of Angular.
+
