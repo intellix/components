@@ -5,6 +5,13 @@ an existing Angular app. It assumes your app is already on a **current, MDC-base
 Material version — legacy (pre-MDC) components and APIs have no equivalent here at all, so there
 is nothing to map from if you haven't already moved off them in Angular itself.
 
+This page covers the concept map at a glance. For the full, verified migration walkthrough —
+installing a local build, the `vite.config.ts` requirements, every Angular DI token's Qwik hook
+equivalent, a row-by-row component/CDK mapping table, the pitfalls a migration will actually hit,
+and the complete not-supported list — see
+[`MIGRATING.md`](../../../../../MIGRATING.md) at the repo root. That file is written for an AI
+coding agent doing the migration autonomously, and is also useful for a human developer.
+
 ## Concept map
 
 | Angular Material | qwik-material |
@@ -64,6 +71,10 @@ ref). See each one's own component page for the exact signature.
 - **RxJS-based APIs** (`Observable` outputs, `asObservable()`). Every output is a plain `QRL`
   handler prop instead; there is no Observable layer to subscribe to.
 - **Zone.js-based change detection.** Qwik has no zones — reactivity is purely signal-based.
+- **Virtual scrolling and drag-and-drop** (`@angular/cdk/scrolling`'s `cdk-virtual-scroll-viewport`,
+  `@angular/cdk/drag-drop`). Neither has a Qwik port; no workaround.
+- **`MatSelectionList`/`MatListOption`** and chip-input autocomplete composition. Not ported — see
+  `MIGRATING.md`'s not-supported list for the full detail and any available workaround.
 
 ## A worked example: Button
 
