@@ -217,6 +217,11 @@
       "types": "./dist/datepicker/index.d.ts",
       "import": "./dist/datepicker/index.js"
     },
+    "./providers": {
+      "qwik": "./providers/index.ts",
+      "types": "./dist/providers/index.d.ts",
+      "import": "./dist/providers/index.js"
+    },
     "./core-prebuilt.css": "./dist/core-prebuilt.css",
     "./dialog-prebuilt.css": "./dist/dialog-prebuilt.css",
     "./button-prebuilt.css": "./dist/button-prebuilt.css",

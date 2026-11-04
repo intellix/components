@@ -1,17 +1,17 @@
 import {$, component$} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {
   MatMenu,
   MatMenuItem,
   MatMenuTrigger,
   createMatMenu,
+  useMatMenuProvider,
 } from '@angular-community/qwik-material/menu';
 
 /**
  * Demonstrates the `MAT_MENU_SCROLL_STRATEGY` (upstream equivalent) API
  * shape: a menu configured to use the `block` scroll strategy instead of
- * the default `reposition` one, via `<QwikMaterialProvider
- * matMenuScrollStrategy="block">` — a plain, serializable
+ * the default `reposition` one, via
+ * `useMatMenuProvider({scrollStrategy: 'block'})` — a plain, serializable
  * `ScrollStrategyDescriptor` (see `qwik-cdk/overlay/scroll/
  * scroll-strategy-descriptor.ts`), not a function factory.
  *
@@ -54,9 +54,12 @@ const Scenario = component$(() => {
   );
 });
 
-export default component$(() => (
-  <QwikMaterialProvider matMenuScrollStrategy="block">
-    <Scenario />
-    <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
-));
+export default component$(() => {
+  useMatMenuProvider({scrollStrategy: 'block'});
+  return (
+    <>
+      <Scenario />
+      <main data-scenario-ready>ready</main>
+    </>
+  );
+});

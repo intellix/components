@@ -6,7 +6,6 @@ import {
 } from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
 import {MatButton} from '@angular-community/qwik-material/button';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {useMatSnackBar} from '@angular-community/qwik-material/snack-bar';
 import PizzaPartySnack from './snack';
 import styles from './example.css?inline';
@@ -25,7 +24,7 @@ export default component$(() => {
   const durationInSeconds = useSignal(5);
 
   return (
-    <QwikMaterialProvider>
+    <>
       <snack-bar-annotated-component-example>
         <MatFormField
           label={<MatLabel>Snack bar duration (seconds)</MatLabel>}
@@ -61,6 +60,6 @@ export default component$(() => {
           Pizza party
         </MatButton>
       </snack-bar-annotated-component-example>
-    </QwikMaterialProvider>
+    </>
   );
 });

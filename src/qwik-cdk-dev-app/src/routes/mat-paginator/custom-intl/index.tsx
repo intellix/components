@@ -1,11 +1,14 @@
 import {component$, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatPaginator, type PageEvent} from '@angular-community/qwik-material/paginator';
+import {
+  MatPaginator,
+  useMatPaginatorProvider,
+  type PageEvent,
+} from '@angular-community/qwik-material/paginator';
 
 // Mirrors src/dev-app/qwik-parity/paginator.ts's PaginatorCustomIntl — a custom MatPaginatorIntl
 // (upstream: a plain class implementing the interface, provided via `providers:
 // [{provide: MatPaginatorIntl, useClass: ...}]`; this port's equivalent is
-// `<QwikMaterialProvider matPaginatorIntl={...}>`, which REPLACES the whole intl object, not a
+// `useMatPaginatorProvider({intl: {...}})`, which REPLACES the whole intl object, not a
 // per-field merge — see qwik-material/paginator/paginator-intl.ts). Exact strings mirrored
 // verbatim from the Angular scenario's header comment.
 //
@@ -26,16 +29,18 @@ export default component$(() => {
   const pageIndex = useSignal(0);
   const pageSize = useSignal(10);
 
+  useMatPaginatorProvider({
+    intl: {
+      itemsPerPageLabel: 'Rows:',
+      nextPageLabel: 'Go forward',
+      previousPageLabel: 'Go backward',
+      firstPageLabel: 'Jump to first',
+      lastPageLabel: 'Jump to last',
+    },
+  });
+
   return (
-    <QwikMaterialProvider
-      matPaginatorIntl={{
-        itemsPerPageLabel: 'Rows:',
-        nextPageLabel: 'Go forward',
-        previousPageLabel: 'Go backward',
-        firstPageLabel: 'Jump to first',
-        lastPageLabel: 'Jump to last',
-      }}
-    >
+    <>
       <div data-parity-root>
         <MatPaginator
           style="width: 600px"
@@ -55,6 +60,6 @@ export default component$(() => {
         </p>
       </div>
       <main data-scenario-ready>ready</main>
-    </QwikMaterialProvider>
+    </>
   );
 });

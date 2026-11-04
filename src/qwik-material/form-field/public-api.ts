@@ -9,7 +9,11 @@ export type {
   MatFormFieldSubscriptSizing,
   MatFormFieldColor,
 } from './form-field-config';
-export {MAT_FORM_FIELD_CONFIG, MAT_FORM_FIELD_CONFIG_DEFAULTS} from './form-field-config';
+export {
+  MAT_FORM_FIELD_CONFIG,
+  MAT_FORM_FIELD_CONFIG_DEFAULTS,
+  useMatFormFieldProvider,
+} from './form-field-config';
 
 export {MatFormField, type MatFormFieldProps} from './mat-form-field';
 export {MatLabel, type MatLabelProps} from './mat-label';

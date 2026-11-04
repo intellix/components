@@ -1,6 +1,8 @@
 import {component$, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatSlideToggle} from '@angular-community/qwik-material/slide-toggle';
+import {
+  MatSlideToggle,
+  useMatSlideToggleProvider,
+} from '@angular-community/qwik-material/slide-toggle';
 
 /**
  * Qwik-only scenario (no Angular mirror — provider config isn't exercised by
@@ -15,8 +17,9 @@ export default component$(() => {
   const toggleCount = useSignal(0);
   const changeCount = useSignal(0);
 
+  useMatSlideToggleProvider({disableToggleValue: true});
   return (
-    <QwikMaterialProvider matSlideToggleConfig={{disableToggleValue: true}}>
+    <>
       <div data-parity-root>
         <MatSlideToggle
           checked={checked.value}
@@ -32,6 +35,6 @@ export default component$(() => {
         <p data-change-count>{changeCount.value}</p>
       </div>
       <main data-scenario-ready>ready</main>
-    </QwikMaterialProvider>
+    </>
   );
 });

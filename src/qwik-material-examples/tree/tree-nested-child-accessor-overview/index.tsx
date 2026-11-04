@@ -1,8 +1,7 @@
 import {$, component$, useContext} from '@qwik.dev/core';
 import {CDK_TREE_TOGGLE_STATE, type CdkTreeNodeInput} from '@angular-community/qwik-cdk/tree';
 import {MatIconButton} from '@angular-community/qwik-material/button';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatIcon} from '@angular-community/qwik-material/icon';
+import {MatIcon, useMatIconProvider} from '@angular-community/qwik-material/icon';
 import {MatTree} from '@angular-community/qwik-material/tree';
 import './tree-nested-child-accessor-overview-example.css';
 
@@ -126,16 +125,17 @@ function buildNodes(data: FoodNode[]): CdkTreeNodeInput<FoodNode>[] {
 }
 
 export default component$(() => {
+  useMatIconProvider({fontSet: 'material-symbols-outlined'});
   return (
     <tree-nested-child-accessor-overview-example>
-      <QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
+      <>
         <MatTree
           variant="nested"
           nodes={buildNodes(FOOD_DATA)}
           class="example-tree"
           nestedHiddenClass="example-tree-invisible"
         />
-      </QwikMaterialProvider>
+      </>
     </tree-nested-child-accessor-overview-example>
   );
 });

@@ -17,6 +17,11 @@ export type {MatPaginatorIntl} from './paginator-intl';
 export {MAT_PAGINATOR_INTL, DEFAULT_PAGINATOR_INTL} from './paginator-intl';
 
 export {
+  useMatPaginatorProvider,
+  type MatPaginatorProviderConfig,
+} from './use-mat-paginator-provider';
+
+export {
   DEFAULT_PAGE_SIZE,
   computeChangedPageIndex,
   computeDisplayedPageSizeOptions,

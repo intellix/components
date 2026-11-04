@@ -1,8 +1,8 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 
 /**
  * Defaults applied to every MatButtonToggleGroup / MatButtonToggle in a subtree.
- * Consumers provide this via <QwikMaterialProvider matButtonToggleConfig={...}>.
+ * Consumers provide this via `useMatButtonToggleProvider(...)`.
  * Mirrors upstream's `MatButtonToggleDefaultOptions` interface +
  * `MAT_BUTTON_TOGGLE_DEFAULT_OPTIONS` injection token
  * (`src/material/button-toggle/button-toggle.ts`) for the two fields this port
@@ -35,3 +35,15 @@ export const MAT_BUTTON_TOGGLE_CONFIG_DEFAULTS: Required<MatButtonToggleConfig> 
 export const MAT_BUTTON_TOGGLE_CONFIG = createContextId<MatButtonToggleConfig>(
   'qwikMaterial/buttonToggleConfig',
 );
+
+/**
+ * Provides {@link MAT_BUTTON_TOGGLE_CONFIG} for this subtree — call once near the root (or anywhere
+ * deeper, to override just that part of the tree) so every MatButtonToggleGroup / MatButtonToggle
+ * descendant resolves its defaults from `config` instead of its own hardcoded fallback.
+ * Only this one context is provided; every other qwik-material configuration context
+ * stays whatever an ancestor (or nothing) already provided — see README.md's
+ * "Configuring the library" section.
+ */
+export function useMatButtonToggleProvider(config?: MatButtonToggleConfig): void {
+  useContextProvider(MAT_BUTTON_TOGGLE_CONFIG, config ?? {});
+}

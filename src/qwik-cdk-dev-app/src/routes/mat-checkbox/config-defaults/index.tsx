@@ -1,6 +1,5 @@
 import {component$, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatCheckbox} from '@angular-community/qwik-material/checkbox';
+import {MatCheckbox, useMatCheckboxProvider} from '@angular-community/qwik-material/checkbox';
 
 // Qwik-only route (no Angular mirror — not part of the angular-parity.spec.ts
 // contract). Exercises MAT_CHECKBOX_CONFIG's provider-supplied defaults
@@ -13,8 +12,9 @@ import {MatCheckbox} from '@angular-community/qwik-material/checkbox';
 export default component$(() => {
   const checked = useSignal(false);
 
+  useMatCheckboxProvider({color: 'primary', clickAction: 'noop'});
   return (
-    <QwikMaterialProvider matCheckboxConfig={{color: 'primary', clickAction: 'noop'}}>
+    <>
       <div data-parity-root>
         <MatCheckbox
           checked={checked.value}
@@ -28,6 +28,6 @@ export default component$(() => {
         <p>Checked: {String(checked.value)}</p>
       </div>
       <main data-scenario-ready>ready</main>
-    </QwikMaterialProvider>
+    </>
   );
 });

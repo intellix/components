@@ -135,9 +135,9 @@ own `onClick$`/etc. handlers the same way you'd call `useMatDialog().open$(...)`
 
 Every built-in component's own ripple (buttons, checkboxes, radios, chips, menu items, options,
 slide toggles, tab labels/links) ALSO honours app-wide ripple defaults — upstream's
-`MAT_RIPPLE_GLOBAL_OPTIONS` — via `<QwikMaterialProvider matRippleConfig={{disabled: false,
-animation: {enterDuration: 225, exitDuration: 150}, terminateOnPointerUp: false}}>` (see
-`dialog/qwik-material-provider.tsx`). Omit any field you don't want to override.
+`MAT_RIPPLE_GLOBAL_OPTIONS` — via `useMatRippleProvider({disabled: false,
+animation: {enterDuration: 225, exitDuration: 150}, terminateOnPointerUp: false})` (see
+`core/ripple/ripple-global-options.ts`). Omit any field you don't want to override.
 
 See `core/host-props.ts` for the full `HostProps`/`mergeHostProps()` API and its rationale, and
 `docs/superpowers/specs/2026-10-31-qwik-material-directive-hooks-design.md` for the overall

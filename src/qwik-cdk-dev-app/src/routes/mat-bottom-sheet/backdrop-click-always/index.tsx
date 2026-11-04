@@ -1,6 +1,8 @@
 import {$, component$, useContext, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {useMatBottomSheet, MAT_BOTTOM_SHEET_REF} from '@angular-community/qwik-material/bottom-sheet';
+import {
+  useMatBottomSheet,
+  MAT_BOTTOM_SHEET_REF,
+} from '@angular-community/qwik-material/bottom-sheet';
 
 /**
  * Bottom-sheet counterpart of mat-dialog/backdrop-click-always: upstream
@@ -54,10 +56,10 @@ const Runner = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <div data-parity-root>
       <Runner />
     </div>
     <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
+  </>
 ));

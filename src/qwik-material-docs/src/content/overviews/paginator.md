@@ -26,7 +26,7 @@ can use the `selectConfig` prop.
 
 ### Internationalization
 The labels for the paginator can be customized by providing your own `MatPaginatorIntl` via
-`<QwikMaterialProvider matPaginatorIntl={{...}}>`. This will allow you to change the following:
+`useMatPaginatorProvider({intl: {...}})`. This will allow you to change the following:
  1. The label for the length of each page (`itemsPerPageLabel`).
  2. The labels/tooltip messages on the navigation buttons (`nextPageLabel`, `previousPageLabel`,
     `firstPageLabel`, `lastPageLabel`).

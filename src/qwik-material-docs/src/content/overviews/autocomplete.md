@@ -53,14 +53,14 @@ the committed value:
    `undefined` once the panel closes.
 2. If the user opens and closes the panel without changing the value, the old value is preserved.
 
-This can be configured app-wide via `<QwikMaterialProvider matAutocompleteConfig={{requireSelection: true}}>`.
+This can be configured app-wide via `useMatAutocompleteProvider({config: {requireSelection: true}})`.
 
 <!-- example(autocomplete-require-selection) -->
 
 ### Automatically highlighting the first option
 
 Pass `autoActiveFirstOption` to highlight the first option whenever the panel opens. Also
-configurable app-wide via `<QwikMaterialProvider matAutocompleteConfig={{autoActiveFirstOption: true}}>`.
+configurable app-wide via `useMatAutocompleteProvider({config: {autoActiveFirstOption: true}})`.
 
 <!-- example(autocomplete-auto-active-first-option) -->
 

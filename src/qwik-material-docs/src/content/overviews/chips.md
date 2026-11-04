@@ -154,7 +154,7 @@ By default, chips are displayed horizontally. To stack chips vertically, apply t
 
 ### Specifying global configuration defaults
 
-Use `<QwikMaterialProvider matChipsConfig={{separatorKeys: ['Enter', ',']}}>` to specify default
+Use `useMatChipsProvider({separatorKeys: ['Enter', ',']})` to specify default
 options for chips.
 
 ### Interaction Patterns
@@ -247,6 +247,6 @@ selected items.
   `MatInput`/`MatSelect`), so the `ng-pristine`/`ng-untouched`/`ng-valid` classes Angular's real
   `NgControlStatus` would add can't be replicated yet.
 - **`EventEmitter`s (`removed`, selection changes) → `onRemoved$`/`onChange$` QRL props.**
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_CHIPS_DEFAULT_OPTIONS` injection
+- **Global defaults via a hook (`useMatChipsProvider()`)**, not an `MAT_CHIPS_DEFAULT_OPTIONS` injection
   token.
 - **Harness not ported.**

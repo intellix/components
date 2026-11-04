@@ -1,5 +1,5 @@
 import {component$} from '@qwik.dev/core';
-import {MatIcon, MatIconRegistryProvider} from '@angular-community/qwik-material/icon';
+import {MatIcon, useMatIconRegistryProvider} from '@angular-community/qwik-material/icon';
 
 /**
  * `svgIcon` names an icon that was never registered — `getNamedSvgIcon`
@@ -7,12 +7,13 @@ import {MatIcon, MatIconRegistryProvider} from '@angular-community/qwik-material
  * (mirrors upstream's failure path; see mat-icon.tsx's `resolvedSvgIcon`).
  */
 export default component$(() => {
+  useMatIconRegistryProvider();
   return (
     <>
       <div data-parity-root>
-        <MatIconRegistryProvider>
+        <>
           <MatIcon svgIcon="does-not-exist" aria-label="Missing" aria-hidden={false} />
-        </MatIconRegistryProvider>
+        </>
       </div>
       <main data-scenario-ready>ready</main>
     </>

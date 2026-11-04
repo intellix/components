@@ -2,7 +2,7 @@ import {test, expect, type Page} from '@playwright/test';
 
 /**
  * Functional (Qwik-only — no Angular comparison) coverage for
- * `MAT_RIPPLE_GLOBAL_OPTIONS`/`<QwikMaterialProvider matRippleConfig={...}>`
+ * `MAT_RIPPLE_GLOBAL_OPTIONS`/`useMatRippleProvider({...})`
  * (`core/ripple/ripple-global-options.ts`). This is a brand-new port-only
  * API surface — upstream's own `MAT_RIPPLE_GLOBAL_OPTIONS` has no bearing on
  * the parity harness (it's an Angular DI token, not DOM), so there's no

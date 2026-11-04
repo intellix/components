@@ -94,12 +94,12 @@ export interface OverlayConfig {
    * solves this; `<OverlayContainerOutlet>` renders overlay content as a
    * SIBLING of the opener under `<QwikCdkRoot>`, not a descendant, so
    * Qwik context providers between the root and the opener — e.g. a
-   * nested `<QwikMaterialProvider>` — don't reach it on their own).
+   * nested `useMat*Provider()` call — don't reach it on their own).
    * `useDialog()`/`useMatDialog()`/`useMatBottomSheet()` populate this
    * automatically from `config.context` plus every qwik-material
    * configuration context visible where the hook is called — see
-   * `qwik-material/dialog/qwik-material-provider.tsx`'s
-   * `useQwikMaterialContextSnapshot()`. A raw `useOverlay()` consumer can
+   * `qwik-material/core/mat-context-snapshot.ts`'s
+   * `useMatContextSnapshot()`. A raw `useOverlay()` consumer can
    * also set this directly, as the generic opt-in.
    */
   context?: OverlayContextOverride[];

@@ -57,6 +57,6 @@ progress bar.
 - **`.mat-progress-bar-reduced-motion` class omitted** — the SCSS's own
   `@media (prefers-reduced-motion: reduce)` rule covers it without a client-side `matchMedia`
   check.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_PROGRESS_BAR_CONFIG` injection
+- **Global defaults via a hook (`useMatProgressBarProvider()`)**, not an `MAT_PROGRESS_BAR_CONFIG` injection
   token.
 - **Harness not ported.**

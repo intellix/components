@@ -13,3 +13,4 @@ export type {
 } from './use-stepper-buttons';
 export {MAT_STEPPER_ACTIONS, type MatStepperActions} from './stepper-actions';
 export {useRequiredControl, type RequiredControlApi} from './step-control';
+export {useMatStepperProvider} from './use-mat-stepper-provider';

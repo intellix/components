@@ -358,7 +358,7 @@ export async function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): P
       direction: options.direction,
       disableAnimations: options.animationsDisabled,
       // Mirrors upstream MAT_MENU_SCROLL_STRATEGY: configurable via
-      // <QwikMaterialProvider matMenuScrollStrategy={...}>, falling back
+      // useMatMenuProvider({scrollStrategy: ...}), falling back
       // to the previously hard-coded reposition strategy.
       scrollStrategy: resolvedScrollStrategy,
     },

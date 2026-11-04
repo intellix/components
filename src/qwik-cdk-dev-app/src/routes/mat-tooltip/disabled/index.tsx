@@ -1,5 +1,4 @@
 import {component$} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {MatTooltip} from '@angular-community/qwik-material/tooltip';
 
 /** Mirrors `src/dev-app/qwik-parity/tooltip.ts`'s `TooltipDisabled`. */
@@ -21,8 +20,8 @@ const Scenario = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <Scenario />
     <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
+  </>
 ));

@@ -4,7 +4,7 @@ import type {MatFormFieldAppearance} from '../form-field/form-field-config';
 /**
  * Qwik-port equivalent of upstream `MatPaginatorDefaultOptions` +
  * `MAT_PAGINATOR_DEFAULT_OPTIONS` (`src/material/paginator/paginator.ts`). Consumers provide this
- * via `<QwikMaterialProvider matPaginatorConfig={{...}}>`. Unlike `MatPaginatorIntl` (see
+ * via `useMatPaginatorProvider({config: {...}})`. Unlike `MatPaginatorIntl` (see
  * `paginator-intl.ts`), this merges field-by-field with each `<MatPaginator>` instance's own props
  * (`props.x ?? config.x ?? <upstream's own hardcoded default>`), same convention as
  * `MatCheckboxConfig`/`MatFormFieldConfig`/etc.

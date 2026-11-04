@@ -12,7 +12,7 @@ export const MAT_DIALOG_DATA = createContextId<unknown>('qwikMaterial/dialogData
 
 /**
  * Default options merged into every open() config. Provided by
- * <QwikMaterialProvider matDialogDefaults={…}>. Optional; defaults to {}.
+ * `useMatDialogProvider({defaults: …})`. Optional; defaults to {}.
  */
 export const MAT_DIALOG_DEFAULT_OPTIONS = createContextId<Partial<MatDialogConfig>>(
   'qwikMaterial/dialogDefaultOptions',
@@ -20,7 +20,7 @@ export const MAT_DIALOG_DEFAULT_OPTIONS = createContextId<Partial<MatDialogConfi
 
 /**
  * Default `ScrollStrategy` descriptor for dialogs that don't specify their
- * own. Provided by `<QwikMaterialProvider matDialogScrollStrategy={…}>`.
+ * own. Provided by `useMatDialogProvider({scrollStrategy: …})`.
  * Default: `'block'` (upstream's own `MAT_DIALOG_SCROLL_STRATEGY` default).
  *
  * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
@@ -58,7 +58,7 @@ export const MAT_DIALOG_CONTAINER = createContextId<MatDialogContainerApi>(
 
 /**
  * Boolean Signal that disables all animations when true. Provided by
- * <QwikMaterialProvider animationsDisabled={…}>. Optional; the container
+ * `useMatAnimationsProvider(…)`. Optional; the container
  * falls back to a frozen `{value: false}` shim when absent.
  */
 export const MAT_ANIMATIONS_DISABLED = createContextId<Signal<boolean>>(

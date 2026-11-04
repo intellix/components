@@ -5,7 +5,7 @@ const QWIK_URL = process.env['QWIK_URL'] ?? 'http://localhost:4173';
 /**
  * Covers overriding a select's scroll strategy (upstream
  * `MAT_SELECT_SCROLL_STRATEGY`), app-wide via
- * `<QwikMaterialProvider matSelectScrollStrategy="block">` — this port's
+ * `useMatSelectProvider({scrollStrategy: 'block'})` — this port's
  * own default is `{type: 'reposition'}`. See `select/SYNC.md`'s
  * "Scroll-strategy configuration" entry: the descriptor is plain,
  * serializable data (not a function factory), so it must survive a real

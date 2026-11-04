@@ -2,10 +2,10 @@
  * Render-time context accessors for `DateAdapter`/`MatDateFormats`/locale — see
  * `date-adapter.ts`'s and `native-date-adapter.ts`'s module doc comments.
  *
- * `QwikMaterialProvider` (`dialog/qwik-material-provider.tsx`) now wires all three contexts
- * below (`matDateAdapterFactory`/`matDateFormats`/`matDateLocale` props), app-wide or per
- * subtree (an inner `<QwikMaterialProvider>` shadows an outer one for its own descendants,
- * exactly like upstream's hierarchical DI and every other `MAT_*_CONFIG` context this project
+ * `useMatDateAdapterProvider()` (below) wires all three contexts
+ * (`factory`/`formats`/`locale` keys), app-wide or per
+ * subtree (an inner call shadows an outer one for its own descendants,
+ * exactly like upstream's hierarchical DI and every other provider hook this project
  * already has) — see `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE /
  * dateClass" section for the full design.
  *
@@ -45,7 +45,15 @@
  * (render-legal), and `resolveDateAdapter()` is called explicitly wherever a live instance is
  * needed.
  */
-import {$, createContextId, useContext, useSignal, type QRL, type Signal} from '@qwik.dev/core';
+import {
+  $,
+  createContextId,
+  useContext,
+  useContextProvider,
+  useSignal,
+  type QRL,
+  type Signal,
+} from '@qwik.dev/core';
 import type {DateAdapter} from './date-adapter';
 import {createNativeDateAdapter, DEFAULT_DATE_ADAPTER} from './native-date-adapter';
 import {MAT_DATE_FORMATS, type MatDateFormats} from './date-formats';
@@ -70,9 +78,9 @@ export function useDateFormats(): MatDateFormats {
 /** Context id a provider can use to override the `DateAdapter` FACTORY every date-aware
  *  component resolves via `useDateAdapterFactory()`/`resolveDateAdapter()`. See this module's
  *  doc comment for why this is a `QRL`, not a live instance. */
-export const MAT_DATE_ADAPTER_FACTORY = createContextId<QRL<(locale: string) => DateAdapter<unknown>>>(
-  'qwikMaterial/dateAdapterFactory',
-);
+export const MAT_DATE_ADAPTER_FACTORY = createContextId<
+  QRL<(locale: string) => DateAdapter<unknown>>
+>('qwikMaterial/dateAdapterFactory');
 
 /** The default factory every date-aware component falls back to when no
  *  `MAT_DATE_ADAPTER_FACTORY` provider is in scope — a `NativeDateAdapter` for the given locale.
@@ -148,4 +156,51 @@ export const MAT_DATE_LOCALE = createContextId<Signal<string>>('qwikMaterial/dat
 export function useDateLocale(): Signal<string> {
   const fallback = useSignal('en-US');
   return useContext(MAT_DATE_LOCALE, fallback);
+}
+
+/** Options for {@link useMatDateAdapterProvider}. */
+export interface MatDateAdapterProviderConfig {
+  /** Overrides the `DateAdapter` every `MatDatepicker`/`MatDateRangeInput`/`MatTimepicker`
+   *  resolves in this subtree. A `QRL` FACTORY, not a live instance — see this module's doc
+   *  comment. Defaults to {@link DEFAULT_DATE_ADAPTER_FACTORY}. */
+  factory?: QRL<(locale: string) => DateAdapter<unknown>>;
+  /** Overrides the parse/display format bag every date-aware component reads via
+   *  `useDateFormats()`. Plain data — defaults to `MAT_NATIVE_DATE_FORMATS`. */
+  formats?: MatDateFormats;
+  /** Seeds the locale every date-aware component reads via `useDateLocale()`/resolves its
+   *  adapter with. Defaults to `'en-US'`. */
+  locale?: string;
+}
+
+/**
+ * Provides {@link MAT_DATE_ADAPTER_FACTORY}, {@link MAT_DATE_FORMATS}, and
+ * {@link MAT_DATE_LOCALE} for this subtree — call once near the root (or anywhere deeper, to
+ * override just that part of the tree) so every date-aware descendant resolves its
+ * adapter/formats/locale from `config` instead of the hardcoded fallbacks. Only these three
+ * contexts are provided; every other qwik-material configuration context stays whatever an
+ * ancestor (or nothing) already provided.
+ *
+ * Returns the locale `Signal<string>` so the caller can switch locale at runtime (write
+ * `.value` on the returned signal — the Qwik-native equivalent of upstream's
+ * `DateAdapter.setLocale()`) — see `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS /
+ * MAT_DATE_LOCALE / dateClass" section.
+ *
+ * `config.locale` is a ONE-TIME SEED only, deliberately NOT guarded-resynced on every render:
+ * a guard that READS `localeSignal.value` (to compare against `config.locale`) during THIS
+ * component's own render would SUBSCRIBE this provider to its OWN signal, so the very next
+ * time a descendant changed it, this re-render would fire and immediately overwrite it back
+ * to the original seed value — confirmed live (a real bug this comment replaces the write-up
+ * of): the "Dynamically switch to French" docs example (`datepicker-locale`) silently reverted
+ * every click. `useSignal()`'s initializer already seeds it correctly exactly once; nothing
+ * more is needed.
+ */
+export function useMatDateAdapterProvider(config?: MatDateAdapterProviderConfig): Signal<string> {
+  // `MAT_DATE_ADAPTER_FACTORY`'s value is a QRL (a lazy import reference), never a live
+  // `DateAdapter` instance — QRLs are natively resumable, no `noSerialize()` needed.
+  useContextProvider(MAT_DATE_ADAPTER_FACTORY, config?.factory ?? DEFAULT_DATE_ADAPTER_FACTORY);
+  // MatDateFormats is plain, serializable data — no noSerialize needed.
+  useContextProvider(MAT_DATE_FORMATS, config?.formats ?? MAT_NATIVE_DATE_FORMATS);
+  const localeSignal = useSignal(config?.locale ?? 'en-US');
+  useContextProvider(MAT_DATE_LOCALE, localeSignal);
+  return localeSignal;
 }

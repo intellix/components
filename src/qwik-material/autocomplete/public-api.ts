@@ -7,10 +7,11 @@
 
 export {MatAutocomplete, type MatAutocompleteProps} from './mat-autocomplete';
 export {MatAutocompletePanel, type MatAutocompletePanelProps} from './mat-autocomplete-panel';
-export type {MatAutocompleteConfig} from './autocomplete-config';
+export type {MatAutocompleteConfig, MatAutocompleteProviderConfig} from './autocomplete-config';
 export {
   MAT_AUTOCOMPLETE_CONFIG,
   MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
+  useMatAutocompleteProvider,
 } from './autocomplete-config';
 export {
   resolveAutocompleteOptions,

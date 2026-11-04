@@ -77,7 +77,7 @@ icons for more information](/components/icon/overview#accessibility).
 - **Interactivity for the `aria-describedby`-vs-inline-span choice is derived from the `as` prop**
   (`'button' | 'a'` count as interactive), not a real `InteractivityChecker.isFocusable` DOM
   check.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_BADGE_CONFIG` injection token.
+- **Global defaults via a hook (`useMatBadgeProvider()`)**, not an `MAT_BADGE_CONFIG` injection token.
 - **No native `disabled` passthrough.** `disabled` only toggles the visual `.mat-badge-disabled`
   class, matching upstream's own `matBadgeDisabled` (it was never a native-disabled passthrough
   upstream either).

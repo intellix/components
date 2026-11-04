@@ -5,7 +5,7 @@
  * injecting `ScrollStrategyOptions` and calling one of its methods
  * (`.block()`, `.reposition({...})`, …) directly, synchronously, wherever
  * an overlay is opened — there's no cross-render-boundary capture to worry
- * about in Angular). This port's own `<QwikMaterialProvider
+ * about in Angular). This port's own provider hooks (e.g. `useMatDialogProvider`
  * matDialogScrollStrategy={…}>`-style config DOES cross such a boundary: the
  * value is read via `useContext()` in one render (the opener's) and has to
  * still be usable later, in a QRL invoked after a real SSR→CSR resume. A

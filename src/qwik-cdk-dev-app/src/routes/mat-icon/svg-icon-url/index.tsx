@@ -1,6 +1,10 @@
 import {component$} from '@qwik.dev/core';
 import {routeLoader$} from '@qwik.dev/router';
-import {MatIcon, MatIconRegistryProvider, trustIconResourceUrl} from '@angular-community/qwik-material/icon';
+import {
+  MatIcon,
+  trustIconResourceUrl,
+  useMatIconRegistryProvider,
+} from '@angular-community/qwik-material/icon';
 
 // This package has no router dependency (see icon/SYNC.md's "no HTTP
 // base-URL resolution" deviation), so a relative icon URL can't be
@@ -19,12 +23,13 @@ export const useHomeSvgUrl = routeLoader$(requestEvent => {
  */
 export default component$(() => {
   const url = useHomeSvgUrl();
+  useMatIconRegistryProvider({icons: [{name: 'home', url: trustIconResourceUrl(url.value)}]});
   return (
     <>
       <div data-parity-root>
-        <MatIconRegistryProvider icons={[{name: 'home', url: trustIconResourceUrl(url.value)}]}>
+        <>
           <MatIcon svgIcon="home" aria-label="Home" aria-hidden={false} />
-        </MatIconRegistryProvider>
+        </>
       </div>
       <main data-scenario-ready>ready</main>
     </>

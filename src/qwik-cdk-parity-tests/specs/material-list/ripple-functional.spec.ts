@@ -47,9 +47,7 @@ test.describe('qwik-material list-item ripple suppression — functional (Qwik o
     await page.mouse.up();
   });
 
-  test('disableRipple on the containing list suppresses ripples for its items', async ({
-    page,
-  }) => {
+  test('disableRipple on the containing list suppresses ripples for its items', async ({page}) => {
     await openPage(page);
     await pressDown(page, '.list-disable-ripple-on-list button');
     await page.waitForTimeout(100);
@@ -60,7 +58,7 @@ test.describe('qwik-material list-item ripple suppression — functional (Qwik o
     await page.mouse.up();
   });
 
-  test("disableRipple on the item itself suppresses its own ripple", async ({page}) => {
+  test('disableRipple on the item itself suppresses its own ripple', async ({page}) => {
     await openPage(page);
     await pressDown(page, '.list-disable-ripple-on-item button');
     await page.waitForTimeout(100);
@@ -90,7 +88,7 @@ test.describe('qwik-material list-item ripple suppression — functional (Qwik o
     await page.waitForTimeout(100);
     expect(
       await page.locator('.list-global-disabled .mat-ripple-element').count(),
-      '<QwikMaterialProvider matRippleConfig={{disabled: true}}> — no ripple',
+      'useMatRippleProvider({disabled: true}) — no ripple',
     ).toBe(0);
     await page.mouse.up();
   });

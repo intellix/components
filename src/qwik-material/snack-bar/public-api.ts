@@ -24,4 +24,5 @@ export {
   MAT_SNACK_BAR_DATA,
   MAT_SNACK_BAR_DEFAULT_OPTIONS,
   MAT_SNACK_BAR_REF,
+  useMatSnackBarProvider,
 } from './mat-snack-bar-tokens';

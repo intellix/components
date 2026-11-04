@@ -88,7 +88,7 @@ describe.skip('MatInput DOM-rendered scenarios — verified via Playwright', () 
   it('focusing the control (when not disabled) sets the shared MAT_FORM_FIELD_CONTROL_STATE.focused + .shouldLabelFloat to true via a lazy onFocus$ handler (never a mount task); blurring recomputes .empty from the LIVE DOM value (via a ref, not a copied signal) and sets .shouldLabelFloat accordingly', () => {});
   it('a fallback id (mat-input-N) is generated only when no `id` prop is present — in practice always already injected by an owning MatFormField', () => {});
   it('`aria-describedby` forwards exactly what the prop carries — MatFormField is responsible for merging in its own hint/error ids before passing it down', () => {});
-  it('MAT_INPUT_CONFIG (via QwikMaterialProvider matInputConfig) supplies disabledInteractive; an explicit prop always wins', () => {});
+  it('MAT_INPUT_CONFIG (via useMatInputProvider) supplies disabledInteractive; an explicit prop always wins', () => {});
 });
 
 describe.skip('MatInput — Angular-only / out-of-scope (deferred forever)', () => {

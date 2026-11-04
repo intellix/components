@@ -122,7 +122,7 @@ function findNextEnabledIndex(
 
 export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props => {
   // DEFAULTS fallback is REQUIRED (Progress Bar / Progress Spinner post-mortem —
-  // bare useContext throws Code 13 when rendered outside <QwikMaterialProvider>).
+  // bare useContext throws Code 13 when rendered with no provider hook ancestor).
   const config = useContext(MAT_BUTTON_TOGGLE_CONFIG, CONFIG_DEFAULTS);
 
   const idGen = useIdGenerator();
@@ -188,8 +188,7 @@ export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props 
     const incoming = track(() => props.values) ?? [];
     const pending = pendingValues.value;
     if (pending === undefined) return;
-    const matches =
-      pending.length === incoming.length && pending.every(v => incoming.includes(v));
+    const matches = pending.length === incoming.length && pending.every(v => incoming.includes(v));
     if (matches) pendingValues.value = undefined;
   });
 

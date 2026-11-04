@@ -8,6 +8,7 @@ export type {MatTooltipDefaultOptions} from './mat-tooltip-tokens';
 export {
   MAT_TOOLTIP_DEFAULT_OPTIONS,
   MAT_TOOLTIP_DEFAULT_OPTIONS_FACTORY,
+  useMatTooltipProvider,
 } from './mat-tooltip-tokens';
 export type {TooltipPosition, TooltipTouchGestures} from './tooltip-position';
 export {

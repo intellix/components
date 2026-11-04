@@ -11,7 +11,11 @@ export {
 export {MatTimepickerInput, type MatTimepickerInputProps} from './mat-timepicker-input';
 export {MatTimepickerToggle, type MatTimepickerToggleProps} from './mat-timepicker-toggle';
 export {MatTimepickerPanel, type MatTimepickerPanelProps} from './mat-timepicker-panel';
-export {MAT_TIMEPICKER_CONFIG, type MatTimepickerConfig} from './timepicker-config';
+export {
+  MAT_TIMEPICKER_CONFIG,
+  useMatTimepickerProvider,
+  type MatTimepickerConfig,
+} from './timepicker-config';
 export {parseInterval, generateOptions, type MatTimepickerOption} from './timepicker-util';
 export {
   openTimepickerPanel,

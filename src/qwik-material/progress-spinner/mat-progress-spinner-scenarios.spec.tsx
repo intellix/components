@@ -124,7 +124,7 @@ describe.skip('MatProgressSpinner — Angular-only tests', () => {
     // ViewChild omitted — §6 deviation #7.
   });
   it('should inject MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS via DI factory', () => {
-    // Config folded into QwikMaterialProvider — §6 deviation #9.
+    // Config provided via useMatProgressSpinnerProvider() — §6 deviation #9.
   });
   it('should read _getAnimationsState() di-disabled', () => {
     // Replaced by MAT_ANIMATIONS_DISABLED context — §6 deviation #3.

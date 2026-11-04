@@ -102,7 +102,7 @@ state by default maps to an icon, same as upstream.
 
 If you want to show an error when the user moved past a step that hasn't been filled out
 correctly, you can set the error message through the step's `errorMessage` field and configure
-the stepper to show errors via the `showError` option on `<QwikMaterialProvider>`'s stepper
+the stepper to show errors via the `showError` option on `useMatStepperProvider()`'s
 global options (mirrors upstream's `STEPPER_GLOBAL_OPTIONS`/`showError`). Note that since
 `linear` steppers prevent a user from advancing past an invalid step to begin with, this setting
 will not affect steppers marked `linear`.

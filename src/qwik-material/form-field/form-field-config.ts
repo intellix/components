@@ -1,4 +1,4 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 
 /** Mirrors upstream's `MatFormFieldAppearance`. */
 export type MatFormFieldAppearance = 'fill' | 'outline';
@@ -14,7 +14,7 @@ export type MatFormFieldColor = 'primary' | 'accent' | 'warn';
  * its own. Mirrors upstream's `MatFormFieldDefaultOptions` +
  * `MAT_FORM_FIELD_DEFAULT_OPTIONS` (`src/material/form-field/form-field.ts`
  * lines 68-92). Consumers provide this via
- * `<QwikMaterialProvider matFormFieldConfig={{...}}>`.
+ * `useMatFormFieldProvider({...})`.
  */
 export interface MatFormFieldConfig {
   /** Upstream default: `'fill'`. */
@@ -44,9 +44,9 @@ export const MAT_FORM_FIELD_CONFIG = createContextId<MatFormFieldConfig>(
  * Mirrors upstream's hardcoded defaults (`DEFAULT_APPEARANCE`,
  * `DEFAULT_FLOAT_LABEL`, `DEFAULT_SUBSCRIPT_SIZING`, and `MatFormField`'s
  * own `color` field initializer) — used as the `useContext()` fallback when
- * no `<QwikMaterialProvider>` ancestor exists, and as `MatFormField`'s own
- * final fallback so a provider supplying an empty `matFormFieldConfig`
- * still behaves correctly.
+ * no `useMatFormFieldProvider()` ancestor call exists, and as `MatFormField`'s
+ * own final fallback so a provider call supplying an empty config still
+ * behaves correctly.
  */
 export const MAT_FORM_FIELD_CONFIG_DEFAULTS: MatFormFieldConfig = {
   appearance: 'fill',
@@ -55,3 +55,14 @@ export const MAT_FORM_FIELD_CONFIG_DEFAULTS: MatFormFieldConfig = {
   floatLabel: 'auto',
   subscriptSizing: 'fixed',
 };
+
+/**
+ * Provides {@link MAT_FORM_FIELD_CONFIG} for this subtree — call once near the root (or
+ * anywhere deeper, to override just that part of the tree) so every `MatFormField`
+ * descendant resolves its defaults from `config` instead of {@link MAT_FORM_FIELD_CONFIG_DEFAULTS}.
+ * Only this one context is provided; every other qwik-material configuration context stays
+ * whatever an ancestor (or nothing) already provided.
+ */
+export function useMatFormFieldProvider(config?: MatFormFieldConfig): void {
+  useContextProvider(MAT_FORM_FIELD_CONFIG, config ?? {});
+}

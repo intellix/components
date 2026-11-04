@@ -4,7 +4,10 @@
 export type {MatProgressSpinnerColor} from './progress-spinner-color';
 export type {MatProgressSpinnerMode} from './progress-spinner-mode';
 export type {MatProgressSpinnerConfig} from './progress-spinner-config';
-export {MAT_PROGRESS_SPINNER_CONFIG} from './progress-spinner-config';
+export {
+  MAT_PROGRESS_SPINNER_CONFIG,
+  useMatProgressSpinnerProvider,
+} from './progress-spinner-config';
 export {
   MatProgressSpinner,
   MatSpinner,

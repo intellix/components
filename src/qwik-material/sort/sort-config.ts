@@ -1,4 +1,4 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 
 /** Position of the arrow that displays when sorted. Mirrors upstream's
  *  `SortHeaderArrowPosition` (src/material/sort/sort.ts). */
@@ -6,7 +6,7 @@ export type SortHeaderArrowPosition = 'before' | 'after';
 
 /**
  * Defaults applied to every MatSort / MatSortHeader in a subtree. Consumers
- * provide this via <QwikMaterialProvider matSortConfig={...}>. Mirrors
+ * provide this via `useMatSortProvider(...)`. Mirrors
  * upstream's `MatSortDefaultOptions` (`MAT_SORT_DEFAULT_OPTIONS` injection
  * token, src/material/sort/sort.ts).
  */
@@ -26,3 +26,15 @@ export interface MatSortConfig {
  * is exposed publicly and MUST remain stable across releases.
  */
 export const MAT_SORT_CONFIG = createContextId<MatSortConfig>('qwikMaterial/sortConfig');
+
+/**
+ * Provides {@link MAT_SORT_CONFIG} for this subtree — call once near the root (or anywhere
+ * deeper, to override just that part of the tree) so every MatSort / MatSortHeader
+ * descendant resolves its defaults from `config` instead of its own hardcoded fallback.
+ * Only this one context is provided; every other qwik-material configuration context
+ * stays whatever an ancestor (or nothing) already provided — see README.md's
+ * "Configuring the library" section.
+ */
+export function useMatSortProvider(config?: MatSortConfig): void {
+  useContextProvider(MAT_SORT_CONFIG, config ?? {});
+}

@@ -1,9 +1,5 @@
 import {$, component$} from '@qwik.dev/core';
-import {
-  QwikMaterialProvider,
-  MatDialogClose,
-  useMatDialog,
-} from '@angular-community/qwik-material/dialog';
+import {MatDialogClose, useMatDialog} from '@angular-community/qwik-material/dialog';
 import {NgComponentHost} from '../../../scenarios/_mat-template';
 
 const Body = component$<{class?: string}>(props => (
@@ -26,10 +22,10 @@ const Trigger = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <div data-parity-root>
       <Trigger />
     </div>
     <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
+  </>
 ));

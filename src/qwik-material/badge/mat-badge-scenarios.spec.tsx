@@ -115,7 +115,7 @@ describe.skip('MatBadge — Angular-only tests', () => {
     // badge/SYNC.md "Fixed in the 2026-10-27 DOM-parity remediation pass" #4.
   });
   it('should be able to specify default values through DI', () => {
-    // Provider flow verified via MAT_BADGE_CONFIG + QwikMaterialProvider.
+    // Provider flow verified via MAT_BADGE_CONFIG + useMatBadgeProvider().
   });
   it('should expose the badge element via getBadgeElement()', () => {
     // Imperative Angular API — no Qwik equivalent, omitted.

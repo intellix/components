@@ -20,12 +20,10 @@ and `outline`. The `fill` appearance displays the form field with a filled backg
 underline, while the `outline` appearance shows the form field with a border all the way around.
 
 Out of the box, if you don't specify an `appearance` it defaults to `fill`. This can be configured
-app-wide through `<QwikMaterialProvider>`:
+app-wide through `useMatFormFieldProvider()`:
 
 ```tsx
-<QwikMaterialProvider matFormFieldConfig={{appearance: 'outline'}}>
-  {/* ... */}
-</QwikMaterialProvider>
+useMatFormFieldProvider({appearance: 'outline'});
 ```
 
 <!-- example(form-field-appearance) -->
@@ -48,8 +46,8 @@ even with no text present, or `auto` to restore the default behavior.
 
 <!-- example(form-field-label) -->
 
-The floating label behavior can also be set app-wide via `<QwikMaterialProvider
-matFormFieldConfig={{floatLabel: 'always'}}>`.
+The floating label behavior can also be set app-wide via
+`useMatFormFieldProvider({floatLabel: 'always'})`.
 
 ### Hint labels
 
@@ -120,7 +118,7 @@ By default, a control's error message is shown when the control is invalid and e
 has interacted with it (`touched`) or the enclosing form has been submitted. This is the
 `ErrorStateMatcher` — upstream's `invalid && (touched || form.submitted)`. Override it:
 
-- **App-wide**, via `<QwikMaterialProvider errorStateMatcher="dirty">` — upstream's
+- **App-wide**, via `useMatErrorStateMatcherProvider('dirty')` — upstream's
   `ShowOnDirtyErrorStateMatcher` (`invalid && (dirty || submitted)`), shows errors as soon as the
   value has changed, without waiting for blur.
 - **Per control**, via `errorStateMatcher` directly on `<MatInput>`/`<MatSelect>`/

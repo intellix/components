@@ -97,7 +97,7 @@ const CONFIG_DEFAULTS: MatSlideToggleConfig = {
 
 export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
   // DEFAULTS fallback is REQUIRED — a bare useContext() throws Code 13 when
-  // rendered outside <QwikMaterialProvider> (Progress Bar / Progress Spinner
+  // rendered with no provider hook ancestor (Progress Bar / Progress Spinner
   // post-mortem; see every other qwik-material config read for precedent).
   const config = useContext(MAT_SLIDE_TOGGLE_CONFIG, CONFIG_DEFAULTS);
 

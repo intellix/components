@@ -1,16 +1,21 @@
 import {component$, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatStepper, useRequiredControl} from '@angular-community/qwik-material/stepper';
+import {
+  MatStepper,
+  useRequiredControl,
+  useMatStepperProvider,
+} from '@angular-community/qwik-material/stepper';
 
+// Only overrides stepperGlobalOptions here — the `matIconConfig` set by the parent
+// `mat-stepper/layout.tsx`'s `useMatIconProvider()` is still inherited: each provider hook
+// provides ONLY its own context, so a nested call here doesn't reset anything the ancestor
+// already provided (unlike the single all-in-one provider component this port used to have).
 export default component$(() => {
   const selected = useSignal(0);
   const nameCtrl = useRequiredControl();
 
+  useMatStepperProvider({showError: true});
   return (
-    <QwikMaterialProvider
-      stepperGlobalOptions={{showError: true}}
-      matIconConfig={{fontSet: 'material-symbols-outlined'}}
-    >
+    <>
       <div data-parity-root>
         <MatStepper
           style="width: 480px"
@@ -42,6 +47,6 @@ export default component$(() => {
         <p>Selected index: {selected.value}</p>
       </div>
       <main data-scenario-ready>ready</main>
-    </QwikMaterialProvider>
+    </>
   );
 });

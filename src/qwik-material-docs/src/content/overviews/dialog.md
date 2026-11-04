@@ -40,7 +40,7 @@ export default component$(() => {
 ```
 
 ### Specifying global configuration defaults
-Default dialog options can be provided through `<QwikMaterialProvider matDialogDefaults={{hasBackdrop: false}}>`
+Default dialog options can be provided through `useMatDialogProvider({defaults: {hasBackdrop: false}})`
 at the root of your app — see [Composing directives](/guide/composing-directives/).
 
 ### Passing props to the opened component
@@ -87,10 +87,10 @@ const unsubscribe = await dialog.afterAllClosed$($(() => {
 ```
 
 ### Contexts inside the dialog
-Content rendered inside the dialog automatically sees every `<QwikMaterialProvider>`
-configuration context visible where `useMatDialog()` was called — a form field inside the
-dialog picks up `matFormFieldConfig` from a provider wrapping your app, for example. To make your
-own app context available too, pass it via `context`:
+Content rendered inside the dialog automatically sees every configuration context a
+`useMat*Provider()` call made visible where `useMatDialog()` was called — a form field inside
+the dialog picks up its `appearance` from a `useMatFormFieldProvider()` call wrapping your app,
+for example. To make your own app context available too, pass it via `context`:
 
 ```tsx
 dialog.open$(UserProfileComponent, {
@@ -221,6 +221,6 @@ You can add handling for this situation with the `afterClosed` promise on `MatDi
   `ComponentRef` equivalent exists in Qwik; `componentInstance` is always `Signal<null>`.
 - **No `viewContainerRef`/`injector` config fields** — no DI container concept in Qwik.
   `MatDialogConfig.providers` → `MatDialogConfig.context` (`OverlayContextOverride[]`).
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_DIALOG_DEFAULT_OPTIONS` injection
+- **Global defaults via a hook (`useMatDialogProvider()`)**, not an `MAT_DIALOG_DEFAULT_OPTIONS` injection
   token.
 - **Harness not ported.**

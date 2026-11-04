@@ -1,5 +1,9 @@
 import {component$} from '@qwik.dev/core';
-import {MatIcon, MatIconRegistryProvider, trustIconHtml} from '@angular-community/qwik-material/icon';
+import {
+  MatIcon,
+  trustIconHtml,
+  useMatIconRegistryProvider,
+} from '@angular-community/qwik-material/icon';
 
 // Same literal string as upstream's icon-svg-example.ts (THUMBUP_ICON) — kept byte-identical so
 // the rendered <svg> markup matches exactly, not just the icon's appearance.
@@ -20,19 +24,17 @@ const THUMBUP_ICON =
  * Upstream registers the literal via the injected `MatIconRegistry` inside
  * the component's constructor:
  *   `iconRegistry.addSvgIconLiteral('thumbs-up', sanitizer.bypassSecurityTrustHtml(THUMBUP_ICON))`
- * This port's equivalent is `<MatIconRegistryProvider icons={[...]}>`
- * wrapping the `<MatIcon svgIcon="thumbs-up">`, with `trustIconHtml()` as
- * the explicit-trust opt-in that replaces `DomSanitizer.bypassSecurityTrustHtml`
- * (see `qwik-material/icon/SYNC.md`'s "SVG icon registry" section — no
- * DomSanitizer, no Angular DI, same "you must explicitly mark this
+ * This port's equivalent is `useMatIconRegistryProvider({icons: [...]})`,
+ * with `trustIconHtml()` as the explicit-trust opt-in that replaces
+ * `DomSanitizer.bypassSecurityTrustHtml` (see `qwik-material/icon/SYNC.md`'s "SVG icon
+ * registry" section — no DomSanitizer, no Angular DI, same "you must explicitly mark this
  * trusted" contract).
  */
 export default component$(() => {
+  useMatIconRegistryProvider({icons: [{name: 'thumbs-up', literal: trustIconHtml(THUMBUP_ICON)}]});
   return (
     <icon-svg-example>
-      <MatIconRegistryProvider icons={[{name: 'thumbs-up', literal: trustIconHtml(THUMBUP_ICON)}]}>
-        <MatIcon svgIcon="thumbs-up" aria-hidden={false} aria-label="Example thumbs up SVG icon" />
-      </MatIconRegistryProvider>
+      <MatIcon svgIcon="thumbs-up" aria-hidden={false} aria-label="Example thumbs up SVG icon" />
     </icon-svg-example>
   );
 });

@@ -1,6 +1,11 @@
 import {component$} from '@qwik.dev/core';
-import {MatList, MatActionList, MatListItem, MatListItemTitle} from '@angular-community/qwik-material/list';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+import {
+  MatList,
+  MatActionList,
+  MatListItem,
+  MatListItemTitle,
+} from '@angular-community/qwik-material/list';
+import {useMatRippleProvider} from '@angular-community/qwik-material/core';
 
 /**
  * Bespoke, non-upstream fixture for list-item ripple SUPPRESSION paths — no Angular mirror
@@ -24,9 +29,19 @@ import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
  *   upstream `MatListItemBase.disableRipple`'s own settable half).
  * - `.list-non-interactive` — a plain `<MatList>` (non-interactive): upstream never constructs a
  *   `RippleRenderer` at all for an item in a non-interactive list.
- * - `.list-global-disabled` — `<QwikMaterialProvider matRippleConfig={{disabled: true}}>`
- *   wrapping an otherwise-plain `<MatActionList>` item (mirrors `MAT_RIPPLE_GLOBAL_OPTIONS`).
+ * - `.list-global-disabled` — `useMatRippleProvider({disabled: true})`, scoped to its own
+ *   wrapper component, around an otherwise-plain `<MatActionList>` item (mirrors
+ *   `MAT_RIPPLE_GLOBAL_OPTIONS`).
  */
+const GlobalDisabledList = component$(() => {
+  useMatRippleProvider({disabled: true});
+  return (
+    <MatActionList class="list-global-disabled">
+      <MatListItem as="button" title={<MatListItemTitle>Global disabled</MatListItemTitle>} />
+    </MatActionList>
+  );
+});
+
 export default component$(() => (
   <>
     <div data-parity-root>
@@ -35,7 +50,10 @@ export default component$(() => (
       </MatActionList>
 
       <MatActionList disableRipple class="list-disable-ripple-on-list">
-        <MatListItem as="button" title={<MatListItemTitle>List disables ripple</MatListItemTitle>} />
+        <MatListItem
+          as="button"
+          title={<MatListItemTitle>List disables ripple</MatListItemTitle>}
+        />
       </MatActionList>
 
       <MatActionList class="list-disable-ripple-on-item">
@@ -50,11 +68,7 @@ export default component$(() => (
         <MatListItem title={<MatListItemTitle>Non-interactive</MatListItemTitle>} />
       </MatList>
 
-      <QwikMaterialProvider matRippleConfig={{disabled: true}}>
-        <MatActionList class="list-global-disabled">
-          <MatListItem as="button" title={<MatListItemTitle>Global disabled</MatListItemTitle>} />
-        </MatActionList>
-      </QwikMaterialProvider>
+      <GlobalDisabledList />
     </div>
     <main data-scenario-ready>ready</main>
   </>

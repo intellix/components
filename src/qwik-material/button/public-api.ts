@@ -3,7 +3,7 @@
 
 export type {MatButtonAppearance, MatButtonColor} from './button-appearance';
 export type {MatButtonConfig} from './button-config';
-export {MAT_BUTTON_CONFIG} from './button-config';
+export {MAT_BUTTON_CONFIG, useMatButtonProvider} from './button-config';
 
 export {MatButton, type MatButtonProps} from './mat-button';
 export {MatIconButton, type MatIconButtonProps} from './mat-icon-button';

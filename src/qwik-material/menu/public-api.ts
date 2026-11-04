@@ -12,11 +12,12 @@ export {MenuPanel} from './menu-panel';
 export type {MenuPanelProps} from './menu-panel';
 export type {MenuPositionX, MenuPositionY} from './menu-positions';
 export type {MenuCloseReason} from './menu-close-reason';
-export type {MatMenuDefaultOptions} from './mat-menu-tokens';
+export type {MatMenuDefaultOptions, MatMenuProviderConfig} from './mat-menu-tokens';
 export {
   MAT_MENU_DEFAULT_OPTIONS,
   MAT_MENU_DEFAULT_OPTIONS_FACTORY,
   MAT_MENU_SCROLL_STRATEGY,
+  useMatMenuProvider,
 } from './mat-menu-tokens';
 export {
   openMenu,

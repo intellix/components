@@ -488,8 +488,11 @@ are the only things that ever need the *configured* adapter.
 
 ```tsx
 import {$, component$} from '@qwik.dev/core';
-import {NativeDateAdapter, type MatDateFormats} from '@angular-community/qwik-material/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+import {
+  NativeDateAdapter,
+  useMatDateAdapterProvider,
+  type MatDateFormats,
+} from '@angular-community/qwik-material/core';
 
 // Apps whose users type dates as dd.mm.yyyy: subclass NativeDateAdapter, overriding only
 // parse()/format() — every other method (arithmetic, comparisons, locale-aware names, time
@@ -526,23 +529,22 @@ const DOT_DATE_FORMATS: MatDateFormats = {
   },
 };
 
-export default component$(() => (
-  // App-wide if placed near your app's root; scoped to one subtree if placed deeper (an inner
-  // <QwikMaterialProvider> shadows an outer one for its own descendants, like every other
-  // QwikMaterialProvider config prop). ONE provider configures useMatDatepicker(),
-  // useMatDateRangePicker(), AND useMatTimepicker() together.
-  <QwikMaterialProvider
-    matDateAdapterFactory={$((locale: string) => new DotDateAdapter(locale))}
-    matDateFormats={DOT_DATE_FORMATS}
-    matDateLocale="en-GB"
-  >
-    <MyPage />
-  </QwikMaterialProvider>
-));
+export default component$(() => {
+  // App-wide if called near your app's root; scoped to one subtree if called deeper (an inner
+  // call shadows an outer one for its own descendants, like every other provider hook). ONE
+  // call configures useMatDatepicker(), useMatDateRangePicker(), AND useMatTimepicker()
+  // together.
+  useMatDateAdapterProvider({
+    factory: $((locale: string) => new DotDateAdapter(locale)),
+    formats: DOT_DATE_FORMATS,
+    locale: 'en-GB',
+  });
+  return <MyPage />;
+});
 ```
 
-`matDateAdapterFactory` is a **`QRL` factory**, never a live instance — see "The core design
-problem" above. Omit any of the three props to fall back to `NativeDateAdapter`/
+`factory` is a **`QRL` factory**, never a live instance — see "The core design
+problem" above. Omit any of the three keys to fall back to `NativeDateAdapter`/
 `MAT_NATIVE_DATE_FORMATS`/`'en-US'` (unchanged behavior for every pre-existing scenario, none of
 which provide any of them).
 

@@ -102,7 +102,7 @@ export const MatInput = component$<MatInputProps>(props => {
   // touched too).
   const invalid = isInFormField ? formField.invalid : (props.invalid ?? false);
   // `ErrorStateMatcher` — see `core/error-state-matcher.ts`'s own doc comment for the full
-  // design (app-wide default via `<QwikMaterialProvider errorStateMatcher={...}>`, per-control
+  // design (app-wide default via `useMatErrorStateMatcherProvider({...})`, per-control
   // override via `props.errorStateMatcher`, built-in `'touched'`/`'dirty'` modes computed
   // synchronously, a custom QRL resolved via the `useTask$` below). Same pattern
   // `qwik-material/select/mat-select.tsx`'s `triggerLabel` (`compareWith$`) and

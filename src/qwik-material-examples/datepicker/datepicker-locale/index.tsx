@@ -1,8 +1,7 @@
 import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatFormField, MatHint, MatLabel} from '@angular-community/qwik-material/form-field';
 import {MatButton} from '@angular-community/qwik-material/button';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {useDateLocale} from '@angular-community/qwik-material/core';
+import {useDateLocale, useMatDateAdapterProvider} from '@angular-community/qwik-material/core';
 import {
   MatDatepicker,
   MatDatepickerInput,
@@ -26,7 +25,7 @@ import './datepicker-locale-example.css';
  * dependency needed), and `MAT_DATE_LOCALE` is a Qwik context carrying a reactive
  * `Signal<string>` (`useDateLocale()`) instead of upstream's one-shot DI token — see
  * `datepicker/SYNC.md`'s "DateAdapter / MAT_DATE_FORMATS / MAT_DATE_LOCALE / dateClass" section.
- * `<QwikMaterialProvider matDateLocale="ja-JP">` seeds it (app-wide if placed near an app's own
+ * `useMatDateAdapterProvider({locale: 'ja-JP'})` seeds it (app-wide if called near an app's own
  * root; scoped to this example here); the inner component reads the SAME signal via
  * `useDateLocale()` and writes to it directly on the button click — the Qwik-native equivalent
  * of calling `DateAdapter.setLocale()`.
@@ -48,7 +47,10 @@ const DatepickerLocaleExample = component$(() => {
       <MatFormField
         label={<MatLabel>Different locale</MatLabel>}
         control={
-          <MatDatepickerInput picker={picker} value={formatDateForDisplay(value.value) || undefined} />
+          <MatDatepickerInput
+            picker={picker}
+            value={formatDateForDisplay(value.value) || undefined}
+          />
         }
         hintStart={<MatHint>{dateFormatString}</MatHint>}
         iconSuffix={<MatDatepickerToggle picker={picker} />}
@@ -65,8 +67,7 @@ const DatepickerLocaleExample = component$(() => {
   );
 });
 
-export default component$(() => (
-  <QwikMaterialProvider matDateLocale="ja-JP">
-    <DatepickerLocaleExample />
-  </QwikMaterialProvider>
-));
+export default component$(() => {
+  useMatDateAdapterProvider({locale: 'ja-JP'});
+  return <DatepickerLocaleExample />;
+});

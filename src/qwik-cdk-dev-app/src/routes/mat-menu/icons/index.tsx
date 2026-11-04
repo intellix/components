@@ -1,5 +1,4 @@
 import {$, component$} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {
   MatMenu,
   MatMenuItem,
@@ -56,8 +55,8 @@ const Scenario = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <Scenario />
     <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
+  </>
 ));

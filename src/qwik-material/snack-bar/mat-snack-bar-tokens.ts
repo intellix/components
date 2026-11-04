@@ -1,4 +1,4 @@
-import {createContextId, type NoSerialize} from '@qwik.dev/core';
+import {createContextId, useContextProvider, type NoSerialize} from '@qwik.dev/core';
 import type {MatSnackBarConfig} from './snack-bar-config';
 import type {MatSnackBarRef} from './mat-snack-bar-ref';
 
@@ -12,12 +12,23 @@ export const MAT_SNACK_BAR_DATA = createContextId<unknown>('qwikMaterial/snackBa
 
 /**
  * Default options merged into every `open()`/`openFromComponent()`/
- * `openFromTemplate()` config. Provided by
- * `<QwikMaterialProvider matSnackBarDefaults={…}>`. Optional; defaults to {}.
+ * `openFromTemplate()` config. Provided by `useMatSnackBarProvider({…})`.
+ * Optional; defaults to {}.
  */
 export const MAT_SNACK_BAR_DEFAULT_OPTIONS = createContextId<Partial<MatSnackBarConfig>>(
   'qwikMaterial/snackBarDefaultOptions',
 );
+
+/**
+ * Provides {@link MAT_SNACK_BAR_DEFAULT_OPTIONS} for this subtree — call once near the root
+ * (or anywhere deeper, to override just that part of the tree) so every
+ * `useMatSnackBar().open()`/`openFromComponent()`/`openFromTemplate()` call in this subtree
+ * merges `defaults` in. Only this one context is provided; every other qwik-material
+ * configuration context stays whatever an ancestor (or nothing) already provided.
+ */
+export function useMatSnackBarProvider(defaults?: Partial<MatSnackBarConfig>): void {
+  useContextProvider(MAT_SNACK_BAR_DEFAULT_OPTIONS, defaults ?? {});
+}
 
 /**
  * The MatSnackBarRef for the currently rendering snack bar. Provided by the

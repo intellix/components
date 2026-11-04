@@ -530,6 +530,20 @@ export default component$(() => {
         </ul>
       </section>
       <section>
+        <h2>Providers</h2>
+        <ul>
+          <li>
+            <a href="/mat-providers/basic/">basic (root useMatProviders())</a>
+          </li>
+          <li>
+            <a href="/mat-providers/nested-override/">nested-override</a>
+          </li>
+          <li>
+            <a href="/mat-providers/dialog/">dialog (context forwarding)</a>
+          </li>
+        </ul>
+      </section>
+      <section>
         <h2>Formisch integration</h2>
         <ul>
           <li>

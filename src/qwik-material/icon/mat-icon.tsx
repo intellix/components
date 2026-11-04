@@ -67,7 +67,7 @@ export interface MatIconProps {
   svgLiteral?: string;
   /**
    * Name of the icon to resolve from a `MAT_ICON_REGISTRY` ancestor (see
-   * `icon-registry.ts`'s `useMatIconRegistry`/`MatIconRegistryProvider`),
+   * `icon-registry.ts`'s `useMatIconRegistryProvider`),
    * exactly like upstream's `svgIcon` Input: `"name"` for the default
    * namespace, or `"namespace:name"`. Resolved during SSR (no flash — the
    * server HTML already contains the resolved `<svg>`; works with no
@@ -136,8 +136,8 @@ export const MatIcon = component$<MatIconProps>(props => {
     if (!registry) {
       // eslint-disable-next-line no-console
       console.error(
-        `Error retrieving icon ${raw}! No MAT_ICON_REGISTRY ancestor found — wrap this ` +
-          `subtree in <MatIconRegistryProvider> (or call useMatIconRegistry()) and register ` +
+        `Error retrieving icon ${raw}! No MAT_ICON_REGISTRY ancestor found — call ` +
+          `useMatIconRegistryProvider() near the root of this subtree and register ` +
           `the icon first.`,
       );
       return null;
@@ -173,7 +173,11 @@ export const MatIcon = component$<MatIconProps>(props => {
   // `_svgNamespace` are always null outside SVG mode. `svgIcon`'s OWN derived name/namespace
   // (not `svgName`/`svgNamespace`, which only apply to the legacy `svgLiteral` path) feeds this
   // the same way upstream's real `_svgName`/`_svgNamespace` fields (set in `_updateSvgIcon`) do.
-  const svgName = hasLiteral ? props.svgName : svgIconParts ? svgIconParts[1] || undefined : undefined;
+  const svgName = hasLiteral
+    ? props.svgName
+    : svgIconParts
+      ? svgIconParts[1] || undefined
+      : undefined;
   const svgNamespace = hasLiteral
     ? props.svgNamespace
     : svgIconParts
@@ -220,7 +224,9 @@ export const MatIcon = component$<MatIconProps>(props => {
     // of its `.value` is conditional, which is the live-prop-safe half (see this file's other
     // "freeze live-prop conditions" notes — reading a signal conditionally is not the same
     // hazard as calling a hook conditionally).
-    const svgMarkup = hasLiteral ? withIconSvgAttributes(props.svgLiteral!) : resolvedSvgIcon.value ?? '';
+    const svgMarkup = hasLiteral
+      ? withIconSvgAttributes(props.svgLiteral!)
+      : (resolvedSvgIcon.value ?? '');
     return (
       <mat-icon
         ref={props.ref}

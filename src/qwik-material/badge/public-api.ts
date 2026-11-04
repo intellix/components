@@ -5,7 +5,7 @@ export type {MatBadgeColor} from './badge-color';
 export type {MatBadgePosition} from './badge-position';
 export type {MatBadgeSize} from './badge-size';
 export type {MatBadgeConfig} from './badge-config';
-export {MAT_BADGE_CONFIG} from './badge-config';
+export {MAT_BADGE_CONFIG, useMatBadgeProvider} from './badge-config';
 export {MatBadge, type MatBadgeProps} from './mat-badge';
 export {useMatBadge} from './use-mat-badge';
 export type {UseMatBadgeProps, MatBadgeHook} from './use-mat-badge';

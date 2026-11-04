@@ -1,6 +1,10 @@
 import {component$, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatSort, MatSortHeader, type Sort} from '@angular-community/qwik-material/sort';
+import {
+  MatSort,
+  MatSortHeader,
+  type Sort,
+  useMatSortProvider,
+} from '@angular-community/qwik-material/sort';
 
 /**
  * Qwik-only scenario (no Angular mirror). Exercises
@@ -15,8 +19,9 @@ import {MatSort, MatSortHeader, type Sort} from '@angular-community/qwik-materia
 export default component$(() => {
   const sort = useSignal<Sort>({active: '', direction: ''});
 
+  useMatSortProvider({disableClear: true});
   return (
-    <QwikMaterialProvider matSortConfig={{disableClear: true}}>
+    <>
       <div data-parity-root>
         <MatSort onSortChange$={next => (sort.value = next)}>
           <thead>
@@ -31,6 +36,6 @@ export default component$(() => {
         </p>
       </div>
       <main data-scenario-ready>ready</main>
-    </QwikMaterialProvider>
+    </>
   );
 });

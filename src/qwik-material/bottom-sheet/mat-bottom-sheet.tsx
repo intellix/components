@@ -32,7 +32,7 @@ import {
   MAT_BOTTOM_SHEET_REF,
   MAT_BOTTOM_SHEET_SCROLL_STRATEGY,
 } from './mat-bottom-sheet-tokens';
-import {useQwikMaterialContextSnapshot} from '../dialog/qwik-material-provider';
+import {useMatContextSnapshot} from '../core/mat-context-snapshot';
 
 /**
  * Internal wrapper component that MatBottomSheet opens via the cdk overlay.
@@ -73,9 +73,9 @@ const MatBottomSheetWrapper = component$<{
  * object for every component in the app (provided once by the ancestor
  * `<QwikCdkRoot>`), INCLUDING components rendered inside the overlay branch
  * (`<OverlayContainerOutlet>`, a sibling of the routed page content under
- * `<QwikCdkRoot>`, not a descendant of `<QwikMaterialProvider>` — so a
- * `<QwikMaterialProvider>`-scoped context would NOT reach a bottom sheet's
- * own content component the way `QWIK_CDK` does). A `WeakMap` keyed by that
+ * `<QwikCdkRoot>`, not a descendant of wherever `useMatBottomSheetProvider()` was called —
+ * so a context provided by one of this subtree's `useMat*Provider()` calls would NOT reach a
+ * bottom sheet's own content component the way `QWIK_CDK` does). A `WeakMap` keyed by that
  * shared object gives every `useMatBottomSheet()` call site — including one
  * from inside a bottom sheet's own content (see the `replace-sheet`
  * scenario, where the first sheet's body opens a second) — the same shared
@@ -85,7 +85,7 @@ const MatBottomSheetWrapper = component$<{
  * Deliberately flat (one level), unlike upstream's `_parentBottomSheet`
  * hierarchy (nested injectors each get their own `_bottomSheetRefAtThisLevel`
  * unless a child explicitly looks up its parent) — no scenario in this port
- * exercises nested `<QwikMaterialProvider>` scoping for bottom sheets.
+ * exercises nested provider-hook scoping for bottom sheets.
  */
 interface BottomSheetRegistry {
   openedRef: NoSerialize<MatBottomSheetRef> | null;
@@ -134,13 +134,13 @@ export function useMatBottomSheet(): MatBottomSheet {
   );
   // Snapshot every qwik-material configuration context visible HERE — see
   // useMatDialog()'s identical line for the full rationale.
-  const inheritedContext = useQwikMaterialContextSnapshot();
+  const inheritedContext = useMatContextSnapshot();
   // `MAT_BOTTOM_SHEET_SCROLL_STRATEGY` is a plain, serializable
   // `ScrollStrategyDescriptor` — NOT a function factory, so neither of
   // `useContext()`'s function-typed-default pitfalls apply (see
   // `useMatDialog()`'s identical comment). `useMatBottomSheet()` can be
-  // called from a component with no `<QwikMaterialProvider>` ancestor at
-  // all (the `replace-sheet` scenario calls it from INSIDE a bottom
+  // called from a component with no `useMatBottomSheetProvider()` ancestor
+  // call at all (the `replace-sheet` scenario calls it from INSIDE a bottom
   // sheet's own content — see `BottomSheetRegistry`'s doc comment below),
   // so a plain `'block'` fallback covers that case too.
   const scrollStrategyDescriptor = useContext(

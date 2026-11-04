@@ -48,9 +48,10 @@ export default component$(() => {
 ```
 
 ### Specifying global configuration defaults
-Default bottom sheet options can be provided through `<QwikMaterialProvider matBottomSheetConfig={{hasBackdrop: false}}>`
-at the root of your app — see [Composing directives](/guide/composing-directives/) for how
-`QwikMaterialProvider` folds every component-family config token into one set of props.
+Default bottom sheet options can be provided through
+`useMatBottomSheetProvider({defaults: {hasBackdrop: false}})`, called once near the root of
+your app (or anywhere deeper, to scope it to one subtree) — see
+[Getting started](/guide/getting-started/#wire-up-your-app-root).
 
 ### Passing props to the opened component
 Use `componentProps` to pass initial props to the component rendered inside the sheet, and
@@ -68,9 +69,9 @@ forward in their browser history, or the URL hash changes — not on every link 
 `closeOnNavigation: false` to opt out.
 
 ### Contexts inside the bottom sheet
-Content rendered inside the sheet automatically sees every `<QwikMaterialProvider>`
-configuration context visible where `useMatBottomSheet()` was called, and can opt in your own
-app contexts via `context` — same pattern as
+Content rendered inside the sheet automatically sees every configuration context a
+`useMat*Provider()` call made visible where `useMatBottomSheet()` was called, and can opt in
+your own app contexts via `context` — same pattern as
 [the dialog overview](/overview/dialog/#contexts-inside-the-dialog).
 
 ### Accessibility
@@ -135,6 +136,6 @@ ref?.afterDismissed.then(() => {
   `componentProps` / `MatBottomSheetRef.setInput`, or `MAT_BOTTOM_SHEET_DATA`.
 - **`MatBottomSheetRef.componentRef` / `.instance` not meaningfully populated** — no `ComponentRef`
   equivalent exists in Qwik; `instance` is always `Signal<null>`.
-- **Global defaults via `QwikMaterialProvider`**, not an `MAT_BOTTOM_SHEET_DEFAULT_OPTIONS`
+- **Global defaults via a hook (`useMatBottomSheetProvider()`)**, not an `MAT_BOTTOM_SHEET_DEFAULT_OPTIONS`
   injection token.
 - **Harness not ported.**

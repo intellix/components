@@ -3,7 +3,7 @@
 // and list/SYNC.md.
 
 export type {MatListConfig} from './list-config';
-export {MAT_LIST_CONFIG} from './list-config';
+export {MAT_LIST_CONFIG, useMatListProvider} from './list-config';
 
 export type {MatListBaseState} from './list-context';
 export {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context';

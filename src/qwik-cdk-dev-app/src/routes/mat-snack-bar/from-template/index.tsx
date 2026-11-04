@@ -1,5 +1,4 @@
 import {component$} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {useMatSnackBar} from '@angular-community/qwik-material/snack-bar';
 import {FromTemplateContent} from '../../../scenarios/_mat-snack-bar-template';
 
@@ -27,8 +26,8 @@ const Scenario = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <Scenario />
     <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
+  </>
 ));

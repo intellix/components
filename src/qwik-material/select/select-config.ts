@@ -1,11 +1,11 @@
-import {createContextId} from '@qwik.dev/core';
+import {createContextId, useContextProvider} from '@qwik.dev/core';
 import type {ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 
 /**
  * Defaults applied to every `MatSelect` in a subtree that doesn't set its
  * own. Mirrors upstream's `MatSelectConfig` + `MAT_SELECT_CONFIG` injection
  * token (`src/material/select/select.ts`). Consumers provide this via
- * `<QwikMaterialProvider matSelectConfig={{...}}>`.
+ * `useMatSelectProvider({config: {...}})`.
  *
  * `disableOptionCentering`/`canSelectNullableOptions` are accepted for API
  * parity but unused by this port — see `select/SYNC.md`'s deviations list.
@@ -48,9 +48,9 @@ export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwikMaterial/
 /**
  * Default `ScrollStrategy` descriptor for a `MatSelect` panel that doesn't
  * specify its own — mirrors upstream's `MAT_SELECT_SCROLL_STRATEGY`
- * injection token. Provided by `<QwikMaterialProvider
- * matSelectScrollStrategy={…}>`. Default: `{type: 'reposition'}` (this
- * port's pre-existing, previously hard-coded behaviour).
+ * injection token. Provided by `useMatSelectProvider({scrollStrategy: …})`.
+ * Default: `{type: 'reposition'}` (this port's pre-existing, previously
+ * hard-coded behaviour).
  *
  * A plain, serializable `ScrollStrategyDescriptor` — NOT a function
  * factory; see `qwik-material/dialog/mat-dialog-tokens.ts`'s
@@ -61,3 +61,28 @@ export const MAT_SELECT_CONFIG = createContextId<MatSelectConfig>('qwikMaterial/
 export const MAT_SELECT_SCROLL_STRATEGY = createContextId<ScrollStrategyDescriptor>(
   'qwikMaterial/selectScrollStrategy',
 );
+
+/** Options for {@link useMatSelectProvider}. */
+export interface MatSelectProviderConfig {
+  /** Defaults applied to every `MatSelect` in this subtree. */
+  config?: MatSelectConfig;
+  /** Default `ScrollStrategy` descriptor for `MatSelect` panels. Defaults to
+   *  `{type: 'reposition'}` (this port's pre-existing hard-coded behaviour). */
+  scrollStrategy?: ScrollStrategyDescriptor;
+}
+
+/**
+ * Provides {@link MAT_SELECT_CONFIG} and {@link MAT_SELECT_SCROLL_STRATEGY} for this subtree
+ * — call once near the root (or anywhere deeper, to override just that part of the tree) so
+ * every `MatSelect` descendant resolves its defaults/scroll strategy from `providerConfig`
+ * instead of the hardcoded fallbacks. Only these two contexts are provided; every other
+ * qwik-material configuration context stays whatever an ancestor (or nothing) already
+ * provided.
+ */
+export function useMatSelectProvider(providerConfig?: MatSelectProviderConfig): void {
+  useContextProvider(MAT_SELECT_CONFIG, providerConfig?.config ?? {});
+  useContextProvider(
+    MAT_SELECT_SCROLL_STRATEGY,
+    providerConfig?.scrollStrategy ?? {type: 'reposition'},
+  );
+}

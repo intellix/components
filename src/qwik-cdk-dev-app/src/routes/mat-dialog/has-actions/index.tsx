@@ -1,6 +1,5 @@
 import {component$} from '@qwik.dev/core';
 import {
-  QwikMaterialProvider,
   MatDialogContent,
   MatDialogActions,
   MatDialogClose,
@@ -18,8 +17,8 @@ const Body = component$<{class?: string}>(props => (
 ));
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <div data-parity-root></div>
     <MatAutoOpen Body={Body} config={{hasBackdrop: true}} />
-  </QwikMaterialProvider>
+  </>
 ));

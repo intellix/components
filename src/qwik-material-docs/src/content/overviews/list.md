@@ -300,7 +300,7 @@ to `<MatList>` and give each list item an appropriate `role`.
   separate wrapper `<div>`). `disableRipple` is available on `<MatList>`/`<MatNavList>`/
   `<MatActionList>` AND on `<MatListItem>` itself, animations-disabled fully suppresses it
   (matching upstream's own list-specific `disableRipple` getter), and
-  `<QwikMaterialProvider matRippleConfig={...}>` applies too. A plain, non-interactive
+  `useMatRippleProvider({...})` applies too. A plain, non-interactive
   `<mat-list>`'s items never get one, matching upstream's `mat-mdc-list-item-interactive` class
   (added at construction) having no interaction behavior behind it in that case either.
 - **`MatSelectionList`/`MatListOption` aren't ported.** They're a dedicated future port with a

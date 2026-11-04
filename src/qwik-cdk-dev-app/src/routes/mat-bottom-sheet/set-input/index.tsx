@@ -1,6 +1,5 @@
 import {$, component$, useSignal} from '@qwik.dev/core';
 import type {NoSerialize} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {useMatBottomSheet} from '@angular-community/qwik-material/bottom-sheet';
 import type {MatBottomSheetRef} from '@angular-community/qwik-material/bottom-sheet';
 
@@ -45,10 +44,10 @@ const Runner = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <div data-parity-root>
       <Runner />
     </div>
     <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
+  </>
 ));

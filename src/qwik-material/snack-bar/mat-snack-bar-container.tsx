@@ -50,7 +50,7 @@ export interface MatSnackBarContainerProps {
  * fails to fire (`* { animation: none !important }` apps) is not ported —
  * out of scope; `[MARK_OPENED]`/`[MARK_DISMISSED]` are driven purely by the
  * real `animationend`/`animationcancel` events (or, when animations are
- * disabled via `<QwikMaterialProvider animationsDisabled>`, by an immediate
+ * disabled via `useMatAnimationsProvider(true)`, by an immediate
  * microtask) — see SYNC.md.
  */
 export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(

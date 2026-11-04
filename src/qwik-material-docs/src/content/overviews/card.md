@@ -115,7 +115,7 @@ Always test your application to verify the behavior that works best for your use
 - **`<MatCardHeader>`/`<MatCardTitleGroup>` use `q:slot` named slots** (`avatar`, `text`, `image`)
   for structured projection, shown above — upstream projects children by directive-selector type
   (`[mat-card-avatar]`, `mat-card-title`), which Qwik has no equivalent for.
-- **Global defaults via `QwikMaterialProvider`**, not a `MAT_CARD_CONFIG` injection token.
+- **Global defaults via a hook (`useMatCardProvider()`)**, not an `MAT_CARD_CONFIG` injection token.
 - **`<MatCardActions>`'s `align` prop stays `'start' | 'end'`** — upstream marked it TODO-to-deprecate
   in favor of `actionPosition`/`actionAlignment`; this port keeps the current name for parity and
   will follow if upstream renames it.

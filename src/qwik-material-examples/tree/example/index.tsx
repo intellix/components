@@ -1,8 +1,7 @@
 import {$, component$, useContext} from '@qwik.dev/core';
 import {CDK_TREE_TOGGLE_STATE, type CdkTreeNodeInput} from '@angular-community/qwik-cdk/tree';
 import {MatIconButton} from '@angular-community/qwik-material/button';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatIcon} from '@angular-community/qwik-material/icon';
+import {MatIcon, useMatIconProvider} from '@angular-community/qwik-material/icon';
 import {MatTree} from '@angular-community/qwik-material/tree';
 
 // Qwik port of material.angular.dev's `tree-flat-child-accessor-overview` docs example — see
@@ -31,10 +30,10 @@ import {MatTree} from '@angular-community/qwik-material/tree';
 // (`DevAppLayout.toggleM3` → `MatIconRegistry.setDefaultFontSetClass(...)`, in effect since
 // `m3Enabled` defaults to `true` — see `src/dev-app/dev-app/dev-app-layout.ts`), confirmed live
 // against `/qwik-parity/mat-icon/basic`. `src/qwik-cdk-dev-app/src/routes/mat-icon/layout.tsx`
-// already reproduces this for every `/mat-icon/*` scenario via a scoped `<QwikMaterialProvider
-// matIconConfig={{fontSet: 'material-symbols-outlined'}}>` — this is the first OTHER route tree
-// to render a font-mode `<MatIcon>`, so the same provider is applied here, inline, scoped to just
-// this subtree (no wrapper DOM — `QwikMaterialProvider` renders a bare `<Slot/>`).
+// already reproduces this for every `/mat-icon/*` scenario via a scoped
+// `useMatIconProvider({fontSet: 'material-symbols-outlined'})` call — this is the first OTHER
+// route tree to render a font-mode `<MatIcon>`, so the same call is made here too, scoped to
+// just this component's own subtree.
 interface FoodNode {
   name: string;
   children?: FoodNode[];
@@ -132,11 +131,10 @@ function buildNodes(data: FoodNode[]): CdkTreeNodeInput<FoodNode>[] {
 }
 
 export default component$(() => {
+  useMatIconProvider({fontSet: 'material-symbols-outlined'});
   return (
     <tree-flat-child-accessor-overview-example>
-      <QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
-        <MatTree nodes={buildNodes(FOOD_DATA)} />
-      </QwikMaterialProvider>
+      <MatTree nodes={buildNodes(FOOD_DATA)} />
     </tree-flat-child-accessor-overview-example>
   );
 });

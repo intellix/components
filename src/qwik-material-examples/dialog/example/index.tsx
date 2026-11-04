@@ -1,5 +1,5 @@
 import {$, component$, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider, useMatDialog} from '@angular-community/qwik-material/dialog';
+import {useMatDialog} from '@angular-community/qwik-material/dialog';
 import {
   MatFormField,
   MatLabel,
@@ -15,10 +15,6 @@ import DialogBody from './dialog-body';
  * matButton="elevated">` has no second directive stacked on it, so it's a plain `<MatButton>` —
  * only the dialog BODY's two action buttons need the local composition `./plain-button.tsx`
  * documents.
- *
- * `<QwikMaterialProvider>` renders a bare `<Slot/>` (no DOM of its own), so wrapping it here
- * instead of at the consuming route is DOM-equivalent — the route just adds the usual
- * `data-parity-root`/`data-scenario-ready` wrapper around this whole module.
  */
 export default component$(() => {
   const dialog = useMatDialog();
@@ -39,42 +35,40 @@ export default component$(() => {
   });
 
   return (
-    <QwikMaterialProvider>
-      <dialog-overview-example>
-        <ol>
+    <dialog-overview-example>
+      <ol>
+        <li>
+          <MatFormField
+            label={<MatLabel>What's your name?</MatLabel>}
+            touched={fc.touched}
+            dirty={fc.dirty}
+            invalid={false}
+            control={
+              <MatInput
+                formBound
+                touched={fc.touched}
+                dirty={fc.dirty}
+                invalid={false}
+                onInput$={(_, el) => {
+                  fc.markAsDirty$();
+                  name.value = el.value;
+                }}
+                onBlur$={fc.markAsTouched$}
+              />
+            }
+          />
+        </li>
+        <li>
+          <MatButton appearance="elevated" onClick$={openDialog$}>
+            Pick one
+          </MatButton>
+        </li>
+        {animal.value && (
           <li>
-            <MatFormField
-              label={<MatLabel>What's your name?</MatLabel>}
-              touched={fc.touched}
-              dirty={fc.dirty}
-              invalid={false}
-              control={
-                <MatInput
-                  formBound
-                  touched={fc.touched}
-                  dirty={fc.dirty}
-                  invalid={false}
-                  onInput$={(_, el) => {
-                    fc.markAsDirty$();
-                    name.value = el.value;
-                  }}
-                  onBlur$={fc.markAsTouched$}
-                />
-              }
-            />
+            You chose: <em>{animal.value}</em>
           </li>
-          <li>
-            <MatButton appearance="elevated" onClick$={openDialog$}>
-              Pick one
-            </MatButton>
-          </li>
-          {animal.value && (
-            <li>
-              You chose: <em>{animal.value}</em>
-            </li>
-          )}
-        </ol>
-      </dialog-overview-example>
-    </QwikMaterialProvider>
+        )}
+      </ol>
+    </dialog-overview-example>
   );
 });

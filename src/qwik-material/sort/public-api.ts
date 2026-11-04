@@ -3,7 +3,7 @@
 
 export type {SortDirection, Sort} from './sort-direction';
 export type {SortHeaderArrowPosition, MatSortConfig} from './sort-config';
-export {MAT_SORT_CONFIG} from './sort-config';
+export {MAT_SORT_CONFIG, useMatSortProvider} from './sort-config';
 
 export {MatSort, type MatSortProps} from './mat-sort';
 export {MatSortHeader, type MatSortHeaderProps} from './mat-sort-header';

@@ -17,10 +17,9 @@ export {MatDialogActions} from './mat-dialog-actions';
 export type {MatDialogActionsProps} from './mat-dialog-actions';
 export {MatDialogClose} from './mat-dialog-close';
 export type {MatDialogCloseProps} from './mat-dialog-close';
-export {QwikMaterialProvider, useQwikMaterialContextSnapshot} from './qwik-material-provider';
-export type {QwikMaterialProviderProps} from './qwik-material-provider';
+export {useMatDialogProvider, type MatDialogProviderConfig} from './use-mat-dialog-provider';
 export {parseCssTime} from './parse-css-time';
-export {useAnimationsDisabled} from './use-animations-disabled';
+export {useAnimationsDisabled, useMatAnimationsProvider} from './use-animations-disabled';
 export {
   MAT_DIALOG_DATA,
   MAT_DIALOG_DEFAULT_OPTIONS,
