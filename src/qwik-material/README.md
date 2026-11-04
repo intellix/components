@@ -2,6 +2,9 @@
 
 Qwik port of Angular Material. First component: Dialog.
 
+Migrating an existing Angular Material app? See [`MIGRATING.md`](../../MIGRATING.md) at the repo
+root for the full install + mapping + pitfalls guide.
+
 Consumes [@angular-community/qwik-cdk](../qwik-cdk/README.md) for overlay, dialog primitives, and a11y foundations. Ships MDC-parity SCSS and JS class-based animation state machine matching Angular Material's timing (150 ms enter, 75 ms exit).
 
 ## Upstream version
