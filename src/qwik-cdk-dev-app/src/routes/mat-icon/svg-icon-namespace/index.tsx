@@ -1,5 +1,9 @@
 import {component$} from '@qwik.dev/core';
-import {MatIcon, MatIconRegistryProvider, trustIconHtml} from '@angular-community/qwik-material/icon';
+import {
+  MatIcon,
+  trustIconHtml,
+  useMatIconRegistryProvider,
+} from '@angular-community/qwik-material/icon';
 
 const ANIMALS_ICON_SET = trustIconHtml(
   `<svg><symbol id="cat" viewBox="0 0 24 24"><path d="M12 8c-2 0-3 1-3 3s1 3 3 3 3-1 3-3-1-3-3-3z"/></symbol>` +
@@ -13,13 +17,14 @@ const ANIMALS_ICON_SET = trustIconHtml(
  * `<symbol>` extraction).
  */
 export default component$(() => {
+  useMatIconRegistryProvider({iconSets: [{namespace: 'animals', literal: ANIMALS_ICON_SET}]});
   return (
     <>
       <div data-parity-root>
-        <MatIconRegistryProvider iconSets={[{namespace: 'animals', literal: ANIMALS_ICON_SET}]}>
+        <>
           <MatIcon svgIcon="animals:cat" aria-label="Cat" aria-hidden={false} />
           <MatIcon svgIcon="animals:dog" aria-label="Dog" aria-hidden={false} />
-        </MatIconRegistryProvider>
+        </>
       </div>
       <main data-scenario-ready>ready</main>
     </>

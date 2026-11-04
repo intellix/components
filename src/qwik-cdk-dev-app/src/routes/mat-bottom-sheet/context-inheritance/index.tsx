@@ -1,7 +1,6 @@
 import {$, component$} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {useMatBottomSheet} from '@angular-community/qwik-material/bottom-sheet';
-import {MatFormField} from '@angular-community/qwik-material/form-field';
+import {MatFormField, useMatFormFieldProvider} from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
 
 /** Bottom-sheet counterpart of mat-dialog/context-inheritance. */
@@ -23,11 +22,14 @@ const Runner = component$(() => {
   );
 });
 
-export default component$(() => (
-  <QwikMaterialProvider matFormFieldConfig={{appearance: 'outline'}}>
-    <div data-parity-root>
-      <Runner />
-    </div>
-    <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
-));
+export default component$(() => {
+  useMatFormFieldProvider({appearance: 'outline'});
+  return (
+    <>
+      <div data-parity-root>
+        <Runner />
+      </div>
+      <main data-scenario-ready>ready</main>
+    </>
+  );
+});

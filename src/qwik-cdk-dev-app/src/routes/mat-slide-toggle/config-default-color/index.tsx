@@ -1,6 +1,8 @@
 import {component$, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatSlideToggle} from '@angular-community/qwik-material/slide-toggle';
+import {
+  MatSlideToggle,
+  useMatSlideToggleProvider,
+} from '@angular-community/qwik-material/slide-toggle';
 
 /**
  * Qwik-only scenario (no Angular mirror). Exercises
@@ -12,14 +14,15 @@ import {MatSlideToggle} from '@angular-community/qwik-material/slide-toggle';
 export default component$(() => {
   const checked = useSignal(false);
 
+  useMatSlideToggleProvider({color: 'warn'});
   return (
-    <QwikMaterialProvider matSlideToggleConfig={{color: 'warn'}}>
+    <>
       <div data-parity-root>
         <MatSlideToggle checked={checked.value} onChange$={next => (checked.value = next)}>
           Warn-colored toggle
         </MatSlideToggle>
       </div>
       <main data-scenario-ready>ready</main>
-    </QwikMaterialProvider>
+    </>
   );
 });

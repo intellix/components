@@ -1,5 +1,5 @@
 import {$, component$} from '@qwik.dev/core';
-import {QwikMaterialProvider, useMatDialog} from '@angular-community/qwik-material/dialog';
+import {useMatDialog} from '@angular-community/qwik-material/dialog';
 import {MatButton} from '@angular-community/qwik-material/button';
 import DialogContentDialog from './dialog';
 
@@ -21,10 +21,10 @@ export default component$(() => {
   });
 
   return (
-    <QwikMaterialProvider>
+    <>
       <dialog-content-example>
         <MatButton onClick$={openDialog$}>Open dialog</MatButton>
       </dialog-content-example>
-    </QwikMaterialProvider>
+    </>
   );
 });

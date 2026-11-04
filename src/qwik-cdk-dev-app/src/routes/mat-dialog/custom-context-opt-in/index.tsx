@@ -1,5 +1,5 @@
 import {$, component$, createContextId, useContext} from '@qwik.dev/core';
-import {QwikMaterialProvider, useMatDialog} from '@angular-community/qwik-material/dialog';
+import {useMatDialog} from '@angular-community/qwik-material/dialog';
 import {NgComponentHost} from '../../../scenarios/_mat-template';
 
 /**
@@ -36,10 +36,10 @@ const Runner = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <div data-parity-root>
       <Runner />
     </div>
     <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
+  </>
 ));

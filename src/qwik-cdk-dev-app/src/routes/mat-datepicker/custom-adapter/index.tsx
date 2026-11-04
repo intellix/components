@@ -1,7 +1,10 @@
 import {$, component$, useSignal} from '@qwik.dev/core';
 import {MatFormField, MatLabel} from '@angular-community/qwik-material/form-field';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {NativeDateAdapter, type MatDateFormats} from '@angular-community/qwik-material/core';
+import {
+  NativeDateAdapter,
+  type MatDateFormats,
+  useMatDateAdapterProvider,
+} from '@angular-community/qwik-material/core';
 import {
   MatDatepicker,
   MatDatepickerInput,
@@ -153,16 +156,19 @@ const DotTimepickerInputExample = component$(() => {
   );
 });
 
-export default component$(() => (
-  <QwikMaterialProvider
-    matDateAdapterFactory={$((locale: string) => new DotDateAdapter(locale))}
-    matDateFormats={DOT_DATE_FORMATS}
-  >
-    <div data-parity-root>
-      <DotDatepickerInputExample />
-      <DotDateRangeInputExample />
-      <DotTimepickerInputExample />
-    </div>
-    <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
-));
+export default component$(() => {
+  useMatDateAdapterProvider({
+    factory: $((locale: string) => new DotDateAdapter(locale)),
+    formats: DOT_DATE_FORMATS,
+  });
+  return (
+    <>
+      <div data-parity-root>
+        <DotDatepickerInputExample />
+        <DotDateRangeInputExample />
+        <DotTimepickerInputExample />
+      </div>
+      <main data-scenario-ready>ready</main>
+    </>
+  );
+});

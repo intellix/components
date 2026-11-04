@@ -1,5 +1,4 @@
 import {$, component$, useSignal} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {MatTooltip} from '@angular-community/qwik-material/tooltip';
 
 /**
@@ -33,8 +32,8 @@ const Scenario = component$(() => {
 });
 
 export default component$(() => (
-  <QwikMaterialProvider>
+  <>
     <Scenario />
     <main data-scenario-ready>ready</main>
-  </QwikMaterialProvider>
+  </>
 ));

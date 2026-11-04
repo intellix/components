@@ -1,7 +1,6 @@
 import {component$} from '@qwik.dev/core';
 import {MatToolbar, MatToolbarRow} from '@angular-community/qwik-material/toolbar';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatIcon} from '@angular-community/qwik-material/icon';
+import {MatIcon, useMatIconProvider} from '@angular-community/qwik-material/icon';
 import './toolbar-multirow-example.css';
 
 // Qwik port of material.angular.dev's `toolbar-multirow` docs example — see
@@ -12,12 +11,13 @@ import './toolbar-multirow-example.css';
 //
 // `multipleRows` is passed explicitly (see toolbar/SYNC.md deviation 1 — Qwik can't detect
 // `<MatToolbarRow>` children at render time the way upstream's `@ContentChildren` does). The
-// `<QwikMaterialProvider matIconConfig>` wrapper matches the Angular dev-app's own default icon
-// font-set, confirmed live (same precedent as qwik-material-examples/tree/example/index.tsx).
+// `useMatIconProvider()` call matches the Angular dev-app's own default icon font-set,
+// confirmed live (same precedent as qwik-material-examples/tree/example/index.tsx).
 
-export default component$(() => (
-  <toolbar-multirow-example>
-    <QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
+export default component$(() => {
+  useMatIconProvider({fontSet: 'material-symbols-outlined'});
+  return (
+    <toolbar-multirow-example>
       <MatToolbar multipleRows>
         <MatToolbarRow>
           <span>Custom Toolbar</span>
@@ -40,6 +40,6 @@ export default component$(() => (
           </MatIcon>
         </MatToolbarRow>
       </MatToolbar>
-    </QwikMaterialProvider>
-  </toolbar-multirow-example>
-));
+    </toolbar-multirow-example>
+  );
+});

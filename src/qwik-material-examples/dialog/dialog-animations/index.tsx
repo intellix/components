@@ -1,5 +1,5 @@
 import {component$, useStyles$} from '@qwik.dev/core';
-import {QwikMaterialProvider, useMatDialog} from '@angular-community/qwik-material/dialog';
+import {useMatDialog} from '@angular-community/qwik-material/dialog';
 import {MatButton} from '@angular-community/qwik-material/button';
 import DialogAnimationsDialog from './dialog';
 import styles from './example.css?inline';
@@ -15,7 +15,7 @@ export default component$(() => {
   const dialog = useMatDialog();
 
   return (
-    <QwikMaterialProvider>
+    <>
       <dialog-animations-example>
         <MatButton
           appearance="elevated"
@@ -42,6 +42,6 @@ export default component$(() => {
           Open dialog slowly
         </MatButton>
       </dialog-animations-example>
-    </QwikMaterialProvider>
+    </>
   );
 });

@@ -1,13 +1,17 @@
 import {component$} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatFormField, MatLabel, useMatFormControl} from '@angular-community/qwik-material/form-field';
+import {useMatErrorStateMatcherProvider} from '@angular-community/qwik-material/core';
+import {
+  MatFormField,
+  MatLabel,
+  useMatFormControl,
+} from '@angular-community/qwik-material/form-field';
 import {MatInput} from '@angular-community/qwik-material/input';
 
 /**
  * Bespoke scenario (no matching upstream docs example) exercising the two BUILT-IN
  * `ErrorStateMatcher` string modes — `'touched'` (upstream's default `ErrorStateMatcher`) and
  * `'dirty'` (upstream's `ShowOnDirtyErrorStateMatcher`) — and the app-wide
- * `<QwikMaterialProvider errorStateMatcher="dirty">` default vs. a per-control override. See
+ * `useMatErrorStateMatcherProvider('dirty')` default vs. a per-control override. See
  * `qwik-material/core/error-state-matcher.ts`'s doc comment.
  *
  * - `app-default`: no `errorStateMatcher` prop of its own — picks up the provider's app-wide
@@ -21,8 +25,10 @@ export default component$(() => {
   const touchedModeField = useMatFormControl({value: ''});
   const invalid = (value: string) => value === '';
 
+  useMatErrorStateMatcherProvider('dirty');
+
   return (
-    <QwikMaterialProvider errorStateMatcher="dirty">
+    <>
       <div data-parity-root>
         <div data-testid="app-default">
           <MatFormField
@@ -67,6 +73,6 @@ export default component$(() => {
         </div>
       </div>
       <main data-scenario-ready>ready</main>
-    </QwikMaterialProvider>
+    </>
   );
 });

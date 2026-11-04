@@ -1,7 +1,6 @@
 import {$, component$} from '@qwik.dev/core';
 import {MatIconButton} from '@angular-community/qwik-material/button';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
-import {MatIcon} from '@angular-community/qwik-material/icon';
+import {MatIcon, useMatIconProvider} from '@angular-community/qwik-material/icon';
 import {
   MatMenu,
   MatMenuItem,
@@ -22,37 +21,42 @@ import {
 //
 // Icon font-set: matches the Angular dev-app's own default (`material-symbols-outlined`,
 // confirmed live — same precedent as `qwik-material-examples/tree/example/index.tsx`), via
-// `<QwikMaterialProvider matIconConfig>`. CONFIRMED LIVE this must wrap the panel's content
-// SEPARATELY, inside `content$` itself — a provider wrapping the trigger/placeholder in the
-// outer tree does NOT reach the menu's overlay-portaled content (the panel renders into a
-// disconnected root, not a context-propagating descendant of this component's own JSX).
+// `useMatIconProvider()`. CONFIRMED LIVE this must be called SEPARATELY inside the panel's own
+// wrapper component (`MenuIconsPanelContent`, below) — a hook called in the trigger/placeholder
+// component's own render does NOT reach the menu's overlay-portaled content (the panel renders
+// into a disconnected root, not a context-propagating descendant of this component's own JSX).
+
+const MenuIconsPanelContent = component$(() => {
+  useMatIconProvider({fontSet: 'material-symbols-outlined'});
+  return (
+    <>
+      <MatMenuItem icon={<MatIcon>dialpad</MatIcon>}>
+        <span>Redial</span>
+      </MatMenuItem>
+      <MatMenuItem disabled icon={<MatIcon>voicemail</MatIcon>}>
+        <span>Check voice mail</span>
+      </MatMenuItem>
+      <MatMenuItem icon={<MatIcon>notifications_off</MatIcon>}>
+        <span>Disable alerts</span>
+      </MatMenuItem>
+    </>
+  );
+});
 
 export default component$(() => {
   const menu = createMatMenu({
-    content$: $(() => (
-      <QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
-        <MatMenuItem icon={<MatIcon>dialpad</MatIcon>}>
-          <span>Redial</span>
-        </MatMenuItem>
-        <MatMenuItem disabled icon={<MatIcon>voicemail</MatIcon>}>
-          <span>Check voice mail</span>
-        </MatMenuItem>
-        <MatMenuItem icon={<MatIcon>notifications_off</MatIcon>}>
-          <span>Disable alerts</span>
-        </MatMenuItem>
-      </QwikMaterialProvider>
-    )),
+    content$: $(() => <MenuIconsPanelContent />),
   });
 
   const trigger = useMatMenuTrigger({menu});
 
+  useMatIconProvider({fontSet: 'material-symbols-outlined'});
+
   return (
     <menu-icons-example>
-      <QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
-        <MatIconButton {...trigger.hostProps} ariaLabel="Example icon-button with a menu">
-          <MatIcon>more_vert</MatIcon>
-        </MatIconButton>
-      </QwikMaterialProvider>
+      <MatIconButton {...trigger.hostProps} ariaLabel="Example icon-button with a menu">
+        <MatIcon>more_vert</MatIcon>
+      </MatIconButton>
       <MatMenu />
     </menu-icons-example>
   );

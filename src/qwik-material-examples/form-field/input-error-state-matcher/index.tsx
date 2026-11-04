@@ -32,7 +32,7 @@ import styles from './input-error-state-matcher-example.css?inline';
  * this port's component boundaries the way it does upstream, and for the full design this
  * example is the first real consumer of. Passed as `<MatInput errorStateMatcher={matcher}>` —
  * mirrors upstream's per-control `[errorStateMatcher]="matcher"` exactly (there is no app-wide
- * `<QwikMaterialProvider errorStateMatcher={...}>` in this example, same as upstream's own
+ * `useMatErrorStateMatcherProvider({...})` call in this example, same as upstream's own
  * `providers: []`).
  *
  * The whole POINT of this matcher — shows the error the moment the field becomes
@@ -44,7 +44,8 @@ import styles from './input-error-state-matcher-example.css?inline';
  * that id's own `EXAMPLE_STEPS` comment for why an interactive step was dropped there).
  */
 const myErrorStateMatcher = $(
-  (state: MatErrorStateSnapshot) => state.invalid && (state.dirty || state.touched || state.submitted),
+  (state: MatErrorStateSnapshot) =>
+    state.invalid && (state.dirty || state.touched || state.submitted),
 );
 
 export default component$(() => {

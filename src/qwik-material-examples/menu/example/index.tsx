@@ -1,5 +1,4 @@
 import {$, component$} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 import {MatButton} from '@angular-community/qwik-material/button';
 import {
   MatMenu,

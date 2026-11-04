@@ -1,5 +1,5 @@
 import {component$, Slot} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+import {useMatIconProvider} from '@angular-community/qwik-material/icon';
 
 // Mirrors the Angular dev-app's default icon font-set
 // (DevAppLayout.toggleM3 → MatIconRegistry.setDefaultFontSetClass('material-symbols-outlined'),
@@ -7,11 +7,10 @@ import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 // defaults to true) so every /mat-stepper/* scenario's step-icon <mat-icon>s
 // (done/edit/error states) resolve the same default font-set class as their
 // Angular counterparts — same as `mat-icon/layout.tsx`, which this mirrors.
-// `error-state/index.tsx` nests its OWN <QwikMaterialProvider> for
-// stepperGlobalOptions and must repeat this matIconConfig there too (a
-// nested provider resets every context it doesn't explicitly pass).
-export default component$(() => (
-  <QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
-    <Slot />
-  </QwikMaterialProvider>
-));
+// `error-state/index.tsx` additionally calls `useMatStepperProvider()` for
+// `stepperGlobalOptions` — since each provider hook provides ONLY its own context, that call
+// doesn't reset the `matIconConfig` provided here; it's still inherited.
+export default component$(() => {
+  useMatIconProvider({fontSet: 'material-symbols-outlined'});
+  return <Slot />;
+});

@@ -1,5 +1,5 @@
 import {component$, Slot} from '@qwik.dev/core';
-import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
+import {useMatIconProvider} from '@angular-community/qwik-material/icon';
 
 // Mirrors the Angular dev-app's default icon font-set
 // (DevAppLayout.toggleM3 -> MatIconRegistry.setDefaultFontSetClass('material-symbols-outlined'),
@@ -8,8 +8,11 @@ import {QwikMaterialProvider} from '@angular-community/qwik-material/dialog';
 // its Angular counterpart — same pattern (and same reasoning) as
 // src/qwik-cdk-dev-app/src/routes/mat-icon/layout.tsx. Applies to every batch's examples/<id>
 // routes, not just this batch's own (any bare, no-fontSet `<MatIcon>` usage needs this).
-export default component$(() => (
-  <QwikMaterialProvider matIconConfig={{fontSet: 'material-symbols-outlined'}}>
-    <Slot />
-  </QwikMaterialProvider>
-));
+export default component$(() => {
+  useMatIconProvider({fontSet: 'material-symbols-outlined'});
+  return (
+    <>
+      <Slot />
+    </>
+  );
+});
