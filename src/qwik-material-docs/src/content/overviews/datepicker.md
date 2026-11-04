@@ -118,11 +118,38 @@ port doesn't distinguish them).
 
 ### Confirmation action buttons
 
-Pass `actions` content to `<MatDatepicker>`/`<MatDateRangePicker>` (rendered via
-`<MatDatepickerActions>`, with `<MatDatepickerCancelButton>`/`<MatDatepickerApplyButton>` inside)
-to require an explicit confirm before a calendar selection commits.
+Pass your own buttons as the `actions` prop of `<MatDatepicker>`/`<MatDateRangePicker>` to require
+an explicit confirm before a calendar selection commits. Their click handlers call
+`applyDatepickerSelection(picker)` / `cancelDatepickerSelection(picker)` (or
+`cancelDateRangePickerSelection(picker)` for a range):
+
+```tsx
+<MatDatepicker
+  picker={picker}
+  actions={
+    <>
+      <MatButton onClick$={() => cancelDatepickerSelection(picker)}>Cancel</MatButton>
+      <MatButton appearance="elevated" onClick$={() => applyDatepickerSelection(picker)}>
+        Apply
+      </MatButton>
+    </>
+  }
+/>
+```
 
 <!-- example(datepicker-actions) -->
+
+### Opening the calendar from code
+
+Upstream's `picker.open()` / `picker.close()` are `openDatepickerPanel(picker, cdk)` /
+`closeDatepickerPanel(picker)` (and `openDateRangePickerPanel(picker, cdk)` for a range), where
+`cdk` is read once during render with `useContext(QWIK_CDK)` from `@angular-community/qwik-cdk`:
+
+```tsx
+const cdk = useContext(QWIK_CDK);
+// e.g. open on focus, like an Angular template's (focus)="picker.open()"
+<MatDatepickerInput picker={picker} onFocus$={() => openDatepickerPanel(picker, cdk)} />
+```
 
 ### Comparison ranges
 
