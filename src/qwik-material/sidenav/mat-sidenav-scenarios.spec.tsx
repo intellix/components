@@ -25,6 +25,8 @@
  * (the authoritative Angular-vs-Qwik DOM diffing gate).
  */
 import {describe, expect, it} from 'vitest';
+import {component$, useContextProvider, useSignal} from '@qwik.dev/core';
+import {createDOM} from '@qwik.dev/core/testing';
 import {
   MAT_SIDENAV_CONFIG,
   MatDrawer,
@@ -37,6 +39,7 @@ import {
   type MatDrawerProps,
   type MatSidenavProps,
 } from './public-api';
+import {MAT_DRAWER_CONTAINER_STATE, type DrawerRegistration} from './drawer-state';
 
 describe('qwik-material/sidenav surface — sanity', () => {
   it('every component is exported and function-shaped', () => {
@@ -78,6 +81,7 @@ describe('qwik-material/sidenav surface — sanity', () => {
       onClosed$: undefined,
       onOpenedStart$: undefined,
       onClosedStart$: undefined,
+      style: {'padding-top': '64px'},
       class: 'my-drawer',
       id: 'drawer-1',
     };
@@ -93,6 +97,83 @@ describe('qwik-material/sidenav surface — sanity', () => {
       fixedBottomGap: 32,
     };
     expect(props.fixedInViewport).toBe(true);
+  });
+});
+
+/**
+ * Real DOM-rendered style-passthrough coverage (Task 1, homepage-material-parity).
+ *
+ * Unlike the rest of this file's DOM-rendered scenarios, `createDOM()` does NOT hang here —
+ * confirmed empirically while adding this task (this package's Qwik/Vite/Vitest versions were
+ * upgraded since the "hangs" finding at this file's header was written). What IS still
+ * environment-blocked: `MatDrawer`'s content-margin contribution is derived from a
+ * `ResizeObserver`-measured `offsetWidth` (see `mat-drawer.tsx`), and happy-dom never lays
+ * elements out — `offsetWidth` reads back `undefined` there (confirmed empirically), so a
+ * literal `<MatDrawerContainer><MatDrawer mode="side" .../></MatDrawerContainer>` render can
+ * never produce a non-null margin in this test environment, regardless of correctness. The
+ * `MatDrawerContent` case below works around that the same way `drawer-state.spec.ts` already
+ * does for the pure margin math: it provides `MAT_DRAWER_CONTAINER_STATE` directly with an
+ * already-resolved drawer `width` (as if the real `ResizeObserver` measurement had already
+ * landed), so `MatDrawerContent`'s OWN merge logic still runs for real, against the exact
+ * `computeContentMargins()` it actually calls — only the unrelated, environment-blocked
+ * measurement step is stubbed out.
+ */
+describe('style passthrough (Task 1)', () => {
+  it('passes style through to the host (MatDrawer/MatSidenav)', async () => {
+    const {render, screen} = await createDOM();
+    await render(
+      <MatDrawerContainer>
+        <MatDrawer
+          q:slot="start-drawer"
+          mode="side"
+          opened={true}
+          width="200px"
+          style={{'padding-top': '64px'}}
+        >
+          drawer
+        </MatDrawer>
+        <MatDrawerContent>content</MatDrawerContent>
+      </MatDrawerContainer>,
+    );
+    const el = screen.querySelector('mat-drawer') as HTMLElement;
+    expect(el.style.getPropertyValue('padding-top')).toBe('64px');
+    // The component's own computed `width` still applies — the caller's style didn't set it.
+    expect(el.style.width).toBe('200px');
+  });
+
+  const ContentHarness = component$((props: {registry: Record<string, DrawerRegistration>}) => {
+    useContextProvider(MAT_DRAWER_CONTAINER_STATE, {
+      registry: useSignal(props.registry),
+      backdropOverride: useSignal<boolean | null>(null),
+      transitionsEnabled: useSignal(false),
+      containerHostRef: useSignal<HTMLElement | undefined>(undefined),
+      contentHostRef: useSignal<HTMLElement | undefined>(undefined),
+    });
+    return <MatDrawerContent style={{'padding-top': '64px'}}>content</MatDrawerContent>;
+  });
+
+  it('passes style through to the host (MatDrawerContent/MatSidenavContent)', async () => {
+    const {render, screen} = await createDOM();
+    await render(
+      <ContentHarness
+        registry={{
+          a: {
+            position: 'start',
+            mode: 'side',
+            opened: true,
+            disableClose: false,
+            width: 180,
+            hostRef: {value: undefined} as DrawerRegistration['hostRef'],
+            requestClose$: (() => {}) as unknown as DrawerRegistration['requestClose$'],
+          },
+        }}
+      />,
+    );
+    const el = screen.querySelector('mat-drawer-content') as HTMLElement;
+    expect(el.style.getPropertyValue('padding-top')).toBe('64px');
+    // The computed margin contributed by the registered `side` drawer still applies — the
+    // caller's style didn't set margin-left.
+    expect(el.style.marginLeft).toBe('180px');
   });
 });
 

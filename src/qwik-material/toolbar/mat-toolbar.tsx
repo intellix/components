@@ -19,6 +19,10 @@ export interface MatToolbarProps {
   multipleRows?: boolean;
   class?: string | ReadonlyArray<string>;
   id?: string;
+  /** Inline style. Nothing is computed for this host, so it's a plain passthrough — mirrors
+   *  Angular, which lets an app bind `style` on `<mat-toolbar>` directly (no host style bindings
+   *  of its own to merge with, unlike `MatDrawer`/`MatDrawerContent`). */
+  style?: string | Record<string, string | number>;
 }
 
 export const MatToolbar = component$<MatToolbarProps>(props => {
@@ -30,7 +34,7 @@ export const MatToolbar = component$<MatToolbarProps>(props => {
   ].filter(Boolean) as string[];
 
   return (
-    <mat-toolbar id={props.id} class={classes}>
+    <mat-toolbar id={props.id} class={classes} style={props.style}>
       <Slot />
     </mat-toolbar>
   );

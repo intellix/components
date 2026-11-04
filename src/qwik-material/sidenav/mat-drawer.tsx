@@ -72,6 +72,35 @@ export interface MatDrawerProps {
   onClosedStart$?: QRL<() => void>;
   class?: string | ReadonlyArray<string>;
   id?: string;
+  /** Inline style, merged with this drawer's own computed `width` (and, when
+   *  `fixedInViewport` is set, `top`/`bottom`) — this property wins for whichever of those the
+   *  caller also sets; the computed value still applies for the rest. Mirrors Angular's own
+   *  host style-binding merge, which is how upstream lets an app bind `style` on
+   *  `<mat-drawer>`/`<mat-sidenav>` while the directive's own `[style.width]`/`[style.top]`/
+   *  `[style.bottom]` host bindings keep applying (`src/material/sidenav/drawer.ts`). */
+  style?: string | Record<string, string | number>;
+}
+
+/**
+ * Merges this drawer's own computed `width`/`top`/`bottom` onto the caller's `style` — see
+ * `MatDrawerProps.style`'s doc comment for the precedence rule. Object + object merges
+ * per-property (caller spread last, so it wins). A string `style` can't be merged
+ * property-by-property, so the computed styles are emitted as CSS text FIRST and the caller's
+ * string appended after — within one `style` attribute, the browser's own "last declaration for
+ * a property wins" parsing then gives the same caller-wins precedence.
+ */
+function mergeDrawerStyle(
+  computed: Record<string, string>,
+  caller: MatDrawerProps['style'],
+): string | Record<string, string | number> {
+  if (caller == null) return computed;
+  if (typeof caller === 'string') {
+    const computedText = Object.entries(computed)
+      .map(([prop, value]) => `${prop}: ${value}`)
+      .join('; ');
+    return [computedText, caller].filter(Boolean).join('; ');
+  }
+  return {...computed, ...caller};
 }
 
 /** Matches `scss/sidenav/drawer.scss`'s hardcoded `.mat-drawer-transition & { transition:
@@ -350,12 +379,13 @@ function createDrawer(
       props.class,
     ].filter(Boolean) as string[];
 
-    const style: Record<string, string> = {};
-    if (props.width != null) style.width = props.width;
+    const computedStyle: Record<string, string> = {};
+    if (props.width != null) computedStyle.width = props.width;
     if (fixedInViewport) {
-      style.top = `${props.fixedTopGap ?? 0}px`;
-      style.bottom = `${props.fixedBottomGap ?? 0}px`;
+      computedStyle.top = `${props.fixedTopGap ?? 0}px`;
+      computedStyle.bottom = `${props.fixedBottomGap ?? 0}px`;
     }
+    const style = mergeDrawerStyle(computedStyle, props.style);
 
     const tabIndexValue = mode !== 'side' ? -1 : undefined;
 
@@ -364,13 +394,7 @@ function createDrawer(
     const HostTag = hostTag as unknown as FunctionComponent<Record<string, unknown>>;
 
     return (
-      <HostTag
-        ref={hostRef}
-        id={props.id}
-        class={classes}
-        style={style}
-        tabIndex={tabIndexValue}
-      >
+      <HostTag ref={hostRef} id={props.id} class={classes} style={style} tabIndex={tabIndexValue}>
         {/* `cdkscrollable` mirrors upstream's bare `cdkScrollable` directive-selector attribute
             (`drawer.html`'s `<div class="mat-drawer-inner-container" cdkScrollable>`) — a static,
             no-value marker Angular echoes onto the host, same category as slide-toggle's

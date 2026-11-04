@@ -17,6 +17,43 @@ import {computeContentMargins, MAT_DRAWER_CONTAINER_STATE} from './drawer-state'
 export interface MatDrawerContentProps {
   class?: string | ReadonlyArray<string>;
   id?: string;
+  /** Inline style, merged with this component's own computed `margin-left`/`margin-right` —
+   *  this property wins for whichever of those two the caller also sets; the computed value
+   *  still applies for the one(s) the caller didn't set. Mirrors Angular's own host
+   *  style-binding merge, which is how upstream lets an app bind `style` on
+   *  `<mat-sidenav-content>` while `MatDrawerContent`'s own `[style.margin-left]`/
+   *  `[style.margin-right]` host bindings keep applying (`src/material/sidenav/sidenav.ts`). */
+  style?: string | Record<string, string | number>;
+}
+
+/** Whether the caller's `style` already sets `prop` — used to decide whether the mount-time
+ *  margin re-apply below (see its own doc comment) should leave that property alone. */
+function hasOwnStyleProperty(style: MatDrawerContentProps['style'], prop: string): boolean {
+  if (style == null) return false;
+  if (typeof style === 'string') return new RegExp(`(?:^|;)\\s*${prop}\\s*:`, 'i').test(style);
+  return prop in style;
+}
+
+/**
+ * Merges this component's own computed margins onto the caller's `style` — see
+ * `MatDrawerContentProps.style`'s doc comment for the precedence rule. Object + object merges
+ * per-property (caller spread last, so it wins). A string `style` can't be merged
+ * property-by-property, so the computed margins are emitted as CSS text FIRST and the caller's
+ * string appended after — within one `style` attribute, the browser's own "last declaration for
+ * a property wins" parsing then gives the same caller-wins precedence.
+ */
+function mergeContentStyle(
+  computed: Record<string, string>,
+  caller: MatDrawerContentProps['style'],
+): string | Record<string, string | number> {
+  if (caller == null) return computed;
+  if (typeof caller === 'string') {
+    const computedText = Object.entries(computed)
+      .map(([prop, value]) => `${prop}: ${value}`)
+      .join('; ');
+    return [computedText, caller].filter(Boolean).join('; ');
+  }
+  return {...computed, ...caller};
 }
 
 /**
@@ -55,8 +92,16 @@ function createContent(
       const el = hostRef.value;
       if (!el) return;
       const m = computeContentMargins(containerState.registry.value);
-      el.style.marginLeft = m.left != null ? `${m.left}px` : '';
-      el.style.marginRight = m.right != null ? `${m.right}px` : '';
+      // Caller-set properties win (see `MatDrawerContentProps.style`'s doc comment) — skip
+      // whichever of margin-left/margin-right the caller's own `style` already sets, so this
+      // mount-time re-apply (see this task's OWN doc comment above for why it exists at all)
+      // doesn't clobber it straight back to the computed-only value.
+      if (!hasOwnStyleProperty(props.style, 'margin-left')) {
+        el.style.marginLeft = m.left != null ? `${m.left}px` : '';
+      }
+      if (!hasOwnStyleProperty(props.style, 'margin-right')) {
+        el.style.marginRight = m.right != null ? `${m.right}px` : '';
+      }
     });
 
     // Reads the container's shared registry directly (same context both `MatDrawerContainer`
@@ -74,9 +119,10 @@ function createContent(
 
     const classes = ['mat-drawer-content', extraHostClass, props.class].filter(Boolean) as string[];
 
-    const style: Record<string, string> = {};
-    if (margins.left != null) style['margin-left'] = `${margins.left}px`;
-    if (margins.right != null) style['margin-right'] = `${margins.right}px`;
+    const computedStyle: Record<string, string> = {};
+    if (margins.left != null) computedStyle['margin-left'] = `${margins.left}px`;
+    if (margins.right != null) computedStyle['margin-right'] = `${margins.right}px`;
+    const style = mergeContentStyle(computedStyle, props.style);
 
     const HostTag = hostTag as unknown as FunctionComponent<Record<string, unknown>>;
 
