@@ -53,7 +53,14 @@ export const MatYearView = component$<MatYearViewProps>(props => {
   const maxDate = (props.maxDate ?? null) as unknown;
 
   const view = useSignal<YearViewData<unknown>>(() =>
-    buildYearView(resolveLabelAdapter(props.locale), formats, props.activeDate, minDate, maxDate, undefined),
+    buildYearView(
+      resolveLabelAdapter(props.locale),
+      formats,
+      props.activeDate,
+      minDate,
+      maxDate,
+      undefined,
+    ),
   );
   // See mat-month-view.tsx's identical doc comment for why this stays synchronous whenever
   // there's no filter to resolve.
@@ -63,11 +70,16 @@ export const MatYearView = component$<MatYearViewProps>(props => {
     track(() => props.maxDate);
     const localeAdapter = resolveLabelAdapter(track(() => props.locale));
     const filterQrl = props.dateFilter as QRL<(date: unknown) => boolean> | undefined;
-    const classQrl = props.dateClass as
-      | QRL<MatCalendarCellClassFunction<unknown>>
-      | undefined;
+    const classQrl = props.dateClass as QRL<MatCalendarCellClassFunction<unknown>> | undefined;
     if (!filterQrl && !classQrl) {
-      view.value = buildYearView(localeAdapter, formats, props.activeDate, minDate, maxDate, undefined);
+      view.value = buildYearView(
+        localeAdapter,
+        formats,
+        props.activeDate,
+        minDate,
+        maxDate,
+        undefined,
+      );
       return;
     }
     return Promise.all([
@@ -88,10 +100,6 @@ export const MatYearView = component$<MatYearViewProps>(props => {
 
   const {startValue, endValue} = toStartEndCompareValues(adapter, props.selected);
   const activeCell = adapter.getMonth(props.activeDate);
-
-  const selectMonth = (month: number) => {
-    props.onMonthSelected$(dateFromMonth(adapter, props.activeDate, month));
-  };
 
   const onKeyDown$ = $((event: KeyboardEvent) => {
     const key = event.key;
@@ -115,13 +123,17 @@ export const MatYearView = component$<MatYearViewProps>(props => {
 
   const onKeyUp$ = $((event: KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
-      if (armed.value) selectMonth(adapter.getMonth(props.activeDate));
+      if (armed.value) {
+        props.onMonthSelected$(
+          dateFromMonth(adapter, props.activeDate, adapter.getMonth(props.activeDate)),
+        );
+      }
       armed.value = false;
     }
   });
 
   const onCellClick$ = $((cell: CalendarCell<unknown>) => {
-    selectMonth(cell.value);
+    props.onMonthSelected$(dateFromMonth(adapter, props.activeDate, cell.value));
   });
 
   const onCellFocus$ = $((cell: CalendarCell<unknown>) => {

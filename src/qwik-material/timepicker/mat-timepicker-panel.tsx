@@ -1,4 +1,4 @@
-import {component$, type Signal} from '@qwik.dev/core';
+import {component$, type Signal, type NoSerialize} from '@qwik.dev/core';
 import {MatOption} from '../core/mat-option';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
@@ -17,9 +17,10 @@ const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
  * `MatTimepickerHandle` owns (never `.value`) — this is what keeps this component's own renders
  * live across the whole open session despite living in a completely separate component tree
  * from `MatTimepickerInput`/`MatTimepickerToggle`; see `mat-select-panel.tsx`'s own doc comment
- * for the same, already-proven pattern. `onOptionSelect` is a plain (non-`$()`) callback — safe
- * here because the whole overlay subsystem is created and consumed client-side, within the same
- * execution context, never crossing an SSR→resume boundary.
+ * for the same, already-proven pattern. `onOptionSelect` is a plain (non-`$()`) callback (the
+ * overlay subsystem is created and consumed client-side, never crossing an SSR→resume boundary),
+ * marked `noSerialize` where the panel is created: this panel's inline handlers capture `props`,
+ * and Qwik's dev mode rejects captured plain functions (Code(Q3)) otherwise.
  *
  * Props are deliberately NOT generic over `D` — same reason `MatSelectPanelProps.value` is a
  * plain `Signal<unknown>` rather than `Signal<T>` — `Component<P>`'s own type (`qwik-cdk/overlay`'s
@@ -37,7 +38,9 @@ export interface MatTimepickerPanelProps {
   ariaLabelledby: string | undefined;
   animationsDisabled: boolean;
   panelRef: Signal<Element | undefined>;
-  onOptionSelect: (option: MatTimepickerRenderOption<unknown>) => void;
+  /** Runtime-only callback from the opening runtime, marked `noSerialize` there: this panel's
+   *  inline handlers capture `props`, and Qwik's dev mode rejects captured plain functions. */
+  onOptionSelect: NoSerialize<(option: MatTimepickerRenderOption<unknown>) => void>;
 }
 
 export const MatTimepickerPanel = component$<MatTimepickerPanelProps>(props => {
@@ -66,7 +69,7 @@ export const MatTimepickerPanel = component$<MatTimepickerPanelProps>(props => {
           echoValueAttr={false}
           selected={props.value.value != null && adapter.sameTime(option.value, props.value.value)}
           active={props.activeIndex.value === index}
-          onSelectInteraction$={() => props.onOptionSelect(option)}
+          onSelectInteraction$={() => props.onOptionSelect?.(option)}
         >
           {option.label}
         </MatOption>

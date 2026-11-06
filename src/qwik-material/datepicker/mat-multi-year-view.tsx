@@ -52,7 +52,13 @@ export const MatMultiYearView = component$<MatMultiYearViewProps>(props => {
   const maxDate = (props.maxDate ?? null) as unknown;
 
   const view = useSignal<MultiYearViewData<unknown>>(() =>
-    buildMultiYearView(resolveLabelAdapter(props.locale), props.activeDate, minDate, maxDate, undefined),
+    buildMultiYearView(
+      resolveLabelAdapter(props.locale),
+      props.activeDate,
+      minDate,
+      maxDate,
+      undefined,
+    ),
   );
   // See mat-month-view.tsx's identical doc comment for why this stays synchronous whenever
   // there's no filter to resolve.
@@ -62,9 +68,7 @@ export const MatMultiYearView = component$<MatMultiYearViewProps>(props => {
     track(() => props.maxDate);
     const localeAdapter = resolveLabelAdapter(track(() => props.locale));
     const filterQrl = props.dateFilter as QRL<(date: unknown) => boolean> | undefined;
-    const classQrl = props.dateClass as
-      | QRL<MatCalendarCellClassFunction<unknown>>
-      | undefined;
+    const classQrl = props.dateClass as QRL<MatCalendarCellClassFunction<unknown>> | undefined;
     if (!filterQrl && !classQrl) {
       view.value = buildMultiYearView(localeAdapter, props.activeDate, minDate, maxDate, undefined);
       return;
@@ -73,15 +77,18 @@ export const MatMultiYearView = component$<MatMultiYearViewProps>(props => {
       filterQrl ? filterQrl.resolve() : Promise.resolve(undefined),
       classQrl ? classQrl.resolve() : Promise.resolve(undefined),
     ]).then(([filterFn, classFn]) => {
-      view.value = buildMultiYearView(localeAdapter, props.activeDate, minDate, maxDate, filterFn, classFn);
+      view.value = buildMultiYearView(
+        localeAdapter,
+        props.activeDate,
+        minDate,
+        maxDate,
+        filterFn,
+        classFn,
+      );
     });
   });
 
   const {startValue, endValue} = toStartEndCompareValues(adapter, props.selected);
-
-  const selectYear = (year: number) => {
-    props.onYearSelected$(dateFromYear(adapter, props.activeDate, year));
-  };
 
   const onKeyDown$ = $((event: KeyboardEvent) => {
     const key = event.key;
@@ -107,13 +114,17 @@ export const MatMultiYearView = component$<MatMultiYearViewProps>(props => {
 
   const onKeyUp$ = $((event: KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
-      if (armed.value) selectYear(adapter.getYear(props.activeDate));
+      if (armed.value) {
+        props.onYearSelected$(
+          dateFromYear(adapter, props.activeDate, adapter.getYear(props.activeDate)),
+        );
+      }
       armed.value = false;
     }
   });
 
   const onCellClick$ = $((cell: CalendarCell<unknown>) => {
-    selectYear(cell.value);
+    props.onYearSelected$(dateFromYear(adapter, props.activeDate, cell.value));
   });
 
   const onCellFocus$ = $((cell: CalendarCell<unknown>) => {

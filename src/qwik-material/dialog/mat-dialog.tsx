@@ -27,6 +27,17 @@ import {MAT_DIALOG_DEFAULT_OPTIONS, MAT_DIALOG_SCROLL_STRATEGY} from './mat-dial
 import {useMatContextSnapshot} from '../core/mat-context-snapshot';
 
 /**
+ * Marks a value that only ever exists in the browser `noSerialize` (in place) and returns it
+ * unchanged. The overlay wrapper's `$()` handlers capture their props, and its config holds live
+ * objects (the resolved scroll strategy); Qwik's dev mode rejects such captures (Code(Q3))
+ * unless they're marked.
+ */
+function browserOnly<T extends object>(value: T): T {
+  noSerialize(value);
+  return value;
+}
+
+/**
  * Internal wrapper component that MatDialog opens via the cdk overlay. It
  * receives the merged config, the consumer's body component, and the
  * per-dialog MatDialogRef (NoSerialize-wrapped) as plain-object props.
@@ -282,7 +293,7 @@ export function useMatDialog(): MatDialog {
       }>(
         MatDialogWrapper as Component<any>,
         {
-          config: {...merged},
+          config: browserOnly({...merged}),
           ContentComponent: component,
           contentProps: {...(merged.componentProps ?? {})},
           matDialogRef: wrapped,
@@ -431,7 +442,7 @@ export function createMatDialogService(deps: CreateMatDialogServiceDeps): MatDia
       const cdkRef = deps.cdk.open(
         MatDialogWrapper,
         {
-          config: {...merged},
+          config: browserOnly({...merged}),
           ContentComponent: component,
           contentProps: {...(merged.componentProps ?? {})},
           matDialogRef: undefined,

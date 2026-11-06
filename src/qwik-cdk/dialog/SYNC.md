@@ -210,3 +210,10 @@ back/forward navigation or a hash change. `navigationDispatcher` is an optional
 `createDialogService` dependency (defaults to not wiring anything) so the existing vitest harness
 test construction stays backward compatible. Un-skipped CDK line 491/508 — see the scenario log
 above.
+
+## Fixed: Code(Q3) under the Vite dev server (2026-11-06)
+
+Qwik's dev mode verifies that every value a `$()` callback captures is serializable; production
+builds don't, so this only showed under `vite` / `pnpm dev`. `DialogWrapper`'s `config` prop carries the resolved scroll and position strategies, and the wrapper's handlers capture its props. These values only exist in
+the browser, so they're now marked `noSerialize` (or the local helper is inlined into the
+handlers). Found by sweeping every dev-app page under the dev server.

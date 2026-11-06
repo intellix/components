@@ -393,7 +393,10 @@ export function cancelDatepickerSelection<D>(picker: MatDatepickerHandle<D>): vo
  * exercises). `sameDate` (arithmetic only) stays on the hardcoded module singleton — see
  * `handleDatepickerUserSelect`'s doc comment.
  */
-async function parseAndCommitTypedDate<D>(picker: MatDatepickerHandle<D>, text: string): Promise<void> {
+async function parseAndCommitTypedDate<D>(
+  picker: MatDatepickerHandle<D>,
+  text: string,
+): Promise<void> {
   const {adapter: a, formats: f} = await resolveAdapterForPicker(picker);
   const parsed = a.parse(text, f.parse.dateInput as never);
   const valid = !parsed || a.isValid(parsed);
@@ -446,12 +449,7 @@ export async function handleDatepickerBlur<D>(picker: MatDatepickerHandle<D>): P
   const value = picker.value.value;
   if (value != null) {
     const resolved = await resolveAdapterForPicker(picker);
-    writeFormattedValueWithAdapter(
-      el,
-      resolved.adapter,
-      resolved.formats,
-      value,
-    );
+    writeFormattedValueWithAdapter(el, resolved.adapter, resolved.formats, value);
   }
   picker.touched.value = true;
 }
@@ -500,8 +498,10 @@ export function openDatepickerPanel<D>(
     exiting: picker._exiting,
     animationsDisabled: picker._animationsDisabled,
     contentElRef: picker._contentEl,
-    onSelect: date => handleDatepickerUserSelect(picker, date as D | null),
-    onClose: () => closeDatepickerPanel(picker),
+    // Runtime-only callbacks, marked `noSerialize`: the content's `$()` handlers capture its
+    // props, and Qwik's dev mode rejects captured plain functions (Code(Q3)) otherwise.
+    onSelect: noSerialize((date: unknown) => handleDatepickerUserSelect(picker, date as D | null)),
+    onClose: noSerialize(() => closeDatepickerPanel(picker)),
   };
 
   buildOverlayAndDispatch(picker, ctx, originEl, contentProps);
@@ -542,8 +542,18 @@ async function writeRangeFormattedValues<D>(
   range: DateRange<D>,
 ): Promise<void> {
   const resolved = await resolveAdapterForPicker(picker);
-  writeFormattedValueWithAdapter(picker._startInputRef.value, resolved.adapter, resolved.formats, range.start);
-  writeFormattedValueWithAdapter(picker._endInputRef.value, resolved.adapter, resolved.formats, range.end);
+  writeFormattedValueWithAdapter(
+    picker._startInputRef.value,
+    resolved.adapter,
+    resolved.formats,
+    range.start,
+  );
+  writeFormattedValueWithAdapter(
+    picker._endInputRef.value,
+    resolved.adapter,
+    resolved.formats,
+    range.end,
+  );
 }
 
 /** Mirrors `MatDatepickerApply._applySelection()` for a date-range picker. Async — see
@@ -609,8 +619,10 @@ export function openDateRangePickerPanel<D>(
     exiting: picker._exiting,
     animationsDisabled: picker._animationsDisabled,
     contentElRef: picker._contentEl,
-    onSelect: date => handleRangePickerUserSelect(picker, date as D | null),
-    onClose: () => closeDatepickerPanel(picker),
+    // Runtime-only callbacks, marked `noSerialize`: the content's `$()` handlers capture its
+    // props, and Qwik's dev mode rejects captured plain functions (Code(Q3)) otherwise.
+    onSelect: noSerialize((date: unknown) => handleRangePickerUserSelect(picker, date as D | null)),
+    onClose: noSerialize(() => closeDatepickerPanel(picker)),
   };
 
   buildOverlayAndDispatch(picker, ctx, originEl, contentProps);

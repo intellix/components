@@ -591,3 +591,10 @@ control now shares — see `core/error-state-matcher.ts`'s doc comment for the f
 fallback) — only the formula combining them with `submitted` changed, and still has no
 `formBound` gate (matching this control's pre-existing, documented deviation from `MatInput`'s
 own).
+
+## Fixed: Code(Q3) under the Vite dev server (2026-11-06)
+
+Qwik's dev mode verifies that every value a `$()` callback captures is serializable; production
+builds don't, so this only showed under `vite` / `pnpm dev`. The timepicker panel's `onOptionSelect` prop is a plain function created per open, and the panel's inline handlers capture `props`. These values only exist in
+the browser, so they're now marked `noSerialize` (or the local helper is inlined into the
+handlers). Found by sweeping every dev-app page under the dev server.

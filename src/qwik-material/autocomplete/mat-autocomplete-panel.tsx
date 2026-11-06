@@ -1,4 +1,4 @@
-import {component$, type Signal} from '@qwik.dev/core';
+import {component$, type Signal, type NoSerialize} from '@qwik.dev/core';
 import {MatOption} from '../core/mat-option';
 import {MatOptgroup} from '../core/mat-optgroup';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
@@ -28,10 +28,11 @@ import type {
  * `options` prop is deliberately reactive (refiltering happens live, while
  * the SAME overlay session stays open).
  *
- * `onOptionSelect` is a plain (non-`$()`) callback — safe here because the
- * whole overlay subsystem is created and consumed client-side, within the
- * same execution context, never crossing an SSR→resume boundary (mirrors
- * `MatSelectPanel`'s own `onOptionSelect` prop).
+ * `onOptionSelect` is a plain (non-`$()`) callback: the whole overlay
+ * subsystem is created and consumed client-side, never crossing an
+ * SSR→resume boundary. It's marked `noSerialize` where the panel is created,
+ * because this panel's inline handlers capture `props` and Qwik's dev mode
+ * rejects captured plain functions (Code(Q3)) otherwise.
  */
 export interface MatAutocompletePanelProps {
   id: string;
@@ -47,7 +48,9 @@ export interface MatAutocompletePanelProps {
   ariaLabelledby: string | null;
   animationsDisabled: boolean;
   panelRef: Signal<Element | undefined>;
-  onOptionSelect: (option: ResolvedAutocompleteOption) => void;
+  /** Runtime-only callback from the opening runtime, marked `noSerialize` there: this panel's
+   *  inline handlers capture `props`, and Qwik's dev mode rejects captured plain functions. */
+  onOptionSelect: NoSerialize<(option: ResolvedAutocompleteOption) => void>;
 }
 
 export const MatAutocompletePanel = component$<MatAutocompletePanelProps>(props => {
@@ -85,7 +88,7 @@ export const MatAutocompletePanel = component$<MatAutocompletePanelProps>(props 
       selected={props.value.value === option.value}
       active={props.activeIndex.value === option.index}
       hideSingleSelectionIndicator={props.hideSingleSelectionIndicator}
-      onSelectInteraction$={() => props.onOptionSelect(option)}
+      onSelectInteraction$={() => props.onOptionSelect?.(option)}
     >
       {/* `cloneJsxForReuse`, not `option.content` directly — this component re-renders itself
           every time `props.tree.value` changes (live refiltering, the whole point of `tree`
