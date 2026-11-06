@@ -473,10 +473,10 @@ export async function openSelectPanel(
       ariaLabelledby: cfg.panelAriaLabelledby,
       animationsDisabled: cfg.animationsDisabled,
       panelRef: signals.panelEl,
-      compareFn,
-      onOptionSelect: (option: ResolvedSelectOption) => {
+      compareFn: compareFn && noSerialize(compareFn),
+      onOptionSelect: noSerialize((option: ResolvedSelectOption) => {
         selectOption(option, true, flat, cfg, signals, compareFn);
-      },
+      }),
     },
     {
       direction: cfg.isRtl ? 'rtl' : 'ltr',

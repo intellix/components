@@ -307,23 +307,30 @@ export async function openMenu(itemsJsx: JSXOutput, options: OpenMenuOptions): P
     signals.isOpen.value = false;
   };
 
+  // Runtime-only values for this one open panel: plain callbacks (`options.restoreFocusTo`,
+  // `options.onClosed`, `requestClose`) and the dispatchers. The two `$()` handlers below capture
+  // them; they only ever run in this browser session (the panel is never server-rendered), so mark
+  // them `noSerialize` — otherwise Qwik's dev-mode capture check throws Code(Q3) on open.
+  const live = noSerialize({options, keyboardDispatcher, outsideClickDispatcher, requestClose});
+
   const handleExitDone = $(() => {
     const ref = signals.overlayRef.value;
-    if (!ref) return;
+    if (!ref || !live) return;
     const reason = signals.pendingReason.value;
-    keyboardDispatcher.remove(ref);
-    outsideClickDispatcher.remove(ref);
+    live.keyboardDispatcher.remove(ref);
+    live.outsideClickDispatcher.remove(ref);
     ref.detach();
     signals.overlayRef.value = undefined;
     signals.panelId.value = undefined;
     signals.pendingReason.value = undefined;
-    if (options.restoreFocus && (reason === 'keydown' || !options.isSubmenu)) {
-      options.restoreFocusTo(options.origin);
+    const opts = live.options;
+    if (opts.restoreFocus && (reason === 'keydown' || !opts.isSubmenu)) {
+      opts.restoreFocusTo(opts.origin);
     }
-    options.onClosed(reason);
+    opts.onClosed(reason);
   });
 
-  const handlePanelClick = $(() => requestClose('click'));
+  const handlePanelClick = $(() => live?.requestClose('click'));
 
   // Resolves BEFORE `overlay.create()` so the real `ScrollStrategy`
   // instance (not a descriptor) lands in its config — see

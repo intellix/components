@@ -443,3 +443,18 @@ opened afterward — confirmed via `specs/material-menu/scroll-strategy.spec.ts`
 
 The identical fix was applied to `qwik-material/dialog`/`bottom-sheet`/`select`/`autocomplete`'s
 own scroll-strategy contexts in the same pass — see those packages' own SYNC.md entries.
+
+## Fixed: menus never opened under the Vite dev server (2026-11-06)
+
+`openMenu()` creates `$()` handlers (panel exit, panel click) that captured plain callbacks
+(`restoreFocusTo`, `onClosed`, `requestClose`) and the dispatchers. Production builds don't check
+captures, but Qwik's dev mode verifies every captured value is serializable and threw Code(Q3) on
+open. These values only live for one open panel in the browser, so they're now captured through a
+single `noSerialize` bag.
+
+## `MatMenuItem` forwards extra attributes (2026-11-06)
+
+Like the button family, `MatMenuItem` now forwards any attribute it doesn't name (`data-*`,
+`aria-*`, `title`, …) onto its rendered `<button>` via `extraHostAttrs()`, matching a static
+attribute on Angular's `button[mat-menu-item]`. Its own attributes (role, `aria-*` state, handlers)
+always win. Guarded by `specs/material-menu/item-attrs.spec.ts`.

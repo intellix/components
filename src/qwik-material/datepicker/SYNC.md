@@ -810,3 +810,10 @@ same `useSignal`+`useTask$` resolution pair every other control now shares — s
 `dirty`/`invalid` themselves are unaffected — still sourced from `picker.touched.value`/
 `picker.dirty.value`/`picker.parseError.value` (or the owning `MatFormField`'s context store)
 exactly as before; only the formula combining them with `submitted` into `errorState` changed.
+
+## Fixed: Code(Q3) under the Vite dev server (2026-11-06)
+
+Qwik's dev mode verifies that every value a `$()` callback captures is serializable; production
+builds don't, so this only showed under `vite` / `pnpm dev`. The calendar popup's `onSelect`/`onClose` props are plain functions created per open; the multi-year and year views' local `selectYear`/`selectMonth` helpers were plain functions captured by their key/click handlers. These values only exist in
+the browser, so they're now marked `noSerialize` (or the local helper is inlined into the
+handlers). Found by sweeping every dev-app page under the dev server.

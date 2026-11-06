@@ -202,6 +202,12 @@ export function createOverlayService(
       // over `ref`, which the qwik optimizer extracts as a free identifier when
       // the closure lives outside a component$ — see ./overlay-host.tsx.
       entry.ref = noSerialize(ref);
+      // Entries only ever exist in the browser (created when something opens, never
+      // server-rendered), yet they hold live objects — position/scroll strategies, the ref, the
+      // attached component's props. `OverlayHost`'s `$()` handlers capture the entry, and Qwik's
+      // dev mode verifies every captured value is serializable (Code(Q3)) — marking the whole
+      // entry `noSerialize` (in place: it joins a WeakSet) exempts it, matching what it is.
+      noSerialize(entry);
       registry.push(entry);
       // Backdrop fade-in is triggered from `OverlayRef._onAttached()` (once a
       // real `OverlayHost` has mounted and registered its visual callbacks),

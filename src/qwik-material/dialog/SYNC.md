@@ -368,3 +368,10 @@ Tested in `specs/material-dialog/scroll-blocking.spec.ts`: the pre-existing defa
 `cdk-global-scrollblock` after the same real page load + open — proving a configured descriptor
 (not just the hard-coded context-level default) actually reaches the runtime post-resume, at
 both the context-default AND per-call layers.
+
+## Fixed: Code(Q3) under the Vite dev server (2026-11-06)
+
+Qwik's dev mode verifies that every value a `$()` callback captures is serializable; production
+builds don't, so this only showed under `vite` / `pnpm dev`. The dialog wrapper's `config` prop carries the resolved scroll strategy, and the wrapper's handlers capture its props. These values only exist in
+the browser, so they're now marked `noSerialize` (or the local helper is inlined into the
+handlers). Found by sweeping every dev-app page under the dev server.

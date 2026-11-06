@@ -1,0 +1,99 @@
+diff --git a/dist/server.mjs b/dist/server.mjs
+index 239d405f0d106e7fecbee48d87d4cb4b90de5c35..639dd81b844d6793cf96722065a2708ed3516c46 100644
+--- a/dist/server.mjs
++++ b/dist/server.mjs
+@@ -1849,6 +1849,13 @@ function isInButton(text) {
+ }
+ function isInPhrasing(text, allowInput) {
+   switch (text) {
++    // PATCH (qwik-material): inside a <button>'s phrasing subtree (allowInput false),
++    // accept <div>. Angular Material renders one there (button[mat-list-item]'s
++    // div.mat-focus-indicator, a <div> in a button label), and the HTML parser keeps it in
++    // place (a <div> start tag doesn't close an open <button> or <span>, unlike <p>). Still
++    // rejected in a <p>'s phrasing subtree (allowInput true), where it would close the <p>.
++    case "div":
++      return allowInput ? 0 /* NOT_ALLOWED */ : 514 /* PHRASING_INSIDE_INPUT */;
+     case "svg":
+     case "math":
+       return 1026 /* PHRASING_CONTAINER */;
+@@ -1916,6 +1923,14 @@ function isInPhrasing(text, allowInput) {
+     case "picture":
+       return 2050 /* PICTURE */;
+     default:
++      // PATCH (qwik-material): HTML defines autonomous custom elements (tag
++      // names containing '-', e.g. <mat-icon>, <x-button>) as phrasing (and flow)
++      // content. This validator didn't know about them and rejected them wherever an
++      // ordinary element like <span> would be allowed. Treat a hyphenated tag name the
++      // same as an ordinary phrasing element.
++      if (text.indexOf("-") !== -1) {
++        return allowInput ? 258 /* PHRASING_ANY */ : 514 /* PHRASING_INSIDE_INPUT */;
++      }
+       return 0 /* NOT_ALLOWED */;
+   }
+ }
+diff --git a/dist/server.prod.mjs b/dist/server.prod.mjs
+index c8a842ecf35f890dfc1fbe23ade66cc66fb9ced9..da8c5c0f850cc9fc15aa14b7403af9e9de0bcab2 100644
+--- a/dist/server.prod.mjs
++++ b/dist/server.prod.mjs
+@@ -1850,6 +1850,13 @@ function isInButton(t) {
+ 
+ function isInPhrasing(t, e) {
+     switch (t) {
++      // PATCH (qwik-material): inside a <button>'s phrasing subtree (e false),
++      // accept <div>. Angular Material renders one there (button[mat-list-item]'s
++      // div.mat-focus-indicator, a <div> in a button label), and the HTML parser keeps it in
++      // place (a <div> start tag doesn't close an open <button> or <span>, unlike <p>). Still
++      // rejected in a <p>'s phrasing subtree (e true), where it would close the <p>.
++      case "div":
++        return e ? 0 /* NOT_ALLOWED */ : 514 /* PHRASING_INSIDE_INPUT */;
+       case "svg":
+       case "math":
+         return 1026 /* PHRASING_CONTAINER */;
+@@ -1922,6 +1929,14 @@ function isInPhrasing(t, e) {
+         return 2050 /* PICTURE */;
+ 
+       default:
++        // PATCH (qwik-material): HTML defines autonomous custom elements (tag
++        // names containing '-', e.g. <mat-icon>, <x-button>) as phrasing (and flow)
++        // content. This validator didn't know about them and rejected them wherever an
++        // ordinary element like <span> would be allowed. Treat a hyphenated tag name
++        // the same as an ordinary phrasing element.
++        if (t.indexOf("-") !== -1) {
++          return e ? 258 /* PHRASING_ANY */ : 514 /* PHRASING_INSIDE_INPUT */;
++        }
+         return 0 /* NOT_ALLOWED */;
+     }
+ }
+diff --git a/dist/testing/index.mjs b/dist/testing/index.mjs
+index 4d675251b3ea3f8b45d687b25c1f9d5d18d7f438..1046fedfa908d1935232552395c212644a7136f5 100644
+--- a/dist/testing/index.mjs
++++ b/dist/testing/index.mjs
+@@ -34625,6 +34625,13 @@ function isInButton(text) {
+ }
+ function isInPhrasing(text, allowInput) {
+   switch (text) {
++    // PATCH (qwik-material): inside a <button>'s phrasing subtree (allowInput false),
++    // accept <div>. Angular Material renders one there (button[mat-list-item]'s
++    // div.mat-focus-indicator, a <div> in a button label), and the HTML parser keeps it in
++    // place (a <div> start tag doesn't close an open <button> or <span>, unlike <p>). Still
++    // rejected in a <p>'s phrasing subtree (allowInput true), where it would close the <p>.
++    case "div":
++      return allowInput ? 0 /* NOT_ALLOWED */ : 514 /* PHRASING_INSIDE_INPUT */;
+     case "svg":
+     case "math":
+       return 1026 /* PHRASING_CONTAINER */;
+@@ -34692,6 +34699,14 @@ function isInPhrasing(text, allowInput) {
+     case "picture":
+       return 2050 /* PICTURE */;
+     default:
++      // PATCH (qwik-material): HTML defines autonomous custom elements (tag
++      // names containing '-', e.g. <mat-icon>, <x-button>) as phrasing (and flow)
++      // content. This validator didn't know about them and rejected them wherever an
++      // ordinary element like <span> would be allowed. Treat a hyphenated tag name the
++      // same as an ordinary phrasing element.
++      if (text.indexOf("-") !== -1) {
++        return allowInput ? 258 /* PHRASING_ANY */ : 514 /* PHRASING_INSIDE_INPUT */;
++      }
+       return 0 /* NOT_ALLOWED */;
+   }
+ }

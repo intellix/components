@@ -1,4 +1,4 @@
-import {defineConfig} from 'vite';
+import {defaultClientConditions, defaultServerConditions, defineConfig} from 'vite';
 import {qwikVite} from '@qwik.dev/core/optimizer';
 import {qwikRouter} from '@qwik.dev/router/vite';
 
@@ -8,11 +8,11 @@ export default defineConfig({
   // (.ts/.tsx) instead of its pre-built dist. This lets the qwik optimizer
   // walk the library's QRLs and emit them into the dev-app's manifest.
   resolve: {
-    conditions: ['qwik', 'browser', 'module', 'import', 'default'],
+    conditions: ['qwik', ...defaultClientConditions],
   },
   ssr: {
     resolve: {
-      conditions: ['qwik', 'node', 'module', 'import', 'default'],
+      conditions: ['qwik', ...defaultServerConditions],
     },
     // `@formisch/qwik` ships its `dist/index.qwik.js`/`internals.qwik.js` UNOPTIMIZED — real,
     // literal `$(...)` calls, same as qwik-cdk/qwik-material's own source, deliberately meant to

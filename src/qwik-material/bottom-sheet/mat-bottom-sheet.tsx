@@ -35,6 +35,17 @@ import {
 import {useMatContextSnapshot} from '../core/mat-context-snapshot';
 
 /**
+ * Marks a value that only ever exists in the browser `noSerialize` (in place) and returns it
+ * unchanged. The overlay wrapper's `$()` handlers capture their props, and its config holds live
+ * objects (the resolved scroll strategy); Qwik's dev mode rejects such captures (Code(Q3))
+ * unless they're marked.
+ */
+function browserOnly<T extends object>(value: T): T {
+  noSerialize(value);
+  return value;
+}
+
+/**
  * Internal wrapper component that MatBottomSheet opens via the cdk overlay.
  * Receives the merged config, the consumer's content component, and the
  * per-sheet MatBottomSheetRef (NoSerialize-wrapped) as plain-object props.
@@ -277,7 +288,7 @@ export function useMatBottomSheet(): MatBottomSheet {
         MatBottomSheetWrapper as Component<any>,
         {
           id,
-          config: {...merged},
+          config: browserOnly({...merged}),
           ContentComponent: component,
           contentProps: {...(merged.componentProps ?? {})},
           matBottomSheetRef: wrapped,
@@ -416,7 +427,7 @@ export function createMatBottomSheetService(
         MatBottomSheetWrapper,
         {
           id,
-          config: {...merged},
+          config: browserOnly({...merged}),
           ContentComponent: component,
           contentProps: {...(merged.componentProps ?? {})},
           matBottomSheetRef: undefined,

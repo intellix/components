@@ -14,6 +14,7 @@ import {QWIK_CDK, ensureCdkDispatchers} from '@angular-community/qwik-cdk';
 import type {OverlayRef, ScrollStrategyDescriptor} from '@angular-community/qwik-cdk/overlay';
 import {useFocusOrigin, focusVia, type FocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {extraHostAttrs} from '../core/host-props';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_MENU_DEFAULT_OPTIONS, MAT_MENU_SCROLL_STRATEGY} from './mat-menu-tokens';
@@ -57,7 +58,27 @@ export interface MatMenuItemProps {
   id?: string;
   /** Forwarded onto the rendered `<button>` — same rationale as every other polymorphic host's `onClick$` passthrough. */
   onClick$?: QRL<(event: MouseEvent) => void>;
+  /**
+   * Any other attribute (`data-*`, `aria-*`, `title`, …) is forwarded onto the rendered
+   * `<button>`, like a static attribute on Angular's `button[mat-menu-item]`. This item's own
+   * attributes (role, `aria-*` state, handlers) always win.
+   */
+  [extraAttr: string]: unknown;
 }
+
+/** Props this component names explicitly — excluded from the `extraHostAttrs()` passthrough. */
+const KNOWN_PROPS = new Set<string>([
+  'role',
+  'disabled',
+  'disableRipple',
+  'icon',
+  'menu',
+  'restoreFocus',
+  'class',
+  'id',
+  'onClick$',
+  'children',
+]);
 
 /**
  * Qwik port of `src/material/menu/menu-item.ts` + `menu-item.html`
@@ -254,6 +275,7 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
 
   return (
     <button
+      {...extraHostAttrs(props as Record<string, unknown>, KNOWN_PROPS)}
       ref={hostRef}
       id={props.id}
       class={classes}

@@ -164,17 +164,20 @@ function createDrawer(
     // (see design doc). `offsetWidth` is always measurable even while the drawer is visually
     // off-screen/closed — `.mat-drawer` is hidden via `visibility`/`transform`, never `display:
     // none` (see scss/sidenav/drawer.scss) — matching upstream's `_getWidth()`.
-    useVisibleTask$(({cleanup}) => {
-      const el = hostRef.value;
-      if (!el) return;
-      const measure = () => {
-        widthPx.value = el.offsetWidth;
-      };
-      measure();
-      const ro = new ResizeObserver(measure);
-      ro.observe(el);
-      cleanup(() => ro.disconnect());
-    });
+    useVisibleTask$(
+      ({cleanup}) => {
+        const el = hostRef.value;
+        if (!el) return;
+        const measure = () => {
+          widthPx.value = el.offsetWidth;
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        cleanup(() => ro.disconnect());
+      },
+      {strategy: 'document-ready'},
+    );
 
     // Single combined task: registry sync (mirrors upstream's `@ContentChildren(MatDrawer)
     // QueryList` iteration — `MatDrawerContainer._validateDrawers()` / `_watchDrawerToggle()` /

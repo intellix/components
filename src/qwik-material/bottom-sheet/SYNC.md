@@ -257,3 +257,10 @@ real resume. Tested in `specs/material-bottom-sheet/scroll-blocking.spec.ts`.
 Run `pnpm test:qwik-material` from the repo root to verify the package (+ `pnpm test:qwik-cdk`
 for the new `qwik-cdk/layout`, which has no specs of its own — exercised indirectly via this
 port's Playwright specs).
+
+## Fixed: Code(Q3) under the Vite dev server (2026-11-06)
+
+Qwik's dev mode verifies that every value a `$()` callback captures is serializable; production
+builds don't, so this only showed under `vite` / `pnpm dev`. The bottom-sheet wrapper's `config` prop carries the resolved scroll strategy, and the wrapper's handlers capture its props. These values only exist in
+the browser, so they're now marked `noSerialize` (or the local helper is inlined into the
+handlers). Found by sweeping every dev-app page under the dev server.

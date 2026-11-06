@@ -234,11 +234,17 @@ export function createDialogService(deps: {
       const instance = {value: null} as Signal<C | null>;
 
       // Spread merged to a plain object so Qwik doesn't try to serialize a
-      // DialogConfig class instance when passing props through the overlay.
+      // DialogConfig class instance when passing props through the overlay. It still
+      // carries live objects (the resolved scroll and position strategies), and the
+      // wrapper's `$()` handlers capture their props; the config only ever exists in the
+      // browser, so mark the copy `noSerialize` in place — otherwise Qwik's dev mode
+      // rejects the capture (Code(Q3)).
+      const wrapperConfig = {...merged};
+      noSerialize(wrapperConfig);
       const overlayRef: OverlayRef = deps.overlay.create(
         DialogWrapper,
         {
-          config: {...merged},
+          config: wrapperConfig,
           ContentComponent: component,
           contentProps: {...(merged.componentProps ?? {})},
         },

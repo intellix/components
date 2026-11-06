@@ -47,6 +47,7 @@ import {
   type JSXOutput,
   type QRL,
   type Signal,
+  type NoSerialize,
 } from '@qwik.dev/core';
 import {useFocusTrap} from '@angular-community/qwik-cdk/a11y';
 import {MatButton} from '../button/mat-button';
@@ -98,8 +99,9 @@ export interface MatDatepickerContentProps {
   /** Written once this component mounts, so `datepicker-runtime.ts` can check "is there anything
    *  to animate the exit of" before deciding whether `close()` needs to wait. */
   contentElRef: Signal<Element | undefined>;
-  onSelect: (date: unknown) => void;
-  onClose: () => void;
+  /** Runtime-only callbacks, `noSerialize` (see `datepicker-runtime.ts`). */
+  onSelect: NoSerialize<(date: unknown) => void>;
+  onClose: NoSerialize<() => void>;
 }
 
 /**
@@ -168,11 +170,11 @@ export const MatDatepickerContent = component$<MatDatepickerContentProps>(props 
     previewEnd = preview.end != null ? getCellCompareValue(ADAPTER, preview.end) : null;
   }
 
-  const onUserSelect$ = $((date: unknown) => props.onSelect(date));
+  const onUserSelect$ = $((date: unknown) => props.onSelect?.(date));
   const onPreviewChange$ = $((date: unknown) => {
     previewDate.value = date;
   });
-  const onClose$ = $(() => props.onClose());
+  const onClose$ = $(() => props.onClose?.());
 
   const animating = props.entering.value || props.exiting.value;
   const hasActions = props.actionsContent !== undefined;

@@ -430,9 +430,9 @@ export async function openAutocompletePanel(
         ariaLabelledby: cfg.panelAriaLabelledby,
         animationsDisabled: cfg.animationsDisabled,
         panelRef: signals.panelEl,
-        onOptionSelect: (option: ResolvedAutocompleteOption) => {
+        onOptionSelect: noSerialize((option: ResolvedAutocompleteOption) => {
           void selectAutocompleteOption(option, cfg, signals);
-        },
+        }),
       },
       {
         direction: cfg.isRtl ? 'rtl' : 'ltr',

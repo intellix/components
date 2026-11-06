@@ -385,3 +385,14 @@ any scenario whose content sizes itself to that text — found via
 `autosize`'s content-sized drawer, but would affect any future scenario
 with the same shape. See root.tsx's own doc comment for the quote-escaping
 pitfall hit along the way.
+
+## Fixed: no slide animation for a container that mounts off-screen (2026-11-06)
+
+The container's 200ms "enable transitions" timer (`mat-drawer-transition`), its backdrop
+placement, the drawer's width measurement and the content's margin setup all ran in
+`useVisibleTask$` with Qwik's default `intersection-observer` strategy, so they only ran once the
+element scrolled into view. A container rendered off-screen (inside a closed panel or portal) never
+got `mat-drawer-transition`, and its first open jumped straight open with no
+`mat-drawer-animating`. Upstream does this work from the constructor regardless of visibility, so
+all four tasks now use `{strategy: 'document-ready'}`. Guarded by
+`specs/material-sidenav/offscreen-container.spec.ts`.

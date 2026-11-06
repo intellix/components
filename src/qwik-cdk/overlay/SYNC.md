@@ -684,3 +684,11 @@ or `{type: 'reposition'}`) is also now safe to pass directly as a `useContext()`
 a function-typed default, it's never confused with "no default" (the `undefined`-default pitfall)
 and never invoked as a lazy initializer (the function-typed-default pitfall), so several call
 sites dropped the earlier `null`-sentinel workaround entirely.
+
+## Fixed: overlays threw Code(Q3) under the Vite dev server (2026-11-06)
+
+`OverlayHost`'s `$()` handlers capture its overlay entry, which holds live objects (position and
+scroll strategies, the ref, the attached component's props). Qwik's dev mode verifies captured
+values are serializable and threw Code(Q3) as soon as any overlay opened. Entries only ever exist
+in the browser, so `createOverlayService().create()` now marks each entry `noSerialize` (in place)
+before registering it.

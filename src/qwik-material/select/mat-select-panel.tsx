@@ -1,4 +1,4 @@
-import {component$, type Signal} from '@qwik.dev/core';
+import {component$, type Signal, type NoSerialize} from '@qwik.dev/core';
 import {MatOption} from '../core/mat-option';
 import {MatOptgroup} from '../core/mat-optgroup';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
@@ -20,11 +20,11 @@ import type {ResolvedSelectNode, ResolvedSelectOption} from './select-option-res
  * separate component tree from `MatSelect` itself; see
  * `core/mat-form-field-control.ts`'s doc comment and `tooltip-runtime.ts`'s
  * own `TooltipPanel` wiring for the same, already-proven pattern.
- * `onOptionSelect` is a plain (non-`$()`) callback — safe here because the
- * whole overlay subsystem is created and consumed client-side, within the
- * same execution context, never crossing an SSR→resume boundary (mirrors
- * `showTooltip`'s `triggerElement: trigger` passing a raw `HTMLElement` the
- * same way).
+ * `onOptionSelect` (and `compareFn`) are plain (non-`$()`) functions: the
+ * whole overlay subsystem is created and consumed client-side, never crossing
+ * an SSR→resume boundary. They're marked `noSerialize` where the panel is
+ * created, because this panel's inline handlers capture `props` and Qwik's dev
+ * mode rejects captured plain functions (Code(Q3)) otherwise.
  */
 export interface MatSelectPanelProps {
   id: string;
@@ -43,14 +43,16 @@ export interface MatSelectPanelProps {
   ariaLabelledby: string | null;
   animationsDisabled: boolean;
   panelRef: Signal<Element | undefined>;
-  onOptionSelect: (option: ResolvedSelectOption) => void;
+  /** Runtime-only callback from the opening runtime, marked `noSerialize` there: this panel's
+   *  inline handlers capture `props`, and Qwik's dev mode rejects captured plain functions. */
+  onOptionSelect: NoSerialize<(option: ResolvedSelectOption) => void>;
   /** Mirrors upstream `MatSelect.compareWith` — a PLAIN, already-resolved comparator (never a
    *  QRL): `select-runtime.ts`'s `openSelectPanel` resolves `SelectRuntimeConfig.compareWith$`
    *  exactly once per open session before creating this component, since `MatSelectPanel` is
    *  created and consumed entirely client-side via `overlay.create()` — the same "plain function
    *  prop is safe here" precedent `onOptionSelect` above already establishes. `undefined` ⇒
    *  strict `===` (upstream's own default). */
-  compareFn?: (o1: unknown, o2: unknown) => boolean;
+  compareFn?: NoSerialize<(o1: unknown, o2: unknown) => boolean>;
 }
 
 function isSelected(
@@ -91,7 +93,7 @@ export const MatSelectPanel = component$<MatSelectPanelProps>(props => {
       multiple={props.multiple}
       hideSingleSelectionIndicator={props.hideSingleSelectionIndicator}
       groupInertLabel={groupInertLabel}
-      onSelectInteraction$={() => props.onOptionSelect(option)}
+      onSelectInteraction$={() => props.onOptionSelect?.(option)}
     >
       {/* `cloneJsxForReuse`, not `option.content` directly — this component re-renders
           itself (`props.exiting.value`'s `classes` dependency above, also `activeIndex`/
