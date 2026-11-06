@@ -451,3 +451,10 @@ own scroll-strategy contexts in the same pass — see those packages' own SYNC.m
 captures, but Qwik's dev mode verifies every captured value is serializable and threw Code(Q3) on
 open. These values only live for one open panel in the browser, so they're now captured through a
 single `noSerialize` bag.
+
+## `MatMenuItem` forwards extra attributes (2026-11-06)
+
+Like the button family, `MatMenuItem` now forwards any attribute it doesn't name (`data-*`,
+`aria-*`, `title`, …) onto its rendered `<button>` via `extraHostAttrs()`, matching a static
+attribute on Angular's `button[mat-menu-item]`. Its own attributes (role, `aria-*` state, handlers)
+always win. Guarded by `specs/material-menu/item-attrs.spec.ts`.
