@@ -125,14 +125,40 @@ Every one of these is required — none is a stylistic preference:
 | `build.cssMinify: 'esbuild'` | Vite 8's default CSS minifier (`lightningcss`) rejects a selector upstream Angular Material's slide-toggle CSS uses (`::after:not(:empty)`) and fails the build. Switching the minifier to `esbuild` avoids the failure. |
 | `esbuild` dev dependency | Vite 8 no longer bundles `esbuild` itself — once you set `cssMinify: 'esbuild'` you must install it directly as a dependency, or the build fails looking for it. |
 
-### 2.4 Updating after a change to this repo
+### 2.4 Dev server (`vite` / `pnpm dev`): patch Qwik's HTML-nesting check
+
+Qwik 2.0.0-rc.4's **dev-mode** server renderer validates element nesting and throws
+`Code(Q12): SsrError(tag)` — killing the request, and with some setups the dev server — for
+markup Angular Material itself renders and browsers keep as written:
+
+- autonomous custom elements (`<mat-icon>`, `<mat-checkbox>`, …) inside a `<button>` or other
+  phrasing content — HTML defines them as phrasing content, but the check rejects any
+  hyphenated tag there;
+- a `<div>` inside a `<button>` (slide toggle, button toggle, action-list items) — the HTML
+  parser leaves it in place.
+
+Production builds don't run the check. Until it's fixed upstream, apply the patch shipped with
+this repo, [`src/qwik-material/patches/@qwik.dev__core@2.0.0-rc.4.patch`](src/qwik-material/patches/@qwik.dev__core@2.0.0-rc.4.patch).
+It accepts hyphenated tags wherever phrasing content is allowed and `<div>` inside a button's
+subtree, and keeps rejecting the genuinely broken case (a `<div>` inside a `<p>`). Copy it into
+the app's `patches/` folder and register it with pnpm:
+
+```yaml
+# pnpm-workspace.yaml (or "pnpm": {"patchedDependencies": …} in package.json)
+patchedDependencies:
+  '@qwik.dev/core@2.0.0-rc.4': patches/@qwik.dev__core@2.0.0-rc.4.patch
+```
+
+Then `pnpm install`. The patch is version-specific: re-check it when upgrading Qwik.
+
+### 2.5 Updating after a change to this repo
 
 Re-run `pnpm -C src/qwik-material pack:local` and reinstall the tarballs in the app (`pnpm add
 <path>/*.tgz` again — pnpm overwrites the previously-installed version since it's the same
 version number, `0.0.0`; if pnpm caches too aggressively, `pnpm add --force` or bump the tarball
 filenames).
 
-### 2.5 How this was verified
+### 2.6 How this was verified
 
 A full end-to-end round trip was run against this exact worktree, outside the repo:
 
