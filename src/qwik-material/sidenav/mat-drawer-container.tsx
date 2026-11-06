@@ -160,14 +160,20 @@ function createContainer(
     // real signal (read via context by `MatDrawer`'s task, which is NOT affected by this same
     // issue), so its only remaining job is that cross-component read — the host's own visible
     // class no longer depends on reading it reactively here.
-    useVisibleTask$(({cleanup}) => {
-      const timer = setTimeout(() => {
-        transitionsEnabled.value = true;
-        const el = hostRef.value;
-        if (el) el.classList.add('mat-drawer-transition');
-      }, 200);
-      cleanup(() => clearTimeout(timer));
-    });
+    // `document-ready`, not the default `intersection-observer` strategy: upstream starts this
+    // timer from its constructor whether or not the container is on screen, so a container that
+    // mounts off-screen (inside a closed panel/portal) must still animate its first open.
+    useVisibleTask$(
+      ({cleanup}) => {
+        const timer = setTimeout(() => {
+          transitionsEnabled.value = true;
+          const el = hostRef.value;
+          if (el) el.classList.add('mat-drawer-transition');
+        }, 200);
+        cleanup(() => clearTimeout(timer));
+      },
+      {strategy: 'document-ready'},
+    );
 
     // `mat-drawer-container-has-open` is NOT set from a task here — see `containerHostRef`'s
     // doc comment in drawer-state.ts for why (a task declared directly in this component,
@@ -200,20 +206,23 @@ function createContainer(
     // used elsewhere in this file (`mat-drawer-transition`'s class toggle
     // above) for a declarative update that doesn't reliably land.
     const backdropRef = useSignal<HTMLElement>();
-    useVisibleTask$(({track}) => {
-      // Re-derive from tracked SIGNALS (not the outer, plain `hasBackdrop`
-      // const) so this task actually re-fires on every registration change
-      // — `track()` only establishes a subscription for a reactive read.
-      const reg = track(() => registry.value);
-      const override = track(() => backdropOverride.value);
-      const show = containerHasBackdrop(reg, override);
-      if (!show) return;
-      const el = backdropRef.value;
-      const parent = hostRef.value;
-      if (el && parent && parent.firstChild !== el) {
-        parent.insertBefore(el, parent.firstChild);
-      }
-    });
+    useVisibleTask$(
+      ({track}) => {
+        // Re-derive from tracked SIGNALS (not the outer, plain `hasBackdrop`
+        // const) so this task actually re-fires on every registration change
+        // — `track()` only establishes a subscription for a reactive read.
+        const reg = track(() => registry.value);
+        const override = track(() => backdropOverride.value);
+        const show = containerHasBackdrop(reg, override);
+        if (!show) return;
+        const el = backdropRef.value;
+        const parent = hostRef.value;
+        if (el && parent && parent.firstChild !== el) {
+          parent.insertBefore(el, parent.firstChild);
+        }
+      },
+      {strategy: 'document-ready'},
+    );
 
     const startEntry = Object.values(registry.value).find(d => d.position === 'start');
     const endEntry = Object.values(registry.value).find(d => d.position === 'end');
