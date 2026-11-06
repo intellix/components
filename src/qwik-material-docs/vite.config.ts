@@ -1,4 +1,4 @@
-import {defineConfig} from 'vite';
+import {defaultClientConditions, defaultServerConditions, defineConfig} from 'vite';
 import {qwikVite} from '@qwik.dev/core/optimizer';
 import {qwikRouter} from '@qwik.dev/router/vite';
 
@@ -14,11 +14,11 @@ import {qwikRouter} from '@qwik.dev/router/vite';
 export default defineConfig({
   plugins: [qwikRouter(), qwikVite()],
   resolve: {
-    conditions: ['qwik', 'browser', 'module', 'import', 'default'],
+    conditions: ['qwik', ...defaultClientConditions],
   },
   ssr: {
     resolve: {
-      conditions: ['qwik', 'node', 'module', 'import', 'default'],
+      conditions: ['qwik', ...defaultServerConditions],
     },
   },
   build: {

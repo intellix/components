@@ -98,7 +98,7 @@ them as `dependencies` — see the reasons below.
 ### 2.3 Required `vite.config.ts` settings
 
 ```ts
-import {defineConfig} from 'vite';
+import {defaultClientConditions, defaultServerConditions, defineConfig} from 'vite';
 import {qwikVite} from '@qwik.dev/core/optimizer';
 import {qwikRouter} from '@qwik.dev/router/vite';
 
@@ -106,9 +106,9 @@ const QWIK_LIBS = ['@angular-community/qwik-cdk', '@angular-community/qwik-mater
 
 export default defineConfig({
   plugins: [qwikRouter(), qwikVite()],
-  resolve: {conditions: ['qwik', 'browser', 'module', 'import', 'default']},
+  resolve: {conditions: ['qwik', ...defaultClientConditions]},
   ssr: {
-    resolve: {conditions: ['qwik', 'node', 'module', 'import', 'default']},
+    resolve: {conditions: ['qwik', ...defaultServerConditions]},
     noExternal: QWIK_LIBS,
   },
   build: {cssMinify: 'esbuild'},
@@ -119,7 +119,7 @@ Every one of these is required — none is a stylistic preference:
 
 | Setting | Why |
 |---|---|
-| `resolve.conditions` including `'qwik'`, and `ssr.resolve.conditions` including `'qwik'` + `'node'` | Both packages' `package.json` `exports` maps publish their **unoptimized source** (real, literal `$(...)` calls, meant to be processed by the consuming app's own Qwik Vite plugin) under the `qwik` export condition. Without it, Vite resolves the prebuilt `dist` output instead. |
+| `'qwik'` prepended to `resolve.conditions` and `ssr.resolve.conditions` | Both packages' `package.json` `exports` maps publish their **unoptimized source** (real, literal `$(...)` calls, meant to be processed by the consuming app's own Qwik Vite plugin) under the `qwik` export condition. Without it, Vite resolves the prebuilt `dist` output instead. **Keep Vite's defaults after it** (`...defaultClientConditions` / `...defaultServerConditions`): replacing the list drops the `development`/`production` condition, and the dev server (`vite`/`pnpm dev`) then mixes production builds of Qwik with dev-mode code — every lazy chunk (`spa_init_event_…`, `…_useVisibleTask_…`) 404s and nothing is interactive. |
 | `ssr.noExternal: QWIK_LIBS` | Without this, Vite's SSR build treats the packages as external (leaves `import` statements pointing at `node_modules` instead of bundling them). Combined with the `qwik` condition resolving to unoptimized source, this makes the server build reference QRL chunks that were never recorded in the client build's manifest — the page builds successfully but **crashes mid-render** with `Cannot resolve symbol "s_…"` the first time a lazy handler needs to load. `noExternal` forces Vite to actually bundle the library source into the SSR build, where the Qwik optimizer can see and register every `$()` boundary. |
 | `sass` dev dependency | The library's component source imports `.scss` files directly (not pre-compiled CSS) along the `qwik`-condition resolution path above — Vite needs a Sass compiler available to process them. |
 | `build.cssMinify: 'esbuild'` | Vite 8's default CSS minifier (`lightningcss`) rejects a selector upstream Angular Material's slide-toggle CSS uses (`::after:not(:empty)`) and fails the build. Switching the minifier to `esbuild` avoids the failure. |
