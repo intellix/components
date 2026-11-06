@@ -719,7 +719,7 @@ For your own app, verify each migrated page the same way, by hand or scripted:
    parity is this port's design contract (§1), a real difference almost always means either a
    missed prop (check the component's row in §6) or a genuine gap (check §9) — not an acceptable
    stylistic difference.
-2. **Check the raw SSR HTML**, not just the hydrated page — `curl` the route directly (as in §2.5)
+2. **Check the raw SSR HTML**, not just the hydrated page — `curl` the route directly (as in §2.6)
    and confirm the Angular Material class names and your app's expected content are present
    *before* any client JS runs. A missing class or empty content here usually means a prop that's
    read once from a JSX descriptor (form-field's `control`, a data-array prop like `rows`/`options`)
