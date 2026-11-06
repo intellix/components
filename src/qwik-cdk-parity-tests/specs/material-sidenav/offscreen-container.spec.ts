@@ -16,7 +16,8 @@ test('an initially off-screen sidenav container still animates its first open', 
   // Record every class the drawer ever has from the click onwards.
   await page.evaluate(() => {
     const drawer = document.querySelector('mat-drawer')!;
-    const seen = ((window as unknown as {seenDrawerClasses: string[]}).seenDrawerClasses = []);
+    const seen: string[] = [];
+    (window as unknown as {seenDrawerClasses: string[]}).seenDrawerClasses = seen;
     new MutationObserver(() => seen.push(drawer.className)).observe(drawer, {
       attributes: true,
       attributeFilter: ['class'],
