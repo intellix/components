@@ -64,6 +64,29 @@ export function focusVia(element: HTMLElement, origin: FocusOrigin, options?: Fo
   }
 }
 
+export interface UseFocusOriginOptions {
+  /**
+   * Also toggle the `cdk-*-focused` classes on the host element with `classList`, exactly as
+   * upstream `FocusMonitor` does, instead of leaving the caller to render them from the signal.
+   * A caller that renders its own `class` from the signal re-renders on every focus change, and
+   * Qwik rewrites the WHOLE `class` attribute on that re-render (the first one after resume diffs
+   * against the live DOM) — undoing any class another script toggled on the host meanwhile, which
+   * upstream preserves. With this set, the caller reads the signal untracked when computing its
+   * own `class` (so a re-render for another reason keeps the classes) and focus changes never
+   * re-render it.
+   */
+  hostClasses?: boolean;
+}
+
+/** Upstream `FocusMonitor._setClasses`. */
+export function setFocusOriginClasses(element: Element, origin: FocusOrigin): void {
+  element.classList.toggle('cdk-focused', !!origin);
+  element.classList.toggle('cdk-touch-focused', origin === 'touch');
+  element.classList.toggle('cdk-keyboard-focused', origin === 'keyboard');
+  element.classList.toggle('cdk-mouse-focused', origin === 'mouse');
+  element.classList.toggle('cdk-program-focused', origin === 'program');
+}
+
 /**
  * Lazy, per-component replacement for `useFocusMonitor()` (which — as of
  * this writing — wires up via `useVisibleTask$`, forcing its JS to load and
@@ -121,12 +144,13 @@ export function focusVia(element: HTMLElement, origin: FocusOrigin, options?: Fo
  * one is guaranteed to be loaded+running before the very first keydown on
  * the page, which `<QwikCdkRoot>`-level eager installation is.
  */
-export function useFocusOrigin(): Signal<FocusOrigin> {
+export function useFocusOrigin(options?: UseFocusOriginOptions): Signal<FocusOrigin> {
   const origin = useSignal<FocusOrigin>(null);
+  const hostClasses = !!options?.hostClasses;
 
   useOn(
     'focusin',
-    $((event: FocusEvent) => {
+    $((event: FocusEvent, host: Element) => {
       const target = event.target as Element | null;
       const pending = target?.getAttribute?.(PENDING_ORIGIN_ATTR);
       if (pending) {
@@ -141,13 +165,15 @@ export function useFocusOrigin(): Signal<FocusOrigin> {
       }
       consumeRecentPointerModality();
       consumeRecentKeydown();
+      if (hostClasses) setFocusOriginClasses(host, origin.value);
     }),
   );
 
   useOn(
     'focusout',
-    $(() => {
+    $((_event: FocusEvent, host: Element) => {
       origin.value = null;
+      if (hostClasses) setFocusOriginClasses(host, null);
     }),
   );
 

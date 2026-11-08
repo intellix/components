@@ -4,6 +4,7 @@ import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
 import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
+import {LazyRipple} from './internal/lazy-ripple';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
@@ -58,7 +59,11 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
 
   // See mat-button.tsx for the full rationale — same lazy useOn()-based
   // replacement for the old useVisibleTask$-based useFocusMonitor.
-  const focusOrigin = useFocusOrigin();
+  const focusOrigin = useFocusOrigin({hostClasses: true});
+  // Untracked: `hostClasses` toggles the focus classes with classList, so focus changes must not
+  // re-render the host (see LazyRipple for why); a re-render for any other reason
+  // still writes the current ones.
+  const origin = focusOrigin.untrackedValue;
 
   const classes = [
     'mat-mdc-button-base',
@@ -70,11 +75,11 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
     props.disabled && 'mat-mdc-button-disabled',
     disabledInteractive && 'mat-mdc-button-disabled-interactive',
     props.disableRipple && 'mat-mdc-button-ripple-disabled',
-    focusOrigin.value && 'cdk-focused',
-    focusOrigin.value === 'touch' && 'cdk-touch-focused',
-    focusOrigin.value === 'keyboard' && 'cdk-keyboard-focused',
-    focusOrigin.value === 'mouse' && 'cdk-mouse-focused',
-    focusOrigin.value === 'program' && 'cdk-program-focused',
+    origin && 'cdk-focused',
+    origin === 'touch' && 'cdk-touch-focused',
+    origin === 'keyboard' && 'cdk-keyboard-focused',
+    origin === 'mouse' && 'cdk-mouse-focused',
+    origin === 'program' && 'cdk-program-focused',
     props.class,
   ].filter(Boolean) as string[];
 
@@ -88,9 +93,8 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
   });
 
   // Returns a signal (not a side effect) — see ripple-loader.ts's
-  // useRippleLoader() doc comment: this component's focus classes above
-  // ALSO come from a signal, so the ripple span/attribute must too, or an
-  // unrelated focus-triggered re-render would clobber an imperative mutation.
+  // useRippleLoader() doc comment. The span renders in `LazyRipple` so the
+  // signal re-renders only that child, never this host.
   // Directive-hook handlers via useOn(), not JSX props — see useForwardedHostHandlers().
   useForwardedHostHandlers(props);
   const rippleInitialized = useRippleLoader();
@@ -106,7 +110,7 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
-      {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
+      <LazyRipple initialized={rippleInitialized} />
     </>
   );
 

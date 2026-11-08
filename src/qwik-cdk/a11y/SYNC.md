@@ -76,6 +76,12 @@
     native signals — `pointerdown` + `focusin`/`focusout` — instead of the
     full `InputModalityDetector` + `FocusMonitor` algorithm). First consumed
     by `qwik-material/button-toggle`.
+  - **2026-11-08:** `useFocusOrigin({hostClasses: true})` also toggles the
+    `cdk-*-focused` classes on the host with `classList` (upstream
+    `FocusMonitor._setClasses`, exported as `setFocusOriginClasses()`), so a
+    caller can read the signal untracked and not re-render on focus — a host
+    re-render rewrites its whole `class` attribute, undoing classes other
+    scripts set. Used by the `qwik-material` button family.
   - **2026-10-27 (lazy-interactions remediation, rule 7 — no per-instance
     `useVisibleTask$` for interaction plumbing in components that appear
     many times per page):** removed the `useFocusMonitor(hostRef,

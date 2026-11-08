@@ -20,7 +20,8 @@ export {
   FocusMonitorDetectionMode,
 } from './focus-monitor/focus-monitor';
 export type {FocusOrigin, FocusOptions} from './focus-monitor/focus-monitor';
-export {useFocusOrigin, focusVia} from './focus-origin/focus-origin';
+export {useFocusOrigin, focusVia, setFocusOriginClasses} from './focus-origin/focus-origin';
+export type {UseFocusOriginOptions} from './focus-origin/focus-origin';
 // Plain, non-`useOn()` building blocks for `useFocusOrigin()`'s SAME
 // keyboard-vs-pointer heuristic — exported so a hostProps-returning
 // directive hook (e.g. `qwik-material/tooltip`'s `useMatTooltip()`) that
