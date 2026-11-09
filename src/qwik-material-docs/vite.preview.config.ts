@@ -7,6 +7,9 @@ import {defineConfig} from 'vite';
  * client build (e.g. a 500 for the preloader's `*-bundle-graph.json`).
  */
 export default defineConfig({
+  // `DOCS_BASE` serves the site from a sub-path, e.g. `/components/` for a GitHub Pages project
+  // site (see .github/workflows/qwik-material-docs-pages.yml). Defaults to the domain root.
+  base: process.env['DOCS_BASE'] ?? '/',
   build: {outDir: 'dist'},
   preview: {port: 4195, strictPort: true},
 });

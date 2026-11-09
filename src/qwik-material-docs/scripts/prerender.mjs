@@ -34,6 +34,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const PORT = 48193; // throwaway, loopback-only, not one of this repo's reserved docs ports.
+// Site base path (Vite's `base`, from `DOCS_BASE`): routes are served under it, while files are
+// written relative to `dist/` (a static host serves `dist/` itself at the base path).
+const BASE = (process.env.DOCS_BASE ?? '/').replace(/\/?$/, '/');
 
 // Keep these three lists in sync with `src/data/{components,cdk,guides}.ts` (duplicated here,
 // same pattern as `scripts/generate-api.mjs`'s own entry-point lists, to avoid needing a
@@ -81,7 +84,7 @@ function writeRedirectStubs() {
     ...CDK_IDS.map(id => `/cdk/${id}/`),
   ];
   for (const route of stubs) {
-    const target = `${route}overview/`;
+    const target = `${BASE}${route.slice(1)}overview/`;
     const file = routeToFile(route);
     fs.mkdirSync(path.dirname(file), {recursive: true});
     fs.writeFileSync(
@@ -118,7 +121,7 @@ async function main() {
   const failures = [];
 
   for (const route of routes) {
-    const url = `http://127.0.0.1:${PORT}${route}`;
+    const url = `http://127.0.0.1:${PORT}${BASE}${route.slice(1)}`;
     try {
       const res = await fetch(url);
       const html = await res.text();

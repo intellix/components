@@ -1,4 +1,5 @@
 import type {JSXOutput} from '@qwik.dev/core';
+import {withBase} from '../lib/base-path';
 
 const INLINE_TOKEN = /`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)/g;
 
@@ -25,7 +26,12 @@ export function renderInlineMarkdown(text: string | undefined): JSXOutput {
       const href = match[3];
       const external = /^https?:\/\//.test(href);
       parts.push(
-        <a key={key++} href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener' : undefined}>
+        <a
+          key={key++}
+          href={withBase(href)}
+          target={external ? '_blank' : undefined}
+          rel={external ? 'noopener' : undefined}
+        >
           {match[2]}
         </a>,
       );

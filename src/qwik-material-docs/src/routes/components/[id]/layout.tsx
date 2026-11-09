@@ -3,6 +3,7 @@ import {useLocation, type StaticGenerateHandler} from '@qwik.dev/router';
 import SectionTabs from '../../../components/section-tabs';
 import {COMPONENTS} from '../../../data/components';
 import {renderInlineMarkdown} from '../../../lib/inline-markdown';
+import {withBase} from '../../../lib/base-path';
 
 const TABS = [
   {id: 'overview', label: 'Overview'},
@@ -20,7 +21,8 @@ export default component$(() => {
       <div>
         <h1>Component not found</h1>
         <p>
-          No component named <code>{id}</code>. <a href="/components/">Back to all components</a>
+          No component named <code>{id}</code>.{' '}
+          <a href={withBase('/components/')}>Back to all components</a>
         </p>
       </div>
     );
@@ -31,7 +33,7 @@ export default component$(() => {
       <header class="docs-page-header">
         <h1>{entry.name}</h1>
         <p class="docs-page-summary">{renderInlineMarkdown(entry.summary)}</p>
-        <SectionTabs basePath={`/components/${entry.id}`} tabs={TABS} />
+        <SectionTabs basePath={withBase(`/components/${entry.id}`)} tabs={TABS} />
       </header>
       <div class="docs-shell-main">
         <Slot />

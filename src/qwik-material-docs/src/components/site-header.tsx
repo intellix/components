@@ -3,11 +3,12 @@ import {useLocation} from '@qwik.dev/router';
 import {MatToolbar} from '@angular-community/qwik-material/toolbar';
 import {MatIcon} from '@angular-community/qwik-material/icon';
 import {MatIconButton} from '@angular-community/qwik-material/button';
+import {withBase} from '../lib/base-path';
 
 const NAV_LINKS = [
-  {href: '/components/', label: 'Components'},
-  {href: '/cdk/', label: 'CDK'},
-  {href: '/guide/', label: 'Guides'},
+  {href: withBase('/components/'), label: 'Components'},
+  {href: withBase('/cdk/'), label: 'CDK'},
+  {href: withBase('/guide/'), label: 'Guides'},
 ];
 
 /**
@@ -26,9 +27,14 @@ export default component$(() => {
   return (
     <header class="docs-header">
       <MatToolbar color="primary">
-        <a href="/" class="docs-header-brand" aria-label="qwik-material home">
+        <a href={withBase('/')} class="docs-header-brand" aria-label="qwik-material home">
           <svg class="docs-header-mark" viewBox="0 0 48 48" aria-hidden="true">
-            <path d="M24 4 L42 14 V34 L24 44 L6 34 V14 Z" fill="none" stroke="currentColor" stroke-width="3" />
+            <path
+              d="M24 4 L42 14 V34 L24 44 L6 34 V14 Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+            />
             <circle cx="24" cy="24" r="6" fill="currentColor" />
           </svg>
           qwik-material

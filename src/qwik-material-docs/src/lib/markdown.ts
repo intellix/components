@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import {createHighlighter, type Highlighter} from 'shiki';
+import {withBase} from './base-path';
 
 /**
  * Build-time (SSG) content pipeline: Markdown -> HTML, with Shiki syntax highlighting for fenced
@@ -83,6 +84,15 @@ async function renderMarkdownChunk(markdown: string, usedIds: Set<string>): Prom
   const highlighter = await getHighlighter();
   const md = new MarkdownIt({html: true, linkify: true, typographer: false});
   addHeadingIds(md, usedIds);
+  // Root-relative links in the content (`/components/button/`) get the site's base path.
+  const renderLinkOpen = md.renderer.rules.link_open;
+  md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+    const href = tokens[idx].attrGet('href');
+    if (href) tokens[idx].attrSet('href', withBase(href));
+    return renderLinkOpen
+      ? renderLinkOpen(tokens, idx, options, env, self)
+      : self.renderToken(tokens, idx, options);
+  };
   md.options.highlight = (code: string, lang: string) => {
     const resolved = LANG_ALIASES[lang] ?? lang;
     const loaded = highlighter.getLoadedLanguages();

@@ -3,6 +3,7 @@ import {useLocation, type StaticGenerateHandler} from '@qwik.dev/router';
 import SectionTabs from '../../../components/section-tabs';
 import {CDK_ENTRIES} from '../../../data/cdk';
 import {renderInlineMarkdown} from '../../../lib/inline-markdown';
+import {withBase} from '../../../lib/base-path';
 
 const TABS = [
   {id: 'overview', label: 'Overview'},
@@ -17,7 +18,7 @@ export default component$(() => {
     return (
       <div>
         <h1>Entry point not found</h1>
-        <a href="/cdk/">Back to CDK</a>
+        <a href={withBase('/cdk/')}>Back to CDK</a>
       </div>
     );
   }
@@ -27,7 +28,7 @@ export default component$(() => {
       <header class="docs-page-header">
         <h1>{entry.name}</h1>
         <p class="docs-page-summary">{renderInlineMarkdown(entry.summary)}</p>
-        <SectionTabs basePath={`/cdk/${entry.id}`} tabs={TABS} />
+        <SectionTabs basePath={withBase(`/cdk/${entry.id}`)} tabs={TABS} />
       </header>
       <div class="docs-shell-main">
         <Slot />

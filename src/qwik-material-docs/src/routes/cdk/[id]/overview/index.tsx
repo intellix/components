@@ -2,6 +2,7 @@ import {component$} from '@qwik.dev/core';
 import {useLocation, type StaticGenerateHandler} from '@qwik.dev/router';
 import {CDK_ENTRIES} from '../../../../data/cdk';
 import {renderInlineMarkdown} from '../../../../lib/inline-markdown';
+import {withBase} from '../../../../lib/base-path';
 
 export default component$(() => {
   const loc = useLocation();
@@ -12,8 +13,8 @@ export default component$(() => {
     <div class="docs-prose">
       <p>{renderInlineMarkdown(entry.summary)}</p>
       <p>
-        See the <a href={`/cdk/${entry.id}/api/`}>API reference</a> for every exported hook,
-        function, and type in <code>@angular-community/qwik-cdk/{entry.id}</code>.
+        See the <a href={withBase(`/cdk/${entry.id}/api/`)}>API reference</a> for every exported
+        hook, function, and type in <code>@angular-community/qwik-cdk/{entry.id}</code>.
       </p>
     </div>
   );

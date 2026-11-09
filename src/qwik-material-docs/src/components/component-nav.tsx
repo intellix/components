@@ -2,6 +2,7 @@ import {component$} from '@qwik.dev/core';
 import {useLocation} from '@qwik.dev/router';
 import {MatNavList, MatListItem, MatSubheader} from '@angular-community/qwik-material/list';
 import {COMPONENT_CATEGORIES, componentsByCategory} from '../data/components';
+import {withBase} from '../lib/base-path';
 
 /**
  * The left-hand component index — dogfoods `<MatNavList>`/`<MatListItem as="a">`, grouped into
@@ -23,7 +24,7 @@ export default component$(() => {
               {category.name}
             </MatSubheader>,
             ...items.map(item => {
-              const href = `/components/${item.id}/`;
+              const href = withBase(`/components/${item.id}/`);
               return (
                 <MatListItem
                   key={item.id}

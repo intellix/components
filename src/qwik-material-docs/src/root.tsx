@@ -39,6 +39,7 @@ import '@angular-community/qwik-material/paginator-prebuilt.css';
 import '@angular-community/qwik-material/autocomplete-prebuilt.css';
 import '@angular-community/qwik-material/datepicker-prebuilt.css';
 import './styles/docs-shell.css';
+import {withBase} from './lib/base-path';
 
 /**
  * Root shell for the qwik-material docs site. Follows `src/qwik-cdk-dev-app/src/root.tsx`'s
@@ -71,7 +72,7 @@ export default component$(() => {
           name="description"
           content="Qwik port of Angular Material — browse components, guides, and live examples."
         />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
         <link rel="preconnect" href="https://fonts.gstatic.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"

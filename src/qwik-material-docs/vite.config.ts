@@ -12,6 +12,9 @@ import {qwikRouter} from '@qwik.dev/router/vite';
  * module).
  */
 export default defineConfig({
+  // `DOCS_BASE` serves the site from a sub-path, e.g. `/components/` for a GitHub Pages project
+  // site (see .github/workflows/qwik-material-docs-pages.yml). Defaults to the domain root.
+  base: process.env['DOCS_BASE'] ?? '/',
   plugins: [qwikRouter(), qwikVite()],
   resolve: {
     conditions: ['qwik', ...defaultClientConditions],

@@ -2,6 +2,7 @@ import {component$} from '@qwik.dev/core';
 import {useLocation} from '@qwik.dev/router';
 import {MatNavList, MatListItem, MatSubheader} from '@angular-community/qwik-material/list';
 import {CDK_ENTRIES} from '../data/cdk';
+import {withBase} from '../lib/base-path';
 
 export default component$(() => {
   const loc = useLocation();
@@ -12,7 +13,7 @@ export default component$(() => {
       <MatNavList>
         <MatSubheader as="h3">CDK entry points</MatSubheader>
         {CDK_ENTRIES.map(entry => {
-          const href = `/cdk/${entry.id}/`;
+          const href = withBase(`/cdk/${entry.id}/`);
           return (
             <MatListItem
               key={entry.id}

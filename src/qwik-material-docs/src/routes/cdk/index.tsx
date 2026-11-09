@@ -2,6 +2,7 @@ import {component$} from '@qwik.dev/core';
 import type {DocumentHead} from '@qwik.dev/router';
 import EntryCard from '../../components/entry-card';
 import {CDK_ENTRIES} from '../../data/cdk';
+import {withBase} from '../../lib/base-path';
 
 export default component$(() => (
   <div>
@@ -12,7 +13,7 @@ export default component$(() => (
     </p>
     <div class="docs-card-grid">
       {CDK_ENTRIES.map(c => (
-        <EntryCard key={c.id} href={`/cdk/${c.id}/`} name={c.name} summary={c.summary} />
+        <EntryCard key={c.id} href={withBase(`/cdk/${c.id}/`)} name={c.name} summary={c.summary} />
       ))}
     </div>
   </div>
