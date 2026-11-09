@@ -9,7 +9,7 @@ This page covers the concept map at a glance. For the full, verified migration w
 installing a local build, the `vite.config.ts` requirements, every Angular DI token's Qwik hook
 equivalent, a row-by-row component/CDK mapping table, the pitfalls a migration will actually hit,
 and the complete not-supported list — see
-[`MIGRATING.md`](../../../../../MIGRATING.md) at the repo root. That file is written for an AI
+[`MIGRATING.md`](https://github.com/intellix/components/blob/qwik-port-21.2/MIGRATING.md) at the repo root. That file is written for an AI
 coding agent doing the migration autonomously, and is also useful for a human developer.
 
 ## Concept map

@@ -56,12 +56,12 @@ your app (or anywhere deeper, to scope it to one subtree) — see
 ### Passing props to the opened component
 Use `componentProps` to pass initial props to the component rendered inside the sheet, and
 `setInput` on the returned `MatBottomSheetRef` to update a prop later, reactively — same pattern
-as [the dialog overview](/overview/dialog/#passing-props-to-the-opened-component).
+as [the dialog overview](/components/dialog/overview/#passing-props-to-the-opened-component).
 
 ### Confirming before dismissing
 `onBackdropClick$` fires on every backdrop click, even when `disableClose` is `true`, and
 `disableClose` itself can be reassigned on the ref at any time — same pattern as
-[the dialog overview](/overview/dialog/#confirming-before-closing).
+[the dialog overview](/components/dialog/overview/#confirming-before-closing).
 
 ### Closing on navigation
 By default (`closeOnNavigation: true`), the sheet dismisses when the user navigates back or
@@ -72,7 +72,7 @@ forward in their browser history, or the URL hash changes — not on every link 
 Content rendered inside the sheet automatically sees every configuration context a
 `useMat*Provider()` call made visible where `useMatBottomSheet()` was called, and can opt in
 your own app contexts via `context` — same pattern as
-[the dialog overview](/overview/dialog/#contexts-inside-the-dialog).
+[the dialog overview](/components/dialog/overview/#contexts-inside-the-dialog).
 
 ### Accessibility
 
