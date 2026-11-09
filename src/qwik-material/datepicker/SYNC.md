@@ -817,3 +817,11 @@ Qwik's dev mode verifies that every value a `$()` callback captures is serializa
 builds don't, so this only showed under `vite` / `pnpm dev`. The calendar popup's `onSelect`/`onClose` props are plain functions created per open; the multi-year and year views' local `selectYear`/`selectMonth` helpers were plain functions captured by their key/click handlers. These values only exist in
 the browser, so they're now marked `noSerialize` (or the local helper is inlined into the
 handlers). Found by sweeping every dev-app page under the dev server.
+
+## Toggle stops click propagation (2026-11-09)
+
+Upstream's `MatDatepickerToggle` host click handler calls `event.stopPropagation()` when it opens
+the picker, so the surrounding form field doesn't also focus the input. A lazily loaded `onClick$`
+can't do that in time, so the host declares `stoppropagation:click` while enabled (Qwik's loader
+stops propagation synchronously). Needed once the form field's container click actually focused
+the input (see form-field/SYNC.md, 2026-11-09).

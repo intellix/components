@@ -598,3 +598,9 @@ Qwik's dev mode verifies that every value a `$()` callback captures is serializa
 builds don't, so this only showed under `vite` / `pnpm dev`. The timepicker panel's `onOptionSelect` prop is a plain function created per open, and the panel's inline handlers capture `props`. These values only exist in
 the browser, so they're now marked `noSerialize` (or the local helper is inlined into the
 handlers). Found by sweeping every dev-app page under the dev server.
+
+## Toggle stops click propagation (2026-11-09)
+
+Same as `MatDatepickerToggle` (datepicker/SYNC.md, 2026-11-09): the host declares
+`stoppropagation:click` while enabled, mirroring upstream's `event.stopPropagation()`, so clicking
+the toggle doesn't also make the form field focus the input.

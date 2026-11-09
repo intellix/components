@@ -592,3 +592,12 @@ scenarios exercising it (`input-error-state-matcher`, `error-state-matcher.spec.
 `error-state-matcher-modes.spec.ts`). `touched`/`dirty`/`invalid` themselves are unaffected —
 still read exactly as deviation 9's own "why `touched`/`dirty`/`invalid` are BOTH a `control`-prop
 field AND a top-level `MatFormField` prop" section describes.
+
+## Fixed: clicking a field outside its input didn't focus it (2026-11-09)
+
+The text-field wrapper's click handler (upstream `_control.onContainerClick`) read
+`event.currentTarget`, which is already `null` when a lazily loaded QRL handler runs, so clicking a
+field's padding/label area focused nothing — for an autocomplete, its panel never opened. The
+handler now uses the element Qwik passes as its second argument, and (like upstream
+`MatInput.onContainerClick`) doesn't re-focus an input that already has focus. Guarded by
+`specs/material-form-field/container-click.spec.ts`.

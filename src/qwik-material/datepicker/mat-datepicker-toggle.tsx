@@ -120,6 +120,10 @@ export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props =>
       }
       {...{'data-mat-calendar': picker.id}}
       onClick$={onClick$}
+      // Upstream's host click handler calls `event.stopPropagation()` when it opens the picker
+      // (so the surrounding form field doesn't also focus the input). A lazily loaded `onClick$`
+      // runs too late to do that, so declare it: Qwik's loader stops propagation synchronously.
+      stoppropagation:click={!disabled}
     >
       <button
         type="button"

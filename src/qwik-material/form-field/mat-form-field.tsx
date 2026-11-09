@@ -732,13 +732,19 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   // Excluding chip-originated clicks here, matching upstream exactly,
   // removes the race outright rather than trying to out-schedule it: this
   // handler now never competes for focus on a chip click at all.
-  const onWrapperClick$: QRL<(event: Event) => void> = $(event => {
+  //
+  // The wrapper comes from the handler's second argument, NOT `event.currentTarget`: a lazily
+  // loaded QRL handler runs after the browser has finished dispatching the event, by which time
+  // `currentTarget` is `null` — so the first click on a freshly loaded page never focused anything
+  // (same pitfall `MatTooltip`/`MatPaginator` document).
+  const onWrapperClick$: QRL<(event: Event, wrapper: Element) => void> = $((event, wrapper) => {
     const target = event.target as Element | null;
     if (target?.closest('input, textarea')) return;
     if (target?.closest('.mat-mdc-chip')) return;
-    const wrapper = (event.currentTarget as Element) ?? null;
-    const control = wrapper?.querySelector<HTMLElement>('input, textarea');
-    control?.focus();
+    const control = wrapper.querySelector<HTMLElement>('input, textarea');
+    // Upstream `MatInput.onContainerClick`: don't re-focus an already focused input (that would
+    // reset the caret, e.g. jump a time input back to its first segment).
+    if (control && control !== control.ownerDocument.activeElement) control.focus();
   });
 
   const labelContent = hasFloatingLabel && (
