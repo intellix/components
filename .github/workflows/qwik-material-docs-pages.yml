@@ -1,0 +1,80 @@
+# Builds the qwik-material docs site (src/qwik-material-docs) and deploys it to GitHub Pages.
+#
+# One-time setup in the repository settings:
+#   - Settings → Pages → Build and deployment → Source: "GitHub Actions".
+#   - The `github-pages` environment only accepts deployments from the default branch unless its
+#     deployment-branch rules allow this one (Settings → Environments → github-pages).
+#
+# The site is served from https://<owner>.github.io/<repo>/, so it's built with that sub-path as its
+# base. With a custom domain (served from the root), set the repository variable DOCS_BASE to `/`.
+name: qwik-material docs (GitHub Pages)
+
+on:
+  push:
+    branches: [qwik-port-21.2]
+    paths:
+      - 'src/qwik-cdk/**'
+      - 'src/qwik-material/**'
+      - 'src/qwik-material-examples/**'
+      - 'src/qwik-material-docs/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/qwik-material-docs-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; let an in-progress one finish rather than cancelling it.
+concurrency:
+  group: qwik-material-docs-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from package.json's `packageManager` field.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # Only the docs site and its workspace dependencies (qwik-cdk, qwik-material,
+      # qwik-material-examples) — not the rest of the monorepo.
+      - name: Install
+        run: pnpm install --frozen-lockfile --filter "qwik-material-docs..."
+        env:
+          HUSKY: '0'
+
+      - name: Build qwik-cdk and qwik-material
+        run: |
+          pnpm -C src/qwik-cdk build
+          pnpm -C src/qwik-material build
+
+      - name: Build the docs site
+        run: pnpm -C src/qwik-material-docs build
+        env:
+          DOCS_BASE: ${{ vars.DOCS_BASE || format('/{0}/', github.event.repository.name) }}
+
+      # The output is plain static files; skip GitHub Pages' Jekyll processing.
+      - run: touch src/qwik-material-docs/dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: src/qwik-material-docs/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
