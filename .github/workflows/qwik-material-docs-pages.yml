@@ -1,12 +1,20 @@
-# Builds the qwik-material docs site (src/qwik-material-docs) and deploys it to GitHub Pages.
+# Builds the qwik-material docs site (src/qwik-material-docs) and publishes it to GitHub Pages.
 #
-# One-time setup in the repository settings:
-#   - Settings → Pages → Build and deployment → Source: "GitHub Actions".
-#   - The `github-pages` environment only accepts deployments from the default branch unless its
-#     deployment-branch rules allow this one (Settings → Environments → github-pages).
+# GitHub Pages can't be enabled on this repository (a fork whose parent disables Pages for its
+# forks), so the built site is pushed to the `gh-pages` branch of a separate, non-fork repository
+# that serves it — by default `<owner>/qwik-material-docs`, at
+# https://<owner>.github.io/qwik-material-docs/.
 #
-# The site is served from https://<owner>.github.io/<repo>/, so it's built with that sub-path as its
-# base. With a custom domain (served from the root), set the repository variable DOCS_BASE to `/`.
+# One-time setup:
+#   1. Create the public repository `<owner>/qwik-material-docs` (empty is fine).
+#   2. Create a fine-grained personal access token with access to only that repository and
+#      "Contents: Read and write", and save it in THIS repository as the Actions secret
+#      DOCS_DEPLOY_TOKEN. Until it exists, the publish step is skipped.
+#   3. After the first successful run, in the docs repository: Settings → Pages → Build and
+#      deployment → Source "Deploy from a branch", branch `gh-pages`, folder `/ (root)`.
+#
+# Optional repository variables: DOCS_PAGES_REPO (`owner/name` of the publishing repository) and
+# DOCS_BASE (the site's base path — `/` for a custom domain served from the root).
 name: qwik-material docs (GitHub Pages)
 
 on:
@@ -23,17 +31,20 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# One deployment at a time; let an in-progress one finish rather than cancelling it.
+# One publish at a time; let an in-progress one finish rather than cancelling it.
 concurrency:
   group: qwik-material-docs-pages
   cancel-in-progress: false
 
+env:
+  PAGES_REPO: ${{ vars.DOCS_PAGES_REPO || format('{0}/qwik-material-docs', github.repository_owner) }}
+
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
+    env:
+      DOCS_DEPLOY_TOKEN: ${{ secrets.DOCS_DEPLOY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,24 +68,29 @@ jobs:
           pnpm -C src/qwik-cdk build
           pnpm -C src/qwik-material build
 
+      # Served from https://<owner>.github.io/<publishing repo name>/ unless DOCS_BASE says otherwise.
       - name: Build the docs site
-        run: pnpm -C src/qwik-material-docs build
+        run: |
+          base="${DOCS_BASE_VAR:-/${PAGES_REPO#*/}/}"
+          echo "Building with base path $base"
+          DOCS_BASE="$base" pnpm -C src/qwik-material-docs build
         env:
-          DOCS_BASE: ${{ vars.DOCS_BASE || format('/{0}/', github.event.repository.name) }}
+          DOCS_BASE_VAR: ${{ vars.DOCS_BASE }}
 
-      # The output is plain static files; skip GitHub Pages' Jekyll processing.
-      - run: touch src/qwik-material-docs/dist/.nojekyll
-
-      - uses: actions/upload-pages-artifact@v3
+      - name: Publish to ${{ env.PAGES_REPO }} (gh-pages)
+        if: env.DOCS_DEPLOY_TOKEN != ''
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: src/qwik-material-docs/dist
+          personal_token: ${{ secrets.DOCS_DEPLOY_TOKEN }}
+          external_repository: ${{ env.PAGES_REPO }}
+          publish_branch: gh-pages
+          publish_dir: src/qwik-material-docs/dist
+          # Keep the publishing branch to a single commit; history lives in this repository.
+          force_orphan: true
+          # Plain static files: write .nojekyll so GitHub Pages serves them as-is.
+          enable_jekyll: false
+          full_commit_message: 'Deploy docs from ${{ github.repository }}@${{ github.sha }}'
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publishing skipped
+        if: env.DOCS_DEPLOY_TOKEN == ''
+        run: echo "::notice::Built the docs site but did not publish it — add the DOCS_DEPLOY_TOKEN secret (see this workflow's header)."
