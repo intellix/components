@@ -12,18 +12,66 @@ import {test, expect, type Page} from '@playwright/test';
 const BASE_URL = process.env['DOCS_URL'] ?? 'http://localhost:4195';
 
 const COMPONENT_IDS = [
-  'autocomplete', 'badge', 'bottom-sheet', 'button', 'button-toggle', 'card', 'checkbox', 'chips',
-  'datepicker', 'dialog', 'divider', 'expansion', 'form-field', 'grid-list', 'icon', 'input',
-  'list', 'menu', 'paginator', 'progress-bar', 'progress-spinner', 'radio', 'select', 'sidenav',
-  'slide-toggle', 'slider', 'snack-bar', 'sort', 'stepper', 'table', 'tabs', 'timepicker',
-  'toolbar', 'tooltip', 'tree',
+  'autocomplete',
+  'badge',
+  'bottom-sheet',
+  'button',
+  'button-toggle',
+  'card',
+  'checkbox',
+  'chips',
+  'datepicker',
+  'dialog',
+  'divider',
+  'expansion',
+  'form-field',
+  'grid-list',
+  'icon',
+  'input',
+  'list',
+  'menu',
+  'paginator',
+  'progress-bar',
+  'progress-spinner',
+  'radio',
+  'select',
+  'sidenav',
+  'slide-toggle',
+  'slider',
+  'snack-bar',
+  'sort',
+  'stepper',
+  'table',
+  'tabs',
+  'timepicker',
+  'toolbar',
+  'tooltip',
+  'tree',
 ];
 const CDK_IDS = [
-  'a11y', 'accordion', 'bidi', 'clipboard', 'coercion', 'collections', 'dialog', 'keycodes',
-  'layout', 'overlay', 'platform', 'portal', 'scrolling', 'stepper', 'table', 'text-field', 'tree',
+  'a11y',
+  'accordion',
+  'bidi',
+  'clipboard',
+  'coercion',
+  'collections',
+  'dialog',
+  'keycodes',
+  'layout',
+  'overlay',
+  'platform',
+  'portal',
+  'scrolling',
+  'stepper',
+  'table',
+  'text-field',
+  'tree',
 ];
 const GUIDE_IDS = [
-  'getting-started', 'theming', 'composing-directives', 'using-with-formisch',
+  'getting-started',
+  'theming',
+  'composing-directives',
+  'using-with-formisch',
   'migrating-from-angular-material',
 ];
 /** Every component's Examples tab (and the three reference components' Overview tab) embeds a
@@ -34,14 +82,11 @@ async function expectNoConsoleErrors(page: Page, url: string) {
   const errors: string[] = [];
   page.on('console', msg => {
     if (msg.type() !== 'error') return;
-    // Third-party subresources aren't the site's errors: tab-group-preserve-content's YouTube
-    // embed loads doubleclick ad scripts, which ad-filtering networks fail with a cert error.
+    // Errors raised by third-party content aren't the site's errors: tab-group-preserve-content's
+    // YouTube embed loads doubleclick ad scripts (which ad-filtering networks fail with a cert
+    // error) and its player intermittently logs permissions-policy violations.
     const source = msg.location().url;
-    if (
-      msg.text().startsWith('Failed to load resource') &&
-      source &&
-      new URL(source).origin !== new URL(BASE_URL).origin
-    ) {
+    if (source && new URL(source).origin !== new URL(BASE_URL).origin) {
       return;
     }
     errors.push(msg.text());
@@ -111,7 +156,11 @@ test.describe('docs site smoke', () => {
   }
 
   // The bare component/CDK URLs must land on the Overview tab, not the homepage fallback.
-  for (const [section, id] of [['components', 'button'], ['components', 'tree'], ['cdk', 'overlay']]) {
+  for (const [section, id] of [
+    ['components', 'button'],
+    ['components', 'tree'],
+    ['cdk', 'overlay'],
+  ]) {
     test(`${section}: ${id} / index redirects to overview`, async ({page}) => {
       await page.goto(`${BASE_URL}/${section}/${id}/`);
       await expect(page).toHaveURL(`${BASE_URL}/${section}/${id}/overview/`);
