@@ -27,3 +27,15 @@
 // it's *declared*, not where it's read.
 
 @use './progress-spinner';
+
+// The spinner's internal containers are `<span>`s in this port, not upstream's `<div>`s (a spinner
+// is often a `<button>`'s content, which HTML restricts to phrasing — progress-spinner/SYNC.md
+// deviation #15). These three are absolutely positioned without offsets, so they sit at their
+// static position, which follows their own `display`: as inline boxes they'd move with an
+// inherited `text-align` (a button's `center`). `display: block` keeps them where the `<div>`s
+// were. (The clippers set `display: inline-flex`; the gap patch has offsets.)
+.mdc-circular-progress__determinate-container,
+.mdc-circular-progress__indeterminate-container,
+.mdc-circular-progress__spinner-layer {
+  display: block;
+}

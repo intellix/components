@@ -171,7 +171,8 @@ function createSpinner(
       >
         {/* <span>s, not upstream's <div>s: a spinner is often a <button>'s content (a loading
             state), which HTML restricts to phrasing content. Each is absolutely positioned or
-            `display: inline-flex` (progress-spinner.scss), so they lay out the same. */}
+            `display: inline-flex` (progress-spinner.scss), and the ones without offsets are
+            `display: block` (progress-spinner-prebuilt.scss), so they lay out the same. */}
         <span class="mdc-circular-progress__determinate-container" aria-hidden="true">
           <SpinnerCircle
             variant="determinate"
