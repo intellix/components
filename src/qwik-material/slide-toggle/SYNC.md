@@ -73,6 +73,8 @@ already established by button-toggle.
 
 8. **Ripple animation ported (2026-10-30, `core/ripple/` remediation).** The static `<span mat-ripple class="mat-ripple mat-mdc-slide-toggle-ripple mat-focus-indicator">` inside `.mdc-switch__ripple` now receives real `.mat-ripple-element` spans on pointer events — `core/ripple/ripple-dom.ts`'s `handleRippleEvent()` wired to `onMouseDown$`/`onMouseUp$`/`onMouseLeave$`/`onTouchStart$`/`onTouchEnd$`/`onTouchCancel$` on the `<button class="mdc-switch">` (upstream's `[matRippleTrigger]="switch"`, a template reference on this same button). `centered: true` matches `[matRippleCentered]="true"`; `disableRipple || disabled` matches `[matRippleDisabled]="disableRipple || disabled"`.
 
+9. **The touch target is a `<span class="mat-mdc-slide-toggle-touch-target">`, not upstream's `<div>` (2026-11-16).** HTML allows only phrasing content in a `<button>`, and Qwik's SSR tag-nesting check rejects a `<div>` there (a consuming app had to patch Qwik to accept it). It sits inside `<button class="mdc-switch">`. It lays out exactly as the `<div>` did: `slide-toggle.scss` positions it absolutely and sets its `display` (the `slide-toggle-touch-target-display` token). The parity specs' snapshot (`qwik-cdk-parity-tests/lib/material-parity.ts`, `PHRASING_SPANS`) reports it as the `<div>` Angular renders; its computed styles are still compared.
+
 ## A real bug found and fixed during this port (stale QRL capture)
 
 The click handler's FIRST implementation captured `checked`/`disabled` as

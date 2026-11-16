@@ -227,10 +227,19 @@ of them set a defined value — see `host-props.ts`'s `mergeHostProps` doc comme
   `qwik-material/button-toggle` established) — functionally equivalent for this port's purposes,
   zero eager JS per item.
 
+## The ripple container is a `<span>`, not upstream's `<div>` (2026-11-16)
+
+`MatMenuItem` renders `<span matripple class="mat-ripple mat-mdc-menu-ripple">` where upstream's
+`menu-item.html` has a `<div>`. HTML allows only phrasing content in a `<button>`, and Qwik's SSR tag-nesting check rejects a `<div>` there (a consuming app had to patch Qwik to accept it). It lays out exactly as the `<div>` did:
+`.mat-mdc-menu-item .mat-mdc-menu-ripple` (`menu-common.item-ripple`) positions it absolutely, so
+its used `display` is `block` either way. The parity specs' snapshot
+(`qwik-cdk-parity-tests/lib/material-parity.ts`, `PHRASING_SPANS`) reports it as the `<div>`
+Angular renders; its computed styles are still compared.
+
 ## Ripple animation (2026-10-30, `core/ripple/` remediation)
 
-`MatMenuItem`'s static `<div matripple class="mat-ripple mat-mdc-menu-ripple">` container (always
-rendered) now also receives real `.mat-ripple-element` spans: `core/ripple/ripple-dom.ts`'s
+`MatMenuItem`'s static `<span matripple class="mat-ripple mat-mdc-menu-ripple">` container (always
+rendered; a `<span>`, not upstream's `<div>` — see below) now also receives real `.mat-ripple-element` spans: `core/ripple/ripple-dom.ts`'s
 `handleRippleEvent()` is wired to `onMouseDown$`/`onMouseUp$`/`onMouseLeave$`/`onTouchStart$`/
 `onTouchEnd$`/`onTouchCancel$` on the item's own host `<button>` (upstream's
 `[matRippleTrigger]="_getHostElement()"`); `onMouseDown$` carries the existing submenu

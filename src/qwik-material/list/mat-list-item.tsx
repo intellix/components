@@ -256,7 +256,9 @@ export const MatListItem = component$<MatListItemProps>(props => {
       </span>
       {props.meta}
       {props.divider}
-      <div class="mat-focus-indicator" />
+      {/* A <span>, not upstream's <div>: this body is also a <button>'s content, which HTML
+          restricts to phrasing content. Absolutely positioned (list.scss), so it lays out the same. */}
+      <span class="mat-focus-indicator" />
     </>
   );
 

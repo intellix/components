@@ -46,6 +46,8 @@ upstream. Every deviation from a verbatim copy is recorded here. Companion to
 13. **`intrinsic-elements.d.ts` widens BOTH `<mat-progress-spinner>` AND `<mat-spinner>` to `QwikIntrinsicElements['div'] & {mode?: string}`.** Both tag types need the widening because both components emit the `mode` custom attribute.
 14. **`color` prop widened to `OpenString<MatProgressSpinnerColor>` (2026-11-03, open-ended-color task).** Upstream's real `color` setter (`src/material/progress-spinner/progress-spinner.ts:109`) is typed `string | null | undefined`, not `ThemePalette` (deviation #11 above narrowed it incorrectly). Fixed by widening just the prop (not `MatProgressSpinnerConfig.color`) to `OpenString<MatProgressSpinnerColor>` (`core/open-string.ts`); `MatSpinnerProps` inherits the fix.
 
+15. **The six internal containers are `<span>`s, not upstream's `<div>`s (2026-11-16)** (`__determinate-container`, `__indeterminate-container`, `__spinner-layer`, both `__circle-clipper`s, `__gap-patch`). A spinner is often a `<button>`'s content (a loading state); hTML allows only phrasing content in a `<button>`, and Qwik's SSR tag-nesting check rejects a `<div>` there (a consuming app had to patch Qwik to accept it). They lay out exactly as the `<div>`s did: `progress-spinner.scss` positions each absolutely, except the clippers, which are `display: inline-flex`. The parity specs' snapshot (`qwik-cdk-parity-tests/lib/material-parity.ts`, `PHRASING_SPANS`) reports them as the `<div>`s Angular renders; their computed styles are still compared.
+
 ## Stub inventory delta
 
 No new stubs — the progress-spinner SCSS chain calls only `cdk.high-contrast` (2 sites), already provided by `_cdk-stub.scss` from prior ports. No additions to any existing stub file.

@@ -222,13 +222,15 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
         {/* Mirrors `button-toggle.html`'s own `@if`: `buttonToggleGroup && (
             (!multiple && !hideSingleSelectionIndicator) || (multiple && !hideMultipleSelectionIndicator))`.
             A standalone toggle (`!buttonToggleGroup`) never renders this, regardless of either
-            flag — matches upstream exactly (the condition's outer `buttonToggleGroup &&` guard). */}
+            flag — matches upstream exactly (the condition's outer `buttonToggleGroup &&` guard).
+            A <span>, not upstream's <div>: a <button> holds phrasing content only. Its
+            `display: inline-block; position: absolute` (button-toggle.scss) lay it out the same. */}
         {!isStandalone &&
           (state.mode === 'single'
             ? !state.hideSingleSelectionIndicator
             : !state.hideMultipleSelectionIndicator) && (
-          <div class="mat-button-toggle-checkbox-wrapper">
-            {/* state is ALWAYS "checked" here, even when this toggle isn't
+            <span class="mat-button-toggle-checkbox-wrapper">
+              {/* state is ALWAYS "checked" here, even when this toggle isn't
                 — matches upstream's literal `state="checked"` (not a
                 binding) in button-toggle.html. The checkmark is only ever
                 visually revealed via button-toggle.scss's `width: 0;
@@ -236,15 +238,15 @@ export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
                 expanded by the ancestor `.mat-button-toggle-checked`
                 selector — not by this component's own checked/unchecked
                 state. */}
-            <MatPseudoCheckbox
-              disabled={effectiveDisabled}
-              state="checked"
-              aria-hidden="true"
-              appearance="minimal"
-              echoAttributes
-            />
-          </div>
-        )}
+              <MatPseudoCheckbox
+                disabled={effectiveDisabled}
+                state="checked"
+                aria-hidden="true"
+                appearance="minimal"
+                echoAttributes
+              />
+            </span>
+          )}
         <span class="mat-button-toggle-label-content">
           <Slot />
         </span>

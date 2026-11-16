@@ -154,6 +154,8 @@ exactly where upstream renders it).
     - Host bindings → plain JSX attribute passthrough.
     - The outer host's `(focus)` listener (delegates `.focus()` calls made directly on `<mat-button-toggle>` to the inner `<button>`) is not ported — the outer host has no `tabindex` of its own either upstream or in this port, so this only matters for a consumer calling `.focus()` imperatively on the custom element, which no parity scenario does.
 
+11. **The selection-indicator wrapper is a `<span class="mat-button-toggle-checkbox-wrapper">`, not upstream's `<div>` (2026-11-16).** HTML allows only phrasing content in a `<button>`, and Qwik's SSR tag-nesting check rejects a `<div>` there (a consuming app had to patch Qwik to accept it). It sits inside the toggle's `<button class="mat-button-toggle-button">`. It lays out exactly as the `<div>` did: `button-toggle.scss` gives it `display: inline-block` and `position: absolute`. The parity specs' snapshot (`qwik-cdk-parity-tests/lib/material-parity.ts`, `PHRASING_SPANS`) reports it as the `<div>` Angular renders; its computed styles are still compared.
+
 ## Stub inventory delta
 
 Now-synced `button-toggle.scss` (see Upstream sync state above) DOES

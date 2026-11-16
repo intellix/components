@@ -309,7 +309,9 @@ export const MatMenuItem = component$<MatMenuItemProps>(props => {
           angular-parity.spec.ts's header note). Real `.mat-ripple-element`
           spans launch here on `mousedown`/`touchstart` of the host `<button>`
           above (`core/ripple/ripple-dom.ts`) — see menu/SYNC.md. */}
-      <div
+      {/* A <span>, not upstream's <div>: a <button> holds phrasing content only. Absolutely
+          positioned (`menu-common.item-ripple`), so it lays out the same. */}
+      <span
         ref={rippleContainerRef}
         {...({matripple: ''} as Record<string, string>)}
         class="mat-ripple mat-mdc-menu-ripple"

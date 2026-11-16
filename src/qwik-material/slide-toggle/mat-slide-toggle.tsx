@@ -290,7 +290,9 @@ export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
           onTouchEnd$={rippleEvent$}
           onTouchCancel$={rippleEvent$}
         >
-          <div class="mat-mdc-slide-toggle-touch-target" />
+          {/* A <span>, not upstream's <div>: a <button> holds phrasing content only. Absolutely
+              positioned, with its own `display` (slide-toggle.scss), so it lays out the same. */}
+          <span class="mat-mdc-slide-toggle-touch-target" />
           <span class="mdc-switch__track" />
           <span class="mdc-switch__handle-track">
             <span class="mdc-switch__handle">

@@ -169,7 +169,10 @@ function createSpinner(
           '--mat-progress-spinner-active-indicator-width': `${diameter}px`,
         }}
       >
-        <div class="mdc-circular-progress__determinate-container" aria-hidden="true">
+        {/* <span>s, not upstream's <div>s: a spinner is often a <button>'s content (a loading
+            state), which HTML restricts to phrasing content. Each is absolutely positioned or
+            `display: inline-flex` (progress-spinner.scss), so they lay out the same. */}
+        <span class="mdc-circular-progress__determinate-container" aria-hidden="true">
           <SpinnerCircle
             variant="determinate"
             viewBox={viewBox}
@@ -178,10 +181,10 @@ function createSpinner(
             dashOffset={determinateDashOffset}
             strokeWidthPct={strokeWidthPct}
           />
-        </div>
-        <div class="mdc-circular-progress__indeterminate-container" aria-hidden="true">
-          <div class="mdc-circular-progress__spinner-layer">
-            <div class="mdc-circular-progress__circle-clipper mdc-circular-progress__circle-left">
+        </span>
+        <span class="mdc-circular-progress__indeterminate-container" aria-hidden="true">
+          <span class="mdc-circular-progress__spinner-layer">
+            <span class="mdc-circular-progress__circle-clipper mdc-circular-progress__circle-left">
               <SpinnerCircle
                 variant="indeterminate"
                 viewBox={viewBox}
@@ -190,8 +193,8 @@ function createSpinner(
                 dashOffset={indeterminateDashOffset}
                 strokeWidthPct={strokeWidthPct}
               />
-            </div>
-            <div class="mdc-circular-progress__gap-patch">
+            </span>
+            <span class="mdc-circular-progress__gap-patch">
               <SpinnerCircle
                 variant="indeterminate"
                 viewBox={viewBox}
@@ -200,8 +203,8 @@ function createSpinner(
                 dashOffset={indeterminateDashOffset}
                 strokeWidthPct={strokeWidthPct}
               />
-            </div>
-            <div class="mdc-circular-progress__circle-clipper mdc-circular-progress__circle-right">
+            </span>
+            <span class="mdc-circular-progress__circle-clipper mdc-circular-progress__circle-right">
               <SpinnerCircle
                 variant="indeterminate"
                 viewBox={viewBox}
@@ -210,9 +213,9 @@ function createSpinner(
                 dashOffset={indeterminateDashOffset}
                 strokeWidthPct={strokeWidthPct}
               />
-            </div>
-          </div>
-        </div>
+            </span>
+          </span>
+        </span>
       </HostTag>
     );
   });

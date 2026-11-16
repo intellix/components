@@ -88,6 +88,24 @@ const IGNORE_ATTR_PREFIXES = [
 // only if the enter animation hasn't ended by then — a render-speed race even
 // within Angular itself, so it can't be part of a deterministic DOM contract.
 const IGNORE_CLASSES = ['ng-star-inserted', 'mat-snack-bar-fallback-visible'];
+
+/**
+ * Elements qwik-material renders as a `<span>` where Angular has a `<div>`, because they sit in a
+ * `<button>`, whose content HTML restricts to phrasing (each component's SYNC.md says why it lays
+ * out the same). Snapshotted as `div` on both pages (a `span` matching one of these selectors), so
+ * the tag isn't a difference; their computed styles (`display` included) are still compared.
+ */
+const PHRASING_SPANS = [
+  '.mat-mdc-list-item > .mat-focus-indicator',
+  '.mat-mdc-menu-ripple',
+  '.mat-button-toggle-checkbox-wrapper',
+  '.mat-mdc-slide-toggle-touch-target',
+  '.mdc-circular-progress__determinate-container',
+  '.mdc-circular-progress__indeterminate-container',
+  '.mdc-circular-progress__spinner-layer',
+  '.mdc-circular-progress__circle-clipper',
+  '.mdc-circular-progress__gap-patch',
+];
 /**
  * Directive selector attributes the *consumer* writes in an Angular template
  * (`<button matFab>`, `<img mat-card-avatar>`). Which spelling appears depends
@@ -528,8 +546,12 @@ export async function snapshotParityRoot(
                   : [c],
               )
             : rawElementChildren;
+        const tag = el.tagName.toLowerCase();
         const node: Node = {
-          tag: el.tagName.toLowerCase(),
+          tag:
+            tag === 'span' && opts.phrasingSpans.some(selector => el.matches(selector))
+              ? 'div'
+              : tag,
           classes,
           attrs,
           styles: opts.compareStyles ? computedStyles(el) : {},
@@ -557,6 +579,7 @@ export async function snapshotParityRoot(
       ignoreAttrs: [...IGNORE_ATTRS, ...CONSUMER_SELECTOR_ATTRS, ...extraIgnoreAttrs],
       ignoreAttrPrefixes: IGNORE_ATTR_PREFIXES,
       ignoreClasses: IGNORE_CLASSES,
+      phrasingSpans: PHRASING_SPANS,
       idAttrs: ID_ATTRS,
       styleProps: COMPUTED_STYLE_PROPS,
       compareStyles: COMPARE_STYLES,
