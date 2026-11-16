@@ -70,6 +70,20 @@ export const MenuPanel = component$<MenuPanelProps>(props => {
   const isAnimating = useSignal(true);
   const exitTimer = useSignal<ReturnType<typeof setTimeout>>();
 
+  // Declared before the task below that calls it: a `$` closure's captures are read where the
+  // closure is created (the optimizer emits `qrl(…).w([captures])` at the `useTask$` call), so a
+  // capture declared later is read in its temporal dead zone ("Cannot access … before
+  // initialization" in an app's build), or, with an older optimizer, silently dropped
+  // ("finishExit is not defined" when the menu closes).
+  const finishExit = $(() => {
+    if (exitTimer.value != null) {
+      clearTimeout(exitTimer.value);
+      exitTimer.value = undefined;
+    }
+    isAnimating.value = false;
+    props.onExitDone$();
+  });
+
   // Drives the exit transition: once `isOpen` flips to `false`, the panel
   // re-renders with `mat-menu-panel-exit-animation` (CSS plays the exit
   // keyframe) and `mat-menu-panel-animating` (re-armed for the exit leg).
@@ -89,15 +103,6 @@ export const MenuPanel = component$<MenuPanelProps>(props => {
     const id = setTimeout(() => finishExit(), EXIT_FALLBACK_MS);
     exitTimer.value = id;
     cleanup(() => clearTimeout(id));
-  });
-
-  const finishExit = $(() => {
-    if (exitTimer.value != null) {
-      clearTimeout(exitTimer.value);
-      exitTimer.value = undefined;
-    }
-    isAnimating.value = false;
-    props.onExitDone$();
   });
 
   const handleAnimationStart$ = $((event: AnimationEvent) => {
