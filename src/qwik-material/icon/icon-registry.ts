@@ -26,9 +26,9 @@
  *     method on it: `addSvgIcon(registry, 'home', trustIconResourceUrl(url))`,
  *     not `registry.addSvgIcon(...)`. Matches `icon-fetch.ts`/
  *     `icon-set-extract.ts`'s same plain-function shape.
- *   - **The fetch cache** (live `Promise` objects — not serializable, and
- *     deliberately NOT request-scoped — see `icon-fetch.ts`'s own doc
- *     comment) and **icon resolvers** (plain functions — also not
+ *   - **The fetch cache** (fetched text, plus the browser's in-flight
+ *     `Promise` objects — not serializable, and deliberately NOT
+ *     request-scoped — see `icon-fetch.ts`'s own doc comment) and **icon resolvers** (plain functions — also not
  *     serializable; see this file's `addSvgIconResolver` doc comment) are
  *     the two pieces of upstream's registry state that live at plain MODULE
  *     scope instead, same rationale as `icon-fetch.ts`.
