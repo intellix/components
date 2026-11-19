@@ -80,6 +80,59 @@ test.describe('qwik-material component styles', () => {
     expect(pointerEvents).toBe('none');
   });
 
+  // datepicker.css overrides the button CSS at equal specificity (`.mat-calendar-period-button {
+  // min-width: 0 }` over `.mdc-button`'s 64px); inside the one `qwik-material` layer only document
+  // order settles it, so the button `<style>` must come first however the calendar arrives.
+  const openCalendar = async (page: Page, route: string, serverButtonCss: boolean) => {
+    await page.goto(`${QWIK_URL}/mat-datepicker/${route}/`);
+    await page.waitForSelector('[data-scenario-ready]');
+    const before = await componentStyles(page);
+    expect(before.filter(s => s.css.includes('.mat-mdc-button{'))).toHaveLength(
+      serverButtonCss ? 1 : 0,
+    );
+    expect(before.filter(s => s.css.includes('.mat-calendar-period-button{'))).toHaveLength(0);
+    await page.locator('button.open-calendar').click();
+    const period = page.locator('.mat-calendar-period-button');
+    await expect(period).toBeVisible();
+    return period;
+  };
+
+  test('a calendar first rendered in a dialog overrides the server-rendered button CSS', async ({
+    page,
+  }) => {
+    const period = await openCalendar(page, 'calendar-in-dialog', true);
+    await expect(period).toHaveCSS('min-width', '0px');
+  });
+
+  test('a calendar first rendered in a dialog brings the button CSS before its own', async ({
+    page,
+  }) => {
+    const period = await openCalendar(page, 'calendar-in-dialog-plain', false);
+    const css = (await componentStyles(page)).map(s => s.css);
+    expect(css.findIndex(c => c.includes('.mat-mdc-button{'))).toBeLessThan(
+      css.findIndex(c => c.includes('.mat-calendar-period-button{')),
+    );
+    await expect(period).toHaveCSS('min-width', '0px');
+  });
+
+  // Known limitation (README "Component styles"): a SECOND copy of the button CSS — registered
+  // from a non-first hook position, which the README says not to do — lands after the datepicker
+  // CSS and wins the tie. Upstream has the same order dependency (styles attach in creation
+  // order). Per-entry sub-layers would make it order-independent but break the specificity-based
+  // overlaps between entry points (`.mat-mdc-icon-button svg` over `.mat-mdc-paginator-icon`,
+  // `.mat-badge.mat-badge` over `.mat-icon`, …), so this stays an expected failure.
+  test('known limitation: a second copy of the button CSS registered later wins the tie', async ({
+    page,
+  }) => {
+    test.fail();
+    const period = await openCalendar(page, 'calendar-in-dialog', true);
+    await page.locator('button.show-hand-written').click();
+    await expect(page.locator('button.hand-written')).toBeVisible();
+    const css = (await componentStyles(page)).map(s => s.css);
+    expect(css.filter(c => c.includes('.mat-mdc-button{'))).toHaveLength(2);
+    await expect(period).toHaveCSS('min-width', '0px', {timeout: 2000});
+  });
+
   test("an app's unlayered rule beats qwik-material's, whatever the specificity", async ({
     page,
   }) => {
