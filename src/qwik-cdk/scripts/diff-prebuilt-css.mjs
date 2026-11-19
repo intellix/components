@@ -13,6 +13,7 @@ import {readFile} from 'node:fs/promises';
 import {resolve, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
+import {LAYER_ORDER} from './css-layer.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '../../..');
@@ -30,6 +31,19 @@ const pairs = [
   ['src/cdk/a11y/a11y-prebuilt.scss', 'src/qwik-cdk/dist/a11y-prebuilt.css'],
   ['src/cdk/text-field/text-field-prebuilt.scss', 'src/qwik-cdk/dist/text-field-prebuilt.css'],
 ];
+
+/**
+ * The prebuilts ship inside `@layer qwik-cdk` after the layer order statement
+ * (scripts/css-layer.mjs) — the one deliberate difference from upstream's output. Unwrap it so the
+ * rules themselves are compared.
+ */
+function unlayer(css) {
+  const prefix = `${LAYER_ORDER}\n@layer qwik-cdk {\n`;
+  if (!css.startsWith(prefix) || !css.endsWith('\n}\n')) {
+    throw new Error('qwik-cdk prebuilt is not wrapped in @layer qwik-cdk');
+  }
+  return css.slice(prefix.length, -'\n}\n'.length);
+}
 
 /** Strip copyright/license/sourcemap comment blocks then collapse whitespace. */
 const STRIP_RE = /\/\*[\s\S]*?(?:Copyright|@license|sourceMappingURL)[\s\S]*?\*\/\s*/g;
@@ -63,7 +77,14 @@ for (const [cdkScssRel, qwikCssRel] of pairs) {
   }
 
   const normBaseline = normalize(baseline);
-  const normQwik = normalize(qwikCSS);
+  let normQwik;
+  try {
+    normQwik = normalize(unlayer(qwikCSS));
+  } catch (err) {
+    console.error(`FAIL ${qwikCssRel}: ${err.message}`);
+    ok = false;
+    continue;
+  }
 
   if (normBaseline !== normQwik) {
     console.error(`FAIL CSS diverges: ${qwikCssRel} != compiled(${cdkScssRel})`);

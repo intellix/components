@@ -1,7 +1,8 @@
 import {component$, Slot, useSignal} from '@qwik.dev/core';
 import {useFocusTrap} from '../a11y/focus-trap/use-focus-trap';
 import type {DialogConfig} from './dialog-config';
-import './../scss/dialog/dialog-container.scss';
+// Inside `@layer qwik-cdk`, below qwik-material's layer (scripts/css-layer.mjs).
+import './../scss/dialog/dialog-container-layered.scss';
 
 export const CdkDialogContainer = component$<{config: DialogConfig}>(({config}) => {
   const hostRef = useSignal<HTMLElement>();

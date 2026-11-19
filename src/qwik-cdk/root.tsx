@@ -105,11 +105,12 @@ export const QwikCdkRoot = component$<QwikCdkRootProps>(props => {
     });
   });
 
-  // Auto-load overlay-structure styles if requested (default true)
+  // Auto-load overlay-structure styles if requested (default true), inside `@layer qwik-cdk`
+  // (scripts/css-layer.mjs).
   if (props.loadStyles !== false) {
     // Side-effect import; Vite bundles the CSS with the component.
     // @ts-expect-error - side-effect css import
-    import('./scss/overlay/overlay-structure.scss');
+    import('./scss/overlay/overlay-structure-layered.scss');
   }
 
   return (

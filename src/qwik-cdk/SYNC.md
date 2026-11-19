@@ -8,6 +8,20 @@ branch/worktree. Originally built against this repo's `main` at
 qwik-cdk-dialog-port branch with that `main`, ie. the upstream tip when
 the initial Dialog port landed) before the rebaseline.
 
+## 2026-11-19 CSS in `@layer qwik-cdk`, below qwik-material
+
+qwik-material now ships all of its CSS in `@layer qwik-material`, so an app's unlayered CSS wins
+over it. Left unlayered, qwik-cdk's CSS would then beat qwik-material's rules on CDK elements too
+(dialog.css's `.cdk-overlay-pane.mat-mdc-dialog-panel { max-width: 560px }` lost to the overlay's
+`.cdk-overlay-pane { max-width: 100% }`; a hidden autocomplete panel's pane got back
+`pointer-events: auto`). So every qwik-cdk stylesheet sits in `@layer qwik-cdk` after the order
+statement `@layer qwik-cdk, qwik-material;` (`scripts/css-layer.mjs`): the three prebuilts (wrapped
+by the build; `test:css-parity` unwraps before comparing with upstream), and the two stylesheets
+components import — `<QwikCdkRoot>`'s overlay structure and `CdkDialogContainer`'s, through
+`scss/overlay/overlay-structure-layered.scss`/`scss/dialog/dialog-container-layered.scss`, which
+load the upstream-synced files unmodified (the overlay structure's own `@layer cdk-overlay` becomes
+`qwik-cdk.cdk-overlay`). `css-layers.spec.ts` checks both kinds.
+
 ## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
 
 None of the 17 upstream template/style files that changed between
@@ -26,17 +40,17 @@ had an `@ts-expect-error` on its scss side-effect import that became an
 
 ## Per-entry-point sync state
 
-| Entry-point | Last synced SHA | Status |
-|---|---|---|
-| platform | v21.2.14 (8fe4d6a8ff) | green — feature helpers ported verbatim with CDK-style `typeof document` guards |
-| bidi     | v21.2.14 (8fe4d6a8ff) | green — Directionality ported with signal-backed `value` |
-| coercion | v21.2.14 (8fe4d6a8ff) | green — pure function helpers ported verbatim |
-| keycodes | v21.2.14 (8fe4d6a8ff) | green — key constants + `hasModifierKey` ported verbatim |
-| portal   | v21.2.14 (8fe4d6a8ff) | green — collapsed Portal<P> type + `<CdkPortalOutlet>` only; ComponentPortal/TemplatePortal/DomPortal removed |
-| a11y     | v21.2.14 (8fe4d6a8ff) | partial — Dialog-required subset plus `useFocusOrigin()`'s `focusVia()` companion (2026-10-27, for expansion); LiveAnnouncer + key managers + `cdkTrapFocus` directive deferred (see a11y/SYNC.md) |
-| accordion | v21.2.14 (8fe4d6a8ff) | green (2026-10-27) — `useCdkAccordion`/`useCdkAccordionItem` hooks; `UniqueSelectionDispatcher` replaced by a per-instance `Signal` broadcast (see accordion/SYNC.md) |
-| overlay  | v21.2.14 (8fe4d6a8ff) | green — `OverlayConfig`, `OverlayRef`, `Overlay` service, position strategies (Global + FlexibleConnected), four scroll strategies, both dispatchers; `_CdkOverlayStyleLoader` replaced by Vite SCSS import |
-| dialog   | v21.2.14 (8fe4d6a8ff) | green — `Dialog`/`useDialog`/`DialogRef`/`DialogConfig`/`CdkDialogContainer` with `Promise<R>` + `QRL` callbacks replacing RxJS streams |
+| Entry-point | Last synced SHA       | Status                                                                                                                                                                                                      |
+| ----------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| platform    | v21.2.14 (8fe4d6a8ff) | green — feature helpers ported verbatim with CDK-style `typeof document` guards                                                                                                                             |
+| bidi        | v21.2.14 (8fe4d6a8ff) | green — Directionality ported with signal-backed `value`                                                                                                                                                    |
+| coercion    | v21.2.14 (8fe4d6a8ff) | green — pure function helpers ported verbatim                                                                                                                                                               |
+| keycodes    | v21.2.14 (8fe4d6a8ff) | green — key constants + `hasModifierKey` ported verbatim                                                                                                                                                    |
+| portal      | v21.2.14 (8fe4d6a8ff) | green — collapsed Portal<P> type + `<CdkPortalOutlet>` only; ComponentPortal/TemplatePortal/DomPortal removed                                                                                               |
+| a11y        | v21.2.14 (8fe4d6a8ff) | partial — Dialog-required subset plus `useFocusOrigin()`'s `focusVia()` companion (2026-10-27, for expansion); LiveAnnouncer + key managers + `cdkTrapFocus` directive deferred (see a11y/SYNC.md)          |
+| accordion   | v21.2.14 (8fe4d6a8ff) | green (2026-10-27) — `useCdkAccordion`/`useCdkAccordionItem` hooks; `UniqueSelectionDispatcher` replaced by a per-instance `Signal` broadcast (see accordion/SYNC.md)                                       |
+| overlay     | v21.2.14 (8fe4d6a8ff) | green — `OverlayConfig`, `OverlayRef`, `Overlay` service, position strategies (Global + FlexibleConnected), four scroll strategies, both dispatchers; `_CdkOverlayStyleLoader` replaced by Vite SCSS import |
+| dialog      | v21.2.14 (8fe4d6a8ff) | green — `Dialog`/`useDialog`/`DialogRef`/`DialogConfig`/`CdkDialogContainer` with `Promise<R>` + `QRL` callbacks replacing RxJS streams                                                                     |
 
 ## Sync recipe
 

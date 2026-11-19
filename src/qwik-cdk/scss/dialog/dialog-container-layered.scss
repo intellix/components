@@ -1,0 +1,9 @@
+// `dialog-container.scss` (upstream-synced, unmodified) inside `@layer qwik-cdk`, below
+// qwik-material's layer — see scripts/css-layer.mjs. What `CdkDialogContainer` loads.
+@use 'sass:meta';
+
+@layer qwik-cdk, qwik-material;
+
+@layer qwik-cdk {
+  @include meta.load-css('dialog-container');
+}

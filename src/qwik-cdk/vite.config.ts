@@ -2,6 +2,7 @@ import {defineConfig} from 'vitest/config';
 import {qwikVite} from '@qwik.dev/core/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
+import {wrapInCdkLayer} from './scripts/css-layer.mjs';
 
 const entries = [
   'platform',
@@ -28,6 +29,8 @@ export default defineConfig({
     qwikVite({csr: true, srcDir: '.'}),
     dts({outDirs: 'dist', insertTypesEntry: true}),
     {
+      // Each prebuilt inside `@layer qwik-cdk`, ordered below qwik-material's layer — see
+      // scripts/css-layer.mjs.
       name: 'qwik-cdk-compile-sass-prebuilt',
       apply: 'build',
       async closeBundle() {
@@ -42,7 +45,7 @@ export default defineConfig({
         for (const [src, out] of entries) {
           const result = sass.compile(path.resolve(__dirname, src), {style: 'expanded'});
           await fs.mkdir(path.dirname(path.resolve(__dirname, out)), {recursive: true});
-          await fs.writeFile(path.resolve(__dirname, out), result.css, 'utf8');
+          await fs.writeFile(path.resolve(__dirname, out), wrapInCdkLayer(result.css), 'utf8');
         }
       },
     },

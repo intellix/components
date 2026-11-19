@@ -1,0 +1,9 @@
+// `overlay-structure.scss` (upstream-synced, unmodified) inside `@layer qwik-cdk`, below
+// qwik-material's layer — see scripts/css-layer.mjs. What `<QwikCdkRoot>` loads (`loadStyles`).
+@use 'sass:meta';
+
+@layer qwik-cdk, qwik-material;
+
+@layer qwik-cdk {
+  @include meta.load-css('overlay-structure');
+}
