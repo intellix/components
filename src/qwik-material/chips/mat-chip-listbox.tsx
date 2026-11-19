@@ -14,6 +14,7 @@ import {
   type MatChipListboxSelectionState,
 } from './internal/listbox-selection';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatChipsStyles} from './chips-styles';
 
 /** Descriptor for one `<MatChipOption>` rendered inside `<MatChipListbox options={[...]}>`.
  *  See `mat-chip-set.tsx`'s module doc comment for why containers take a data array. */
@@ -73,6 +74,7 @@ function getOptionButtons(root: Element | undefined): HTMLButtonElement[] {
 }
 
 export const MatChipListbox = component$<MatChipListboxProps>(props => {
+  useMatChipsStyles();
   const disabled = props.disabled ?? false;
   const multiple = props.multiple ?? false;
   const selectable = props.selectable ?? true;

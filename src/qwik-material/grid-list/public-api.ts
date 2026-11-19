@@ -13,3 +13,6 @@ export {
   MatGridTileFooter,
   type MatGridTileTextProps,
 } from './mat-grid-tile-text';
+
+// The entry point's CSS, registered by its components; see grid-list-styles.ts.
+export {useMatGridListStyles} from './grid-list-styles';

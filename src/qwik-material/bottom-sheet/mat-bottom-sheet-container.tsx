@@ -9,7 +9,7 @@ import {
   type MatBottomSheetRef,
 } from './mat-bottom-sheet-ref';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import './../scss/bottom-sheet/bottom-sheet-container.scss';
+import {useMatBottomSheetStyles} from './bottom-sheet-styles';
 
 /** Keyframe names declared in bottom-sheet-container.scss — matched against real `animation*` events. */
 const ENTER_ANIMATION = '_mat-bottom-sheet-enter';
@@ -41,6 +41,7 @@ export interface MatBottomSheetContainerProps {
  */
 export const MatBottomSheetContainer = component$<MatBottomSheetContainerProps>(
   ({id, config, matBottomSheetRef}) => {
+    useMatBottomSheetStyles();
     const hostRef = useSignal<HTMLElement>();
     // Mirrors upstream's `_animationState: 'void' | 'visible' | 'hidden'` —
     // a 3-state enum, not independently-toggled transient classes like

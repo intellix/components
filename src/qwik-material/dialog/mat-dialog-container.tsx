@@ -24,6 +24,7 @@ import {
 } from './mat-dialog-ref';
 import {parseCssTime} from './parse-css-time';
 import {useAnimationsDisabled} from './use-animations-disabled';
+import {useMatDialogStyles} from './dialog-styles';
 
 /** MDC class prefixes. Toggled by the container's animation state machine. */
 const OPENING_CLASS = 'mdc-dialog--opening';
@@ -42,6 +43,7 @@ export interface MatDialogContainerProps {
 }
 
 export const MatDialogContainer = component$<MatDialogContainerProps>(({config, matDialogRef}) => {
+  useMatDialogStyles();
   const hostRef = useSignal<HTMLElement>();
   // Mirrors upstream's independent class toggles exactly (NOT a single
   // mutually-exclusive phase): `_startOpenAnimation()` adds `--opening` and

@@ -33,3 +33,6 @@ export {
   MatListItemMeta,
   type MatListItemSectionProps,
 } from './mat-list-item-sections';
+
+// The entry point's CSS, registered by its components; see list-styles.ts.
+export {useMatListStyles} from './list-styles';

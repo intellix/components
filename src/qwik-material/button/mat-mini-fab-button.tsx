@@ -10,6 +10,7 @@ import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {callHostHandler, extraHostAttrs, useForwardedHostHandlers} from '../core/host-props';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatButtonStyles} from './button-styles';
 
 // Mini-FAB has no 'extended' prop; everything else matches MatFabProps
 // (via its index-signature-free MatFabOwnProps — see that type's doc
@@ -51,6 +52,7 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
+  useMatButtonStyles();
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? DEFAULTS.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;

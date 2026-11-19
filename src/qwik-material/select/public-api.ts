@@ -25,3 +25,6 @@ export {SELECT_POSITIONS, getOptionScrollPosition} from './select-runtime';
 
 export {MatOption, type MatOptionProps} from '../core/mat-option';
 export {MatOptgroup, type MatOptgroupProps} from '../core/mat-optgroup';
+
+// The entry point's CSS, registered by its components; see select-styles.ts.
+export {useMatSelectStyles} from './select-styles';

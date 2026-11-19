@@ -7,6 +7,7 @@ import {
 } from './progress-spinner-config';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import type {OpenString} from '../core/open-string';
+import {useMatProgressSpinnerStyles} from './progress-spinner-styles';
 
 /**
  * Props for <MatProgressSpinner> and <MatSpinner>. Both components accept the
@@ -117,6 +118,7 @@ function createSpinner(
   defaultMode: MatProgressSpinnerMode,
 ): Component<MatProgressSpinnerProps> {
   return component$<MatProgressSpinnerProps>(props => {
+    useMatProgressSpinnerStyles();
     const config = useContext(MAT_PROGRESS_SPINNER_CONFIG, DEFAULTS);
     const animationsDisabled = useAnimationsDisabled();
 

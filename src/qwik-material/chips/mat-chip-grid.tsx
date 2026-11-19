@@ -17,6 +17,7 @@ import {MAT_CHIPS_CONFIG, MAT_CHIPS_CONFIG_DEFAULTS} from './tokens';
 import {MatChipRow, type MatChipEditButtonDef} from './mat-chip-row';
 import type {MatChipRemoveButtonDef} from './mat-chip';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatChipsStyles} from './chips-styles';
 
 /** Descriptor for one `<MatChipRow>` rendered inside `<MatChipGrid rows={[...]}>`. See
  *  `mat-chip-set.tsx`'s module doc comment for why containers take a data array. */
@@ -296,6 +297,7 @@ const ChipGridRows = component$<ChipGridRowsProps>(props => {
 });
 
 export const MatChipGrid = component$<MatChipGridProps>(props => {
+  useMatChipsStyles();
   const config = useContext(MAT_CHIPS_CONFIG, MAT_CHIPS_CONFIG_DEFAULTS);
   const idGen = useIdGenerator();
   const autoInputId = useSignal(() => idGen.getId('mat-mdc-chip-list-input-'));

@@ -44,6 +44,7 @@ import {
   type SliderStore,
   type ThumbKey,
 } from './slider-thumb-state';
+import {useMatSliderStyles} from './slider-styles';
 
 export type MatSliderColor = 'primary' | 'accent' | 'warn';
 
@@ -175,6 +176,7 @@ async function computeValueText(
 const RIPPLE_BOX = computeRippleBox(48, 48);
 
 export const MatSlider = component$<MatSliderProps>(props => {
+  useMatSliderStyles();
   const cfg = readSliderConfig(props);
   const noopAnimations = useAnimationsDisabled();
 

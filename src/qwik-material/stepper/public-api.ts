@@ -14,3 +14,6 @@ export type {
 export {MAT_STEPPER_ACTIONS, type MatStepperActions} from './stepper-actions';
 export {useRequiredControl, type RequiredControlApi} from './step-control';
 export {useMatStepperProvider} from './use-mat-stepper-provider';
+
+// The entry point's CSS, registered by its components; see stepper-styles.ts.
+export {useMatStepperStyles} from './stepper-styles';

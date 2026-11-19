@@ -3,6 +3,7 @@ import {MatOption} from '../core/mat-option';
 import type {DateAdapter} from '../core/datetime/date-adapter';
 import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import type {MatTimepickerRenderOption} from './use-mat-timepicker';
+import {useMatTimepickerStyles} from './timepicker-styles';
 
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 
@@ -44,6 +45,7 @@ export interface MatTimepickerPanelProps {
 }
 
 export const MatTimepickerPanel = component$<MatTimepickerPanelProps>(props => {
+  useMatTimepickerStyles();
   const classes = [
     'mat-timepicker-panel',
     !props.animationsDisabled && 'mat-timepicker-panel-animations-enabled',

@@ -19,6 +19,7 @@ import {
   type MatButtonToggleGroupMode,
   type MatButtonToggleGroupState,
 } from './button-toggle-group-state';
+import {useMatButtonToggleStyles} from './button-toggle-styles';
 
 /**
  * Props for <MatButtonToggleGroup>. Controlled component pair with
@@ -121,6 +122,7 @@ function findNextEnabledIndex(
 }
 
 export const MatButtonToggleGroup = component$<MatButtonToggleGroupProps>(props => {
+  useMatButtonToggleStyles();
   // DEFAULTS fallback is REQUIRED (Progress Bar / Progress Spinner post-mortem —
   // bare useContext throws Code 13 when rendered with no provider hook ancestor).
   const config = useContext(MAT_BUTTON_TOGGLE_CONFIG, CONFIG_DEFAULTS);

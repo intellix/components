@@ -100,7 +100,14 @@ export const MatMonthView = component$<MatMonthViewProps>(props => {
   const maxDate = (props.maxDate ?? null) as unknown;
 
   const view = useSignal<MonthViewData<unknown>>(() =>
-    buildMonthView(resolveLabelAdapter(props.locale), formats, props.activeDate, minDate, maxDate, undefined),
+    buildMonthView(
+      resolveLabelAdapter(props.locale),
+      formats,
+      props.activeDate,
+      minDate,
+      maxDate,
+      undefined,
+    ),
   );
   // Synchronous (no `await`) whenever there's no filter to resolve — the overwhelmingly common
   // case (no scenario outside `min-max-filter` passes one) — rather than unconditionally async,
@@ -113,11 +120,16 @@ export const MatMonthView = component$<MatMonthViewProps>(props => {
     track(() => props.maxDate);
     const localeAdapter = resolveLabelAdapter(track(() => props.locale));
     const filterQrl = props.dateFilter as QRL<(date: unknown) => boolean> | undefined;
-    const classQrl = props.dateClass as
-      | QRL<MatCalendarCellClassFunction<unknown>>
-      | undefined;
+    const classQrl = props.dateClass as QRL<MatCalendarCellClassFunction<unknown>> | undefined;
     if (!filterQrl && !classQrl) {
-      view.value = buildMonthView(localeAdapter, formats, props.activeDate, minDate, maxDate, undefined);
+      view.value = buildMonthView(
+        localeAdapter,
+        formats,
+        props.activeDate,
+        minDate,
+        maxDate,
+        undefined,
+      );
       return;
     }
     return Promise.all([

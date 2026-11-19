@@ -4,3 +4,6 @@
 export type {MatToolbarColor} from './toolbar-color';
 export {MatToolbar, type MatToolbarProps} from './mat-toolbar';
 export {MatToolbarRow, type MatToolbarRowProps} from './mat-toolbar-row';
+
+// The entry point's CSS, registered by its components; see toolbar-styles.ts.
+export {useMatToolbarStyles} from './toolbar-styles';

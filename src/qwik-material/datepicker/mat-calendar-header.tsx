@@ -35,6 +35,7 @@ import {
   type CalendarView,
 } from './calendar-math';
 import {DATEPICKER_INTL, formatYearRange, formatYearRangeLabel} from './datepicker-intl';
+import {useMatButtonStyles} from '../button/button-styles';
 
 interface CalendarNavButtonProps {
   class: string;
@@ -125,6 +126,7 @@ const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 const formats = MAT_NATIVE_DATE_FORMATS;
 
 export const MatCalendarHeader = component$<MatCalendarHeaderProps>(props => {
+  useMatButtonStyles();
   const idGen = useIdGenerator();
   // Once per mount — see mat-calendar-body.tsx's ids.
   const periodLabelId = useSignal(() => idGen.getId('mat-calendar-period-label-')).value;

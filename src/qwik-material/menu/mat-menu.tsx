@@ -1,4 +1,5 @@
-import type {JSXChildren, JSXOutput} from '@qwik.dev/core';
+import {component$, type JSXChildren, type JSXOutput} from '@qwik.dev/core';
+import {useMatMenuStyles} from './menu-styles';
 
 /**
  * Props accepted by the `<MatMenu>` placeholder. Only `panelClass` affects
@@ -36,11 +37,30 @@ function hasNonEmptyPanelClass(panelClass: MatMenuPlaceholderProps['panelClass']
  * setter runs `this._elementRef.nativeElement.className = ''` whenever a
  * non-empty value is set — so the host renders `<mat-menu class="">`
  * (present, empty string) rather than no `class` attribute at all. A plain
- * function (not `component$`): purely static output, no hooks needed.
+ * function (not `component$`): purely static output, no hooks needed — except
+ * the menu CSS (`mat-menu { display: none }` among it), registered by
+ * `MenuStyles` just before the placeholder.
  */
 export function MatMenu(props: MatMenuPlaceholderProps): JSXOutput {
-  return <mat-menu class={hasNonEmptyPanelClass(props.panelClass) ? '' : undefined} />;
+  return (
+    <>
+      <MenuStyles />
+      <mat-menu class={hasNonEmptyPanelClass(props.panelClass) ? '' : undefined} />
+    </>
+  );
 }
+
+/**
+ * Registers the menu CSS where upstream's `MatMenu` component (`styleUrl: 'menu.css'`) is
+ * created — its `<mat-menu>` host, which that CSS hides (`mat-menu { display: none }`) — since
+ * the `MatMenu` placeholder is a plain function with no hook phase. A `component$` that renders
+ * nothing, like upstream's own style loaders (`_CdkPrivateStyleLoader`) and grid-list's
+ * `GridListStyles`; `MenuPanel` registers the same CSS for a panel opened without one.
+ */
+const MenuStyles = component$(() => {
+  useMatMenuStyles();
+  return null;
+});
 
 /**
  * Marks lazily-rendered menu content. Mirrors `<ng-template matMenuContent>`

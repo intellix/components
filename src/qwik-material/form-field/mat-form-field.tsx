@@ -34,6 +34,7 @@ import {
   resolveErrorStateSync,
   type MatErrorStateSnapshot,
 } from '../core/error-state-matcher';
+import {useMatFormFieldStyles} from './form-field-styles';
 
 /**
  * Props for `<MatFormField>`. See `SYNC.md` for the full architecture
@@ -212,6 +213,7 @@ function observeLabelResize(notch: HTMLElement, label: HTMLElement): () => void 
 }
 
 export const MatFormField = component$<MatFormFieldProps>(props => {
+  useMatFormFieldStyles();
   const config = useContext(MAT_FORM_FIELD_CONFIG, MAT_FORM_FIELD_CONFIG_DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();

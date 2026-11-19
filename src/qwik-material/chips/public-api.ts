@@ -24,3 +24,6 @@ export {
   type MatChipsConfig,
   type SeparatorKey,
 } from './tokens';
+
+// The entry point's CSS, registered by its components; see chips-styles.ts.
+export {useMatChipsStyles} from './chips-styles';

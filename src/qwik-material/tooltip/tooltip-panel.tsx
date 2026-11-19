@@ -2,6 +2,7 @@ import {$, component$, useTask$, type NoSerialize, type Signal} from '@qwik.dev/
 import {isBrowser} from '@qwik.dev/core/build';
 import type {OverlayRef} from '@angular-community/qwik-cdk/overlay';
 import {finalizeHidden} from './tooltip-runtime';
+import {useMatTooltipStyles} from './tooltip-styles';
 
 /** Name of the show animation and the class that toggles it (upstream `_showAnimation`). */
 const SHOW_ANIMATION = 'mat-mdc-tooltip-show';
@@ -76,6 +77,7 @@ export interface TooltipPanelProps {
  * is hardcoded `false`. See SYNC.md.
  */
 export const TooltipPanel = component$<TooltipPanelProps>(props => {
+  useMatTooltipStyles();
   const showing = props.isVisible.value;
   const stateClass = showing ? SHOW_ANIMATION : props.everShown.value ? HIDE_ANIMATION : undefined;
 

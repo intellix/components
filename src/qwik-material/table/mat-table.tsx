@@ -19,6 +19,7 @@ import type {
   MatTableProps,
   MatTableRowGroupDef,
 } from './mat-table-types';
+import {useMatTableStyles} from './table-styles';
 
 export type {
   MatTableCellProps,
@@ -228,6 +229,7 @@ function renderNoDataRow(noData: MatNoDataRowDef, displayedColumns: readonly str
  * deviations.
  */
 export const MatTable = component$<MatTableProps>(props => {
+  useMatTableStyles();
   const isNative = (props.as ?? 'table') !== 'mat-table';
   const columnsByName = new Map(props.columns.map(c => [c.name, c] as const));
 

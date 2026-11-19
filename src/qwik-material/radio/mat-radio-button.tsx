@@ -16,6 +16,7 @@ import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import type {MatRadioColor} from './radio-color';
 import {MAT_RADIO_CONFIG, MAT_RADIO_CONFIG_DEFAULTS} from './radio-config';
 import {MAT_RADIO_GROUP_STATE, MAT_RADIO_GROUP_STATE_DEFAULTS} from './radio-group-state';
+import {useMatRadioStyles} from './radio-styles';
 
 /**
  * Props for <MatRadioButton>. Renders upstream's `radio.html` template
@@ -92,6 +93,7 @@ export interface MatRadioButtonProps {
 }
 
 export const MatRadioButton = component$<MatRadioButtonProps>(props => {
+  useMatRadioStyles();
   const config = useContext(MAT_RADIO_CONFIG, MAT_RADIO_CONFIG_DEFAULTS);
   const stateSignal = useContext(MAT_RADIO_GROUP_STATE, {value: MAT_RADIO_GROUP_STATE_DEFAULTS});
   const state = stateSignal.value;

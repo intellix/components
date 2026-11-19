@@ -4,3 +4,6 @@
 export type {MatDividerConfig} from './divider-config';
 export {MAT_DIVIDER_CONFIG, useMatDividerProvider} from './divider-config';
 export {MatDivider, type MatDividerProps} from './mat-divider';
+
+// The entry point's CSS, registered by its components; see divider-styles.ts.
+export {useMatDividerStyles} from './divider-styles';

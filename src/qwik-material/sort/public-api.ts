@@ -35,3 +35,6 @@ export {
   isSorted,
   type SortableOverrides,
 } from './sort-state';
+
+// The entry point's CSS, registered by its components; see sort-styles.ts.
+export {useMatSortStyles} from './sort-styles';

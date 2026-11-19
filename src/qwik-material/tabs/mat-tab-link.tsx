@@ -4,6 +4,7 @@ import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_TAB_NAV_STATE, MAT_TAB_NAV_STATE_DEFAULTS} from './tab-nav-state';
+import {useMatTabsStyles} from './tabs-styles';
 
 export interface MatTabLinkProps {
   /** Whether this link is the active one (`[active]`). */
@@ -24,6 +25,7 @@ export interface MatTabLinkProps {
  * need the `tabs`-data-array treatment `MatTabGroup` requires.
  */
 export const MatTabLink = component$<MatTabLinkProps>(props => {
+  useMatTabsStyles();
   const navState = useContext(MAT_TAB_NAV_STATE, {value: MAT_TAB_NAV_STATE_DEFAULTS});
   const nav = navState.value;
   const idGen = useIdGenerator();

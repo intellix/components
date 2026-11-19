@@ -10,3 +10,6 @@ export {
 } from './checkbox-config';
 
 export {MatCheckbox, type MatCheckboxProps, type MatCheckboxChangeEvent} from './mat-checkbox';
+
+// The entry point's CSS, registered by its components; see checkbox-styles.ts.
+export {useMatCheckboxStyles} from './checkbox-styles';

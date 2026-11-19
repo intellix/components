@@ -35,6 +35,8 @@ import {DEFAULT_DATE_ADAPTER} from '../core/datetime/native-date-adapter';
 import {resolveDateAdapter} from '../core/datetime/use-date-adapter';
 import {formatDateForDisplay, formatDateWithAdapter} from './datepicker-runtime';
 import type {MatDateRangePickerHandle} from './use-mat-datepicker';
+import {useMatButtonStyles} from '../button/button-styles';
+import {useMatDatepickerStyles} from './datepicker-styles';
 
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 
@@ -70,6 +72,8 @@ export interface MatDateRangeInputProps<D = unknown> extends Omit<
 }
 
 export const MatDateRangeInput = component$<MatDateRangeInputProps>(props => {
+  useMatButtonStyles();
+  useMatDatepickerStyles();
   const picker = props.picker;
   const idGen = useIdGenerator();
   const id = useSignal(() => idGen.getId('mat-date-range-input-')).value;

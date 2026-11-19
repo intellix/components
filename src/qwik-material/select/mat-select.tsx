@@ -42,6 +42,7 @@ import {
   resolveErrorStateSync,
   type MatErrorStateSnapshot,
 } from '../core/error-state-matcher';
+import {useMatSelectStyles} from './select-styles';
 
 const MAT_SELECT_CONFIG_DEFAULTS: MatSelectConfig = {};
 
@@ -255,16 +256,16 @@ function panelAriaLabelledby(
 }
 
 export const MatSelect = component$<MatSelectProps>(props => {
+  useMatSelectStyles();
   const config = useContext(MAT_SELECT_CONFIG, MAT_SELECT_CONFIG_DEFAULTS);
   // `MAT_SELECT_SCROLL_STRATEGY` is a plain, serializable
   // `ScrollStrategyDescriptor` (string/object, or a `QRL` escape hatch) —
   // NOT a function factory, so neither of `useContext()`'s two
   // function-typed-default pitfalls apply here. `{type: 'reposition'}` is
   // this port's pre-existing, previously hard-coded default behaviour.
-  const scrollStrategyDescriptor = useContext(
-    MAT_SELECT_SCROLL_STRATEGY,
-    {type: 'reposition'} as ScrollStrategyDescriptor,
-  );
+  const scrollStrategyDescriptor = useContext(MAT_SELECT_SCROLL_STRATEGY, {
+    type: 'reposition',
+  } as ScrollStrategyDescriptor);
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();
@@ -366,7 +367,9 @@ export const MatSelect = component$<MatSelectProps>(props => {
   // overwrites it with the REAL, `compareWith$`-aware label before any HTML is ever serialized,
   // so an object-valued `compareWith$`-matched initial selection is already correct on the very
   // first paint, not just after a later client-side re-render.
-  const triggerLabel = useSignal(() => computeTriggerLabel(multiple, value.value, flat, STRICT_EQUALS));
+  const triggerLabel = useSignal(() =>
+    computeTriggerLabel(multiple, value.value, flat, STRICT_EQUALS),
+  );
   useTask$(({track}) => {
     const currentValue = track(() => value.value);
     const compareWith$ = props.compareWith$ as
@@ -538,7 +541,8 @@ export const MatSelect = component$<MatSelectProps>(props => {
     // handler's CODE actually runs, the DOM's real focus state may have already moved on past
     // the stale event that queued it — checking it directly (not trusting "a blur event fired,
     // so we must be blurred") avoids clobbering a focus state that's already correct.
-    if ((hostRef.value?.ownerDocument.activeElement ?? null) !== hostRef.value) focused.value = false;
+    if ((hostRef.value?.ownerDocument.activeElement ?? null) !== hostRef.value)
+      focused.value = false;
     keyManager.value?.cancelTypeahead();
     if (!disabled && !panelOpen.value) {
       props.onTouched$?.();

@@ -16,6 +16,7 @@ import {
   type CdkTreeNodeInput,
 } from '@angular-community/qwik-cdk/tree';
 import {resolveTreeKeydown} from '@angular-community/qwik-cdk/a11y';
+import {useMatTreeStyles} from './tree-styles';
 
 export type {CdkTreeNodeInput, FlatTreeEntry} from '@angular-community/qwik-cdk/tree';
 
@@ -92,6 +93,7 @@ export interface MatTreeProps<T = unknown> {
  * deviations.
  */
 export const MatTree = component$((props: MatTreeProps<unknown>) => {
+  useMatTreeStyles();
   const variant = props.variant ?? 'flat';
   const indent = props.indent ?? 40;
   const padding = props.padding ?? true;

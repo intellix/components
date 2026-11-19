@@ -53,6 +53,8 @@ import {
   type CalendarCell,
 } from './calendar-math';
 import {DATEPICKER_INTL} from './datepicker-intl';
+import {useMatButtonStyles} from '../button/button-styles';
+import {useMatDatepickerStyles} from './datepicker-styles';
 
 const COMPARISON_DATE_LABEL = DATEPICKER_INTL.comparisonDateLabel;
 
@@ -102,6 +104,8 @@ function describedBy(
 // itself is instantiated at the default `D = unknown` (a `component$` can't be generic per call
 // site); passing a concrete `MatCalendarBodyProps<Date>` here still type-checks structurally.
 export const MatCalendarBody = component$<MatCalendarBodyProps>(props => {
+  useMatButtonStyles();
+  useMatDatepickerStyles();
   const idGen = useIdGenerator();
   // Generated once per mount: `getId` writes the shared counter signal, so calling it on every
   // render would subscribe to and bump that counter, re-rendering forever.

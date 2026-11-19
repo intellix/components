@@ -53,6 +53,7 @@ import {
   resolveErrorStateSync,
   type MatErrorStateSnapshot,
 } from '../core/error-state-matcher';
+import {useMatAutocompleteStyles} from './autocomplete-styles';
 
 const MAT_AUTOCOMPLETE_CONFIG_DEFAULTS: MatAutocompleteConfig = {};
 
@@ -285,16 +286,16 @@ export interface MatAutocompleteProps extends Omit<MatFormFieldControlProps, 'va
 }
 
 export const MatAutocomplete = component$<MatAutocompleteProps>(props => {
+  useMatAutocompleteStyles();
   const config = useContext(MAT_AUTOCOMPLETE_CONFIG, MAT_AUTOCOMPLETE_CONFIG_DEFAULTS);
   // `MAT_AUTOCOMPLETE_SCROLL_STRATEGY` is a plain, serializable
   // `ScrollStrategyDescriptor` — see `mat-select.tsx`'s identical read for
   // why a plain default is safe here (no `useContext()`
   // function-typed-default pitfall). `{type: 'reposition'}` is this
   // port's pre-existing, previously hard-coded default behaviour.
-  const scrollStrategyDescriptor = useContext(
-    MAT_AUTOCOMPLETE_SCROLL_STRATEGY,
-    {type: 'reposition'} as ScrollStrategyDescriptor,
-  );
+  const scrollStrategyDescriptor = useContext(MAT_AUTOCOMPLETE_SCROLL_STRATEGY, {
+    type: 'reposition',
+  } as ScrollStrategyDescriptor);
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const idGen = useIdGenerator();

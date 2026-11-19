@@ -37,3 +37,6 @@ export {
   resolveInitialPageSize,
   type PageEvent,
 } from './paginator-math';
+
+// The entry point's CSS, registered by its components; see paginator-styles.ts.
+export {useMatPaginatorStyles} from './paginator-styles';

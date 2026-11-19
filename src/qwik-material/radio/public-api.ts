@@ -11,3 +11,6 @@ export {MAT_RADIO_GROUP_STATE, MAT_RADIO_GROUP_STATE_DEFAULTS} from './radio-gro
 export {MatRadioGroup, type MatRadioGroupProps} from './mat-radio-group';
 
 export {MatRadioButton, type MatRadioButtonProps} from './mat-radio-button';
+
+// The entry point's CSS, registered by its components; see radio-styles.ts.
+export {useMatRadioStyles} from './radio-styles';

@@ -4,3 +4,6 @@
 export {MatTree, type MatTreeProps} from './mat-tree';
 export {MatTreeNodeToggle, type MatTreeNodeToggleProps} from './mat-tree-node-toggle';
 export type {CdkTreeNodeInput, FlatTreeEntry} from '@angular-community/qwik-cdk/tree';
+
+// The entry point's CSS, registered by its components; see tree-styles.ts.
+export {useMatTreeStyles} from './tree-styles';

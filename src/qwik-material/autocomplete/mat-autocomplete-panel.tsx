@@ -6,6 +6,7 @@ import type {
   ResolvedAutocompleteNode,
   ResolvedAutocompleteOption,
 } from './autocomplete-option-resolver';
+import {useMatAutocompleteStyles} from './autocomplete-styles';
 
 /**
  * The content `MatAutocomplete` attaches to its overlay — the literal
@@ -54,6 +55,7 @@ export interface MatAutocompletePanelProps {
 }
 
 export const MatAutocompletePanel = component$<MatAutocompletePanelProps>(props => {
+  useMatAutocompleteStyles();
   const tree = props.tree.value;
   // Mirrors `MatAutocomplete.showPanel = !!this.options?.length` — flat
   // count, not tree-node count (an empty group still contributes 0 flat

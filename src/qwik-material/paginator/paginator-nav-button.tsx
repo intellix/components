@@ -27,6 +27,7 @@ import {
   useRippleLoader,
   wasRippleInitialized,
 } from '../button/internal/ripple-loader';
+import {useMatButtonStyles} from '../button/button-styles';
 
 /**
  * One `first`/`previous`/`next`/`last` nav button. Mirrors `paginator.html`'s
@@ -100,6 +101,7 @@ export interface PaginatorNavButtonProps {
 }
 
 export const PaginatorNavButton = component$<PaginatorNavButtonProps>(props => {
+  useMatButtonStyles();
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const focusOrigin = useFocusOrigin();

@@ -7,6 +7,7 @@ import {MAT_TABS_CONFIG, type MatTabsConfig} from './tab-config';
 import {computeNextTabFocusIndex, type TabFocusKey} from './tab-group-keyboard';
 import {usePaginatedHeader} from './use-paginated-header';
 import {MAT_TAB_NAV_STATE, type MatTabNavState} from './tab-nav-state';
+import {useMatTabsStyles} from './tabs-styles';
 
 export interface MatTabNavProps {
   /** Id of the `<MatTabNavPanel>` this nav is wired to (mirrors Angular's
@@ -46,6 +47,7 @@ function normalizeDuration(value: string | number): string {
  * here but not for the tab group's header/body split.
  */
 export const MatTabNav = component$<MatTabNavProps>(props => {
+  useMatTabsStyles();
   const config = useContext(MAT_TABS_CONFIG, CONFIG_DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
   const rippleGlobalOptions = useRippleGlobalOptions();

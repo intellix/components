@@ -1,4 +1,5 @@
 import {component$, Slot, type JSXChildren, type JSXOutput} from '@qwik.dev/core';
+import {useMatGridListStyles} from './grid-list-styles';
 
 /**
  * Props for <MatGridTile>. Rendered as <mat-grid-tile> with an inner
@@ -70,6 +71,7 @@ export function renderGridTile(p: GridTileRenderProps, content: JSXChildren): JS
 }
 
 export const MatGridTile = component$<MatGridTileProps>(props => {
+  useMatGridListStyles();
   // Mirrors upstream's rowspan/colspan setters: Math.round only, no clamp —
   // `<MatGridTile rowspan={0}>` really does reflect `rowspan="0"`, same as
   // Angular's `[attr.rowspan]="rowspan"` host binding.

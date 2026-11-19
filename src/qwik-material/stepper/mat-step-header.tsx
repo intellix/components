@@ -6,6 +6,7 @@ import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatStepperStyles} from './stepper-styles';
 
 /**
  * Internal per-step header item — `src/material/stepper/step-header.html` +
@@ -89,6 +90,7 @@ export function defaultTextForState(state: StepState, index: number): string {
 }
 
 export const MatStepHeaderItem = component$<MatStepHeaderItemProps>(props => {
+  useMatStepperStyles();
   // Mirrors `MatStepHeader`'s `FocusMonitor.monitor(this._elementRef, true)`.
   const focusOrigin = useFocusOrigin();
   const animationsDisabled = useAnimationsDisabled();

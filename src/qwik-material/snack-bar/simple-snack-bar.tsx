@@ -1,6 +1,7 @@
 import {$, component$, useContext} from '@qwik.dev/core';
 import {MAT_SNACK_BAR_DATA, MAT_SNACK_BAR_REF} from './mat-snack-bar-tokens';
 import {MatSnackBarAction, MatSnackBarActions, MatSnackBarLabel} from './mat-snack-bar-content';
+import {useMatSnackBarStyles} from './snack-bar-styles';
 
 /** Shape of the data `MatSnackBar.open(message, action, config)` passes in. */
 export interface TextOnlySnackBarData {
@@ -15,6 +16,7 @@ export interface TextOnlySnackBarData {
  * directly by consumers, same as upstream.
  */
 export const SimpleSnackBar = component$(() => {
+  useMatSnackBarStyles();
   const data = useContext(MAT_SNACK_BAR_DATA) as TextOnlySnackBarData;
   const snackBarRef = useContext(MAT_SNACK_BAR_REF, undefined);
   const hasAction = !!data?.action;

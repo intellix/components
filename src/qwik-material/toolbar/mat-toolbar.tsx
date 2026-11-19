@@ -1,6 +1,7 @@
 import {component$, Slot} from '@qwik.dev/core';
 import type {MatToolbarColor} from './toolbar-color';
 import type {OpenString} from '../core/open-string';
+import {useMatToolbarStyles} from './toolbar-styles';
 
 export interface MatToolbarProps {
   /**
@@ -26,6 +27,7 @@ export interface MatToolbarProps {
 }
 
 export const MatToolbar = component$<MatToolbarProps>(props => {
+  useMatToolbarStyles();
   const classes = [
     'mat-toolbar',
     props.color ? `mat-${props.color}` : '',

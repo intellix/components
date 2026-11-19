@@ -1,4 +1,5 @@
-import type {JSXChildren, JSXOutput} from '@qwik.dev/core';
+import {component$, type JSXChildren, type JSXOutput} from '@qwik.dev/core';
+import {useMatGridListStyles} from './grid-list-styles';
 import {collectTypedChildren} from './jsx-children';
 import {MatGridTile, renderGridTile, type MatGridTileProps} from './mat-grid-tile';
 import {TileCoordinator} from './tile-coordinator';
@@ -87,6 +88,19 @@ function createTileStyler(rowHeight: string): TileStyler {
   return new FixedTileStyler(rowHeight);
 }
 
+/**
+ * Registers the grid-list CSS for `MatGridList` (upstream `MatGridList`'s `styleUrl:
+ * 'grid-list.css'`), which, as a plain function (see this file's header comment), has no hook
+ * phase of its own to call `useMatGridListStyles()` from. A `component$` that renders nothing,
+ * the same shape as upstream's own style loaders (`_CdkPrivateStyleLoader.load(…)` creates an
+ * empty component just for its `styleUrl`, e.g. badge.ts's `_MatBadgeStyleLoader`); rendered
+ * just before `<mat-grid-list>` so its server-rendered `<style>` sits outside the list.
+ */
+const GridListStyles = component$(() => {
+  useMatGridListStyles();
+  return null;
+});
+
 export function MatGridList(props: MatGridListProps): JSXOutput {
   // Mirrors upstream's `cols` setter: Math.max(1, Math.round(coerceNumberProperty(value))).
   const cols = Math.max(1, Math.round(props.cols));
@@ -149,17 +163,20 @@ export function MatGridList(props: MatGridListProps): JSXOutput {
     : undefined;
 
   return (
-    <mat-grid-list
-      id={props.id}
-      class={classes}
-      cols={cols}
-      style={listStyle}
-      role={props.role}
-      aria-label={props['aria-label']}
-      aria-labelledby={props['aria-labelledby']}
-      aria-describedby={props['aria-describedby']}
-    >
-      <div>{renderedTiles}</div>
-    </mat-grid-list>
+    <>
+      <GridListStyles />
+      <mat-grid-list
+        id={props.id}
+        class={classes}
+        cols={cols}
+        style={listStyle}
+        role={props.role}
+        aria-label={props['aria-label']}
+        aria-labelledby={props['aria-labelledby']}
+        aria-describedby={props['aria-describedby']}
+      >
+        <div>{renderedTiles}</div>
+      </mat-grid-list>
+    </>
   );
 }

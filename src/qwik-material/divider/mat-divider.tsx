@@ -1,5 +1,6 @@
 import {component$, useContext} from '@qwik.dev/core';
 import {MAT_DIVIDER_CONFIG, type MatDividerConfig} from './divider-config';
+import {useMatDividerStyles} from './divider-styles';
 
 /**
  * Props for <MatDivider>. Renders a self-closing <mat-divider> custom
@@ -21,6 +22,7 @@ export interface MatDividerProps {
 const DEFAULTS: MatDividerConfig = {};
 
 export const MatDivider = component$<MatDividerProps>(props => {
+  useMatDividerStyles();
   // Read config for family-shape consistency, even though it currently has
   // no fields to resolve. The read pattern is established so future config
   // fields plug in without a component-file rewrite.

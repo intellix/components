@@ -31,6 +31,7 @@ import {
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatStepHeaderItem} from './mat-step-header';
 import {MAT_STEPPER_ACTIONS} from './stepper-actions';
+import {useMatStepperStyles} from './stepper-styles';
 
 /**
  * Descriptor for one step — mirrors `CdkStep`/`MatStep`'s inputs
@@ -224,6 +225,7 @@ const StepContent = component$<{content: JSXOutput}>(props => {
  * folding in `MatTabHeader`/`MatPaginatedTabHeader`).
  */
 export const MatStepper = component$<MatStepperProps>(props => {
+  useMatStepperStyles();
   const idGen = useIdGenerator();
   const groupId = useSignal(() => idGen.getId('cdk-stepper-'));
   const animationsDisabled = useAnimationsDisabled();

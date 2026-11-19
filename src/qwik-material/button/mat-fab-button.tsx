@@ -17,6 +17,7 @@ import {
   useForwardedHostHandlers,
 } from '../core/host-props';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatButtonStyles} from './button-styles';
 
 /** See `mat-button.tsx`'s identical constant doc comment. */
 const KNOWN_PROPS = new Set<string>([
@@ -116,6 +117,7 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatFabButton = component$<MatFabProps>(props => {
+  useMatButtonStyles();
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? DEFAULTS.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;

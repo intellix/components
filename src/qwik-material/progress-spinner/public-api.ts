@@ -14,3 +14,6 @@ export {
   type MatProgressSpinnerProps,
   type MatSpinnerProps,
 } from './mat-progress-spinner';
+
+// The entry point's CSS, registered by its components; see progress-spinner-styles.ts.
+export {useMatProgressSpinnerStyles} from './progress-spinner-styles';

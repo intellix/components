@@ -5,6 +5,7 @@ import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import type {MatChipRemoveButtonDef} from './mat-chip';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatChipsStyles} from './chips-styles';
 
 /**
  * Props for `<MatChipRow>` — upstream `MatChipRow` (`src/material/chips/chip-row.ts`), the
@@ -90,6 +91,7 @@ export interface MatChipRowProps {
 }
 
 export const MatChipRow = component$<MatChipRowProps>(props => {
+  useMatChipsStyles();
   const idGen = useIdGenerator();
   const autoId = useSignal(() => idGen.getId('mat-mdc-chip-'));
   const id = props.id ?? autoId.value;
@@ -111,7 +113,8 @@ export const MatChipRow = component$<MatChipRowProps>(props => {
   const editInputRef = useSignal<HTMLElement>();
 
   // Upstream `_hasTrailingIcon()`/`_hasLeadingActionIcon()`: both hidden while editing.
-  const hasTrailingIcon = (props.trailingIcon != null || props.removeButton != null) && !isEditing.value;
+  const hasTrailingIcon =
+    (props.trailingIcon != null || props.removeButton != null) && !isEditing.value;
   const hasLeadingActionIcon = props.editIcon != null && !isEditing.value;
 
   const animationsDisabled = useAnimationsDisabled();

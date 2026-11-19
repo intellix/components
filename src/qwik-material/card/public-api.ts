@@ -22,3 +22,6 @@ export {
   type MatCardImageProps,
 } from './mat-card-image';
 export {MatCardAvatar, type MatCardAvatarProps} from './mat-card-avatar';
+
+// The entry point's CSS, registered by its components; see card-styles.ts.
+export {useMatCardStyles} from './card-styles';

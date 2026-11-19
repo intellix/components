@@ -42,3 +42,6 @@ export {
   type MatIconRegistrySeedIconSet,
   type MatIconRegistryStore,
 } from './icon-registry';
+
+// The entry point's CSS, registered by its components; see icon-styles.ts.
+export {useMatIconStyles} from './icon-styles';

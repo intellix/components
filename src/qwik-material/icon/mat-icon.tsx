@@ -5,6 +5,7 @@ import {withIconSvgAttributes} from './icon-svg-attrs';
 import {getNamedSvgIcon, splitIconName, useOptionalIconRegistry} from './icon-registry';
 import {extraHostAttrs, type HostRef} from '../core/host-props';
 import type {OpenString} from '../core/open-string';
+import {useMatIconStyles} from './icon-styles';
 
 /** See `button/mat-button.tsx`'s identical constant doc comment. */
 const KNOWN_PROPS = new Set<string>([
@@ -122,6 +123,7 @@ function cleanupFontValue(value: string | undefined): string | undefined {
 }
 
 export const MatIcon = component$<MatIconProps>(props => {
+  useMatIconStyles();
   const config = useContext(MAT_ICON_CONFIG, DEFAULTS);
   const registry = useOptionalIconRegistry();
 

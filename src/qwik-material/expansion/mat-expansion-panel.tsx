@@ -15,6 +15,7 @@ import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MAT_ACCORDION_STATE, type MatAccordionTogglePosition} from './accordion-state';
 import {type MatExpansionConfig, MAT_EXPANSION_CONFIG} from './expansion-config';
 import {MAT_EXPANSION_PANEL_STATE, type MatExpansionPanelState} from './panel-state';
+import {useMatExpansionStyles} from './expansion-styles';
 
 /**
  * Props for `<MatExpansionPanel>`. Controlled component (design spec: "API
@@ -81,6 +82,7 @@ const CONFIG_DEFAULTS: MatExpansionConfig = {};
  * unique-selection auto-close.
  */
 export const MatExpansionPanel = component$<MatExpansionPanelProps>(props => {
+  useMatExpansionStyles();
   const config = useContext(MAT_EXPANSION_CONFIG, CONFIG_DEFAULTS);
   // MatAccordion provides this; absent (undefined) for a standalone panel —
   // see accordion-state.ts's doc comment for why that distinction matters.

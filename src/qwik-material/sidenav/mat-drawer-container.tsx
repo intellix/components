@@ -14,6 +14,7 @@ import {
 import {createInteractivityChecker} from '@angular-community/qwik-cdk/a11y';
 import {getFirstTabbableElement, getLastTabbableElement} from './focus-helpers';
 import {MAT_SIDENAV_CONFIG, type MatSidenavConfig} from './sidenav-config';
+import {useMatSidenavStyles} from './sidenav-styles';
 import {
   containerHasBackdrop,
   drawerHasBackdrop,
@@ -109,6 +110,7 @@ function createContainer(
   extraHostClass: string | undefined,
 ): Component<MatDrawerContainerProps> {
   return component$<MatDrawerContainerProps>(props => {
+    useMatSidenavStyles();
     const config = useContext(MAT_SIDENAV_CONFIG, CONFIG_DEFAULTS);
     void (props.autosize ?? config.autosize ?? false); // see doc comment above — accepted, inert.
 

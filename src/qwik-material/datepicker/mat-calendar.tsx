@@ -88,6 +88,8 @@ import {
   type MatCalendarCellClassFunction,
   type SelectionValue,
 } from './calendar-math';
+import {useMatButtonStyles} from '../button/button-styles';
+import {useMatDatepickerStyles} from './datepicker-styles';
 
 /** This component's own focus-move origins — a NARROWER type than qwik-cdk's own `FocusOrigin`
  *  (`'mouse' | 'touch' | 'keyboard' | 'program' | null`): every focus move this component itself
@@ -160,6 +162,8 @@ const CalendarContent = component$<{focusOrigin: Signal<CalendarFocusOrigin>}>(p
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 
 export const MatCalendar = component$<MatCalendarProps>(props => {
+  useMatButtonStyles();
+  useMatDatepickerStyles();
   // `props.locale` (set by `datepicker-runtime.ts` for the popup case — see this prop's own doc
   // comment for why that case can't rely on THIS component's own `useDateLocale()` call) takes
   // priority; otherwise resolved here directly (render-legal; correct for the standalone

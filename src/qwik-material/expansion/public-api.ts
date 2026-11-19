@@ -18,3 +18,6 @@ export {MatPanelTitle, type MatPanelTitleProps} from './mat-panel-title';
 export {MatPanelDescription, type MatPanelDescriptionProps} from './mat-panel-description';
 export {MatActionRow, type MatActionRowProps} from './mat-action-row';
 export {MatExpansionPanelContent} from './mat-expansion-panel-content';
+
+// The entry point's CSS, registered by its components; see expansion-styles.ts.
+export {useMatExpansionStyles} from './expansion-styles';

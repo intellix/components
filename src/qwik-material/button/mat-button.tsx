@@ -20,6 +20,7 @@ import {
   type HostRef,
   useForwardedHostHandlers,
 } from '../core/host-props';
+import {useMatButtonStyles} from './button-styles';
 
 /** Props this component already names explicitly — excluded from the generic
  *  `extraHostAttrs()` passthrough (see that prop's doc comment below). Kept
@@ -150,6 +151,7 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatButton = component$<MatButtonProps>(props => {
+  useMatButtonStyles();
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const appearance = props.appearance ?? config.defaultAppearance ?? 'text';
   const color = props.color ?? config.color ?? null;

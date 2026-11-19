@@ -60,6 +60,8 @@ import {
   type MatCalendarCellClassFunction,
 } from './calendar-math';
 import {rangeCreatePreview, type DateRange} from './date-range-selection';
+import {useMatButtonStyles} from '../button/button-styles';
+import {useMatDatepickerStyles} from './datepicker-styles';
 
 // Only used for the (adapter-agnostic) `getCellCompareValue` helper below, which only ever
 // dereferences `getYear`/`getMonth`/`getDate` — matches `calendar-math.ts`'s own "cast through
@@ -150,6 +152,8 @@ const ActionsOutlet = component$<{
 });
 
 export const MatDatepickerContent = component$<MatDatepickerContentProps>(props => {
+  useMatButtonStyles();
+  useMatDatepickerStyles();
   const containerRef = useSignal<HTMLElement>();
   // Pure tab-wrapping + anchors — see this file's own doc comment for why `autoFocus`/
   // `restoreFocus` are both left off.

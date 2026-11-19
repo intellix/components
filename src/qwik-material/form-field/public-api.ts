@@ -52,3 +52,6 @@ export {
   type MatErrorStateMatcher,
   type MatErrorStateSnapshot,
 } from '../core/error-state-matcher';
+
+// The entry point's CSS, registered by its components; see form-field-styles.ts.
+export {useMatFormFieldStyles} from './form-field-styles';

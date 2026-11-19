@@ -28,3 +28,6 @@ export {
   getParentInnerPadding,
 } from './menu-runtime';
 export type {MenuRuntimeSignals, ResolvedMenuConfig, OpenMenuOptions} from './menu-runtime';
+
+// The entry point's CSS, registered by its components; see menu-styles.ts.
+export {useMatMenuStyles} from './menu-styles';

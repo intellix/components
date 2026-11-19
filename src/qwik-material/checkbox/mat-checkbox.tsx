@@ -14,6 +14,7 @@ import {MatInternalFormField} from '../core/mat-internal-form-field';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_CHECKBOX_CONFIG, MAT_CHECKBOX_CONFIG_DEFAULTS} from './checkbox-config';
+import {useMatCheckboxStyles} from './checkbox-styles';
 
 /** Payload passed to `onChange$` — mirrors upstream's `MatCheckboxChange.checked`. */
 export interface MatCheckboxChangeEvent {
@@ -159,6 +160,7 @@ function animationClassFor(
 }
 
 export const MatCheckbox = component$<MatCheckboxProps>(props => {
+  useMatCheckboxStyles();
   const config = useContext(MAT_CHECKBOX_CONFIG, MAT_CHECKBOX_CONFIG_DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
   const rippleGlobalOptions = useRippleGlobalOptions();

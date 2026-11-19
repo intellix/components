@@ -29,3 +29,6 @@ export {
   MAT_ANIMATIONS_DISABLED,
 } from './mat-dialog-tokens';
 export type {MatDialogContainerApi} from './mat-dialog-tokens';
+
+// The entry point's CSS, registered by its components; see dialog-styles.ts.
+export {useMatDialogStyles} from './dialog-styles';

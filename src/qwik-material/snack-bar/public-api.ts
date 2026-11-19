@@ -26,3 +26,6 @@ export {
   MAT_SNACK_BAR_REF,
   useMatSnackBarProvider,
 } from './mat-snack-bar-tokens';
+
+// The entry point's CSS, registered by its components; see snack-bar-styles.ts.
+export {useMatSnackBarStyles} from './snack-bar-styles';

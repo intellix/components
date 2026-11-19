@@ -59,3 +59,6 @@ export {
   applyDateRangePickerSelection,
   cancelDateRangePickerSelection,
 } from './datepicker-runtime';
+
+// The entry point's CSS, registered by its components; see datepicker-styles.ts.
+export {useMatDatepickerStyles} from './datepicker-styles';

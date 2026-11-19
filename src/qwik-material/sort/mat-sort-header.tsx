@@ -20,6 +20,7 @@ import {
   readSortState,
   type MatSortSharedState,
 } from './sort-state';
+import {useMatSortStyles} from './sort-styles';
 
 /**
  * Fallback for a <MatSortHeader> rendered with no <MatSort> ancestor — not
@@ -93,6 +94,7 @@ export interface MatSortHeaderProps {
 const CONFIG_DEFAULTS: MatSortConfig = {};
 
 export const MatSortHeader = component$<MatSortHeaderProps>(props => {
+  useMatSortStyles();
   const config = useContext(MAT_SORT_CONFIG, CONFIG_DEFAULTS);
   // Standalone fallback (no <MatSort> ancestor) renders inert rather than
   // throwing upstream's getSortHeaderNotContainedWithinSortError() — see

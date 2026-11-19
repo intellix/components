@@ -2,6 +2,7 @@ import {$, component$, Slot, useContext} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {type MatExpansionConfig, MAT_EXPANSION_CONFIG} from './expansion-config';
 import {MAT_EXPANSION_PANEL_STATE, MAT_EXPANSION_PANEL_STATE_DEFAULTS} from './panel-state';
+import {useMatExpansionStyles} from './expansion-styles';
 
 /**
  * Props for `<MatExpansionPanelHeader>`. Must be rendered with
@@ -35,6 +36,7 @@ function hasModifierKey(event: KeyboardEvent): boolean {
  * `expansion-panel-header.html`).
  */
 export const MatExpansionPanelHeader = component$<MatExpansionPanelHeaderProps>(props => {
+  useMatExpansionStyles();
   const config = useContext(MAT_EXPANSION_CONFIG, CONFIG_DEFAULTS);
   const panel = useContext(MAT_EXPANSION_PANEL_STATE, {
     value: MAT_EXPANSION_PANEL_STATE_DEFAULTS,

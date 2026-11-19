@@ -8,6 +8,7 @@ import {
   MAT_BUTTON_TOGGLE_GROUP_STATE,
   MAT_BUTTON_TOGGLE_GROUP_STATE_DEFAULTS,
 } from './button-toggle-group-state';
+import {useMatButtonToggleStyles} from './button-toggle-styles';
 
 /**
  * Props for <MatButtonToggle>. Rendered as <mat-button-toggle role="presentation">
@@ -36,6 +37,7 @@ export interface MatButtonToggleProps {
 }
 
 export const MatButtonToggle = component$<MatButtonToggleProps>(props => {
+  useMatButtonToggleStyles();
   // Read parent state; SSR-safe fallback for standalone toggles. The
   // context carries a Signal<MatButtonToggleGroupState> (not the state
   // object directly) — see button-toggle-group-state.ts for why context

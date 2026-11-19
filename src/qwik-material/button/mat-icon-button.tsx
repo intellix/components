@@ -15,6 +15,7 @@ import {
   type HostRef,
   useForwardedHostHandlers,
 } from '../core/host-props';
+import {useMatButtonStyles} from './button-styles';
 
 /** See `mat-button.tsx`'s identical constant doc comment. */
 const KNOWN_PROPS = new Set<string>([
@@ -81,6 +82,7 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatIconButton = component$<MatIconButtonProps>(props => {
+  useMatButtonStyles();
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;

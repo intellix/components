@@ -20,6 +20,7 @@ import {
 import {usePaginatedHeader} from './use-paginated-header';
 import {MatTabLabelItem} from './mat-tab-label';
 import {MatTabBodyItem} from './mat-tab-body';
+import {useMatTabsStyles} from './tabs-styles';
 
 /**
  * Descriptor for one tab — mirrors `MatTab`'s inputs
@@ -130,6 +131,7 @@ function clampIndex(index: number | undefined, length: number): number {
  * that split here.
  */
 export const MatTabGroup = component$<MatTabGroupProps>(props => {
+  useMatTabsStyles();
   const config = useContext(MAT_TABS_CONFIG, CONFIG_DEFAULTS);
   const idGen = useIdGenerator();
   const groupId = useSignal(() => idGen.getId('mat-tab-group-'));

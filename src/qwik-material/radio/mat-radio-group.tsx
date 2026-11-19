@@ -2,6 +2,7 @@ import {$, component$, Slot, useContextProvider, useSignal, type QRL} from '@qwi
 import {useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {MatRadioColor} from './radio-color';
 import {MAT_RADIO_GROUP_STATE, type MatRadioGroupState} from './radio-group-state';
+import {useMatRadioStyles} from './radio-styles';
 
 /**
  * Props for <MatRadioGroup>. Controlled component — the consumer owns
@@ -72,6 +73,7 @@ export interface MatRadioGroupProps {
 }
 
 export const MatRadioGroup = component$<MatRadioGroupProps>(props => {
+  useMatRadioStyles();
   const idGen = useIdGenerator();
   // Computed once, lazily — mirrors upstream's `_name = inject(_IdGenerator)
   // .getId(...)` field initializer, which runs once at construction and is
@@ -140,8 +142,7 @@ export const MatRadioGroup = component$<MatRadioGroupProps>(props => {
           'mat-mdc-radio-group',
           // Mirrors `NgControlStatus` — only present when bound to a reactive-forms-like
           // control. See `MatRadioGroupProps.formBound`'s own doc comment.
-          (props.formBound ?? false) &&
-            ((props.touched ?? false) ? 'ng-touched' : 'ng-untouched'),
+          (props.formBound ?? false) && ((props.touched ?? false) ? 'ng-touched' : 'ng-untouched'),
           (props.formBound ?? false) && ((props.dirty ?? false) ? 'ng-dirty' : 'ng-pristine'),
           (props.formBound ?? false) && ((props.invalid ?? false) ? 'ng-invalid' : 'ng-valid'),
           props.class,

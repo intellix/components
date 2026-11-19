@@ -5,6 +5,7 @@ import type {MatBadgeColor} from './badge-color';
 import type {MatBadgePosition} from './badge-position';
 import type {MatBadgeSize} from './badge-size';
 import {MAT_BADGE_CONFIG, type MatBadgeConfig} from './badge-config';
+import {useMatBadgeStyles} from './badge-styles';
 
 /**
  * Directive-hook form of upstream's `[matBadge]` (`src/material/badge/
@@ -34,6 +35,13 @@ import {MAT_BADGE_CONFIG, type MatBadgeConfig} from './badge-config';
  * passed in instead of read from `MAT_BADGE_CONFIG` — for a plain function
  * that renders JSX outside any component's hook phase, where `useContext()`
  * can't be called.
+ *
+ * The badge CSS: `useMatBadge()` registers it (`useMatBadgeStyles()`, first,
+ * like upstream's directive loading `_MatBadgeStyleLoader` in its
+ * constructor) — call it as the consuming component's FIRST hook so every
+ * caller shares one `<style>` (README "Component styles"). `matBadge()`
+ * can't (no hook phase): the component rendering its result calls
+ * `useMatBadgeStyles()` itself, first.
  */
 export interface UseMatBadgeProps {
   /** Content shown inside `.mat-badge-content`. Empty/whitespace-only (after trim) renders
@@ -90,15 +98,20 @@ const DEFAULTS: MatBadgeConfig = {
 /** Shared monotonic id generator — see `mat-badge.tsx`'s identical note. */
 const idGenerator = createIdGenerator();
 
-/** The badge for `props`, with defaults from the nearest `useMatBadgeProvider()` (MAT_BADGE_CONFIG). */
+/**
+ * The badge for `props`, with defaults from the nearest `useMatBadgeProvider()` (MAT_BADGE_CONFIG),
+ * registering the badge CSS (`useMatBadgeStyles()`).
+ */
 export function useMatBadge(props: UseMatBadgeProps): MatBadgeHook {
+  useMatBadgeStyles();
   return matBadge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS));
 }
 
 /**
  * The badge `useMatBadge()` returns, computed from `config` as given instead of read from
  * MAT_BADGE_CONFIG — no hook, so callable where hooks aren't (a plain function rendering
- * JSX for a `component$`). Same `hostProps` and `content` for the same props and config.
+ * JSX for a `component$`). Same `hostProps` and `content` for the same props and config. Registers
+ * no CSS: the component rendering the result calls `useMatBadgeStyles()` as its first hook.
  */
 export function matBadge(props: UseMatBadgeProps, config: MatBadgeConfig = DEFAULTS): MatBadgeHook {
   const position = props.position ?? config.position ?? 'above after';

@@ -12,3 +12,6 @@ export type {
   MatTableRowGroupDef,
   MatTableSortConfig,
 } from './mat-table-types';
+
+// The entry point's CSS, registered by its components; see table-styles.ts.
+export {useMatTableStyles} from './table-styles';

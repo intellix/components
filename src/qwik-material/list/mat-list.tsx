@@ -1,6 +1,7 @@
 import {component$, Slot, useContext, useContextProvider} from '@qwik.dev/core';
 import {MAT_LIST_CONFIG, type MatListConfig} from './list-config';
 import {MAT_LIST_BASE_STATE, type MatListBaseState} from './list-context';
+import {useMatListStyles} from './list-styles';
 
 /**
  * Shared props for the three container variants (MatList, MatNavList,
@@ -59,6 +60,7 @@ export interface MatSubheaderProps {
 const CONFIG_DEFAULTS: MatListConfig = {};
 
 export const MatList = component$<MatListProps>(props => {
+  useMatListStyles();
   // Read config for family-shape consistency, even though it currently
   // has no fields to resolve. The read pattern is established so future
   // config fields plug in without a component-file rewrite. DEFAULTS
@@ -92,6 +94,7 @@ export const MatList = component$<MatListProps>(props => {
 });
 
 export const MatNavList = component$<MatNavListProps>(props => {
+  useMatListStyles();
   useContext(MAT_LIST_CONFIG, CONFIG_DEFAULTS);
   // Nav lists are interactive — items are only reachable via keyboard
   // shortcuts per MDC, so upstream opts every item into the ripple /
@@ -121,6 +124,7 @@ export const MatNavList = component$<MatNavListProps>(props => {
 });
 
 export const MatActionList = component$<MatActionListProps>(props => {
+  useMatListStyles();
   useContext(MAT_LIST_CONFIG, CONFIG_DEFAULTS);
   useContextProvider(MAT_LIST_BASE_STATE, {
     isNonInteractive: false,

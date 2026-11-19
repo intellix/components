@@ -5,6 +5,7 @@ import {MatInternalFormField} from '../core/mat-internal-form-field';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_SLIDE_TOGGLE_CONFIG, type MatSlideToggleConfig} from './slide-toggle-config';
+import {useMatSlideToggleStyles} from './slide-toggle-styles';
 
 /**
  * Props for <MatSlideToggle>. Rendered as the upstream DOM shape from
@@ -96,6 +97,7 @@ const CONFIG_DEFAULTS: MatSlideToggleConfig = {
 };
 
 export const MatSlideToggle = component$<MatSlideToggleProps>(props => {
+  useMatSlideToggleStyles();
   // DEFAULTS fallback is REQUIRED — a bare useContext() throws Code 13 when
   // rendered with no provider hook ancestor (Progress Bar / Progress Spinner
   // post-mortem; see every other qwik-material config read for precedent).

@@ -25,3 +25,6 @@ export {
   useMatBottomSheetProvider,
   type MatBottomSheetProviderConfig,
 } from './use-mat-bottom-sheet-provider';
+
+// The entry point's CSS, registered by its components; see bottom-sheet-styles.ts.
+export {useMatBottomSheetStyles} from './bottom-sheet-styles';

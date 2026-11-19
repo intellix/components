@@ -28,6 +28,8 @@ import {openDatepickerPanel, openDateRangePickerPanel} from './datepicker-runtim
 import {DATEPICKER_INTL} from './datepicker-intl';
 import type {MatDatepickerHandle, MatDateRangePickerHandle} from './use-mat-datepicker';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatButtonStyles} from '../button/button-styles';
+import {useMatDatepickerStyles} from './datepicker-styles';
 
 export type AnyDatepickerHandle<D = unknown> = MatDatepickerHandle<D> | MatDateRangePickerHandle<D>;
 
@@ -69,6 +71,8 @@ export interface MatDatepickerToggleProps<D = unknown> {
 }
 
 export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props => {
+  useMatButtonStyles();
+  useMatDatepickerStyles();
   const picker = props.picker;
   const ctx = useContext(QWIK_CDK);
   const disabled = props.disabled ?? picker.disabled.value;

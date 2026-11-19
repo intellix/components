@@ -3,6 +3,7 @@ import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context';
+import {useMatListStyles} from './list-styles';
 
 /**
  * Props for MatListItem. Polymorphic host via `as` prop:
@@ -119,6 +120,7 @@ export interface MatListItemProps {
 }
 
 export const MatListItem = component$<MatListItemProps>(props => {
+  useMatListStyles();
   const as = props.as ?? 'div';
   const activated = props.activated ?? false;
   const disabled = props.disabled ?? false;

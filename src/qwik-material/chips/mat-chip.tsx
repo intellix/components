@@ -3,6 +3,7 @@ import {useFocusOrigin, useIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatChipsStyles} from './chips-styles';
 
 /** A `matChipRemove` button's content/props — see `MatChipProps.removeButton`. */
 export interface MatChipRemoveButtonDef {
@@ -56,6 +57,7 @@ export interface MatChipProps {
 }
 
 export const MatChip = component$<MatChipProps>(props => {
+  useMatChipsStyles();
   const idGen = useIdGenerator();
   const autoId = useSignal(() => idGen.getId('mat-mdc-chip-'));
   const id = props.id ?? autoId.value;

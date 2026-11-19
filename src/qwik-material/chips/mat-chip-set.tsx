@@ -3,6 +3,7 @@ import {isBrowser} from '@qwik.dev/core/build';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {MatChip, type MatChipRemoveButtonDef} from './mat-chip';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatChipsStyles} from './chips-styles';
 
 /**
  * Descriptor for one `<MatChip>` rendered inside `<MatChipSet chips={[...]}>`.
@@ -95,6 +96,7 @@ export interface MatChipSetProps {
 }
 
 export const MatChipSet = component$<MatChipSetProps>(props => {
+  useMatChipsStyles();
   const chips = props.chips;
   const disabled = props.disabled ?? false;
   const empty = chips.length === 0;

@@ -9,6 +9,7 @@ import {
   type MatAccordionTogglePosition,
 } from './accordion-state';
 import {computeNextHeaderIndex, type AccordionNavKey} from './accordion-keyboard';
+import {useMatExpansionStyles} from './expansion-styles';
 
 /**
  * Props for `<MatAccordion>`. Mirrors `src/material/accordion.ts`'s
@@ -44,6 +45,7 @@ const NAV_KEYS: ReadonlySet<string> = new Set(['ArrowDown', 'ArrowUp', 'Home', '
  * headers.
  */
 export const MatAccordion = component$<MatAccordionProps>(props => {
+  useMatExpansionStyles();
   const multi = props.multi ?? false;
   const displayMode = props.displayMode ?? 'default';
   const togglePosition = props.togglePosition ?? 'after';

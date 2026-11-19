@@ -4,6 +4,7 @@ import type {MatProgressBarMode} from './progress-bar-mode';
 import {MAT_PROGRESS_BAR_CONFIG, type MatProgressBarConfig} from './progress-bar-config';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import type {OpenString} from '../core/open-string';
+import {useMatProgressBarStyles} from './progress-bar-styles';
 
 /**
  * Props for <MatProgressBar>. Renders <mat-progress-bar> custom element with
@@ -42,6 +43,7 @@ function clamp(v: number): number {
 }
 
 export const MatProgressBar = component$<MatProgressBarProps>(props => {
+  useMatProgressBarStyles();
   const config = useContext(MAT_PROGRESS_BAR_CONFIG, DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
 

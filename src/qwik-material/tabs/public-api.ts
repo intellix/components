@@ -8,3 +8,6 @@ export {MatTabGroup, type MatTabDef, type MatTabGroupProps} from './mat-tab-grou
 export {MatTabNav, type MatTabNavProps} from './mat-tab-nav';
 export {MatTabLink, type MatTabLinkProps} from './mat-tab-link';
 export {MatTabNavPanel, type MatTabNavPanelProps} from './mat-tab-nav-panel';
+
+// The entry point's CSS, registered by its components; see tabs-styles.ts.
+export {useMatTabsStyles} from './tabs-styles';

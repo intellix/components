@@ -2,6 +2,7 @@ import {defineConfig} from 'vitest/config';
 import {qwikVite} from '@qwik.dev/core/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
+import {wrapInLayer, writeComponentStyles} from './scripts/component-styles.mjs';
 
 const entries = [
   'core',
@@ -51,6 +52,26 @@ export default defineConfig({
     qwikVite({csr: true, srcDir: '.'}),
     dts({outDirs: 'dist', insertTypesEntry: true}),
     {
+      // Each component entry point's CSS is generated into the SOURCE tree, committed: the
+      // `useMat<Entry>Styles()` hook in `<entry>/<entry>-styles.ts`, with the compiled CSS as a
+      // literal — see scripts/component-styles.mjs. Regenerated here so a build (and so
+      // `pack:local`) always ships CSS matching the Sass; `component-styles.spec.ts` catches a
+      // stale commit.
+      name: 'qwik-material-component-styles',
+      apply: 'build',
+      async buildStart() {
+        const written = await writeComponentStyles();
+        if (written.length) {
+          console.warn(
+            `[qwik-material] regenerated ${written.join(', ')} component styles — commit them.`,
+          );
+        }
+      },
+    },
+    {
+      // The CSS that stays global — an app imports each once: the core (default theme, ripple,
+      // focus indicators, option, pseudo-checkbox, …) and the typography/elevation classes. Inside
+      // the same `@layer qwik-material` as every component's CSS, so the app's unlayered CSS wins.
       name: 'qwik-material-compile-sass-prebuilt',
       apply: 'build',
       async closeBundle() {
@@ -59,64 +80,13 @@ export default defineConfig({
         const path = await import('node:path');
         const sassEntries: [string, string][] = [
           ['scss/core/core-prebuilt.scss', 'dist/core-prebuilt.css'],
-          ['scss/dialog/dialog-prebuilt.scss', 'dist/dialog-prebuilt.css'],
-          ['scss/button/button-prebuilt.scss', 'dist/button-prebuilt.css'],
-          ['scss/card/card-prebuilt.scss', 'dist/card-prebuilt.css'],
-          ['scss/toolbar/toolbar-prebuilt.scss', 'dist/toolbar-prebuilt.css'],
-          ['scss/badge/badge-prebuilt.scss', 'dist/badge-prebuilt.css'],
-          ['scss/icon/icon-prebuilt.scss', 'dist/icon-prebuilt.css'],
-          ['scss/progress-bar/progress-bar-prebuilt.scss', 'dist/progress-bar-prebuilt.css'],
-          [
-            'scss/progress-spinner/progress-spinner-prebuilt.scss',
-            'dist/progress-spinner-prebuilt.css',
-          ],
-          ['scss/divider/divider-prebuilt.scss', 'dist/divider-prebuilt.css'],
-          ['scss/grid-list/grid-list-prebuilt.scss', 'dist/grid-list-prebuilt.css'],
-          ['scss/list/list-prebuilt.scss', 'dist/list-prebuilt.css'],
-          ['scss/button-toggle/button-toggle-prebuilt.scss', 'dist/button-toggle-prebuilt.css'],
-          ['scss/slide-toggle/slide-toggle-prebuilt.scss', 'dist/slide-toggle-prebuilt.css'],
-          ['scss/expansion/expansion-prebuilt.scss', 'dist/expansion-prebuilt.css'],
-          ['scss/radio/radio-prebuilt.scss', 'dist/radio-prebuilt.css'],
-          ['scss/checkbox/checkbox-prebuilt.scss', 'dist/checkbox-prebuilt.css'],
-          ['scss/sort/sort-prebuilt.scss', 'dist/sort-prebuilt.css'],
-          ['scss/tabs/tabs-prebuilt.scss', 'dist/tabs-prebuilt.css'],
-          ['scss/sidenav/sidenav-prebuilt.scss', 'dist/sidenav-prebuilt.css'],
-          ['scss/snack-bar/snack-bar-prebuilt.scss', 'dist/snack-bar-prebuilt.css'],
-          ['scss/bottom-sheet/bottom-sheet-prebuilt.scss', 'dist/bottom-sheet-prebuilt.css'],
-          ['scss/form-field/form-field-prebuilt.scss', 'dist/form-field-prebuilt.css'],
-          ['scss/stepper/stepper-prebuilt.scss', 'dist/stepper-prebuilt.css'],
-          ['scss/chips/chips-prebuilt.scss', 'dist/chips-prebuilt.css'],
-          ['scss/tooltip/tooltip-prebuilt.scss', 'dist/tooltip-prebuilt.css'],
-          ['scss/slider/slider-prebuilt.scss', 'dist/slider-prebuilt.css'],
-          ['scss/select/select-prebuilt.scss', 'dist/select-prebuilt.css'],
-          ['scss/timepicker/timepicker-prebuilt.scss', 'dist/timepicker-prebuilt.css'],
-          ['scss/menu/menu-prebuilt.scss', 'dist/menu-prebuilt.css'],
-          ['scss/table/table-prebuilt.scss', 'dist/table-prebuilt.css'],
-          ['scss/tree/tree-prebuilt.scss', 'dist/tree-prebuilt.css'],
-          ['scss/paginator/paginator-prebuilt.scss', 'dist/paginator-prebuilt.css'],
-          ['scss/autocomplete/autocomplete-prebuilt.scss', 'dist/autocomplete-prebuilt.css'],
-          ['scss/datepicker/datepicker-prebuilt.scss', 'dist/datepicker-prebuilt.css'],
           ['scss/core/typography-prebuilt.scss', 'dist/typography-prebuilt.css'],
           ['scss/core/elevation-prebuilt.scss', 'dist/elevation-prebuilt.css'],
         ];
         for (const [src, out] of sassEntries) {
-          const srcAbs = path.resolve(__dirname, src);
-          try {
-            const result = sass.compile(srcAbs, {style: 'expanded'});
-            await fs.mkdir(path.dirname(path.resolve(__dirname, out)), {recursive: true});
-            await fs.writeFile(path.resolve(__dirname, out), result.css, 'utf8');
-          } catch (err: unknown) {
-            const e = err as {code?: string; message?: string};
-            if (
-              e?.code === 'ENOENT' ||
-              (e?.message ?? '').includes('does not exist') ||
-              (e?.message ?? '').includes('no such file or directory')
-            ) {
-              console.warn(`[qwik-material] skipping ${src} — not yet present.`);
-              continue;
-            }
-            throw err;
-          }
+          const result = sass.compile(path.resolve(__dirname, src), {style: 'expanded'});
+          await fs.mkdir(path.dirname(path.resolve(__dirname, out)), {recursive: true});
+          await fs.writeFile(path.resolve(__dirname, out), wrapInLayer(result.css), 'utf8');
         }
       },
     },

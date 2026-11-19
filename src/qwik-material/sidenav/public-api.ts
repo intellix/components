@@ -23,3 +23,6 @@ export {
   type MatDrawerToggleResult,
   type UseMatDrawerRefOptions,
 } from './use-mat-drawer-ref';
+
+// The entry point's CSS, registered by its components; see sidenav-styles.ts.
+export {useMatSidenavStyles} from './sidenav-styles';

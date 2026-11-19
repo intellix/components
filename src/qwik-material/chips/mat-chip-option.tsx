@@ -5,6 +5,7 @@ import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {MAT_CHIP_LISTBOX_SELECTION} from './internal/listbox-selection';
 import type {MatChipRemoveButtonDef} from './mat-chip';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatChipsStyles} from './chips-styles';
 
 /**
  * Props for `<MatChipOption>` — upstream `MatChipOption`
@@ -61,6 +62,7 @@ export interface MatChipOptionProps {
 }
 
 export const MatChipOption = component$<MatChipOptionProps>(props => {
+  useMatChipsStyles();
   const idGen = useIdGenerator();
   const autoId = useSignal(() => idGen.getId('mat-mdc-chip-'));
   const id = props.id ?? autoId.value;

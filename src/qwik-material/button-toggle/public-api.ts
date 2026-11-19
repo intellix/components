@@ -20,3 +20,6 @@ export {
 export {MatButtonToggleGroup, type MatButtonToggleGroupProps} from './mat-button-toggle-group';
 
 export {MatButtonToggle, type MatButtonToggleProps} from './mat-button-toggle';
+
+// The entry point's CSS, registered by its components; see button-toggle-styles.ts.
+export {useMatButtonToggleStyles} from './button-toggle-styles';

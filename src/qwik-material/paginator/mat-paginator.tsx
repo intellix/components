@@ -17,6 +17,8 @@ import {
   resolveInitialPageSize,
   type PageEvent,
 } from './paginator-math';
+import {useMatButtonStyles} from '../button/button-styles';
+import {useMatPaginatorStyles} from './paginator-styles';
 
 export type {PageEvent};
 
@@ -129,6 +131,8 @@ function paginatorIcon(d: string): JSXOutput {
 const MAT_PAGINATOR_CONFIG_DEFAULTS: MatPaginatorConfig = {};
 
 export const MatPaginator = component$<MatPaginatorProps>(props => {
+  useMatButtonStyles();
+  useMatPaginatorStyles();
   const config = useContext(MAT_PAGINATOR_CONFIG, MAT_PAGINATOR_CONFIG_DEFAULTS);
   const intl = useContext(MAT_PAGINATOR_INTL, DEFAULT_PAGINATOR_INTL);
   const idGen = useIdGenerator();

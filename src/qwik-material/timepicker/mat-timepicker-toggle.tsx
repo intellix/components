@@ -9,6 +9,7 @@ import {disabledAttr} from '../button/internal/disabled-attr';
 import {openTimepickerPanel} from './timepicker-runtime';
 import type {MatTimepickerHandle} from './use-mat-timepicker';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
+import {useMatButtonStyles} from '../button/button-styles';
 
 const DEFAULT_ARIA_LABEL = 'Open timepicker options';
 
@@ -53,6 +54,7 @@ export interface MatTimepickerToggleProps<D = unknown> {
 }
 
 export const MatTimepickerToggle = component$<MatTimepickerToggleProps>(props => {
+  useMatButtonStyles();
   const picker = props.picker;
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();

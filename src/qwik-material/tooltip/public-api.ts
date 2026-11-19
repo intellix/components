@@ -24,3 +24,6 @@ export {
 } from './tooltip-position';
 export {showTooltip, hideTooltip, repositionTooltip, finalizeHidden} from './tooltip-runtime';
 export type {TooltipRuntimeSignals, TooltipShowConfig, TooltipHideConfig} from './tooltip-runtime';
+
+// The entry point's CSS, registered by its components; see tooltip-styles.ts.
+export {useMatTooltipStyles} from './tooltip-styles';

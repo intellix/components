@@ -1,4 +1,12 @@
-import {$, component$, useComputed$, useContext, useSignal, useTask$, type QRL} from '@qwik.dev/core';
+import {
+  $,
+  component$,
+  useComputed$,
+  useContext,
+  useSignal,
+  useTask$,
+  type QRL,
+} from '@qwik.dev/core';
 import {
   type MatFormFieldControlProps,
   useOptionalFormFieldConnectedOrigin,
@@ -15,6 +23,7 @@ import {
 } from './timepicker-runtime';
 import {resolveDateAdapter} from '../core/datetime/use-date-adapter';
 import type {MatTimepickerHandle} from './use-mat-timepicker';
+import {useMatTimepickerStyles} from './timepicker-styles';
 import {useMatFormState} from '../core/mat-form';
 import {
   MAT_ERROR_STATE_MATCHER,
@@ -133,6 +142,7 @@ export interface MatTimepickerInputProps<D = unknown> extends Omit<
 }
 
 export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
+  useMatTimepickerStyles();
   const picker = props.picker;
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
@@ -250,7 +260,9 @@ export const MatTimepickerInput = component$<MatTimepickerInputProps>(props => {
       // out of order on their first-ever invocation. `handleTimepickerBlur`/`empty`/
       // `shouldLabelFloat` above are deliberately NOT guarded — a blur that bounces right back
       // is still a REAL blur for "touched"/value-reformatting purposes (matches upstream).
-      if ((picker._inputRef.value?.ownerDocument.activeElement ?? null) !== picker._inputRef.value) {
+      if (
+        (picker._inputRef.value?.ownerDocument.activeElement ?? null) !== picker._inputRef.value
+      ) {
         formField.focused = false;
       }
       formField.empty = liveEmpty;

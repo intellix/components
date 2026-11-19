@@ -10,6 +10,7 @@ import {
 import {isBrowser} from '@qwik.dev/core/build';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
 import type {MenuPositionX, MenuPositionY} from './menu-positions';
+import {useMatMenuStyles} from './menu-styles';
 
 /** Name of the enter animation `@keyframes` (mirrors upstream `menu.ts`). */
 const ENTER_ANIMATION = '_mat-menu-enter';
@@ -61,6 +62,7 @@ export interface MenuPanelProps {
  * `mat-menu-trigger.tsx` / `mat-menu-item.tsx`.
  */
 export const MenuPanel = component$<MenuPanelProps>(props => {
+  useMatMenuStyles();
   const panelRef = useSignal<HTMLElement>();
   // True while either the enter OR exit animation is actually in flight.
   // Starts `true`: every parity scenario confirms `mat-menu-panel-animating`

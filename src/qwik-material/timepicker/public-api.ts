@@ -23,3 +23,6 @@ export {
   selectTimepickerOption,
   formatTimeForDisplay,
 } from './timepicker-runtime';
+
+// The entry point's CSS, registered by its components; see timepicker-styles.ts.
+export {useMatTimepickerStyles} from './timepicker-styles';

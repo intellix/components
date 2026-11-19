@@ -32,3 +32,6 @@ export {
 
 export {MatOption, type MatOptionProps} from '../core/mat-option';
 export {MatOptgroup, type MatOptgroupProps} from '../core/mat-optgroup';
+
+// The entry point's CSS, registered by its components; see autocomplete-styles.ts.
+export {useMatAutocompleteStyles} from './autocomplete-styles';

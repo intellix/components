@@ -17,6 +17,7 @@ import {
   type MatSnackBarRef,
 } from './mat-snack-bar-ref';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
+import {useMatSnackBarStyles} from './snack-bar-styles';
 
 const ENTER_ANIMATION = '_mat-snack-bar-enter';
 const EXIT_ANIMATION = '_mat-snack-bar-exit';
@@ -55,6 +56,7 @@ export interface MatSnackBarContainerProps {
  */
 export const MatSnackBarContainer = component$<MatSnackBarContainerProps>(
   ({config, snackBarRef}) => {
+    useMatSnackBarStyles();
     const hostRef = useSignal<HTMLElement>();
     const labelRef = useSignal<HTMLElement>();
     const animationsDisabled = useAnimationsDisabled();

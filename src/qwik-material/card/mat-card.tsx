@@ -1,6 +1,7 @@
 import {component$, Slot, useContext} from '@qwik.dev/core';
 import type {MatCardAppearance} from './card-appearance';
 import {MAT_CARD_CONFIG, type MatCardConfig} from './card-config';
+import {useMatCardStyles} from './card-styles';
 
 export interface MatCardProps {
   /** Visual appearance. Overrides the provider config. Defaults to 'raised'. */
@@ -12,6 +13,7 @@ export interface MatCardProps {
 const DEFAULTS: MatCardConfig = {appearance: 'raised'};
 
 export const MatCard = component$<MatCardProps>(props => {
+  useMatCardStyles();
   const config = useContext(MAT_CARD_CONFIG, DEFAULTS);
   const appearance = props.appearance ?? config.appearance ?? 'raised';
 
