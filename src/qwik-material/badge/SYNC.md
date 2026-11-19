@@ -136,6 +136,12 @@ host element's tag/`href`/`tabIndex`, which a hook spread onto an UNKNOWN eventu
 inspect, so the caller (who DOES know what it's rendering) states it explicitly; `<MatBadge>`
 computes it the same way it always did (from its own `as`/`href`/`tabIndex`) and passes it in.
 
+`matBadge(props, config?)` (same file, same entry point) is the hook's body as a plain function:
+`useMatBadge(props)` is `matBadge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS))`. A function that
+renders JSX outside a component's hook phase (a static render helper) can't call `useContext()`,
+so it passes the config itself (or nothing, for the defaults) and gets the same `hostProps` and
+`content` — `use-mat-badge.spec.tsx` renders both side by side for the same props/config.
+
 `<MatBadge>` (`mat-badge.tsx`) is now a thin wrapper: calls the hook, `mergeHostProps()`s with its
 own `class`/`id`/`role`/`tabIndex`/`aria-label`/`aria-labelledby`/`onClick$`, renders `badge.content`
 as its last child — same rendered DOM as before, verified by the full `specs/material-badge` suite

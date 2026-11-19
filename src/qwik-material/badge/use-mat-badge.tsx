@@ -29,6 +29,11 @@ import {MAT_BADGE_CONFIG, type MatBadgeConfig} from './badge-config';
  * `<MatBadge>` (`mat-badge.tsx`) is now a thin wrapper around this hook for
  * the common case of a badge that doesn't need to be combined with ANOTHER
  * directive on the same element.
+ *
+ * `matBadge(props, config?)` is the same computation with the badge config
+ * passed in instead of read from `MAT_BADGE_CONFIG` — for a plain function
+ * that renders JSX outside any component's hook phase, where `useContext()`
+ * can't be called.
  */
 export interface UseMatBadgeProps {
   /** Content shown inside `.mat-badge-content`. Empty/whitespace-only (after trim) renders
@@ -85,8 +90,17 @@ const DEFAULTS: MatBadgeConfig = {
 /** Shared monotonic id generator — see `mat-badge.tsx`'s identical note. */
 const idGenerator = createIdGenerator();
 
+/** The badge for `props`, with defaults from the nearest `useMatBadgeProvider()` (MAT_BADGE_CONFIG). */
 export function useMatBadge(props: UseMatBadgeProps): MatBadgeHook {
-  const config = useContext(MAT_BADGE_CONFIG, DEFAULTS);
+  return matBadge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS));
+}
+
+/**
+ * The badge `useMatBadge()` returns, computed from `config` as given instead of read from
+ * MAT_BADGE_CONFIG — no hook, so callable where hooks aren't (a plain function rendering
+ * JSX for a `component$`). Same `hostProps` and `content` for the same props and config.
+ */
+export function matBadge(props: UseMatBadgeProps, config: MatBadgeConfig = DEFAULTS): MatBadgeHook {
   const position = props.position ?? config.position ?? 'above after';
   const size = props.size ?? config.size ?? 'medium';
   const overlap = props.overlap ?? config.overlap ?? true;
