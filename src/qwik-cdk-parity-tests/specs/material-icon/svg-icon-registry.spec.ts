@@ -35,6 +35,23 @@ test('material-icon/svg-icon-url — URL-registered icon is already resolved in 
   expect(html).toMatch(/<svg[^>]*\bfocusable="false"/);
 });
 
+test('material-icon/svg-icon-url — the resolved <svg> markup is in the HTML only, not in the serialized state too', async ({
+  request,
+}) => {
+  const response = await request.get(`${BASE_URL}/mat-icon/svg-icon-url/`);
+  const html = await response.text();
+  const state = [...html.matchAll(/<script type="qwik\/state"[^>]*>([\s\S]*?)<\/script>/g)]
+    .map(m => m[1])
+    .join('');
+
+  expect(state).not.toBe('');
+  expect(html).toContain('M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z');
+  // The `<MatIcon>`'s resolved markup is the browser's to compute again if it ever re-renders
+  // (an `svgIcon` change) — shipping it a second time, beside the same markup in the HTML, only
+  // grows the page.
+  expect(state).not.toContain('M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z');
+});
+
 test('material-icon/svg-icon-url — same DOM after hydration', async ({page}) => {
   await page.goto(`${BASE_URL}/mat-icon/svg-icon-url/`);
   await page.waitForSelector('[data-scenario-ready]');

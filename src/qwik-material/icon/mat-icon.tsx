@@ -130,24 +130,34 @@ export const MatIcon = component$<MatIconProps>(props => {
   // for why the common case (no `svgIcon`, or `svgLiteral` winning instead)
   // takes a plain SYNCHRONOUS return with zero async-engine overhead, and
   // only a REAL `svgIcon` lookup ever becomes a suspending async read.
-  const resolvedSvgIcon = useComputed$(() => {
-    const raw = props.svgIcon;
-    if (props.svgLiteral || !raw) return null;
-    if (!registry) {
-      // eslint-disable-next-line no-console
-      console.error(
-        `Error retrieving icon ${raw}! No MAT_ICON_REGISTRY ancestor found — call ` +
-          `useMatIconRegistryProvider() near the root of this subtree and register ` +
-          `the icon first.`,
-      );
-      return null;
-    }
-    return getNamedSvgIcon(registry, raw).catch((err: Error) => {
-      // eslint-disable-next-line no-console
-      console.error(`Error retrieving icon ${raw}! ${err.message}`);
-      return null;
-    });
-  });
+  //
+  // `serializationStrategy: 'never'`: the resolved markup is already in the
+  // server-rendered HTML (`dangerouslySetInnerHTML` below), so it isn't
+  // serialized a second time into the resumable state, which doubled every
+  // SVG icon's size in the page. Only a re-render after resume reads the
+  // value (an `svgIcon` change), and it resolves the icon again then, from
+  // the fetch cache or the URL.
+  const resolvedSvgIcon = useComputed$(
+    () => {
+      const raw = props.svgIcon;
+      if (props.svgLiteral || !raw) return null;
+      if (!registry) {
+        // eslint-disable-next-line no-console
+        console.error(
+          `Error retrieving icon ${raw}! No MAT_ICON_REGISTRY ancestor found — call ` +
+            `useMatIconRegistryProvider() near the root of this subtree and register ` +
+            `the icon first.`,
+        );
+        return null;
+      }
+      return getNamedSvgIcon(registry, raw).catch((err: Error) => {
+        // eslint-disable-next-line no-console
+        console.error(`Error retrieving icon ${raw}! ${err.message}`);
+        return null;
+      });
+    },
+    {serializationStrategy: 'never'},
+  );
 
   const color = props.color ?? config.color;
   const inline = props.inline ?? false;
