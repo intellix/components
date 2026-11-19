@@ -16,6 +16,7 @@
     "generate-typography-elevation-prebuilt": "node ./scripts/generate-typography-elevation-prebuilt.mjs",
     "check-generated-scss": "node ./scripts/check-generated-scss.mjs",
     "generate-component-styles": "node ./scripts/component-styles.mjs",
+    "check-component-styles": "node ./scripts/component-styles.mjs --check",
     "pack:local": "node ./scripts/pack-local.mjs",
     "vendor:local": "node ./scripts/vendor-local.mjs"
   },

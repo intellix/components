@@ -6,6 +6,7 @@ import {
   COMPONENT_STYLE_ENTRIES,
   compileComponentStyles,
   componentStylePaths,
+  LAYER_ORDER,
   renderStylesModule,
 } from './scripts/component-styles.mjs';
 
@@ -76,11 +77,16 @@ const REGISTERS: Record<string, string[]> = {
 };
 
 /**
- * Components registering ANOTHER entry's CSS, before their own (see REGISTERS). The datepicker's
- * and paginator's markup composes buttons and their CSS overrides the buttons' at equal
- * specificity (`.mat-calendar-period-button { min-width: 0 }` over `.mat-mdc-button`'s 64px), so
- * the button CSS has to come first — as the old global import order had it — and every one of
- * their registering components calls the two hooks in the same positions, sharing both `<style>`s.
+ * Components registering ANOTHER entry's CSS before their own (see REGISTERS): the stylesheets
+ * their own CSS overrides at EQUAL specificity, which only document order settles inside the one
+ * `qwik-material` layer (`.mat-calendar-period-button { min-width: 0 }` over `.mdc-button`'s
+ * 64px; the paginator, which composes icon buttons, keeps the old import order the same way —
+ * no equal-specificity overlap found there). Registered first, the overridden `<style>` always comes
+ * earlier — in `<body>` during SSR, and appended to `<head>` earlier when first registered in the
+ * browser (Qwik hoists server-rendered `<style>`s into `<head>` before it appends any). Every
+ * datepicker component registering the datepicker CSS calls the two hooks in the same positions,
+ * so each shares one `<style>`. Also: components rendering a button's markup by hand
+ * (`button/internal/`).
  */
 const ALSO_REGISTERS: Record<string, string[]> = {
   MatCalendar: ['useMatButtonStyles'],
@@ -166,7 +172,8 @@ describe('component styles', () => {
       const css = await compileComponentStyles(entry);
       // The layer order statement (qwik-cdk below qwik-material), then one layer block holding
       // every rule.
-      expect(css).toMatch(/^@layer qwik-cdk,qwik-material;@layer qwik-material\{[^]+\}$/);
+      expect(css.startsWith(`${LAYER_ORDER.replace(', ', ',')}@layer qwik-material{`)).toBe(true);
+      expect(css.endsWith('}')).toBe(true);
       expect(css.match(/@layer/g)).toHaveLength(2);
     },
   );

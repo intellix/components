@@ -23,8 +23,10 @@
 //   have the same chunk shape). A literal leaves the segment with no imports at all.
 // - Compressed: the string ships as is (no consumer CSS minifier sees it), into server-rendered
 //   HTML and client chunks.
-// `component-styles.spec.ts` fails when a committed file no longer matches its Sass; the package
-// build regenerates them too.
+// Generation is explicit (`generate-component-styles`, below); nothing else writes these files.
+// The package build (`vite.config.ts`) and `component-styles.spec.ts` only CHECK them, and fail
+// with the command to run when a committed file no longer matches its Sass — so a build, a test
+// run or `vendor:local` never ships, or silently fixes up, CSS the commit doesn't contain.
 //
 // The cascade layer: `useStyles$` styles land wherever a component first renders (in `<body>`
 // during SSR, `<head>` when first rendered in the browser) — after an app's own stylesheets. Inside
@@ -33,8 +35,9 @@
 // CSS (`core-prebuilt.css`, plus typography/elevation) is wrapped in the same layer by the build
 // (see `vite.config.ts`).
 //
-// Usage: node src/qwik-material/scripts/component-styles.mjs
-// (also runnable via `pnpm -C src/qwik-material generate-component-styles`)
+// Usage: node src/qwik-material/scripts/component-styles.mjs           (regenerate)
+//        node src/qwik-material/scripts/component-styles.mjs --check   (exit 1 if stale)
+// (also `pnpm -C src/qwik-material generate-component-styles` / `check-component-styles`)
 
 import {readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -51,6 +54,16 @@ export const LAYER = 'qwik-material';
  * `max-width` on the overlay pane over the CDK's 100%), as source order had it before either was
  * layered. Repeated in every file so it holds whichever loads first. Identical in qwik-cdk's
  * `scripts/css-layer.mjs`.
+ *
+ * ONE layer for all of qwik-material, not a sub-layer per entry point: upstream's stylesheets
+ * resolve their overlaps by specificity (`.mat-mdc-icon-button svg { width: 24px }` over
+ * paginator's `.mat-mdc-paginator-icon { width: 28px }`; `.mat-mdc-icon-button.mat-mdc-button-
+ * disabled`'s color over datepicker's `.mat-datepicker-toggle button { color: inherit }`;
+ * badge's deliberately doubled `.mat-badge.mat-badge { overflow: visible }` over `.mat-icon`'s
+ * `hidden`), and a layer beats specificity. Only equal-specificity overlaps depend on order (the
+ * calendar's `.mat-calendar-period-button { min-width: 0 }` over `.mdc-button`'s 64px): a
+ * component registers the stylesheets its own CSS overrides BEFORE its own (README "Component
+ * styles").
  */
 export const LAYER_ORDER = '@layer qwik-cdk, qwik-material;';
 
@@ -185,6 +198,27 @@ export async function renderStylesModule(entry) {
   );
 }
 
+/** Entries whose committed module differs from a fresh compile (or is missing). */
+export async function staleComponentStyles() {
+  const stale = [];
+  for (const entry of COMPONENT_STYLE_ENTRIES) {
+    const current = await readFile(componentStylePaths(entry).module, 'utf8').catch(
+      () => undefined,
+    );
+    if (current !== (await renderStylesModule(entry))) stale.push(entry);
+  }
+  return stale;
+}
+
+/** The error for stale entries: which files, and the command that regenerates them. */
+export function staleMessage(stale) {
+  return (
+    `[qwik-material] stale generated component styles: ` +
+    `${stale.map(e => `${e}/${e}-styles.ts`).join(', ')} no longer match their Sass. ` +
+    'Run `pnpm -C src/qwik-material generate-component-styles` and commit the result.'
+  );
+}
+
 /** Writes every entry's generated module whose content changed; returns the entries written. */
 export async function writeComponentStyles() {
   const written = [];
@@ -200,6 +234,15 @@ export async function writeComponentStyles() {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (process.argv.includes('--check')) {
+    const stale = await staleComponentStyles();
+    if (stale.length) {
+      console.error(staleMessage(stale));
+      process.exit(1);
+    }
+    console.log('[qwik-material] component styles up to date');
+    process.exit(0);
+  }
   const written = await writeComponentStyles();
   console.log(
     written.length

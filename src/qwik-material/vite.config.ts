@@ -2,7 +2,7 @@ import {defineConfig} from 'vitest/config';
 import {qwikVite} from '@qwik.dev/core/optimizer';
 import dts from 'vite-plugin-dts';
 import {resolve} from 'node:path';
-import {wrapInLayer, writeComponentStyles} from './scripts/component-styles.mjs';
+import {staleComponentStyles, staleMessage, wrapInLayer} from './scripts/component-styles.mjs';
 
 const entries = [
   'core',
@@ -54,18 +54,13 @@ export default defineConfig({
     {
       // Each component entry point's CSS is generated into the SOURCE tree, committed: the
       // `useMat<Entry>Styles()` hook in `<entry>/<entry>-styles.ts`, with the compiled CSS as a
-      // literal — see scripts/component-styles.mjs. Regenerated here so a build (and so
-      // `pack:local`) always ships CSS matching the Sass; `component-styles.spec.ts` catches a
-      // stale commit.
+      // literal — see scripts/component-styles.mjs. The build only checks them: a stale file
+      // fails it (never rewritten here), so what's built and packed is what's committed.
       name: 'qwik-material-component-styles',
       apply: 'build',
       async buildStart() {
-        const written = await writeComponentStyles();
-        if (written.length) {
-          console.warn(
-            `[qwik-material] regenerated ${written.join(', ')} component styles — commit them.`,
-          );
-        }
+        const stale = await staleComponentStyles();
+        if (stale.length) throw new Error(staleMessage(stale));
       },
     },
     {

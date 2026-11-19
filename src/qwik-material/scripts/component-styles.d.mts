@@ -9,3 +9,5 @@ export declare function componentStylePaths(entry: string): {scss: string; modul
 export declare function compileComponentStyles(entry: string): Promise<string>;
 export declare function renderStylesModule(entry: string): Promise<string>;
 export declare function writeComponentStyles(): Promise<string[]>;
+export declare function staleComponentStyles(): Promise<string[]>;
+export declare function staleMessage(stale: string[]): string;

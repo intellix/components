@@ -42,8 +42,10 @@ CSS when it renders, as upstream attaches a component's `styleUrl` on first crea
 - `scripts/component-styles.mjs` compiles each entry point's `scss/<entry>/<entry>-prebuilt.scss`
   (compressed, inside the layer) into `<entry>/<entry>-styles.ts` beside its source: a
   `useMat<Entry>Styles()` hook whose one `useStyles$` call holds the CSS as a string literal
-  (committed; the build regenerates them and `component-styles.spec.ts` fails on a stale one —
-  `pnpm generate-component-styles`). A consuming app compiles this source with its own Qwik Vite
+  (committed). Generating is explicit — `pnpm generate-component-styles` — and nothing else writes
+  them: the package build and `component-styles.spec.ts` fail on a stale one
+  (`pnpm check-component-styles` checks alone), and `vendor:local` refuses a tree that differs
+  from HEAD. A consuming app compiles this source with its own Qwik Vite
   plugin (the `qwik` export condition): plain TypeScript, so no Sass, no Vite config, no CSS
   pipeline in the app. A literal rather than `import css from './x.css?inline'`: Vite 8's client
   build put a segment that only re-exports an imported string in a chunk cycle with that string's
@@ -58,8 +60,22 @@ CSS when it renders, as upstream attaches a component's `styleUrl` on first crea
   server rendering writes it once, before the first instance; a component first rendered in the
   browser appends it to `<head>`. `MatGridList` and the `MatMenu` placeholder, plain functions
   with no hook phase, render a `GridListStyles`/`MenuStyles` component that only registers the
-  CSS. Where an entry point's CSS overrides another's it composes (datepicker and paginator over
-  button), its components call the other hook first, keeping the old global import order.
+  CSS.
+- Where one entry point's CSS overrides another's at EQUAL specificity (datepicker's
+  `.mat-calendar-period-button { min-width: 0 }` over the button's `.mdc-button { min-width:
+  64px }`), only document order decides, inside the one layer. So the overriding entry point's
+  components register the overridden CSS first (`useMatButtonStyles()`, then
+  `useMatDatepickerStyles()`; paginator likewise): its `<style>` is never before the other's —
+  in `<body>` during SSR, or appended to `<head>` in the browser, where Qwik first hoists every
+  server-rendered `<style>` (`$hoistStyles$`) before it appends one. Known limitation: a SECOND
+  copy of the overridden CSS — registered from a non-first hook position, which the rule above
+  forbids — lands later and wins the tie (`specs/material-core/component-styles.spec.ts`), the
+  same creation-order dependency upstream has. Sub-layers per entry point would remove the order
+  dependency but break the overlaps upstream resolves by specificity instead (a layer beats
+  specificity): `.mat-mdc-icon-button svg { width: 24px }` over paginator's
+  `.mat-mdc-paginator-icon { width: 28px }`, the disabled icon button's color over datepicker's
+  `.mat-datepicker-toggle button { color: inherit }`, badge's doubled `.mat-badge.mat-badge {
+  overflow: visible }` over `.mat-icon`'s `hidden` — no order of sub-layers keeps them all.
 - The hooks are exported for markup rendered without its component — a hand-written
   `mat-mdc-button` host, `matBadge()` called from a plain render function: the component
   rendering it calls the entry point's hook (`useMatButtonStyles()`, `useMatBadgeStyles()`) as its

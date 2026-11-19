@@ -5,6 +5,9 @@
  *
  *   pnpm -C src/qwik-material vendor:local <app-dir> [--commit]
  *
+ * 0. Refuses to run unless both packages' trees are clean (no modified or untracked files under
+ *    `src/qwik-cdk`/`src/qwik-material`), before and again after building: the app records this
+ *    repository's HEAD as what it vendored, so the tarballs must be exactly HEAD's content.
  * 1. Builds and packs both packages (`pack-local.mjs`).
  * 2. Copies the tarballs over `<app-dir>/vendor/*.tgz`.
  * 3. Replaces the previously vendored commit hash (full and 10-character short form) with this
@@ -57,9 +60,27 @@ const tarballs = [
 const candidates = [...tarballs.map(t => path.join(vendorDir, t)), lockfile, ...docs];
 const preDirty = candidates.filter(f => fs.existsSync(f) && dirty(f));
 
+// 0. The packages' trees must be HEAD's, before building and after (a build that changed a
+// tracked or packed file would ship content the recorded commit doesn't have).
+const packageDirs = ['src/qwik-cdk', 'src/qwik-material'];
+const assertCleanPackages = when => {
+  const status = execFileSync('git', ['status', '--porcelain', '--', ...packageDirs], {cwd: repo})
+    .toString()
+    .trim();
+  if (status) {
+    console.error(
+      `Refusing to vendor: ${packageDirs.join(' and ')} differ from HEAD ${when} — the app would ` +
+        `record ${head.slice(0, 10)} for content it doesn't contain. Commit or discard:\n${status}`,
+    );
+    process.exit(1);
+  }
+};
+assertCleanPackages('before building');
+
 // 1. Pack.
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'qwik-packages-'));
 execFileSync('node', [path.join(here, 'pack-local.mjs'), out], {stdio: 'inherit'});
+assertCleanPackages('after building');
 
 // 2. Copy.
 for (const t of tarballs) fs.copyFileSync(path.join(out, t), path.join(vendorDir, t));
