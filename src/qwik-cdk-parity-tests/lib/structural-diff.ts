@@ -89,18 +89,25 @@ export async function snapshot(loc: Locator): Promise<DomNode> {
           if (val) styles[prop] = val;
         }
 
-        // Children — skip text/comment nodes; capture text when node has only text children
+        // Children — skip text/comment nodes and Qwik's `useStyles$` `<style q:style>` elements
+        // (a qwik-material component's CSS, written in place by server rendering — Angular
+        // attaches it in `<head>`); capture text when node has only text children
         const childElements: Element[] = [];
         let textContent: string | undefined;
         let hasOnlyTextChildren = true;
+        let text = '';
         for (const child of Array.from(node.childNodes)) {
           if (child.nodeType === Node.ELEMENT_NODE) {
-            childElements.push(child as Element);
+            const el = child as Element;
+            if (el.tagName.toLowerCase() === 'style' && el.hasAttribute('q:style')) continue;
+            childElements.push(el);
             hasOnlyTextChildren = false;
+          } else if (child.nodeType === Node.TEXT_NODE) {
+            text += child.textContent ?? '';
           }
         }
-        if (hasOnlyTextChildren && node.textContent) {
-          const trimmed = node.textContent.trim();
+        if (hasOnlyTextChildren && text) {
+          const trimmed = text.trim();
           if (trimmed) textContent = trimmed;
         }
 

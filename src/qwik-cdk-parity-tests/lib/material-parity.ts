@@ -500,10 +500,15 @@ export async function snapshotParityRoot(
         // equivalent to diff against, the same category as the `q:*`/`on:*`
         // attribute prefixes and comment nodes already stripped above —
         // just a real element instead of a comment, so `el.children`
-        // doesn't exclude it for free the way it excludes comments.
-        const rawElementChildren = Array.from(el.children).filter(
-          c => c.tagName.toLowerCase() !== 'q:template',
-        );
+        // doesn't exclude it for free the way it excludes comments. Same for
+        // a `useStyles$` `<style q:style>`: qwik-material components register
+        // their CSS on first render and server rendering writes it in place,
+        // before the first instance (qwik-material README "Component
+        // styles") — Angular attaches the same CSS in `<head>`.
+        const isFrameworkElement = (c: Element): boolean =>
+          c.tagName.toLowerCase() === 'q:template' ||
+          (c.tagName.toLowerCase() === 'style' && c.hasAttribute('q:style'));
+        const rawElementChildren = Array.from(el.children).filter(c => !isFrameworkElement(c));
         // A bare `<table><tr>...` (no `<thead>`/`<tbody>` at all — e.g. a plain `matSort` table
         // with no `mat-table`) gets an IMPLICIT, attribute-less `<tbody>` wrapping its `<tr>`s
         // when the browser's HTML parser builds it from SSR'd markup (Qwik's side here), but NOT
@@ -542,7 +547,7 @@ export async function snapshotParityRoot(
           el.tagName.toLowerCase() === 'table'
             ? rawElementChildren.flatMap(c =>
                 isImplicitTbody(c)
-                  ? Array.from(c.children).filter(cc => cc.tagName.toLowerCase() !== 'q:template')
+                  ? Array.from(c.children).filter(cc => !isFrameworkElement(cc))
                   : [c],
               )
             : rawElementChildren;
