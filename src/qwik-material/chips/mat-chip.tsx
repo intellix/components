@@ -19,9 +19,7 @@ export interface MatChipRemoveButtonDef {
  * `MatChip`, `src/material/chips/chip.ts`). Used inside `<MatChipSet>`.
  *
  * Avatar/trailing-icon/remove-button content is accepted as NAMED PROPS
- * (`avatar`/`trailingIcon`/`removeButton`), not `<Slot>`-projected children
- * — the same "named prop instead of inspected children" pattern
- * `qwik-material/list`'s `MatListItem` established (see its SYNC.md):
+ * (`avatar`/`trailingIcon`/`removeButton`), not `<Slot>`-projected children:
  * `MatChip`'s own host classes (`mdc-evolution-chip--with-avatar`,
  * `mat-mdc-chip-with-trailing-icon`, …) depend on whether these are
  * present, which a real `component$` can only know synchronously from a

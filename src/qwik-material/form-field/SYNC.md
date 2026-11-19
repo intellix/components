@@ -69,9 +69,9 @@ one actually implemented:
    disabled />` is, before Qwik ever calls `MatInput`'s function, just a
    plain data object `{type: MatInput, props: {value: 'x', disabled: true}}`
    — `core/mat-form-field-control.ts`'s `readControlProps()` reads `.props`
-   straight off that object. This is the SAME trick `qwik-material/list`'s
-   `MatListItem` already uses for a narrower case (section presence/count);
-   this port extends it to reading actual prop VALUES. Since this happens
+   straight off that object — a `<Slot>`'s projected children can't be
+   inspected at all, so a named prop is the only way to read the control's
+   prop VALUES at render time. Since this happens
    during `MatFormField`'s OWN render, before `MatInput` ever executes,
    there is no ordering problem at all — the very first SSR render is
    correct for free. This is why every piece of projected content

@@ -94,8 +94,8 @@ export interface MatFabOwnProps {
    * `iconPositionEnd`) via a SEPARATE `<ng-content>` ahead of the label's
    * own — content projection there is by TYPE, not by source position, so
    * an icon written inside the button's content still lands outside the
-   * label. Qwik can't inspect `<Slot/>` children by type, so (same pattern
-   * as `MatListItem`'s section props) the icon is an explicit prop instead.
+   * label. Qwik can't inspect `<Slot/>` children by type, so the icon is
+   * an explicit prop instead.
    * `iconPositionEnd` (icon AFTER the label) isn't exposed — no current
    * scenario needs it.
    */

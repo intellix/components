@@ -48,11 +48,9 @@ type MatFormFieldColor = 'primary' | 'accent' | 'warn';
  *    `.props` is just a plain data bag built by the CALLER before either
  *    component renders, so this is available instantly, before
  *    `MatFormField` returns its own JSX — the very FIRST (SSR) render is
- *    correct, with nothing to "fix later". This is the same "pass a named
- *    prop instead of inspecting a `<Slot>`'s children" pattern
- *    `qwik-material/list`'s `MatListItem` already established for a
- *    smaller case (presence/count of a section) — extended here to reading
- *    actual prop VALUES, not just presence.
+ *    correct, with nothing to "fix later". A `<Slot>`'s projected children
+ *    can't be inspected at all, so a named prop is the only way to read
+ *    the control's prop VALUES at render time.
  *
  * 2. **{@link MatFormFieldControlState}** (the `MAT_FORM_FIELD_CONTROL_STATE`
  *    context) — fields that legitimately change AFTER mount with no

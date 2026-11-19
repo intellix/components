@@ -10,8 +10,7 @@ import {component$, Slot} from '@qwik.dev/core';
  *
  * Pass the result as `<MatFormField label={<MatLabel>Email</MatLabel>}>`
  * — not as a nested child — see `mat-form-field.tsx`'s doc comment for why
- * (same "named prop, not inspected `<Slot>` content" reasoning as
- * `qwik-material/list`'s `MatListItem` sections).
+ * (a component can't inspect its `<Slot>` content).
  */
 export interface MatLabelProps {
   class?: string | ReadonlyArray<string>;

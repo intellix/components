@@ -99,8 +99,8 @@ for the full writeup) rather than leave as a gap:
   no `/mat-button/*` scenario put a real `<MatIcon>` inside one of these three components (the
   existing `fab`/`mini-fab` routes use plain text/emoji). Added an `icon?: JSXOutput` prop to
   `MatFabButton`/`MatMiniFabButton` (button/SYNC.md item 16) — rendered as a direct child before
-  the label, same "named prop instead of slotted children" pattern `MatListItem`/`MatCardHeader`
-  already use for analogous by-type projection. `MatButton` deliberately did NOT get this prop
+  the label: Qwik can't inspect `<Slot/>` children by type, so the icon is an explicit prop.
+  `MatButton` deliberately did NOT get this prop
   — see the Qwik pitfall above. `iconPositionEnd` (icon AFTER the label) isn't exposed on either
   component — no current scenario needs it.
 

@@ -46,8 +46,7 @@ import {
  * function — a child can never retroactively change what its already-
  * rendered ancestor serialized, confirmed empirically (see "SSR ordering"
  * below). So every piece of projected content is a NAMED PROP holding a
- * JSX value (same "named prop, not inspected `<Slot>` content" pattern
- * `qwik-material/list`'s `MatListItem` sections already established), and
+ * JSX value (a component can't inspect its `<Slot>` content), and
  * the one piece that ALSO needs live reactive data out of its control
  * (`focused`/`empty`/`shouldLabelFloat`) uses a tiny context store the
  * control writes into via its own lazy event handlers — see
@@ -341,7 +340,10 @@ export const MatFormField = component$<MatFormFieldProps>(props => {
   const errorMatcher = controlProps?.errorStateMatcher ?? errorMatcherConfig;
   const errorStateSignal = useSignal(() =>
     typeof errorMatcher === 'string'
-      ? resolveErrorStateSync({invalid, touched, dirty, submitted: formState.submitted}, errorMatcher)
+      ? resolveErrorStateSync(
+          {invalid, touched, dirty, submitted: formState.submitted},
+          errorMatcher,
+        )
       : false,
   );
   useTask$(({track}) => {
