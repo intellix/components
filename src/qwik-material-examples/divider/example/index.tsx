@@ -10,11 +10,11 @@ export default component$(() => {
   return (
     <divider-overview-example>
       <MatList>
-        <MatListItem content="Item 1" />
+        <MatListItem content>Item 1</MatListItem>
         <MatDivider />
-        <MatListItem content="Item 2" />
+        <MatListItem content>Item 2</MatListItem>
         <MatDivider />
-        <MatListItem content="Item 3" />
+        <MatListItem content>Item 3</MatListItem>
       </MatList>
     </divider-overview-example>
   );

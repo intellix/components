@@ -12,9 +12,10 @@ import {component$, Slot, type CSSProperties} from '@qwik.dev/core';
  * lands on this same host element (e.g. a colored avatar swatch), exactly
  * like `<div matListItemAvatar style="...">` upstream.
  *
- * Pass the result as the matching named prop on `<MatListItem>` (`avatar`,
- * `icon`, `title`, `lineContent`, `meta`) rather than as nested JSX
- * children — see mat-list-item.tsx's doc comment for why.
+ * Place each as a child of `<MatListItem>` with the matching `q:slot`
+ * (`avatar`, `icon`, `title`, `line`, `meta`), and declare it with the
+ * item's matching structure prop (`leading`, `title`, `lineCount`, `meta`)
+ * — see mat-list-item.tsx's doc comment for why both.
  */
 export interface MatListItemSectionProps {
   class?: string | ReadonlyArray<string>;

@@ -1,4 +1,4 @@
-import {$, component$, useContext, useSignal, type JSXOutput, type QRL} from '@qwik.dev/core';
+import {$, component$, Slot, useContext, useSignal, type QRL} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
@@ -11,24 +11,35 @@ import {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context'
  *   - 'button' renders <button> (mirrors upstream button[mat-list-item]
  *     selector)
  *
- * **Why sections are named props, not nested children.** Upstream's
- * `list-item.html` distributes projected content into fixed positions —
- * leading avatar/icon BEFORE a `<span class="mdc-list-item__content">`
- * that itself only wraps title + lines + unscoped text, then trailing
- * meta AFTER. Angular does this with `<ng-content select="...">`, which
- * reorders by selector regardless of source order. Qwik's equivalent
- * (`<Slot>`) only supports this via `q:slot` attributes authored at each
- * child's JSX call site — and, separately, a parent component cannot
- * inspect what's inside its own `<Slot>` projection (count, presence) to
- * decide its OWN class list, which `MatListItem` needs to do for the
- * content-derived classes below. So instead of nested
- * `<MatListItem><MatListItemTitle>...</MatListItemTitle></MatListItem>`
- * children, each section is passed as a named prop holding JSX (built
- * with the matching exported section component, which still renders the
- * real element with the real classes — see mat-list-item-sections.tsx).
- * This mirrors the design doc's explicit fallback ("if Qwik can't inspect
- * slotted children, add an explicit prop") extended to every section, not
- * just `lines`.
+ * **Sections are named slots; their structure is declared in props.**
+ * Upstream's `list-item.html` distributes projected content into fixed
+ * positions — leading avatar/icon BEFORE a `<span class="mdc-list-item__content">`
+ * that itself only wraps title + lines + unscoped text, then trailing meta
+ * and a nested divider AFTER — with `<ng-content select="...">`, which
+ * reorders by selector regardless of source order. Qwik's named `<Slot>`
+ * does the same by the `q:slot` name each child carries:
+ *
+ * ```tsx
+ * <MatListItem leading="icon" title lineCount={1} meta>
+ *   <MatListItemIcon q:slot="icon">…</MatListItemIcon>
+ *   <MatListItemTitle q:slot="title">Inbox</MatListItemTitle>
+ *   <MatListItemLine q:slot="line">3 unread</MatListItemLine>
+ *   <MatListItemMeta q:slot="meta">128</MatListItemMeta>
+ * </MatListItem>
+ * ```
+ *
+ * Slots: `avatar`, `icon`, `title`, `line` (any number), `meta`, `divider`;
+ * unnamed children are the unscoped content (upstream's default
+ * `<ng-content>`). A projection is rendered by the parent and never
+ * serialized with the item's props, so a re-renderable item (e.g. a nav item
+ * whose `activated` follows the URL) doesn't ship its content twice.
+ *
+ * What a component can't do is inspect its own projection — upstream's
+ * `@ContentChildren` queries (`_avatars`, `_icons`, `_titles`, `_lines`,
+ * `_meta`) and `_hasUnscopedTextContent` have no Qwik equivalent — so the
+ * caller declares the structure with `leading` / `title` / `lineCount` /
+ * `meta` / `content`, and the content-derived classes below follow from
+ * those exactly as upstream's follow from its queries.
  */
 export interface MatListItemProps {
   /** Which host tag to render. Default 'div' renders <mat-list-item>.
@@ -57,44 +68,35 @@ export interface MatListItemProps {
    * `list-base.ts`'s `disableRipple` getter.
    */
   disableRipple?: boolean;
-  /** Leading avatar — pass a `<MatListItemAvatar>` element. Mirrors
-   *  upstream's `<ng-content select="[matListItemAvatar]">`. Presence
-   *  drives the `mdc-list-item--with-leading-avatar` class. */
-  avatar?: JSXOutput;
-  /** Leading icon — pass a `<MatListItemIcon>` element. Mirrors upstream's
-   *  `<ng-content select="[matListItemIcon]">`. Presence drives the
-   *  `mdc-list-item--with-leading-icon` class. */
-  icon?: JSXOutput;
-  /** Title — pass a `<MatListItemTitle>` element. Mirrors upstream's
-   *  `<ng-content select="[matListItemTitle]">`. */
-  title?: JSXOutput;
-  /** Secondary/tertiary line(s) — pass one or more `<MatListItemLine>`
-   *  elements. Mirrors upstream's `<ng-content select="[matListItemLine]">`.
-   *  Array length feeds the line-count inference below. */
-  lineContent?: JSXOutput | JSXOutput[];
-  /** Trailing meta — pass a `<MatListItemMeta>` element. Mirrors
-   *  upstream's `<ng-content select="[matListItemMeta]">`. Presence drives
-   *  `mdc-list-item--with-trailing-meta`. */
-  meta?: JSXOutput;
-  /** A `<MatDivider>` nested inside this item. Mirrors upstream's
-   *  `<ng-content select="mat-divider">`. Rare — most consumers place
-   *  dividers as siblings between items instead. */
-  divider?: JSXOutput;
+  /** Which leading section is projected: `'avatar'` (`q:slot="avatar"`,
+   *  upstream's `[matListItemAvatar]`) or `'icon'` (`q:slot="icon"`,
+   *  `[matListItemIcon]`). Drives `mdc-list-item--with-leading-avatar`/
+   *  `-icon` — upstream's `_avatars.length`/`_icons.length`. */
+  leading?: 'avatar' | 'icon';
+  /** Whether a `q:slot="title"` section (`[matListItemTitle]`) is projected —
+   *  upstream's `_titles.length`, which feeds the line count and whether
+   *  unscoped content is treated as the title. */
+  title?: boolean;
+  /** How many `q:slot="line"` sections (`[matListItemLine]`) are projected —
+   *  upstream's `_lines.length`, which feeds the line count. Default 0. */
+  lineCount?: number;
+  /** Whether a `q:slot="meta"` section (`[matListItemMeta]`) is projected.
+   *  Drives `mdc-list-item--with-trailing-meta` — upstream's `_meta.length`. */
+  meta?: boolean;
   /**
-   * Unscoped content — matches upstream's default `<ng-content>` (plain
-   * text or markup not wrapped in one of the sections above). When it's
-   * the item's only content (no title, 1 total line) it's treated as the
-   * title; otherwise as a secondary line — matches upstream
-   * `_updateItemLines`'s `treatAsTitle` logic. A plain string is checked
-   * for non-whitespace; anything else non-null is assumed meaningful.
+   * Whether the item has unscoped content — unnamed children, upstream's
+   * default `<ng-content>` (plain text or markup not in one of the sections
+   * above). Upstream's `_hasUnscopedTextContent` (non-whitespace text in the
+   * unscoped wrapper). When it's the item's only line (no title, 1 total
+   * line) it's treated as the title; otherwise as a secondary line —
+   * matches upstream `_updateItemLines`'s `treatAsTitle` logic.
    */
-  content?: JSXOutput;
+  content?: boolean;
   /**
    * Explicit line count (matches upstream `[lines]` input — same name,
    * same meaning). Upstream infers this from projected content (title +
    * line count, +1 if there's unscoped text) when omitted; the default
-   * here does the same from the `title` / `lineContent` / `content` props
-   * since Qwik has no content-query equivalent to inspect real children.
+   * here does the same from `title` / `lineCount` / `content`.
    * Set this only to override that inference.
    */
   lines?: number;
@@ -114,14 +116,6 @@ export interface MatListItemProps {
    * I render" affordance, so it's accepted as an explicit prop instead.
    */
   onClick$?: QRL<(event: MouseEvent) => void>;
-}
-
-/** Counts a `JSXOutput | readonly JSXOutput[] | undefined` prop the way
- *  upstream's `QueryList.length` would — an absent/null/undefined value
- *  is 0, an array is its length, anything else is 1. */
-function countSection(value: JSXOutput | JSXOutput[] | undefined): number {
-  if (value == null) return 0;
-  return Array.isArray(value) ? value.length : 1;
 }
 
 export const MatListItem = component$<MatListItemProps>(props => {
@@ -182,19 +176,15 @@ export const MatListItem = component$<MatListItemProps>(props => {
     );
   });
 
-  const avatarCount = countSection(props.avatar);
-  const iconCount = countSection(props.icon);
-  const titleCount = countSection(props.title);
-  const lineCount = countSection(props.lineContent);
-  const metaCount = countSection(props.meta);
+  // Upstream's `_titles.length` / `_lines.length` / `_hasUnscopedTextContent`,
+  // declared by the caller (see the doc comment above).
+  const titleCount = props.title ? 1 : 0;
+  const lineCount = props.lineCount ?? 0;
+  const hasContentText = props.content ?? false;
 
-  const hasContentText =
-    props.content != null &&
-    (typeof props.content === 'string' ? props.content.trim().length > 0 : true);
-
-  const hasLeadingAvatar = avatarCount > 0;
-  const hasLeadingIcon = iconCount > 0;
-  const hasTrailingMeta = metaCount > 0;
+  const hasLeadingAvatar = props.leading === 'avatar';
+  const hasLeadingIcon = props.leading === 'icon';
+  const hasTrailingMeta = props.meta ?? false;
   const hasBothLeadingAndTrailing = hasTrailingMeta && (hasLeadingAvatar || hasLeadingIcon);
 
   const numberOfLines = props.lines ?? titleCount + lineCount + (hasContentText ? 1 : 0);
@@ -247,15 +237,17 @@ export const MatListItem = component$<MatListItemProps>(props => {
   // button[mat-list-item]`.
   const body = (
     <>
-      {props.avatar}
-      {props.icon}
+      <Slot name="avatar" />
+      <Slot name="icon" />
       <span class="mdc-list-item__content">
-        {props.title}
-        {props.lineContent}
-        <span class={unscopedClasses}>{props.content}</span>
+        <Slot name="title" />
+        <Slot name="line" />
+        <span class={unscopedClasses}>
+          <Slot />
+        </span>
       </span>
-      {props.meta}
-      {props.divider}
+      <Slot name="meta" />
+      <Slot name="divider" />
       {/* A <span>, not upstream's <div>: this body is also a <button>'s content, which HTML
           restricts to phrasing content. Absolutely positioned (list.scss), so it lays out the same. */}
       <span class="mat-focus-indicator" />

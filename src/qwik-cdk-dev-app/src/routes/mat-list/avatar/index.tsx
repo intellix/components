@@ -32,21 +32,27 @@ export default component$(() => (
   <>
     <div data-parity-root>
       <MatList role="list">
-        <MatListItem
-          avatar={<MatListItemAvatar style={avatarStyle('#f44336')}>AS</MatListItemAvatar>}
-          title={<MatListItemTitle>Alice Smith</MatListItemTitle>}
-          lineContent={<MatListItemLine>alice@example.com</MatListItemLine>}
-        />
-        <MatListItem
-          avatar={<MatListItemAvatar style={avatarStyle('#4caf50')}>BJ</MatListItemAvatar>}
-          title={<MatListItemTitle>Bob Jones</MatListItemTitle>}
-          lineContent={<MatListItemLine>bob@example.com</MatListItemLine>}
-        />
-        <MatListItem
-          avatar={<MatListItemAvatar style={avatarStyle('#2196f3')}>CD</MatListItemAvatar>}
-          title={<MatListItemTitle>Carol Davis</MatListItemTitle>}
-          lineContent={<MatListItemLine>carol@example.com</MatListItemLine>}
-        />
+        <MatListItem leading="avatar" title lineCount={1}>
+          <MatListItemAvatar q:slot="avatar" style={avatarStyle('#f44336')}>
+            AS
+          </MatListItemAvatar>
+          <MatListItemTitle q:slot="title">Alice Smith</MatListItemTitle>
+          <MatListItemLine q:slot="line">alice@example.com</MatListItemLine>
+        </MatListItem>
+        <MatListItem leading="avatar" title lineCount={1}>
+          <MatListItemAvatar q:slot="avatar" style={avatarStyle('#4caf50')}>
+            BJ
+          </MatListItemAvatar>
+          <MatListItemTitle q:slot="title">Bob Jones</MatListItemTitle>
+          <MatListItemLine q:slot="line">bob@example.com</MatListItemLine>
+        </MatListItem>
+        <MatListItem leading="avatar" title lineCount={1}>
+          <MatListItemAvatar q:slot="avatar" style={avatarStyle('#2196f3')}>
+            CD
+          </MatListItemAvatar>
+          <MatListItemTitle q:slot="title">Carol Davis</MatListItemTitle>
+          <MatListItemLine q:slot="line">carol@example.com</MatListItemLine>
+        </MatListItem>
       </MatList>
     </div>
     <main data-scenario-ready>ready</main>

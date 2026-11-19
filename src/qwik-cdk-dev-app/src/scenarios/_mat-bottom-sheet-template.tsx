@@ -25,7 +25,7 @@ export const BottomSheetScenarioBody = component$(() => (
  * Mirrors BottomSheetNavBody — the real demo's content
  * (src/dev-app/bottom-sheet/bottom-sheet-demo.ts), using already-ported `MatNavList`/
  * `MatListItemTitle` (see src/qwik-cdk-dev-app/src/routes/mat-list/nav/index.tsx for the
- * identical `title={<MatListItemTitle>...}` convention). Each action dismisses the sheet via
+ * identical `<MatListItemTitle q:slot="title">` convention). Each action dismisses the sheet via
  * the injected MAT_BOTTOM_SHEET_REF context, exactly like the real demo's `ExampleBottomSheet`.
  */
 export const BottomSheetNavBody = component$(() => {
@@ -37,24 +37,15 @@ export const BottomSheetNavBody = component$(() => {
   return (
     <bottom-sheet-nav-body>
       <MatNavList>
-        <MatListItem
-          as="a"
-          href="#"
-          onClick$={onActionClick$}
-          title={<MatListItemTitle>Action 1</MatListItemTitle>}
-        />
-        <MatListItem
-          as="a"
-          href="#"
-          onClick$={onActionClick$}
-          title={<MatListItemTitle>Action 2</MatListItemTitle>}
-        />
-        <MatListItem
-          as="a"
-          href="#"
-          onClick$={onActionClick$}
-          title={<MatListItemTitle>Action 3</MatListItemTitle>}
-        />
+        <MatListItem as="a" href="#" onClick$={onActionClick$} title>
+          <MatListItemTitle q:slot="title">Action 1</MatListItemTitle>
+        </MatListItem>
+        <MatListItem as="a" href="#" onClick$={onActionClick$} title>
+          <MatListItemTitle q:slot="title">Action 2</MatListItemTitle>
+        </MatListItem>
+        <MatListItem as="a" href="#" onClick$={onActionClick$} title>
+          <MatListItemTitle q:slot="title">Action 3</MatListItemTitle>
+        </MatListItem>
       </MatNavList>
     </bottom-sheet-nav-body>
   );

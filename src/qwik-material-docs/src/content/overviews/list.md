@@ -8,45 +8,51 @@ List items can be constructed in two ways depending on the content they need to 
 ### Simple lists
 
 If a list item needs to show a single line of textual information, the text can be inserted
-directly into `<MatListItem>`'s content.
+directly into `<MatListItem>`'s content (declared with `content`).
 
 ```tsx
 <MatList>
-  <MatListItem>Pepper</MatListItem>
-  <MatListItem>Salt</MatListItem>
-  <MatListItem>Paprika</MatListItem>
+  <MatListItem content>Pepper</MatListItem>
+  <MatListItem content>Salt</MatListItem>
+  <MatListItem content>Paprika</MatListItem>
 </MatList>
 ```
 
 ### Multi-line lists
 
-List items that have more than one line of text pass a `<MatListItemTitle>` element via the
-`title` prop to indicate their title text for accessibility purposes, plus one or more
-`<MatListItemLine>` elements via `lineContent` for each subsequent line of text.
+List items that have more than one line of text place a `<MatListItemTitle q:slot="title">` to
+indicate their title text for accessibility purposes, plus a `<MatListItemLine q:slot="line">`
+for each subsequent line of text. The item can't see what it projects, so it's told: `title`
+says there's a title, `lineCount` how many lines.
 
 ```tsx
 <MatList>
-  <MatListItem title={<MatListItemTitle>Pepper</MatListItemTitle>}
-               lineContent={<MatListItemLine>Produced by a plant</MatListItemLine>} />
-  <MatListItem title={<MatListItemTitle>Salt</MatListItemTitle>}
-               lineContent={<MatListItemLine>Extracted from sea water</MatListItemLine>} />
-  <MatListItem title={<MatListItemTitle>Paprika</MatListItemTitle>}
-               lineContent={<MatListItemLine>Produced by dried and ground red peppers</MatListItemLine>} />
+  <MatListItem title lineCount={1}>
+    <MatListItemTitle q:slot="title">Pepper</MatListItemTitle>
+    <MatListItemLine q:slot="line">Produced by a plant</MatListItemLine>
+  </MatListItem>
+  <MatListItem title lineCount={1}>
+    <MatListItemTitle q:slot="title">Salt</MatListItemTitle>
+    <MatListItemLine q:slot="line">Extracted from sea water</MatListItemLine>
+  </MatListItem>
+  <MatListItem title lineCount={1}>
+    <MatListItemTitle q:slot="title">Paprika</MatListItemTitle>
+    <MatListItemLine q:slot="line">Produced by dried and ground red peppers</MatListItemLine>
+  </MatListItem>
 </MatList>
 ```
 
-`MatListItem` infers how many lines of text it has from `lineContent`'s length — pass an array
-of `<MatListItemLine>` elements for more than one line.
+The following slots can be used to style the content of a list item, each declared by the
+matching prop:
 
-The following props/elements can be used to style the content of a list item:
-
-| Prop | Description |
-|---|---|
-| `title` | Pass a `<MatListItemTitle>`. Required for multi-line list items. |
-| `lineContent` | Pass one or more `<MatListItemLine>`. Wraps a line of text within a list item. |
-| `icon` | Pass a `<MatListItemIcon>`. Icon typically placed at the beginning of a list item. |
-| `avatar` | Pass a `<MatListItemAvatar>`. Image typically placed at the beginning of a list item. |
-| `meta` | Pass a `<MatListItemMeta>`. Inserts content in the meta section at the end of a list item. |
+| Slot | Prop | Description |
+|---|---|---|
+| `title` | `title` | A `<MatListItemTitle>`. Required for multi-line list items. |
+| `line` | `lineCount={n}` | One or more `<MatListItemLine>`. Wraps a line of text within a list item. |
+| `icon` | `leading="icon"` | A `<MatListItemIcon>`. Icon typically placed at the beginning of a list item. |
+| `avatar` | `leading="avatar"` | A `<MatListItemAvatar>`. Image typically placed at the beginning of a list item. |
+| `meta` | `meta` | A `<MatListItemMeta>`. Inserts content in the meta section at the end of a list item. |
+| (none) | `content` | Unscoped content — plain children outside the slots above. |
 
 ### Navigation lists
 
@@ -57,29 +63,27 @@ Simple navigation lists use `as="a"` on `<MatListItem>` directly:
 ```tsx
 <MatNavList>
   {links.map(link => (
-    <MatListItem key={link} as="a" href="..." activated={link.isActive}>{link}</MatListItem>
+    <MatListItem key={link} as="a" href="..." activated={link.isActive} content>
+      {link}
+    </MatListItem>
   ))}
 </MatNavList>
 ```
 
-For more complex navigation lists (e.g. with more than one target per item), pass the anchor as
-the item's `title`:
+For more complex navigation lists (e.g. with more than one target per item), project the anchor
+as the item's title:
 
 ```tsx
 <MatNavList>
   {links.map(link => (
-    <MatListItem
-      key={link}
-      activated={link.isActive}
-      title={<MatListItemTitle as="a" href="...">{link}</MatListItemTitle>}
-      meta={
-        <MatListItemMeta>
-          <MatIconButton onClick$={() => showInfo(link)}>
-            <MatIcon>info</MatIcon>
-          </MatIconButton>
-        </MatListItemMeta>
-      }
-    />
+    <MatListItem key={link} activated={link.isActive} title meta>
+      <MatListItemTitle q:slot="title" as="a" href="...">{link}</MatListItemTitle>
+      <MatListItemMeta q:slot="meta">
+        <MatIconButton onClick$={() => showInfo(link)}>
+          <MatIcon>info</MatIcon>
+        </MatIconButton>
+      </MatListItemMeta>
+    </MatListItem>
   ))}
 </MatNavList>
 ```
@@ -93,8 +97,8 @@ Simple action lists use `as="button"` directly:
 
 ```tsx
 <MatActionList>
-  <MatListItem as="button" onClick$={save}>Save</MatListItem>
-  <MatListItem as="button" onClick$={undo}>Undo</MatListItem>
+  <MatListItem as="button" onClick$={save} content>Save</MatListItem>
+  <MatListItem as="button" onClick$={undo} content>Undo</MatListItem>
 </MatActionList>
 ```
 
@@ -109,8 +113,8 @@ buttons and anchors.
 
 ### Multi-line lists
 
-For lists that require multiple lines per item, pass a `<MatListItemLine>` per line via
-`lineContent` (array form). Whichever host tag is appropriate for your DOM hierarchy should be
+For lists that require multiple lines per item, project a `<MatListItemLine q:slot="line">` per
+line and set `lineCount` to match. Whichever host tag is appropriate for your DOM hierarchy should be
 used (not necessarily `<h3>`/`<p>` as shown here) via `<MatListItemTitle as="h3">`/
 `<MatListItemLine as="p">`.
 
@@ -118,97 +122,85 @@ used (not necessarily `<h3>`/`<p>` as shown here) via `<MatListItemTitle as="h3"
 {/* two line list */}
 <MatList>
   {messages.map(message => (
-    <MatListItem
-      key={message.id}
-      title={<MatListItemTitle as="h3">{message.from}</MatListItemTitle>}
-      lineContent={
-        <MatListItemLine as="p">
-          <span>{message.subject}</span>
-          <span class="demo-2"> -- {message.content}</span>
-        </MatListItemLine>
-      }
-    />
+    <MatListItem key={message.id} title lineCount={1}>
+      <MatListItemTitle q:slot="title" as="h3">{message.from}</MatListItemTitle>
+      <MatListItemLine q:slot="line" as="p">
+        <span>{message.subject}</span>
+        <span class="demo-2"> -- {message.content}</span>
+      </MatListItemLine>
+    </MatListItem>
   ))}
 </MatList>
 
 {/* three line list */}
 <MatList>
   {messages.map(message => (
-    <MatListItem
-      key={message.id}
-      title={<MatListItemTitle as="h3">{message.from}</MatListItemTitle>}
-      lineContent={[
-        <MatListItemLine as="p">{message.subject}</MatListItemLine>,
-        <MatListItemLine as="p" class="demo-2">{message.content}</MatListItemLine>,
-      ]}
-    />
+    <MatListItem key={message.id} title lineCount={2}>
+      <MatListItemTitle q:slot="title" as="h3">{message.from}</MatListItemTitle>
+      <MatListItemLine q:slot="line" as="p">{message.subject}</MatListItemLine>
+      <MatListItemLine q:slot="line" as="p" class="demo-2">{message.content}</MatListItemLine>
+    </MatListItem>
   ))}
 </MatList>
 ```
 
 ### Lists with icons
 
-To add an icon to your list item, pass a `<MatListItemIcon>` via `icon`.
+To add an icon to your list item, project a `<MatListItemIcon q:slot="icon">` and set
+`leading="icon"`.
 
 ```tsx
 <MatList>
   {messages.map(message => (
-    <MatListItem
-      key={message.id}
-      icon={<MatListItemIcon><MatIcon>folder</MatIcon></MatListItemIcon>}
-      title={<MatListItemTitle as="h3">{message.from}</MatListItemTitle>}
-      lineContent={
-        <MatListItemLine as="p">
-          <span>{message.subject}</span>
-          <span class="demo-2"> -- {message.content}</span>
-        </MatListItemLine>
-      }
-    />
+    <MatListItem key={message.id} leading="icon" title lineCount={1}>
+      <MatListItemIcon q:slot="icon"><MatIcon>folder</MatIcon></MatListItemIcon>
+      <MatListItemTitle q:slot="title" as="h3">{message.from}</MatListItemTitle>
+      <MatListItemLine q:slot="line" as="p">
+        <span>{message.subject}</span>
+        <span class="demo-2"> -- {message.content}</span>
+      </MatListItemLine>
+    </MatListItem>
   ))}
 </MatList>
 ```
 
 ### Lists with meta section icons
 
-To add a meta icon to your list item, pass a `<MatListItemMeta>` via `meta`. This lets you
+To add a meta icon to your list item, project a `<MatListItemMeta q:slot="meta">` and set
+`meta`. This lets you
 display an icon or any other content in the meta section of the list item.
 
 ```tsx
 <MatList>
   {messages.map(message => (
-    <MatListItem
-      key={message.id}
-      meta={<MatListItemMeta><MatIcon>folder</MatIcon></MatListItemMeta>}
-      title={<MatListItemTitle as="h3">{message.from}</MatListItemTitle>}
-      lineContent={
-        <MatListItemLine as="p">
-          <span>{message.subject}</span>
-          <span class="demo-2"> -- {message.content}</span>
-        </MatListItemLine>
-      }
-    />
+    <MatListItem key={message.id} title lineCount={1} meta>
+      <MatListItemMeta q:slot="meta"><MatIcon>folder</MatIcon></MatListItemMeta>
+      <MatListItemTitle q:slot="title" as="h3">{message.from}</MatListItemTitle>
+      <MatListItemLine q:slot="line" as="p">
+        <span>{message.subject}</span>
+        <span class="demo-2"> -- {message.content}</span>
+      </MatListItemLine>
+    </MatListItem>
   ))}
 </MatList>
 ```
 
 ### Lists with avatars
 
-To include an avatar image, pass a `<MatListItemAvatar>` (wrapping an `<img>`) via `avatar`.
+To include an avatar image, project a `<MatListItemAvatar q:slot="avatar">` (wrapping an
+`<img>`) and set `leading="avatar"`.
 
 ```tsx
 <MatList>
   {messages.map(message => (
-    <MatListItem
-      key={message.id}
-      avatar={<MatListItemAvatar><img src="..." alt="..." /></MatListItemAvatar>}
-      title={<MatListItemTitle as="h3">{message.from}</MatListItemTitle>}
-      lineContent={
-        <MatListItemLine as="p">
-          <span>{message.subject}</span>
-          <span class="demo-2"> -- {message.content}</span>
-        </MatListItemLine>
-      }
-    />
+    <MatListItem key={message.id} leading="avatar" title lineCount={1}>
+      <MatListItemAvatar q:slot="avatar"><img src="..." alt="..." /></MatListItemAvatar>
+      <MatListItemTitle q:slot="title" as="h3">{message.from}</MatListItemTitle>
+      <MatListItemLine q:slot="line" as="p">
+        <span>{message.subject}</span>
+        <span class="demo-2"> -- {message.content}</span>
+      </MatListItemLine>
+    </MatListItem>
   ))}
 </MatList>
 ```
@@ -221,22 +213,20 @@ Subheaders can be added to a list via `<MatSubheader>`. To add a divider, use `<
 <MatList>
   <MatSubheader as="h3">Folders</MatSubheader>
   {folders.map(folder => (
-    <MatListItem
-      key={folder.name}
-      icon={<MatListItemIcon><MatIcon>folder</MatIcon></MatListItemIcon>}
-      title={<MatListItemTitle as="h4">{folder.name}</MatListItemTitle>}
-      lineContent={<MatListItemLine as="p" class="demo-2">{folder.updated}</MatListItemLine>}
-    />
+    <MatListItem key={folder.name} leading="icon" title lineCount={1}>
+      <MatListItemIcon q:slot="icon"><MatIcon>folder</MatIcon></MatListItemIcon>
+      <MatListItemTitle q:slot="title" as="h4">{folder.name}</MatListItemTitle>
+      <MatListItemLine q:slot="line" as="p" class="demo-2">{folder.updated}</MatListItemLine>
+    </MatListItem>
   ))}
   <MatDivider />
   <MatSubheader as="h3">Notes</MatSubheader>
   {notes.map(note => (
-    <MatListItem
-      key={note.name}
-      icon={<MatListItemIcon><MatIcon>note</MatIcon></MatListItemIcon>}
-      title={<MatListItemTitle as="h4">{note.name}</MatListItemTitle>}
-      lineContent={<MatListItemLine as="p" class="demo-2">{note.updated}</MatListItemLine>}
-    />
+    <MatListItem key={note.name} leading="icon" title lineCount={1}>
+      <MatListItemIcon q:slot="icon"><MatIcon>note</MatIcon></MatListItemIcon>
+      <MatListItemTitle q:slot="title" as="h4">{note.name}</MatListItemTitle>
+      <MatListItemLine q:slot="line" as="p" class="demo-2">{note.updated}</MatListItemLine>
+    </MatListItem>
   ))}
 </MatList>
 ```
@@ -280,14 +270,14 @@ to `<MatList>` and give each list item an appropriate `role`.
 
 ## Angular → Qwik notes
 
-- **Content is data/props, not slotted children.** Upstream's `matListItemTitle`/
-  `matListItemLine`/`matListItemIcon`/`matListItemAvatar`/`matListItemMeta` are content-projected
-  by directive selector, placed anywhere in a `<mat-list-item>`'s template; Qwik can't inspect a
-  `<Slot/>`'s projected children's shape to re-derive the same placement/class/line-count logic.
-  `MatListItem` instead takes each section as an explicit prop (`title`, `lineContent`, `icon`,
-  `avatar`, `meta`, `divider`) holding the matching section component
-  (`<MatListItemTitle>`/`<MatListItemLine>`/etc.) — presence and `lineContent`'s array length
-  drive the same `mdc-list-item--with-*` classes upstream derives from `@ContentChildren`.
+- **Sections are named slots, and the item is told what it projects.** Upstream's
+  `matListItemTitle`/`matListItemLine`/`matListItemIcon`/`matListItemAvatar`/`matListItemMeta`
+  are content-projected by directive selector (`<ng-content select="...">`); here each section
+  carries the matching `q:slot` (`title`, `line`, `icon`, `avatar`, `meta`, `divider`) and lands
+  in the same place. Qwik can't inspect a `<Slot/>`'s projected children, though, so the
+  `mdc-list-item--with-*` classes upstream derives from `@ContentChildren` come from props you
+  set to match: `leading="avatar" | "icon"`, `title`, `lineCount`, `meta`, and `content` for
+  unscoped children.
 - **One `MatListItem` component with an `as` prop, not a separate attribute directive per host
   element.** Upstream's `mat-list-item`/`[mat-list-item]` attaches to whatever element you write
   (`<mat-list-item>`, `<a mat-list-item>`, `<button mat-list-item>`); `MatListItem` renders its

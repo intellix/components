@@ -39,12 +39,11 @@ the last element in a list, because it will overlap with the section divider.
 <MatList>
   <MatSubheader>Folders</MatSubheader>
   {folders.value.map((folder, i) => (
-    <MatListItem
-      key={folder.name}
-      icon={<MatListItemIcon><MatIcon>folder</MatIcon></MatListItemIcon>}
-      title={<MatListItemTitle as="h4">{folder.name}</MatListItemTitle>}
-      content={<p>{folder.updated}</p>}
-    />
+    <MatListItem key={folder.name} leading="icon" title content>
+      <MatListItemIcon q:slot="icon"><MatIcon>folder</MatIcon></MatListItemIcon>
+      <MatListItemTitle q:slot="title" as="h4">{folder.name}</MatListItemTitle>
+      <p>{folder.updated}</p>
+    </MatListItem>
   ))}
   {folders.value.map((_, i) =>
     i < folders.value.length - 1 ? <MatDivider key={i} inset /> : null,
@@ -52,12 +51,11 @@ the last element in a list, because it will overlap with the section divider.
   <MatDivider />
   <MatSubheader>Notes</MatSubheader>
   {notes.value.map(note => (
-    <MatListItem
-      key={note.name}
-      icon={<MatListItemIcon><MatIcon>note</MatIcon></MatListItemIcon>}
-      title={<MatListItemTitle as="h4">{note.name}</MatListItemTitle>}
-      content={<p>{note.updated}</p>}
-    />
+    <MatListItem key={note.name} leading="icon" title content>
+      <MatListItemIcon q:slot="icon"><MatIcon>note</MatIcon></MatListItemIcon>
+      <MatListItemTitle q:slot="title" as="h4">{note.name}</MatListItemTitle>
+      <p>{note.updated}</p>
+    </MatListItem>
   ))}
 </MatList>
 ```

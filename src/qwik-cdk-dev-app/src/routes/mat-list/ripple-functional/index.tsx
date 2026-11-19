@@ -37,7 +37,9 @@ const GlobalDisabledList = component$(() => {
   useMatRippleProvider({disabled: true});
   return (
     <MatActionList class="list-global-disabled">
-      <MatListItem as="button" title={<MatListItemTitle>Global disabled</MatListItemTitle>} />
+      <MatListItem as="button" title>
+        <MatListItemTitle q:slot="title">Global disabled</MatListItemTitle>
+      </MatListItem>
     </MatActionList>
   );
 });
@@ -46,26 +48,27 @@ export default component$(() => (
   <>
     <div data-parity-root>
       <MatActionList class="list-control">
-        <MatListItem as="button" title={<MatListItemTitle>Control</MatListItemTitle>} />
+        <MatListItem as="button" title>
+          <MatListItemTitle q:slot="title">Control</MatListItemTitle>
+        </MatListItem>
       </MatActionList>
 
       <MatActionList disableRipple class="list-disable-ripple-on-list">
-        <MatListItem
-          as="button"
-          title={<MatListItemTitle>List disables ripple</MatListItemTitle>}
-        />
+        <MatListItem as="button" title>
+          <MatListItemTitle q:slot="title">List disables ripple</MatListItemTitle>
+        </MatListItem>
       </MatActionList>
 
       <MatActionList class="list-disable-ripple-on-item">
-        <MatListItem
-          as="button"
-          disableRipple
-          title={<MatListItemTitle>Item disables ripple</MatListItemTitle>}
-        />
+        <MatListItem as="button" disableRipple title>
+          <MatListItemTitle q:slot="title">Item disables ripple</MatListItemTitle>
+        </MatListItem>
       </MatActionList>
 
       <MatList class="list-non-interactive">
-        <MatListItem title={<MatListItemTitle>Non-interactive</MatListItemTitle>} />
+        <MatListItem title>
+          <MatListItemTitle q:slot="title">Non-interactive</MatListItemTitle>
+        </MatListItem>
       </MatList>
 
       <GlobalDisabledList />

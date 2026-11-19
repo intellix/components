@@ -20,8 +20,10 @@ export default component$(() => {
               as="a"
               href={href}
               activated={path.startsWith(href)}
-              content={entry.name}
-            />
+              content
+            >
+              {entry.name}
+            </MatListItem>
           );
         })}
       </MatNavList>

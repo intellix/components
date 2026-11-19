@@ -26,7 +26,7 @@ below) — the one gap this remediation pass explicitly deferred (deviation
 | File | Upstream path | Sync state | Notes |
 | --- | --- | --- | --- |
 | `list/mat-list.tsx` | `src/material/list/list.ts` (MatList) + `nav-list.ts` (MatNavList) + `action-list.ts` (MatActionList) + `subheader.ts` (MatListSubheaderCssMatStyler) | ported | 4 upstream files collapsed into one Qwik file. Each container provides `MAT_LIST_BASE_STATE` (`isNonInteractive`, `disableRipple`) via `list-context.ts` so descendant `<MatListItem>`s know whether to add `mat-mdc-list-item-interactive` (mirrors upstream's DI-based `inject(MatListBase)`) and whether ripples are disabled list-wide (mirrors `MatListBase.disableRipple`). `aria-disabled` is always `"true"`/`"false"` (upstream's `[attr.aria-disabled]` binding always stringifies, never removes the attribute). `MatListSubheaderCssMatStyler` → `MatSubheader`, now polymorphic (`as`, default `'div'` — the tag used in both the Material demo and the parity scenario) instead of a `<mat-subheader>` custom tag |
-| `list/mat-list-item.tsx` | `src/material/list/list.ts` (MatListItem) + `list-base.ts` (MatListItemBase, incl. ripple) + `list-item.html` | ported | Polymorphic host via `as` (`'div'`→`<mat-list-item>`, `'a'`, `'button'`). Renders upstream's template shape: leading avatar/icon, `<span class="mdc-list-item__content">` wrapping title + lineContent + a `<span class="mat-mdc-list-item-unscoped-content">`, trailing meta, an optional nested divider, then `<span class="mat-focus-indicator">` (upstream: a `<div>` — see deviation #7). Content-derived classes (`mdc-list-item--with-leading-avatar/-icon`, `--with-trailing-meta`, `mat-mdc-list-item-both-leading-and-trailing`, `--with-one/two/three-lines`, `mat-mdc-list-item-single-line`) are computed from named props, not nested JSX children — **see the "Why sections are props" deviation below, it's the load-bearing one.** `aria-disabled` always stringified; native `disabled` is the *string* `"true"` (not a bare boolean attribute) because upstream sets it via `[attr.disabled]`, an attribute binding Angular stringifies, not a property binding. `type="button"` unconditional on the button variant (we never accept a custom `type`, matching upstream's "only if not already set" default). `mat-mdc-list-item-interactive` comes from `MAT_LIST_BASE_STATE` context; ripple wiring described in the dedicated "Ripple" section below |
+| `list/mat-list-item.tsx` | `src/material/list/list.ts` (MatListItem) + `list-base.ts` (MatListItemBase, incl. ripple) + `list-item.html` | ported | Polymorphic host via `as` (`'div'`→`<mat-list-item>`, `'a'`, `'button'`). Renders upstream's template shape: leading avatar/icon, `<span class="mdc-list-item__content">` wrapping title + lines + a `<span class="mat-mdc-list-item-unscoped-content">`, trailing meta, an optional nested divider — each section projected through a named `<Slot>` (`avatar`/`icon`/`title`/`line`/`meta`/`divider`, unnamed children into the unscoped span), then `<span class="mat-focus-indicator">` (upstream: a `<div>` — see deviation #7). Content-derived classes (`mdc-list-item--with-leading-avatar/-icon`, `--with-trailing-meta`, `mat-mdc-list-item-both-leading-and-trailing`, `--with-one/two/three-lines`, `mat-mdc-list-item-single-line`) are computed from structure props the caller declares (`leading`/`title`/`lineCount`/`meta`/`content`), since a component can't inspect its own projection — **see the "Sections are named slots" deviation below, it's the load-bearing one.** `aria-disabled` always stringified; native `disabled` is the *string* `"true"` (not a bare boolean attribute) because upstream sets it via `[attr.disabled]`, an attribute binding Angular stringifies, not a property binding. `type="button"` unconditional on the button variant (we never accept a custom `type`, matching upstream's "only if not already set" default). `mat-mdc-list-item-interactive` comes from `MAT_LIST_BASE_STATE` context; ripple wiring described in the dedicated "Ripple" section below |
 | `list/mat-list-item-sections.tsx` | `src/material/list/list-item-sections.ts` (5 directives: Avatar, Icon, Title, Line, Meta) | ported | 5 upstream attribute directives ported as 5 polymorphic `component$`s (`as`, default `'div'`; Avatar also takes `'img'`, Icon also takes `'span'`), each rendering its own host element directly (the directive's exact class list) — no wrapper. `style` prop passes through (upstream directives can carry arbitrary attributes/style on the same host element they decorate) |
 | `list/list-context.ts` | (no direct upstream file; mirrors `MatListBase._isNonInteractive`/`.disableRipple`) | new | `MAT_LIST_BASE_STATE` context (`isNonInteractive` + `disableRipple`) + defaults, see above |
 | `list/list-config.ts` | (no upstream equivalent) | new, unchanged | `MatListConfig = {}` + `MAT_LIST_CONFIG` context id; folded into `QwikMaterialProvider.matListConfig` for family-shape parity |
@@ -38,7 +38,7 @@ below) — the one gap this remediation pass explicitly deferred (deviation
 | `scss/list/_m3-list.scss` | `src/material/list/_m3-list.scss` | synced, unchanged | byte-identical |
 | `scss/list/list-prebuilt.scss` | (qwik-material-specific) | new, trimmed | `@use './list';` only — no `:root` token defaults (removed 2026-10-30, see `core/SYNC.md` "Default theme"): the one remaining override, `--mat-list-subheader-text-size`, has no M3 equivalent at all (see upstream `_list-theme.scss`'s own comment) and isn't read via `var()` anywhere in list.scss's compiled output, so it resolved nothing in practice. The restored `list.scss` now uses the SAME `token-utils.slot(...)` key names as `_m3-list.scss`'s `get-tokens()` map, so most `--mat-list-*` variables get a real fallback baked into their `var()` chain automatically — the two manual `label-text-size`/`supporting-text-size` overrides this file previously needed (to paper over a key-name mismatch in the old *rewritten* `list.scss`) are gone |
 
-## Why sections are named props on `<MatListItem>`, not nested JSX children
+## Sections are named slots on `<MatListItem>`; their structure is declared in props
 
 Upstream distributes projected content via `<ng-content select="...">`:
 avatar/icon always render before a `<span class="mdc-list-item__content">`
@@ -48,29 +48,39 @@ author's source order. This needs BOTH (a) redistributing children into a
 *new* wrapper element, and (b) knowing counts/presence to compute
 `<MatListItem>`'s own classes.
 
-Qwik has no `@ContentChildren`-equivalent content-query API, so (b) is
-out. For (a), reading `props.children` directly and re-embedding the nodes
-in a different shape was tried and **does not work on `@builder.io/qwik`
-1.20.0**: confirmed by a throwaway `component$` that read `props.children`
-into an array and rendered `{array}` — the array rendered as nothing, and
-the original nodes reappeared as a hidden `<q:template q:slot hidden
-aria-hidden="true">` sibling instead (Qwik's SSR renderer treats a
-component's `children` specially end-to-end and only "consumes" them
-through an actual `<Slot>`, which itself can't redistribute a flat child
-list into a different wrapper shape). A **named prop holding a JSX value**
-(not Qwik's special `children`) was verified to render exactly where
-placed, with no stash — so `<MatListItem>` takes `avatar` / `icon` /
-`title` / `lineContent` / `meta` / `divider` / `content` as props (each
-built with the matching exported section component,
-e.g. `avatar={<MatListItemAvatar>...</MatListItemAvatar>}`), and derives
-every content-driven class from their presence/array-length. This is the
-design doc's explicitly-sanctioned fallback ("if Qwik can't inspect
-slotted children, add an explicit prop") extended from just `lines` to
-every section, because the *placement* problem applies to all of them,
-not just the line count.
+(a) is Qwik's named `<Slot>`: each section is a child carrying a `q:slot`
+name, and `<MatListItem>` places `<Slot name="avatar"/>`, `"icon"`, then the
+content span (`"title"`, `"line"` — any number — and the default `<Slot/>`
+inside `mat-mdc-list-item-unscoped-content`), then `"meta"`, `"divider"`.
+`<Slot>` renders no element of its own, so the markup is exactly upstream's
+template shape:
 
-The `lines` prop keeps its upstream name/meaning (`number`, explicit
-override of the inferred count) since there's no naming conflict with it.
+```tsx
+<MatListItem leading="avatar" title lineCount={1}>
+  <MatListItemAvatar q:slot="avatar">AS</MatListItemAvatar>
+  <MatListItemTitle q:slot="title">Alice Smith</MatListItemTitle>
+  <MatListItemLine q:slot="line">alice@example.com</MatListItemLine>
+</MatListItem>
+```
+
+A projection is rendered by the parent, never serialized with the item's
+props — unlike the JSX-valued section props this port used before, which
+Qwik serialized into the page's state whenever the item could re-render
+(e.g. a nav item whose `activated` follows the URL), shipping every item's
+content a second time. `specs/material-list/nav.spec.ts`'s `nav-state` test
+(a bespoke, Qwik-only fixture: `mat-list/nav-state`) checks the item content
+stays out of the state.
+
+(b) has no Qwik equivalent — no `@ContentChildren`-style query, and a
+component can't inspect its own `<Slot>` projection — so the caller declares
+the structure with props that stand in for upstream's queries:
+`leading?: 'avatar' | 'icon'` (`_avatars`/`_icons`), `title?: boolean`
+(`_titles`), `lineCount?: number` (`_lines`), `meta?: boolean` (`_meta`),
+`content?: boolean` (`_hasUnscopedTextContent`). The class derivation —
+`numberOfLines` (`lines` ?? title + lines + 1 for content),
+`treatContentAsTitle`, the leading/trailing classes — is upstream's
+`_updateItemLines`, fed from these. `lines` keeps its upstream name/meaning
+(`number`, explicit override of the inferred count).
 
 ## Ripple (2026-11-03)
 
@@ -196,15 +206,15 @@ suppress, plus one unsuppressed control.
    mechanism — defaults to animations-enabled (class absent) outside a
    `<QwikMaterialProvider>`, matching upstream's default.
 3. **`@ContentChildren` / `AfterViewInit` / `cdkObserveContent` removed.**
-   No Qwik equivalent; replaced by the named-props design above, which
-   computes everything at SSR render time from props instead of a
+   No Qwik equivalent; replaced by the declared structure props above,
+   which compute everything at SSR render time from props instead of a
    post-render DOM inspection pass.
 4. **`NgZone` / `Platform` / `MAT_LIST` / `MAT_NAV_LIST` DI tokens
    removed.** Only used by the ripple system and Angular's DI graph; no
    Qwik equivalent need.
-5. **Sections are named props, not nested children** — see the dedicated
-   section above; this is the one deviation worth reading in full before
-   touching this file.
+5. **Section structure is declared in props, not queried** — see the
+   dedicated "Sections are named slots" section above; this is the one
+   deviation worth reading in full before touching this file.
 6. **Angular-specific removals (unchanged from before):**
    `@Input()` + `BooleanInput`/`NumberInput` coercion → TS types + inline
    defaults; `signal()` → plain props; `Directive`/`MatListBase`/

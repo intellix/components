@@ -31,8 +31,10 @@ export default component$(() => {
                   as="a"
                   href={href}
                   activated={path.startsWith(href)}
-                  content={item.name}
-                />
+                  content
+                >
+                  {item.name}
+                </MatListItem>
               );
             }),
           ];

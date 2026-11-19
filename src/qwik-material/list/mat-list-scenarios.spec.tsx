@@ -10,8 +10,8 @@
  *
  *   - Live sanity tests: typeof + MAT_LIST_CONFIG.id + config +
  *     props shape acceptance for all 10 components, matching the CURRENT
- *     API (named-prop sections on MatListItem — see mat-list-item.tsx's
- *     doc comment for why nested children aren't used).
+ *     API (`q:slot` sections on MatListItem, their structure declared in
+ *     props — see mat-list-item.tsx's doc comment).
  *   - describe.skip DOM-rendered: deferred to Playwright.
  *   - describe.skip Angular-only: deferred forever per the remediation
  *     design doc's "Qwik primitives are unrestricted" / no-lifecycle-hooks
@@ -103,16 +103,16 @@ describe('MatList surface — sanity', () => {
     expect(actionProps.class).toBe('my-actions');
   });
 
-  it('MatListItemProps accepts as / href / activated / disabled / lines + the named section props', () => {
+  it('MatListItemProps accepts as / href / activated / disabled / lines + the structure props', () => {
     const divProps: MatListItemProps = {
       role: 'listitem',
       class: 'item',
       id: 'i1',
-      avatar: <MatListItemAvatar />,
-      icon: <MatListItemIcon />,
-      title: <MatListItemTitle>Inbox</MatListItemTitle>,
-      lineContent: [<MatListItemLine key="l1">a</MatListItemLine>],
-      meta: <MatListItemMeta>128</MatListItemMeta>,
+      leading: 'avatar',
+      title: true,
+      lineCount: 1,
+      meta: true,
+      content: false,
       lines: 2,
     };
     const anchorProps: MatListItemProps = {
@@ -130,6 +130,8 @@ describe('MatList surface — sanity', () => {
     };
     expect(divProps.role).toBe('listitem');
     expect(divProps.lines).toBe(2);
+    expect(divProps.leading).toBe('avatar');
+    expect(divProps.lineCount).toBe(1);
     expect(anchorProps.as).toBe('a');
     expect(anchorProps.href).toBe('/inbox');
     expect(anchorProps.activated).toBe(true);
@@ -183,7 +185,7 @@ describe.skip('MatList DOM-rendered scenarios — see Playwright specs instead',
   it('MatActionList renders <mat-action-list role="group">; its items get mat-mdc-list-item-interactive', () => {});
   it('MatListItem polymorphism: as="div" → <mat-list-item>; as="a" href → <a href>; as="button" → <button type="button">', () => {});
   it('MatListItem activated on <a> emits aria-current="page"; on <div> does not', () => {});
-  it('MatListItem derives leading/trailing/line-count classes from the avatar/icon/title/lineContent/meta/lines props', () => {});
+  it('MatListItem derives leading/trailing/line-count classes from the leading/title/lineCount/meta/content/lines props', () => {});
   it('section components (Avatar/Icon/Title/Line/Meta) render their own host element with the upstream class hooks, no wrapper', () => {});
 });
 
@@ -192,14 +194,10 @@ describe.skip('MatList — Angular-only tests', () => {
     // Omitted — Qwik JSX passes booleans/numbers directly.
   });
   it('should enumerate slot content via @ContentChildren + _updateItemLines + cdkObserveContent', () => {
-    // Qwik has no content-query equivalent — MatListItem instead takes the
-    // avatar/icon/title/lineContent/meta sections as named props (see
-    // mat-list-item.tsx's doc comment: reading `children` directly causes
-    // Qwik's SSR renderer to stash the original nodes into a hidden
-    // `<q:template>` sibling instead of rendering them, and a bare
-    // `<Slot>` can't redistribute children into a NEW wrapper element —
-    // confirmed empirically against this Qwik version before choosing
-    // this design).
+    // Qwik has no content-query equivalent — a component can't inspect its
+    // own `<Slot>` projection, so the caller declares what it projects with
+    // MatListItem's leading/title/lineCount/meta/content props (see
+    // mat-list-item.tsx's doc comment).
   });
   it('should inherit from MatListBase / MatListItemBase abstract classes', () => {
     // Collapsed to plain component$ wrappers + a small MAT_LIST_BASE_STATE

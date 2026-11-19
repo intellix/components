@@ -12,12 +12,20 @@ export default component$(() => (
     <div data-parity-root>
       <MatList role="list">
         <MatSubheader>Inbox</MatSubheader>
-        <MatListItem title={<MatListItemTitle>Message 1</MatListItemTitle>} />
-        <MatListItem title={<MatListItemTitle>Message 2</MatListItemTitle>} />
+        <MatListItem title>
+          <MatListItemTitle q:slot="title">Message 1</MatListItemTitle>
+        </MatListItem>
+        <MatListItem title>
+          <MatListItemTitle q:slot="title">Message 2</MatListItemTitle>
+        </MatListItem>
         <MatDivider />
         <MatSubheader>Archive</MatSubheader>
-        <MatListItem title={<MatListItemTitle>Archived 1</MatListItemTitle>} />
-        <MatListItem title={<MatListItemTitle>Archived 2</MatListItemTitle>} />
+        <MatListItem title>
+          <MatListItemTitle q:slot="title">Archived 1</MatListItemTitle>
+        </MatListItem>
+        <MatListItem title>
+          <MatListItemTitle q:slot="title">Archived 2</MatListItemTitle>
+        </MatListItem>
       </MatList>
     </div>
     <main data-scenario-ready>ready</main>

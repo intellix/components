@@ -10,7 +10,7 @@ test('material-list/two-line — mdc-list-item--with-two-lines, item height ≈ 
 
   const items = page.locator('mat-list-item');
   await expect(items).toHaveCount(3);
-  // numberOfLines is inferred from the title + lineContent props (see
+  // numberOfLines is inferred from the `title` + `lineCount={1}` props (see
   // mat-list-item.tsx) — upstream's `.mdc-list-item--with-two-lines` class
   // sets an explicit `height`, not a CSS `:has()` selector.
   await expect(items.first()).toHaveClass(/mdc-list-item--with-two-lines/);

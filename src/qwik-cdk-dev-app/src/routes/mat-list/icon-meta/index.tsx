@@ -39,21 +39,27 @@ export default component$(() => {
     <>
       <div data-parity-root>
         <MatList role="list">
-          <MatListItem
-            icon={<MatIcon class="mat-mdc-list-item-icon mdc-list-item__start">inbox</MatIcon>}
-            title={<MatListItemTitle>Inbox</MatListItemTitle>}
-            meta={<MatListItemMeta>128</MatListItemMeta>}
-          />
-          <MatListItem
-            icon={<MatIcon class="mat-mdc-list-item-icon mdc-list-item__start">send</MatIcon>}
-            title={<MatListItemTitle>Sent</MatListItemTitle>}
-            meta={<MatListItemMeta>42</MatListItemMeta>}
-          />
-          <MatListItem
-            icon={<MatIcon class="mat-mdc-list-item-icon mdc-list-item__start">drafts</MatIcon>}
-            title={<MatListItemTitle>Drafts</MatListItemTitle>}
-            meta={<MatListItemMeta>7</MatListItemMeta>}
-          />
+          <MatListItem leading="icon" title meta>
+            <MatIcon q:slot="icon" class="mat-mdc-list-item-icon mdc-list-item__start">
+              inbox
+            </MatIcon>
+            <MatListItemTitle q:slot="title">Inbox</MatListItemTitle>
+            <MatListItemMeta q:slot="meta">128</MatListItemMeta>
+          </MatListItem>
+          <MatListItem leading="icon" title meta>
+            <MatIcon q:slot="icon" class="mat-mdc-list-item-icon mdc-list-item__start">
+              send
+            </MatIcon>
+            <MatListItemTitle q:slot="title">Sent</MatListItemTitle>
+            <MatListItemMeta q:slot="meta">42</MatListItemMeta>
+          </MatListItem>
+          <MatListItem leading="icon" title meta>
+            <MatIcon q:slot="icon" class="mat-mdc-list-item-icon mdc-list-item__start">
+              drafts
+            </MatIcon>
+            <MatListItemTitle q:slot="title">Drafts</MatListItemTitle>
+            <MatListItemMeta q:slot="meta">7</MatListItemMeta>
+          </MatListItem>
         </MatList>
       </div>
       <main data-scenario-ready>ready</main>

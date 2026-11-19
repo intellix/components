@@ -10,7 +10,7 @@ test('material-list/three-line — mdc-list-item--with-three-lines, item height 
 
   const items = page.locator('mat-list-item');
   await expect(items).toHaveCount(3);
-  // numberOfLines is inferred from the title + 2 lineContent props (see
+  // numberOfLines is inferred from the `title` + `lineCount={2}` props (see
   // mat-list-item.tsx) — upstream's `.mdc-list-item--with-three-lines`
   // class sets an explicit `height`, not a CSS `:has()` selector.
   await expect(items.first()).toHaveClass(/mdc-list-item--with-three-lines/);
