@@ -32,6 +32,45 @@ against `2.0.0-rc.4`). Upgraded from Qwik 1.x on 2026-11-01. For apps coming fro
 
 See [SYNC.md](./SYNC.md) for upstream sync state.
 
+## Component styles
+
+The CSS an app imports once, at its root, is only the global part: `core-prebuilt.css` (default
+theme, ripple, focus indicators, option, pseudo-checkbox, …), the opt-in `typography-prebuilt.css`
+/`elevation-prebuilt.css`, and qwik-cdk's `overlay-prebuilt.css`. Each component brings its own
+CSS when it renders, as upstream attaches a component's `styleUrl` on first creation:
+
+- `scripts/component-styles.mjs` compiles each entry point's `scss/<entry>/<entry>-prebuilt.scss`
+  (compressed, inside the layer) into `<entry>/<entry>-styles.ts` beside its source: a
+  `useMat<Entry>Styles()` hook whose one `useStyles$` call holds the CSS as a string literal
+  (committed; the build regenerates them and `component-styles.spec.ts` fails on a stale one —
+  `pnpm generate-component-styles`). A consuming app compiles this source with its own Qwik Vite
+  plugin (the `qwik` export condition): plain TypeScript, so no Sass, no Vite config, no CSS
+  pipeline in the app. A literal rather than `import css from './x.css?inline'`: Vite 8's client
+  build put a segment that only re-exports an imported string in a chunk cycle with that string's
+  module, and a component first rendered in the browser registered an empty `<style>` (see the
+  generator's header).
+- Every component upstream declares that stylesheet on (`styleUrl`, or a style loader such as
+  `MatBadge`'s `_MatBadgeStyleLoader`) calls the hook as its **first** hook; so does a directive
+  hook (`useMatBadge()`), and a component rendering another entry point's markup by hand calls
+  that entry point's hook first (the datepicker toggle's icon button → `useMatButtonStyles()`).
+  Qwik keys a `useStyles$` `<style>` by the call site AND the hook's position in the component
+  (`styleKey(qrl, index)`), so first-hook calls of the one hook share one `<style>` per document:
+  server rendering writes it once, before the first instance; a component first rendered in the
+  browser appends it to `<head>`. `MatGridList` and the `MatMenu` placeholder, plain functions
+  with no hook phase, render a `GridListStyles`/`MenuStyles` component that only registers the
+  CSS. Where an entry point's CSS overrides another's it composes (datepicker and paginator over
+  button), its components call the other hook first, keeping the old global import order.
+- The hooks are exported for markup rendered without its component — a hand-written
+  `mat-mdc-button` host, `matBadge()` called from a plain render function: the component
+  rendering it calls the entry point's hook (`useMatButtonStyles()`, `useMatBadgeStyles()`) as its
+  first hook.
+
+All of it — every component's CSS and the global CSS — sits in `@layer qwik-material`, so an
+app's unlayered CSS wins whatever its specificity or position (component `<style>`s land in
+`<body>`, after the app's stylesheets). Unscoped like upstream's `ViewEncapsulation.None`. The one
+inversion: an `!important` inside the layer beats an unlayered `!important` (see MIGRATING.md
+§3.2 for the few qwik-material has).
+
 ## Composing directives
 
 Angular lets several attribute directives sit on one element at once:

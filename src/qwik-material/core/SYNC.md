@@ -154,7 +154,7 @@ automatically.
 
 1. **No Angular DI / `@Component` decorator.** Plain `component$<MatPseudoCheckboxProps>`.
 2. **`state`/`appearance`/`disabled` are plain props, not `@Input()`s**, but the DOM output intentionally still distinguishes "echoed as an attribute" (`state`, `appearance`) from "consumed only" (`disabled`) to match upstream's actual rendered DOM for its one current caller (button-toggle always passes `state`/`appearance` as static values and `disabled` as a variable one). A future caller that needs `state`/`appearance` to vary reactively without being echoed as a literal attribute would need a second prop (e.g. `stateNoEcho`) — not needed yet, no current caller does this.
-3. **No `_CdkPrivateStyleLoader` / `_StructuralStylesLoader` lazy style injection.** This port's CSS is always-loaded prebuilt CSS, not Angular's per-app lazy stylesheet injection — N/A.
+3. **No `_CdkPrivateStyleLoader` / `_StructuralStylesLoader` lazy style injection for core's shared pieces.** Pseudo-checkbox, internal form field, option, ripple structure, focus-indicator structural styles and visually-hidden ship in the global `core-prebuilt.css` the app imports once (inside `@layer qwik-material`). Component entry points' own CSS is loaded on first render instead (`useMat<Entry>Styles()`, package README "Component styles").
 
 ## Class count
 

@@ -94,7 +94,7 @@ export default component$(() => {
 The `formField`/`icon` settings from the root layout above are still inherited here — only the
 tooltip default changed.
 
-## Fonts and prebuilt CSS
+## Fonts and global CSS
 
 Angular Material ships a Roboto font recommendation and a Material Symbols/Icons webfont for
 `<mat-icon>`'s default ligature mode; qwik-material is no different — load them yourself (there's
@@ -106,22 +106,23 @@ no automatic injection):
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=block" rel="stylesheet" />
 ```
 
-Each qwik-material entry point ships its own **prebuilt CSS** file — import only the ones for
-components you actually use, plus `core-prebuilt.css` (the design tokens and typography every
-other component's CSS depends on) and qwik-cdk's `overlay-prebuilt.css` (needed by anything that
-opens an overlay — menu, select, autocomplete, datepicker, dialog, tooltip, snack bar, bottom
-sheet, …):
+Import the global CSS once, at your root: qwik-material's `core-prebuilt.css` (the design tokens,
+typography, ripple and focus-indicator styles every component relies on) and qwik-cdk's
+`overlay-prebuilt.css` (needed by anything that opens an overlay — menu, select, autocomplete,
+datepicker, dialog, tooltip, snack bar, bottom sheet, …):
 
 ```ts
 import '@angular-community/qwik-cdk/overlay-prebuilt.css';
 import '@angular-community/qwik-material/core-prebuilt.css';
-import '@angular-community/qwik-material/button-prebuilt.css';
-import '@angular-community/qwik-material/form-field-prebuilt.css';
-// ...one import per component you use
 ```
 
-There's no single "import everything" CSS bundle by design — same reasoning as Angular Material's
-own per-component stylesheets, just without a build-time Sass mixin to assemble them for you.
+That's all: each component brings its own CSS when it renders, as Angular Material attaches a
+component's styles when the component is first created. A server-rendered page carries the CSS of
+the components it renders, once each, and a component first rendered in the browser (a dialog, a
+menu) brings its CSS with its own code. Like Angular Material's (`ViewEncapsulation.None`), that
+CSS is global, not scoped to the component — and all of qwik-material's CSS sits in one cascade
+layer, `@layer qwik-material`, so any rule of your own (outside a layer) beats it, whatever its
+specificity or where it loads. No Sass or Vite configuration is needed: the CSS ships compiled.
 
 ## Render your first component
 

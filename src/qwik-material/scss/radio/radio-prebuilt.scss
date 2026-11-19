@@ -6,8 +6,9 @@
 // `var(--mat-radio-selected-icon-color, var(--mat-sys-primary))`), the same
 // mechanism upstream itself uses — so no `:root` override block is needed.
 // The one default theme's `--mat-sys-*` (core/default-theme.scss, shipped
-// via core-prebuilt.css) is all that's required. Consumers import via
-// `@angular-community/qwik-material/radio-prebuilt.css`. For full custom
+// via core-prebuilt.css) is all that's required. Compiled into
+// radio/radio-styles.ts, which the radio components register on first render
+// (scripts/component-styles.mjs). For full custom
 // theming, consumers should instead @use the radio-theme mixin from
 // `@angular-community/qwik-material/scss/radio/_radio-theme.scss` once the
 // qwik-material/core theming DSL lands.

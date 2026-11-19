@@ -17,7 +17,8 @@
 // won over a consumer's real theme, since a custom property's `var()`
 // resolves where it's *declared* (`:root`), not where it's read.
 //
-// Consumers import via `@angular-community/qwik-material/slider-prebuilt.css`.
+// Compiled into slider/slider-styles.ts, which MatSlider registers on first
+// render (scripts/component-styles.mjs).
 // For full custom theming, consumers should instead @use the slider-theme
 // mixin from `@angular-community/qwik-material/scss/slider/_slider-theme.scss`
 // once the qwik-material/core theming DSL lands.

@@ -191,13 +191,10 @@ import {component$} from '@qwik.dev/core';
 import {RouterOutlet, useQwikRouter} from '@qwik.dev/router';
 import {QwikCdkRoot} from '@angular-community/qwik-cdk';
 
-// CSS: cdk overlay structure, material core (tokens/typography), then one
-// `<component>-prebuilt.css` per qwik-material component actually used.
+// Global CSS: cdk overlay structure, material core (tokens/typography/ripple/…). Each
+// qwik-material component brings its own CSS when it renders (§3.2).
 import '@angular-community/qwik-cdk/overlay-prebuilt.css';
 import '@angular-community/qwik-material/core-prebuilt.css';
-import '@angular-community/qwik-material/button-prebuilt.css';
-import '@angular-community/qwik-material/form-field-prebuilt.css';
-// ...one import per component you use — see §6 for each component's entry point name.
 
 export default component$(() => {
   useQwikRouter();
@@ -241,25 +238,41 @@ required for the M2-era typography class aliases (`.mat-h1`, `.mat-body`, …) a
 | `direction` | `'ltr' \| 'rtl'` | the initial `Dir`/`Directionality` value |
 | `loadStyles` | `boolean` (default `true`) | — (set `false` to opt out of this component's own auto-imported overlay-structure CSS) |
 
-### 3.2 CSS imports, per component
+### 3.2 CSS: global imports, and per-component CSS that loads itself
 
-Every component entry point ships its own prebuilt CSS; import only what you use, plus the three
-always-needed files:
+Import the global CSS once, at the root:
 
 - `@angular-community/qwik-cdk/overlay-prebuilt.css` — needed by anything that opens an overlay
   (menu, select, autocomplete, datepicker, dialog, tooltip, snack bar, bottom sheet, timepicker).
-- `@angular-community/qwik-material/core-prebuilt.css` — design tokens + base typography every
-  other component's CSS depends on.
-- `@angular-community/qwik-material/<component>-prebuilt.css` — one per component used (see the
-  per-component entry-point names in [§6](#6-component-by-component-mapping)).
+- `@angular-community/qwik-material/core-prebuilt.css` — design tokens, ripple, focus indicators,
+  option/pseudo-checkbox and the other shared pieces every component's CSS depends on.
 - Opt-in, only if the Angular app used the matching Sass mixin:
   `@angular-community/qwik-material/typography-prebuilt.css` (`mat.typography-hierarchy()`'s
   classes) and `@angular-community/qwik-material/elevation-prebuilt.css`
   (`mat.elevation-classes()`'s `.mat-elevation-zN` classes — see [§4](#4-theming) for a known
   upstream limitation with these).
 
-There's no "import everything" bundle, by design — same per-component split Angular Material's own
-Sass has.
+Each component's own CSS is NOT imported: the component registers it with `useStyles$` when it
+renders, as Angular Material attaches a component's `styleUrl` when the component is first
+created. A server-rendered page carries the CSS of the components it renders (once each, in a
+`<style>` before the first instance); a component first rendered in the browser (a dialog, a
+menu panel) brings its CSS with its own chunk. The CSS ships compiled, as a string in each entry
+point's TypeScript (`<entry>/<entry>-styles.ts`), so the app needs no Sass, no Vite config and no
+CSS pipeline for it. Markup an app renders by hand with a component's classes (a hand-written
+`mat-mdc-button` host, `matBadge()` called from a plain render function) registers that entry
+point's CSS itself: every entry point exports its hook, `useMat<Entry>Styles()` (e.g.
+`useMatButtonStyles()` from `.../button`) — call it as that component's first hook.
+
+All of qwik-material's CSS — the global core and every component's — sits in one cascade layer,
+`@layer qwik-material`, so the app's own unlayered CSS beats it whatever the specificity or load
+order (components' `<style>` elements land in `<body>`, after the app's stylesheets; the layer is
+what keeps the app's rules winning). Browser support: Chrome 99+, Safari 15.4+, Firefox 97+.
+One inversion to know: an `!important` declaration *inside* a layer beats an unlayered
+`!important` one, so an app rule that used `!important` to override one of qwik-material's own
+`!important` declarations (they're few: `_mat-animation-noopable` transition/animation resets,
+forced-colors fixes, `.mat-mdc-table-sticky`'s `position: sticky`, the outlined text field's
+`border: none` on its input, the date range input's transparent placeholders) no longer wins —
+drop the `!important` race and set the value without it (it now wins by layer).
 
 ### 3.3 Configuration: provider hooks
 
@@ -343,8 +356,8 @@ this guide called out by name:
 ## 4. Theming
 
 qwik-material ships Angular Material's M3 design tokens as plain CSS custom properties
-(`--mat-sys-*`, `--mat-button-*`, …) set once at `html`/`:root` by `core-prebuilt.css` and each
-component's own prebuilt CSS — there's no Sass build step to run at migration time. Full detail,
+(`--mat-sys-*`, `--mat-button-*`, …) set once at `html`/`:root` by `core-prebuilt.css` and read by
+each component's own CSS — there's no Sass build step to run at migration time. Full detail,
 including dark mode (`light-dark()`), scoping a theme to part of the page, and the known upstream
 limitation with `elevation-prebuilt.css`'s shadow classes, is in
 [`guides/theming.md`](src/qwik-material-docs/src/content/guides/theming.md). Summary for a
@@ -355,16 +368,16 @@ migration:
   package (a dependency your app keeps, not qwik-material) themes this port exactly the same way
   it themes Angular Material. Verified concretely: compiling `mat.button-overrides((filled-container-color:
   red))` against `@angular/material` produces `--mat-button-filled-container-color: red`, the exact
-  variable `button-prebuilt.css` reads.
+  variable the button's CSS reads.
 - **Only keep the token-emitting mixins**: `mat.theme-overrides(...)` and the per-component
   `mat.<component>-overrides(...)` mixins (e.g. `mat.button-overrides(...)`,
   `mat.checkbox-overrides(...)`). These only emit `--mat-*`/`--mat-sys-*` custom property
-  declarations — exactly what the prebuilt CSS already reads.
+  declarations — exactly what the component CSS already reads.
 - **Remove, don't keep**: `mat.core()` (a no-op at this Angular Material version anyway); any full
   `*-theme()`/`*-color()`/`*-typography()`/`*-density()`/`*-base()` mixin (`mat.button-theme(...)`,
   `mat.all-component-themes(...)`) — these emit the component's entire structural CSS, which this
-  port already ships compiled into `<component>-prebuilt.css`; running them again just adds a
-  duplicate, conflicting ruleset. Also drop `mat.typography-hierarchy($theme)`/
+  port already ships compiled with each component; running them again just adds a duplicate,
+  conflicting — and unlayered, so winning — ruleset. Also drop `mat.typography-hierarchy($theme)`/
   `mat.elevation-classes()` themselves if only the token *values* need to change — those mixins
   emit the same classes `typography-prebuilt.css`/`elevation-prebuilt.css` already ship; override
   the tokens those files read instead.
@@ -546,9 +559,11 @@ Qwik/browser behavior relevant to any component in this library).
   request's origin the way a browser's own `fetch('/foo.svg')` does. Build an absolute URL
   yourself (e.g. `new URL('/icons/home.svg', requestEvent.url)` inside a `routeLoader$`, which has
   the request URL) before calling `addSvgIcon`.
-- **Imported CSS is global, not scoped to a component.** Every `*-prebuilt.css` file from this
-  library is intentionally global (it must match Angular Material's own global stylesheet
-  behavior). Any CSS the migrated app imports for its *own* route-level or feature components
+- **qwik-material's CSS is global, not scoped to a component — but loaded on first use.** Like
+  Angular Material's own (`ViewEncapsulation.None`), a component's CSS applies to the whole page,
+  unscoped; like Angular Material's, it arrives when the component first renders (§3.2) rather
+  than up front, and it sits in `@layer qwik-material`, below every unlayered rule of the app's.
+  Any CSS the migrated app imports for its *own* route-level or feature components
   should be scoped (e.g. `useStylesScoped$()`, a CSS Modules-style convention, or a unique root
   class) — importing a plain, unscoped `.css`/`.scss` file the way the library does will leak
   selectors across the whole page the same way an un-encapsulated Angular component's styles

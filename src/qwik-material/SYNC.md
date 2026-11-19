@@ -9,6 +9,20 @@ v21.2.14 in the `qwik-port-21.2` branch/worktree — see each entry-point's
 own `SYNC.md` for its upstream path and sync state, and the root-level
 rebaseline notes below for what moved between the two versions.
 
+## 2026-11-19 component styles load on first render, in `@layer qwik-material`
+
+Upstream attaches each component's `styleUrl` (compiled with `ViewEncapsulation.None`: global,
+unscoped) when the component is first created; this port used to ship each entry point's CSS as a
+`<entry>-prebuilt.css` export the app imported globally, up front. Now each entry point's CSS is
+compiled into `<entry>/<entry>-styles.ts` (`scripts/component-styles.mjs`: a `useMat<Entry>Styles()`
+hook, the CSS a literal in its `useStyles$` call) and registered by the components upstream
+declares it on — README "Component styles", and each
+entry point's SYNC.md "Styles (2026-11-19)". The 34 per-component `*-prebuilt.css` exports are
+gone; `core-prebuilt.css`, `typography-prebuilt.css` and `elevation-prebuilt.css` stay global.
+Every stylesheet — global and per-component — is wrapped in `@layer qwik-material`, so an app's
+unlayered CSS wins regardless of order (component `<style>`s land in `<body>` during SSR). The
+Sass sources (`scss/`) are unchanged.
+
 ## 2026-11-02 rebaseline to v21.2.14 (8fe4d6a8ffcf)
 
 A comparison of every template/style file under `src/material/`/`src/cdk/`

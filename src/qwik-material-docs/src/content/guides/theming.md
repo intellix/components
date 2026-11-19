@@ -2,9 +2,11 @@
 
 qwik-material ships Angular Material's M3 design tokens as plain CSS custom properties — there's
 no Sass theming API (`mat.define-theme()`, mixins, …) to run at build time. Every component's
-SCSS was ported verbatim and compiled once into the prebuilt CSS files you import (see
-[Getting started](/guide/getting-started/)); theming means overriding CSS variables, not
-recompiling Sass.
+SCSS was ported verbatim and compiled once into the CSS each component brings with it, plus the
+global `core-prebuilt.css` you import (see [Getting started](/guide/getting-started/)); theming
+means overriding CSS variables, not recompiling Sass. All of it sits in one cascade layer,
+`@layer qwik-material`, so your own (unlayered) CSS always wins over it — whatever its
+specificity, wherever it loads.
 
 ## The default theme
 
@@ -43,8 +45,8 @@ Every component's CSS reads these tokens (`background: var(--mat-sys-surface)`,
 ## Applying a brand theme
 
 Override the tokens you care about at `:root` (or scope the override to a subtree, e.g. a
-section of your app that should look different) — the same variable names, after your prebuilt
-CSS imports so your rule wins:
+section of your app that should look different) — the same variable names. Your rule wins
+because it's outside qwik-material's layer, not because of where it loads:
 
 ```css
 :root {
@@ -86,9 +88,9 @@ component-level theming prop to set.
 
 ## Typography classes and elevation classes (opt-in)
 
-Two more CSS files exist alongside every component's own `<component>-prebuilt.css` (see
+Two more global CSS files exist alongside `core-prebuilt.css` (see
 [Getting started](/guide/getting-started/)), for the same two upstream Sass mixins `mat.theme()`
-itself never calls, so neither one is in `core-prebuilt.css`:
+itself never calls, so neither one is in `core-prebuilt.css` (both in `@layer qwik-material` too):
 
 ```ts
 import '@angular-community/qwik-material/typography-prebuilt.css';
@@ -148,31 +150,32 @@ itself. **Verified concretely**, not just asserted: compiling
 ```
 
 produces `:root { --mat-button-filled-container-color: red; }` — the exact CSS variable
-`button-prebuilt.css` already reads (`background-color: var(--mat-button-filled-container-color,
+the button's CSS already reads (`background-color: var(--mat-button-filled-container-color,
 var(--mat-sys-primary))`) — and applying that one declaration to a live
 `<MatButton appearance="filled">` really does flip its computed background color.
 
 **Use ONLY the token-emitting `*-overrides()` mixins** (`mat.theme-overrides(...)`,
 `mat.button-overrides(...)`, `mat.checkbox-overrides(...)`, one per component, same naming as the
 component itself) — every one of these just emits `--mat-*`/`--mat-sys-*` custom property
-declarations, nothing else, which is exactly what this port's prebuilt CSS already reads.
+declarations, nothing else, which is exactly what this port's component CSS already reads.
 
-**Do NOT include**, because they'd duplicate (and can conflict with) the structural CSS your
-`<component>-prebuilt.css` imports already provide:
+**Do NOT include**, because they'd duplicate (and can conflict with) the structural CSS each
+component already brings:
 
 - `mat.core()` — a no-op as of this Angular Material version anyway, but never needed here.
 - Any full `*-theme()`/`*-color()`/`*-typography()`/`*-density()`/`*-base()` mixin
   (`mat.button-theme($theme)`, `mat.all-component-themes($theme)`, …) — these emit the component's
   entire structural ruleset (selectors, layout, every property, not just token values), which this
-  port already ships compiled into `<component>-prebuilt.css`. Running them again produces a
-  second, separate copy of the same rules, which only adds specificity/ordering risk for no benefit.
+  port already ships compiled with each component. Running them again produces a second,
+  separate, unlayered copy of the same rules, which then beats the component's own CSS
+  everywhere — risk for no benefit.
 - `mat.typography-hierarchy($theme)`/`mat.elevation-classes()` themselves, if you only want the
   token VALUES to differ — those mixins emit the CLASSES this port already ships as
   `typography-prebuilt.css`/`elevation-prebuilt.css` (above); override the tokens those files
   already read instead.
 
-The recommended setup, end to end: keep importing every `*-prebuilt.css` file from
-`@angular-community/qwik-material` as usual (that's your structural CSS), then compile your own
-small Sass entry that calls only `mat.theme-overrides(...)` plus whichever `*-overrides(...)`
-per-component mixins you need, and load the resulting plain CSS output alongside the prebuilt
-files (after them, so your overrides win the cascade).
+The recommended setup, end to end: keep importing `core-prebuilt.css` as usual (each component
+brings its own structural CSS), then compile your own small Sass entry that calls only
+`mat.theme-overrides(...)` plus whichever `*-overrides(...)` per-component mixins you need, and
+load the resulting plain CSS output anywhere, outside any `@layer` — unlayered, your overrides
+win the cascade over `@layer qwik-material` regardless of order.

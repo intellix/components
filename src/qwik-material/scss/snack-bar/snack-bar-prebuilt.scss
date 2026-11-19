@@ -17,7 +17,8 @@
 // property's `var()` resolves where it's *declared* (`:root`), not where
 // it's read.
 //
-// Consumers import via `@angular-community/qwik-material/snack-bar-prebuilt.css`.
+// Compiled into snack-bar/snack-bar-styles.ts, which the snack-bar components
+// register on first render (scripts/component-styles.mjs).
 // For full custom theming, consumers should instead @use the snack-bar-theme mixin from
 // `@angular-community/qwik-material/scss/snack-bar/_snack-bar-theme.scss`
 // once the qwik-material/core theming DSL lands.
