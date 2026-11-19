@@ -29,7 +29,8 @@ test.describe('qwik-material component styles', () => {
     expect(carrying('.mat-mdc-button{')).toHaveLength(1);
     expect(carrying('.mat-mdc-form-field{')).toHaveLength(1);
     expect(carrying('.mat-mdc-dialog-container{')).toHaveLength(0);
-    for (const style of styles) expect(style.css).toMatch(/^@layer qwik-material\{[^]+\}$/);
+    for (const style of styles)
+      expect(style.css).toMatch(/^@layer qwik-cdk,qwik-material;@layer qwik-material\{[^]+\}$/);
     await expect(page.locator('.mat-mdc-button-base')).toHaveCSS('display', 'inline-flex');
   });
 
@@ -47,6 +48,36 @@ test.describe('qwik-material component styles', () => {
       'min-width',
       '280px',
     );
+  });
+
+  // qwik-cdk's CSS sits in `@layer qwik-cdk`, declared below `qwik-material`
+  // (`@layer qwik-cdk, qwik-material;`), so material's rules on CDK overlay elements beat the
+  // CDK's own — as source order (cdk imported first) had it before either was layered.
+  test("dialog.css's 560px max-width beats the CDK pane's 100%", async ({page}) => {
+    await page.setViewportSize({width: 1600, height: 900});
+    await page.goto(`${QWIK_URL}/mat-dialog/basic/`);
+    await expect(page.locator('.mdc-dialog--open')).toBeVisible();
+    await expect(page.locator('.cdk-overlay-pane.mat-mdc-dialog-panel')).toHaveCSS(
+      'max-width',
+      '560px',
+    );
+  });
+
+  test("autocomplete.css hides a hidden panel's pane from pointer events over the CDK's", async ({
+    page,
+  }) => {
+    // autocomplete.css: `.cdk-overlay-pane:has(> .mat-mdc-autocomplete-hidden) { pointer-events:
+    // none }` against the CDK's `.cdk-overlay-pane { pointer-events: auto }`.
+    await page.goto(`${QWIK_URL}/mat-autocomplete/basic-filter/`);
+    await page.waitForSelector('[data-scenario-ready]');
+    const pointerEvents = await page.evaluate(() => {
+      const pane = document.createElement('div');
+      pane.className = 'cdk-overlay-pane';
+      pane.innerHTML = '<div class="mat-mdc-autocomplete-panel mat-mdc-autocomplete-hidden"></div>';
+      document.body.append(pane);
+      return getComputedStyle(pane).pointerEvents;
+    });
+    expect(pointerEvents).toBe('none');
   });
 
   test("an app's unlayered rule beats qwik-material's, whatever the specificity", async ({

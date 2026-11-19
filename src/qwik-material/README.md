@@ -71,6 +71,12 @@ app's unlayered CSS wins whatever its specificity or position (component `<style
 inversion: an `!important` inside the layer beats an unlayered `!important` (see MIGRATING.md
 §3.2 for the few qwik-material has).
 
+qwik-cdk's CSS (overlay, a11y, text-field prebuilts; `<QwikCdkRoot>`'s overlay structure;
+`CdkDialogContainer`'s) sits in `@layer qwik-cdk`, ordered below: every stylesheet of either package
+starts with `@layer qwik-cdk, qwik-material;`, so the order holds whichever loads first. Material's
+rules on CDK elements (dialog.css's 560px `max-width` on the overlay pane over the CDK's `100%`)
+win as source order made them win before either was layered; the app's unlayered CSS beats both.
+
 ## Composing directives
 
 Angular lets several attribute directives sit on one element at once:
@@ -343,7 +349,7 @@ reactive-forms Angular app writes its own small `ErrorStateMatcher`/validator gl
 - **Validation timing**: Formisch's `validate`/`revalidate` modes (`useForm$()`'s config) decide
   WHEN a field's validity is (re)computed — set `validate: 'initial', revalidate: 'input'` to
   match Angular reactive forms' own always-on validity (a required-but-empty field is `invalid`
-  from the very first render on both sides). Error *display* still only turns on once `touched`
+  from the very first render on both sides). Error _display_ still only turns on once `touched`
   (or the form submits), via the default `ErrorStateMatcher` every qwik-material form control
   already implements — this doesn't make errors appear any earlier than Angular's. One semantic
   difference can't be configured away: Formisch's `isTouched` flips on FOCUS (or any value

@@ -1,5 +1,6 @@
 // Types for component-styles.mjs, imported by component-styles(-render).spec.
 export declare const LAYER: string;
+export declare const LAYER_ORDER: string;
 export declare const COMPONENT_STYLES: Record<string, string>;
 export declare const COMPONENT_STYLE_ENTRIES: string[];
 export declare function wrapInLayer(css: string, options?: {compressed?: boolean}): string;

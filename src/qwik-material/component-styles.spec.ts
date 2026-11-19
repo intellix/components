@@ -162,10 +162,12 @@ describe('component styles', () => {
         readFileSync(file, 'utf8'),
         `${relative(root, file)} is stale — run generate-component-styles`,
       ).toBe(await renderStylesModule(entry));
-      // One layer block holding every rule.
+
       const css = await compileComponentStyles(entry);
-      expect(css).toMatch(/^@layer qwik-material\{[^]+\}$/);
-      expect(css.match(/@layer/g)).toHaveLength(1);
+      // The layer order statement (qwik-cdk below qwik-material), then one layer block holding
+      // every rule.
+      expect(css).toMatch(/^@layer qwik-cdk,qwik-material;@layer qwik-material\{[^]+\}$/);
+      expect(css.match(/@layer/g)).toHaveLength(2);
     },
   );
 
@@ -175,7 +177,7 @@ describe('component styles', () => {
     const hook = readFileSync(componentStylePaths(entry).module, 'utf8');
     expect(hook).toMatch(new RegExp(`export function ${hookName(entry)}\\(\\): void \\{`));
     // The CSS is a literal in the `useStyles$` call (no `?inline` import — see the generator).
-    expect(hook).toContain('useStyles$(\n    `@layer qwik-material{');
+    expect(hook).toContain('useStyles$(\n    `@layer qwik-cdk,qwik-material;@layer qwik-material{');
     expect(hook).not.toMatch(/^import .*css/m);
   });
 

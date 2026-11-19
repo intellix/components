@@ -46,6 +46,15 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const LAYER = 'qwik-material';
 
 /**
+ * The layer order, at the top of every stylesheet: qwik-cdk's CSS (`@layer qwik-cdk`) below
+ * qwik-material's, so material's rules on CDK elements beat the CDK's own (dialog.css's 560px
+ * `max-width` on the overlay pane over the CDK's 100%), as source order had it before either was
+ * layered. Repeated in every file so it holds whichever loads first. Identical in qwik-cdk's
+ * `scripts/css-layer.mjs`.
+ */
+export const LAYER_ORDER = '@layer qwik-cdk, qwik-material;';
+
+/**
  * Entry points with their own structural CSS → the upstream component(s) that declare it
  * (`styleUrl`), for the hook's doc comment. `input` has none (upstream's `MatInput` ships no
  * stylesheet; its styles are form-field's), `core` ships `core-prebuilt.css` globally, and
@@ -99,12 +108,17 @@ export const COMPONENT_STYLES = {
 
 export const COMPONENT_STYLE_ENTRIES = Object.keys(COMPONENT_STYLES);
 
-/** `css` inside `@layer qwik-material { … }`. A `@charset`/`@import` can't sit in a layer block. */
+/**
+ * `css` inside `@layer qwik-material { … }`, after the layer order statement. A `@charset`/`@import`
+ * can't sit in a layer block.
+ */
 export function wrapInLayer(css, {compressed = false} = {}) {
   if (/@charset|@import/.test(css)) {
     throw new Error('qwik-material: compiled CSS has a @charset/@import that cannot be layered');
   }
-  return compressed ? `@layer ${LAYER}{${css.trim()}}` : `@layer ${LAYER} {\n${css.trimEnd()}\n}\n`;
+  return compressed
+    ? `${LAYER_ORDER.replace(', ', ',')}@layer ${LAYER}{${css.trim()}}`
+    : `${LAYER_ORDER}\n@layer ${LAYER} {\n${css.trimEnd()}\n}\n`;
 }
 
 /** `useMat<Entry>Styles` for an entry name. */

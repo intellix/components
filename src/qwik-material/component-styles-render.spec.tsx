@@ -59,7 +59,8 @@ describe('component styles, server-rendered', () => {
       </div>,
     );
     const [style] = styleTags(html);
-    expect(style.css).toMatch(/^@layer qwik-material\{/);
+    // After the layer order statement (qwik-cdk's layer below qwik-material's).
+    expect(style.css).toMatch(/^@layer qwik-cdk,qwik-material;@layer qwik-material\{/);
     expect(style.css).toContain('.mat-mdc-card{');
     expect(html.indexOf('<style q:style')).toBeLessThan(html.indexOf('<mat-card'));
   });
