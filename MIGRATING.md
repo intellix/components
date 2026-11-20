@@ -258,10 +258,22 @@ created. A server-rendered page carries the CSS of the components it renders (on
 `<style>` before the first instance); a component first rendered in the browser (a dialog, a
 menu panel) brings its CSS with its own chunk. The CSS ships compiled, as a string in each entry
 point's TypeScript (`<entry>/<entry>-styles.ts`), so the app needs no Sass, no Vite config and no
-CSS pipeline for it. Markup an app renders by hand with a component's classes (a hand-written
-`mat-mdc-button` host, `matBadge()` called from a plain render function) registers that entry
-point's CSS itself: every entry point exports its hook, `useMat<Entry>Styles()` (e.g.
+CSS pipeline for **qwik-material's** CSS. Markup an app renders by hand with a component's classes
+(a hand-written `mat-mdc-button` host, `matBadge()` called from a plain render function) registers
+that entry point's CSS itself: every entry point exports its hook, `useMat<Entry>Styles()` (e.g.
 `useMatButtonStyles()` from `.../button`) — call it as that component's first hook.
+
+This "no Sass" claim does not extend to qwik-cdk. `<QwikCdkRoot>`'s default `loadStyles` (see
+[§3.1](#31-root-component)) imports `scss/overlay/overlay-structure-layered.scss`, and
+`CdkDialogContainer` (behind `useMatDialog()`) imports `scss/dialog/dialog-container-layered.scss`
+unconditionally — both compiled by the consumer's Vite under the `qwik` export condition, so an
+app that uses either needs the `sass` dev dependency from
+[§2.3](#23-required-viteconfigts-settings) regardless of
+whether it touches qwik-material's own CSS. This is pre-existing: the files were `.scss` with
+`@use` before this port's cascade-layer work, which only added `sass:meta`/`meta.load-css` to
+them. `<QwikCdkRoot loadStyles={false}>` skips the overlay import — `overlay-prebuilt.css` already
+ships the same structural CSS globally, so the auto-load is a duplicate — but has no effect on
+`CdkDialogContainer`'s unconditional import.
 
 All of qwik-material's CSS — the global core and every component's — sits in one cascade layer,
 `@layer qwik-material`, so the app's own unlayered CSS beats it whatever the specificity or load

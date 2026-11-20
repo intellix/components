@@ -122,7 +122,20 @@ the components it renders, once each, and a component first rendered in the brow
 menu) brings its CSS with its own code. Like Angular Material's (`ViewEncapsulation.None`), that
 CSS is global, not scoped to the component — and all of qwik-material's CSS sits in one cascade
 layer, `@layer qwik-material`, so any rule of your own (outside a layer) beats it, whatever its
-specificity or where it loads. No Sass or Vite configuration is needed: the CSS ships compiled.
+specificity or where it loads. No Sass or Vite configuration is needed for qwik-material's CSS: it
+ships compiled, as a string in each entry point's TypeScript.
+
+qwik-cdk is different: `<QwikCdkRoot>` auto-loads `scss/overlay/overlay-structure-layered.scss` by
+default (its `loadStyles` prop, default `true`), and `CdkDialogContainer` (used by
+`useMatDialog()`) imports `scss/dialog/dialog-container-layered.scss` unconditionally. Both
+resolve under the `qwik` export condition (see
+[Migrating from Angular Material](/guide/migrating-from-angular-material/) for the Vite setup
+that condition needs), so your own Vite build compiles them, and your app needs a `sass` dev
+dependency for that. This is pre-existing — the files were already `.scss` before this port's
+cascade-layer work. `overlay-prebuilt.css` above already carries the same structural CSS, so the
+auto-load is a duplicate: pass `loadStyles={false}` to `<QwikCdkRoot>` to skip it and drop the Sass
+requirement for the overlay structure (the dialog container's `.scss` import is unconditional and
+has no equivalent opt-out).
 
 ## Render your first component
 
