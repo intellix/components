@@ -346,6 +346,18 @@ export interface ForwardedHostHandlers {
   onFocusOut$?: HostHandler<FocusEvent>;
 }
 
+/** Each forwarded handler prop, by the DOM event it listens to (`event.type`). */
+const FORWARDED_HANDLERS = {
+  mousedown: 'onMouseDown$',
+  mouseenter: 'onMouseEnter$',
+  mouseleave: 'onMouseLeave$',
+  keydown: 'onKeyDown$',
+  focusin: 'onFocusIn$',
+  focusout: 'onFocusOut$',
+} as const satisfies Record<string, keyof ForwardedHostHandlers>;
+
+type ForwardedEvent = keyof typeof FORWARDED_HANDLERS;
+
 /**
  * Forwards a host component's directive-hook handlers to its own root element via `useOn()`,
  * reading `props` live. Use this instead of `onMouseEnter$={props.onMouseEnter$}`-style JSX props
@@ -353,30 +365,25 @@ export interface ForwardedHostHandlers {
  * loader and focus origin): under Qwik v2 the `useOn()` listeners replace a same-named JSX-prop
  * handler on that element instead of joining it, so e.g. `useMatTooltip()`'s `mouseenter` never
  * ran on a `<MatButton>`.
+ *
+ * Only the events whose handler prop the host was given are listened to, through ONE shared
+ * forwarder (one QRL, one capture of `props`): a button with no directive hook (most of them)
+ * serializes no forwarder and its HTML names no forwarded listener — it had six. "Given" is the
+ * prop's presence, not its value: Qwik keeps a host's `useOn()` registrations for the life of the
+ * element (a later render can't add a listener to it), so a handler passed as
+ * `onMouseEnter$={cond ? fn$ : undefined}` is forwarded from the start and read live, exactly as
+ * before. Each directive hook's `hostProps` always has the same handler keys. Only a handler key
+ * that is absent at first and appears later (a spread object that gains it) isn't forwarded.
  */
 export function useForwardedHostHandlers(props: ForwardedHostHandlers): void {
-  useOn(
-    'mousedown',
-    $((e: MouseEvent, el: Element) => callHostHandler(props.onMouseDown$, e, el)),
+  const forward$ = $((e: Event, el: Element) =>
+    callHostHandler(
+      props[FORWARDED_HANDLERS[e.type as ForwardedEvent]] as HostHandler | undefined,
+      e,
+      el,
+    ),
   );
-  useOn(
-    'mouseenter',
-    $((e: MouseEvent, el: Element) => callHostHandler(props.onMouseEnter$, e, el)),
-  );
-  useOn(
-    'mouseleave',
-    $((e: MouseEvent, el: Element) => callHostHandler(props.onMouseLeave$, e, el)),
-  );
-  useOn(
-    'keydown',
-    $((e: KeyboardEvent, el: Element) => callHostHandler(props.onKeyDown$, e, el)),
-  );
-  useOn(
-    'focusin',
-    $((e: FocusEvent, el: Element) => callHostHandler(props.onFocusIn$, e, el)),
-  );
-  useOn(
-    'focusout',
-    $((e: FocusEvent, el: Element) => callHostHandler(props.onFocusOut$, e, el)),
-  );
+  for (const event of Object.keys(FORWARDED_HANDLERS) as ForwardedEvent[]) {
+    if (FORWARDED_HANDLERS[event] in props) useOn(event, forward$);
+  }
 }
