@@ -1,8 +1,13 @@
-import {component$, Slot, useComputed$, useContext, type JSXOutput} from '@qwik.dev/core';
+import {component$, Slot, useContext, type JSXOutput} from '@qwik.dev/core';
 import type {MatIconColor} from './icon-color';
 import {MAT_ICON_CONFIG, MAT_ICON_DEFAULT_FONT_SET_CLASS, type MatIconConfig} from './icon-config';
 import {withIconSvgAttributes} from './icon-svg-attrs';
-import {getNamedSvgIcon, splitIconName, useOptionalIconRegistry} from './icon-registry';
+import {
+  getNamedSvgIcon,
+  splitIconName,
+  useOptionalIconRegistry,
+  type MatIconRegistryStore,
+} from './icon-registry';
 import {extraHostAttrs, type HostRef} from '../core/host-props';
 import type {OpenString} from '../core/open-string';
 import {useMatIconStyles} from './icon-styles';
@@ -122,44 +127,31 @@ function cleanupFontValue(value: string | undefined): string | undefined {
   return typeof value === 'string' ? value.trim().split(' ')[0] : value;
 }
 
+/**
+ * `svgIcon`'s markup, or `''` (logged, as upstream's default `ErrorHandler` does) when there is no
+ * registry or no such icon — upstream's `getNamedSvgIcon` failure path renders nothing.
+ */
+function resolveSvgIcon(registry: MatIconRegistryStore | undefined, raw: string): Promise<string> {
+  if (!registry) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `Error retrieving icon ${raw}! No MAT_ICON_REGISTRY ancestor found — call ` +
+        `useMatIconRegistryProvider() near the root of this subtree and register ` +
+        `the icon first.`,
+    );
+    return Promise.resolve('');
+  }
+  return getNamedSvgIcon(registry, raw).catch((err: Error) => {
+    // eslint-disable-next-line no-console
+    console.error(`Error retrieving icon ${raw}! ${err.message}`);
+    return '';
+  });
+}
+
 export const MatIcon = component$<MatIconProps>(props => {
   useMatIconStyles();
   const config = useContext(MAT_ICON_CONFIG, DEFAULTS);
   const registry = useOptionalIconRegistry();
-
-  // Called unconditionally every render (Qwik hook rule) regardless of
-  // which mode this instance ends up in — see this hook's own doc comment
-  // for why the common case (no `svgIcon`, or `svgLiteral` winning instead)
-  // takes a plain SYNCHRONOUS return with zero async-engine overhead, and
-  // only a REAL `svgIcon` lookup ever becomes a suspending async read.
-  //
-  // `serializationStrategy: 'never'`: the resolved markup is already in the
-  // server-rendered HTML (`dangerouslySetInnerHTML` below), so it isn't
-  // serialized a second time into the resumable state, which doubled every
-  // SVG icon's size in the page. Only a re-render after resume reads the
-  // value (an `svgIcon` change), and it resolves the icon again then, from
-  // the fetch cache or the URL.
-  const resolvedSvgIcon = useComputed$(
-    () => {
-      const raw = props.svgIcon;
-      if (props.svgLiteral || !raw) return null;
-      if (!registry) {
-        // eslint-disable-next-line no-console
-        console.error(
-          `Error retrieving icon ${raw}! No MAT_ICON_REGISTRY ancestor found — call ` +
-            `useMatIconRegistryProvider() near the root of this subtree and register ` +
-            `the icon first.`,
-        );
-        return null;
-      }
-      return getNamedSvgIcon(registry, raw).catch((err: Error) => {
-        // eslint-disable-next-line no-console
-        console.error(`Error retrieving icon ${raw}! ${err.message}`);
-        return null;
-      });
-    },
-    {serializationStrategy: 'never'},
-  );
 
   const color = props.color ?? config.color;
   const inline = props.inline ?? false;
@@ -227,19 +219,10 @@ export const MatIcon = component$<MatIconProps>(props => {
   const extraAttrs = extraHostAttrs(props as Record<string, unknown>, KNOWN_PROPS);
 
   if (usingSvg) {
-    // Reading `.value` only here (not above, unconditionally) means a `hasLiteral` instance
-    // never pulls `resolvedSvgIcon` at all — it stays uncomputed, zero async-engine cost — while
-    // a REAL `svgIcon` lookup suspends this render (SSR: blocks until resolved, so the server
-    // HTML already has the final markup, no flash; client: re-renders once the promise settles)
-    // exactly where upstream's own `AsyncSignal`/`ComputedSignal` docs say reading a pending one
-    // will. `useComputed$` is still called UNCONDITIONALLY above, every render — only the READ
-    // of its `.value` is conditional, which is the live-prop-safe half (see this file's other
-    // "freeze live-prop conditions" notes — reading a signal conditionally is not the same
-    // hazard as calling a hook conditionally).
-    const svgMarkup = hasLiteral
-      ? withIconSvgAttributes(props.svgLiteral!)
-      : (resolvedSvgIcon.value ?? '');
-    return (
+    // Built here, not in the `.then()` below, so every prop is read during the render: a
+    // tracked read (the `svgIcon` value a later change re-renders for), never after an `await`.
+    const svgIcon = props.svgIcon;
+    const svgHost = (svgMarkup: string) => (
       <mat-icon
         ref={props.ref}
         id={props.id}
@@ -260,11 +243,22 @@ export const MatIcon = component$<MatIconProps>(props => {
         // real-world usage (including every upstream doc example) writes a literal `svgIcon`
         // value. Reflecting it here unconditionally when set keeps this port's DOM matching that
         // common case.
-        svgIcon={props.svgIcon}
+        svgIcon={svgIcon}
         {...extraAttrs}
         dangerouslySetInnerHTML={svgMarkup}
       />
     );
+    if (hasLiteral) return svgHost(withIconSvgAttributes(props.svgLiteral!));
+    // A real `svgIcon` lookup renders the host once it is resolved — a promise child, which Qwik
+    // renders when it settles (SSR: the server HTML already has the final markup, no flash,
+    // works with no client JS; client: the host keeps its old markup until the new icon is
+    // resolved, after an `svgIcon` change).
+    // No signal holds the markup (nor the lookup's QRL and captures, as the `useComputed$` this
+    // used to be did, for every icon, font ones included): it is in the HTML only, and a
+    // re-render after resume resolves the icon again, from the fetch cache or its URL. The
+    // registry entry this reads (`getNamedSvgIcon`'s synchronous part) subscribes this
+    // component, so registering the icon later re-renders it, as the computed did.
+    return <>{resolveSvgIcon(registry, svgIcon!).then(svgHost)}</>;
   }
 
   return (
