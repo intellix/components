@@ -43,6 +43,23 @@ const Toggle = component$(() => {
   );
 });
 
+/** An icon whose class and color change (not its `svgIcon`). */
+const Restyled = component$(() => {
+  const on = useSignal(false);
+  return (
+    <>
+      <MatIcon
+        class={on.value ? 'restyled on' : 'restyled'}
+        color={on.value ? 'warn' : undefined}
+        svgIcon="star"
+      />
+      <button type="button" class="restyle" onClick$={() => (on.value = !on.value)}>
+        Restyle
+      </button>
+    </>
+  );
+});
+
 const Seeded = component$(() => {
   useMatIconRegistryProvider({
     icons: [
@@ -125,6 +142,26 @@ describe('<MatIcon svgIcon> from a seeded registry', () => {
     expect(document.querySelector('mat-icon.toggled')!.getAttribute('svgicon')).toBe('heart');
     await trigger(document.body, 'button.toggle', 'click');
     await expect.poll(path).toBe(STAR);
+  });
+
+  it('keeps the same element and markup when it re-renders for another class or color', async () => {
+    const {document} = await ssrRenderToDom(
+      <Seeded>
+        <Restyled />
+      </Seeded>,
+    );
+    const icon = document.querySelector('mat-icon.restyled')!;
+    const markup = icon.innerHTML;
+    expect(icon.querySelector('svg path')?.getAttribute('d')).toBe(STAR);
+    await trigger(document.body, 'button.restyle', 'click');
+    await expect.poll(() => icon.classList.contains('on')).toBe(true);
+    expect(icon.classList.contains('mat-warn')).toBe(true);
+    expect(document.querySelector('mat-icon.restyled')).toBe(icon);
+    expect(icon.innerHTML).toBe(markup);
+    await trigger(document.body, 'button.restyle', 'click');
+    await expect.poll(() => icon.classList.contains('on')).toBe(false);
+    expect(document.querySelector('mat-icon.restyled')).toBe(icon);
+    expect(icon.innerHTML).toBe(markup);
   });
 
   it('renders an icon registered after it was first rendered', async () => {
