@@ -121,7 +121,10 @@ export const MatFabButton = component$<MatFabProps>(props => {
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? DEFAULTS.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
-  const isAnchor = props.href != null;
+  // `href` is read here anyway (the host tag depends on it), so the attribute takes the plain
+  // value: `href={props.href}` would add a derived signal per button.
+  const href = props.href;
+  const isAnchor = href != null;
   const nativelyDisabled = !!props.disabled && !disabledInteractive;
 
   // See mat-button.tsx for the full rationale — same lazy useOn()-based
@@ -196,7 +199,7 @@ export const MatFabButton = component$<MatFabProps>(props => {
     return (
       <a
         ref={props.ref}
-        href={props.href}
+        href={href}
         id={props.id}
         class={classes}
         tabIndex={nativelyDisabled ? -1 : undefined}

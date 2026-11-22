@@ -188,3 +188,10 @@ Measured on an app's home page (Qwik 2 state + vnode data, server-rendered) and 
   button: ~100 B less state, ~140 B less HTML (`q-e:*` attributes). The one case that changes: a
   handler key absent at first that a later render adds (a spread object gaining it) isn't
   forwarded; every directive hook's `hostProps` has fixed keys. `forwarded-host-handlers.spec.tsx`.
+- **`FocusIndicator`, `TouchTarget`, `PersistentRipple` are plain inline function components**,
+  not `component$`s: each was its own component boundary — vnode data, a render QRL, props and a
+  render subscription per instance — for a static span. ~140 B state and ~40 B vnode data less
+  per button. `LazyRipple` stays a component: it is the re-render boundary for the ripple signal.
+- **`href` attribute from the value already read.** `isAnchor` reads `props.href` in the render
+  (tracked), so `href={props.href}` only added a derived signal per anchor button; it takes the
+  plain value now.
