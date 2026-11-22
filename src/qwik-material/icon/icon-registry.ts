@@ -553,9 +553,11 @@ export async function getNamedSvgIcon(
     return resolveEntry(resolved);
   }
 
-  // Read before the resolver is awaited, so the sets stay a tracked read.
-  const sets = registry.iconSets[namespace];
   const resolver$ = untrack(() => registry.resolver$);
+  // Without a resolver$, the sets are read now, before any `await`, so the read stays tracked (an icon
+  // set registered later re-resolves the icon), as before there was one. With one, they are read only
+  // once it misses: tracked, every icon it resolves would subscribe to the sets.
+  let sets = resolver$ ? undefined : registry.iconSets[namespace];
   if (resolver$) {
     const result = await resolver$(name, namespace);
     if (result && !isTrustedResourceUrl(isTrustedResourceUrl(result) ? result : result.url)) {
@@ -565,6 +567,7 @@ export async function getNamedSvgIcon(
     }
     const entry = toUrlEntry(result);
     if (entry) return resolveEntry(entry);
+    sets = registry.iconSets[namespace];
   }
 
   if (sets) {
