@@ -1,4 +1,4 @@
-import {$, component$, Slot, useContext, useSignal, type QRL} from '@qwik.dev/core';
+import {$, component$, Slot, useContext, type QRL} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
@@ -156,8 +156,6 @@ export const MatListItem = component$<MatListItemProps>(props => {
     animationsDisabled.value ||
     !!listBase.disableRipple;
 
-  const hostRef = useSignal<HTMLElement>();
-
   // Upstream: `new RippleRenderer(this, this._ngZone, this._hostElement, ...)`
   // — the CONTAINER passed to the renderer is the list item's own host
   // element itself (no dedicated ripple `<div>`, unlike menu-item/mat-option).
@@ -166,10 +164,12 @@ export const MatListItem = component$<MatListItemProps>(props => {
   // ONE shared `$()` reference wired to all six pointer events — see
   // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
   // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
-  const rippleEvent$ = $((event: MouseEvent | TouchEvent) => {
+  // The host is the element Qwik passes the listener (the one it's set on),
+  // not a `ref` signal: a signal holding the element is serialized per item.
+  const rippleEvent$ = $((event: MouseEvent | TouchEvent, host: Element) => {
     handleRippleEvent(
       event,
-      hostRef.value,
+      host,
       {
         rippleDisabled,
         rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
@@ -284,7 +284,6 @@ export const MatListItem = component$<MatListItemProps>(props => {
   if (as === 'a') {
     return (
       <a
-        ref={hostRef}
         {...sharedAttrs}
         href={props.href}
         aria-current={ariaCurrent}
@@ -299,7 +298,6 @@ export const MatListItem = component$<MatListItemProps>(props => {
   if (as === 'button') {
     return (
       <button
-        ref={hostRef}
         {...sharedAttrs}
         type={nativeType}
         disabled={nativeDisabled as unknown as boolean}
@@ -313,7 +311,7 @@ export const MatListItem = component$<MatListItemProps>(props => {
 
   // Default: <mat-list-item> custom element.
   return (
-    <mat-list-item ref={hostRef} {...sharedAttrs} onClick$={props.onClick$} {...rippleProps}>
+    <mat-list-item {...sharedAttrs} onClick$={props.onClick$} {...rippleProps}>
       {body}
     </mat-list-item>
   );
