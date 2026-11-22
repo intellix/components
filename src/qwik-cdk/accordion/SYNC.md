@@ -67,3 +67,8 @@ Tracks the sync state between this port and `src/cdk/accordion/` upstream. Porte
 `pnpm test:qwik-cdk` at the repo root runs `build && vitest && lint:no-ssr-leaks` for the whole
 qwik-cdk package, covering platform + bidi + coercion + keycodes + portal + a11y + accordion +
 overlay + dialog.
+
+## Serialized state (2026-11-22)
+
+`useCdkAccordionItem`'s id is a `useConstant`, not a signal: it never changes after the first
+render, and the signal was serialized per item.

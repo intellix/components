@@ -1,6 +1,7 @@
 import {
   component$,
   Slot,
+  useConstant,
   useContext,
   useContextProvider,
   useSignal,
@@ -91,8 +92,10 @@ export const MatExpansionPanel = component$<MatExpansionPanelProps>(props => {
 
   const idGen = useIdGenerator();
   // Lazy initializer — runs exactly once, mirroring upstream's
-  // `_headerId = inject(_IdGenerator).getId(...)` field initializer.
-  const headerId = useSignal(() => idGen.getId('mat-expansion-panel-header-'));
+  // `_headerId = inject(_IdGenerator).getId(...)` field initializer. A constant, not a signal:
+  // it never changes, and a signal (plus the derived one `aria-labelledby` would bind to it)
+  // is serialized per panel.
+  const headerId = useConstant(() => idGen.getId('mat-expansion-panel-header-'));
 
   // `props` is passed straight through (not destructured first) so the
   // reactive tasks `useCdkAccordionItem` registers always read the LIVE
@@ -122,7 +125,7 @@ export const MatExpansionPanel = component$<MatExpansionPanelProps>(props => {
     disabled,
     hideToggle,
     togglePosition,
-    headerId: headerId.value,
+    headerId,
     contentId: item.id,
     setExpanded$: item.setExpanded$,
     headerElRef,
@@ -136,20 +139,19 @@ export const MatExpansionPanel = component$<MatExpansionPanelProps>(props => {
   // consumer uses it) renders once the panel opens for the first time and
   // then stays rendered — mirrors `ngAfterContentInit`'s
   // `opened.pipe(startWith(null), filter(() => expanded && !portal), take(1))`.
-  useTask$(({track}) => {
-    if (track(() => props.expanded ?? false)) {
-      hasEverOpened.value = true;
-    }
-  });
-
+  //
   // "Closing a panel while focus was inside its body moves focus back to
   // the header, via FocusMonitor.focusVia(header, 'program')" — mirrors
   // `panel.closed.pipe(filter(() => panel._containsFocus()))` in
   // `MatExpansionPanelHeader`'s constructor, reframed as a reactive task on
   // the SAME `expanded` transition (true → false) that drives `closed`.
+  // One task for both (it was two, each serialized per panel), tracking `expanded` once.
   const wasExpanded = useSignal(expanded);
   useTask$(({track}) => {
     const isExpanded = track(() => props.expanded ?? false);
+    if (isExpanded) {
+      hasEverOpened.value = true;
+    }
     const closedJustNow = wasExpanded.value && !isExpanded;
     wasExpanded.value = isExpanded;
     if (!closedJustNow || !isBrowser) return;
@@ -213,7 +215,7 @@ export const MatExpansionPanel = component$<MatExpansionPanelProps>(props => {
           class="mat-expansion-panel-content"
           role="region"
           id={item.id}
-          aria-labelledby={headerId.value}
+          aria-labelledby={headerId}
         >
           <div class="mat-expansion-panel-body">
             <Slot />

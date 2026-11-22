@@ -1,4 +1,4 @@
-import {$, useContext, useSignal, useTask$, type QRL} from '@qwik.dev/core';
+import {$, useConstant, useContext, useTask$, type QRL} from '@qwik.dev/core';
 import {useIdGenerator} from '../a11y/id-generator';
 import {CDK_ACCORDION_STATE, CDK_ACCORDION_STATE_DEFAULTS} from './accordion-state';
 import {shouldAutoClose} from './unique-selection';
@@ -61,8 +61,9 @@ export interface CdkAccordionItemApi {
 export function useCdkAccordionItem(props: UseCdkAccordionItemProps): CdkAccordionItemApi {
   const idGen = useIdGenerator();
   // Lazy initializer — runs exactly once per instance, mirroring upstream's
-  // field initializer (which also runs exactly once, at construction).
-  const id = useSignal(() => idGen.getId('cdk-accordion-child-'));
+  // field initializer (which also runs exactly once, at construction). A constant, not a
+  // signal: it never changes, and a signal is serialized per item.
+  const id = useConstant(() => idGen.getId('cdk-accordion-child-'));
 
   const accordion = useContext(CDK_ACCORDION_STATE, {value: CDK_ACCORDION_STATE_DEFAULTS});
 
@@ -76,7 +77,7 @@ export function useCdkAccordionItem(props: UseCdkAccordionItemProps): CdkAccordi
     if (
       shouldAutoClose({
         multi: accordion.value.multi,
-        selfId: id.value,
+        selfId: id,
         openedId: broadcast.itemId,
         currentlyExpanded: props.expanded ?? false,
       })
@@ -111,11 +112,11 @@ export function useCdkAccordionItem(props: UseCdkAccordionItemProps): CdkAccordi
       // Notify unconditionally, like upstream's dispatcher.notify() —
       // shouldAutoClose() on the listening side is what makes `multi`
       // accordions ignore it (see unique-selection.ts).
-      accordion.value.opened.value = {itemId: id.value};
+      accordion.value.opened.value = {itemId: id};
     } else {
       props.onClosed$?.();
     }
   });
 
-  return {id: id.value, setExpanded$};
+  return {id, setExpanded$};
 }
