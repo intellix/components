@@ -280,8 +280,11 @@ export function mergeHostProps(...parts: Array<HostPropsLike | undefined | null>
   if (classes.length) merged.class = classes;
   const ref = composeRef(refs);
   if (ref) merged.ref = ref;
+  // An event key every part left unset is kept, `undefined`, as a non-event key is (above): a host
+  // component forwards a directive handler only when its key is present at first
+  // (`useForwardedHostHandlers()`), so one set by a later render must have been there, unset, before.
   for (const [key, list] of handlerLists) {
-    if (list.length) merged[key] = list.length === 1 ? list[0] : list;
+    merged[key] = list.length === 0 ? undefined : list.length === 1 ? list[0] : list;
   }
   return merged;
 }

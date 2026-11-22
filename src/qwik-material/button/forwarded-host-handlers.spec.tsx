@@ -2,6 +2,7 @@
 import {$, component$, useSignal} from '@qwik.dev/core';
 import {ssrRenderToDom, trigger} from '@qwik.dev/core/testing';
 import {describe, expect, it} from 'vitest';
+import {mergeHostProps} from '../core/host-props';
 import {MatButton, MatIconButton} from './public-api';
 
 /**
@@ -28,6 +29,13 @@ const Hosts = component$(() => {
       >
         L
       </MatIconButton>
+      {/* A directive hook's handler, merged: unset at first, so only an `undefined` key in the merge. */}
+      <MatButton
+        class="merged"
+        {...mergeHostProps({onMouseLeave$: withLeave.value ? record$ : undefined})}
+      >
+        M
+      </MatButton>
       <button type="button" class="arm" onClick$={() => (withLeave.value = true)}>
         arm
       </button>
@@ -65,6 +73,15 @@ describe('forwarded host handlers', () => {
     expect(document.querySelector('output')!.textContent).toBe('');
     await trigger(document.body, 'button.arm', 'click');
     await trigger(document.body, 'button.late', 'mouseleave');
+    expect(document.querySelector('output')!.textContent).toBe('mouseleave');
+  });
+
+  it('forwards a merged handler unset at first, once it is set', async () => {
+    const {document} = await ssrRenderToDom(<Hosts />);
+    await trigger(document.body, 'button.merged', 'mouseleave');
+    expect(document.querySelector('output')!.textContent).toBe('');
+    await trigger(document.body, 'button.arm', 'click');
+    await trigger(document.body, 'button.merged', 'mouseleave');
     expect(document.querySelector('output')!.textContent).toBe('mouseleave');
   });
 });

@@ -53,6 +53,13 @@ describe('mergeHostProps', () => {
     expect(calls).toEqual(['a', 'b', 'c']);
   });
 
+  it('keeps an event key every part left unset, as undefined (a host forwards only the keys present at first)', () => {
+    const merged = mergeHostProps({onMouseEnter$: undefined}, {onMouseEnter$: null, class: 'x'});
+    expect('onMouseEnter$' in merged).toBe(true);
+    expect(merged.onMouseEnter$).toBeUndefined();
+    expect('onMouseLeave$' in merged).toBe(false);
+  });
+
   it('returns a single handler unwrapped (not a 1-element array) when only one part sets it', () => {
     const a = qrl(() => {});
     const merged = mergeHostProps({onClick$: a}, {class: 'x'});
