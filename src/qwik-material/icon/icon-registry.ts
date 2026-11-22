@@ -33,7 +33,14 @@
  *     the two pieces of upstream's registry state that live at plain MODULE
  *     scope instead, same rationale as `icon-fetch.ts`.
  */
-import {createContextId, useContextProvider, useContext, useStore} from '@qwik.dev/core';
+import {
+  createContextId,
+  untrack,
+  useContextProvider,
+  useContext,
+  useStore,
+  type QRL,
+} from '@qwik.dev/core';
 import {
   isTrustedHtml,
   isTrustedResourceUrl,
@@ -84,6 +91,27 @@ export type IconResolver = (
 ) => TrustedResourceUrl | {url: TrustedResourceUrl; options?: IconOptions} | null;
 
 /**
+ * What {@link IconResolver} and {@link IconResolverQrl} return: a trusted URL (or one plus
+ * options), or `null` when the resolver doesn't know the icon.
+ */
+export type IconResolverResult =
+  | TrustedResourceUrl
+  | {url: TrustedResourceUrl; options?: IconOptions}
+  | null;
+
+/**
+ * A registry's own resolver (`MatIconRegistryStore.resolver$`): {@link IconResolver} as a QRL,
+ * so it is serializable — it is kept in the registry's store, scoped to that registry (one
+ * tenant's icons, during SSR), and still there in the browser after resume. It may answer
+ * asynchronously. Not in upstream (whose resolvers are plain functions on its one service): an
+ * app with many icons, only a few of them on any page, resolves them by name here instead of
+ * registering them all in the store, which serializes every registration into the page.
+ */
+export type IconResolverQrl = QRL<
+  (name: string, namespace: string) => IconResolverResult | Promise<IconResolverResult>
+>;
+
+/**
  * The registry's serializable data: name/namespace → icon-or-icon-set
  * registrations, font-class aliases, and the default font-set class.
  * Created with `useStore()`, never constructed directly by consumers — see
@@ -102,6 +130,14 @@ export interface MatIconRegistryStore {
    *  only. `<MatIcon>`'s actual font-set default resolution is the
    *  independent, pre-existing `MatIconConfig.fontSet` mechanism. */
   defaultFontSetClass: string[];
+  /**
+   * Resolves an icon no registration or {@link addSvgIconResolver} resolver knows, before the
+   * icon sets are searched — see {@link IconResolverQrl}. Its answer is not written into
+   * `icons` (unlike a plain resolver's, below): that would serialize it, during SSR, which is
+   * what the resolver is for avoiding; the fetched SVG is cached by URL anyway (`icon-fetch.ts`).
+   * Read untracked: replacing it doesn't re-resolve icons already rendered.
+   */
+  resolver$?: IconResolverQrl;
 }
 
 function iconKey(namespace: string, name: string): string {
@@ -194,6 +230,8 @@ export interface MatIconRegistrySeedIconSet {
 export interface MatIconRegistrySeed {
   icons?: MatIconRegistrySeedIcon[];
   iconSets?: MatIconRegistrySeedIconSet[];
+  /** The registry's {@link MatIconRegistryStore.resolver$}. */
+  resolver$?: IconResolverQrl;
 }
 
 function buildStoreFromSeed(seed: MatIconRegistrySeed | undefined): MatIconRegistryStore {
@@ -214,6 +252,8 @@ function buildStoreFromSeed(seed: MatIconRegistrySeed | undefined): MatIconRegis
       addSvgIconSetLiteralInNamespace(store, namespace, set.literal, set.options);
     }
   }
+  // Only when given: an unused key would still be serialized with the store.
+  if (seed?.resolver$) store.resolver$ = seed.resolver$;
   return store;
 }
 
@@ -400,12 +440,16 @@ export function _clearIconResolversForTests(): void {
   resolvers.length = 0;
 }
 
+function toUrlEntry(result: IconResolverResult): IconEntry | null {
+  if (!result) return null;
+  const resolved = isTrustedResourceUrl(result) ? {url: result, options: undefined} : result;
+  return {kind: 'url', value: resolved.url.url, options: resolved.options};
+}
+
 function resolveViaResolvers(name: string, namespace: string): IconEntry | null {
   for (const resolver of resolvers) {
-    const result = resolver(name, namespace);
-    if (!result) continue;
-    const resolved = isTrustedResourceUrl(result) ? {url: result, options: undefined} : result;
-    return {kind: 'url', value: resolved.url.url, options: resolved.options};
+    const entry = toUrlEntry(resolver(name, namespace));
+    if (entry) return entry;
   }
   return null;
 }
@@ -472,7 +516,8 @@ async function resolveEntry(entry: IconEntry): Promise<string> {
 /**
  * Resolves an icon by (possibly namespaced) name, exactly like upstream
  * `getNamedSvgIcon`: a direct registration first, then a registered
- * resolver, then a search through the namespace's registered icon sets
+ * resolver, then the registry's own `resolver$` (this port's addition, see
+ * {@link IconResolverQrl}), then a search through the namespace's registered icon sets
  * (later-registered sets win, matching upstream's backward iteration).
  * Returns the resolved `<svg>...</svg>` markup, with the universal
  * `fit`/`height`/`width`/`preserveAspectRatio`/`focusable` attributes (plus
@@ -508,7 +553,20 @@ export async function getNamedSvgIcon(
     return resolveEntry(resolved);
   }
 
+  // Read before the resolver is awaited, so the sets stay a tracked read.
   const sets = registry.iconSets[namespace];
+  const resolver$ = untrack(() => registry.resolver$);
+  if (resolver$) {
+    const result = await resolver$(name, namespace);
+    if (result && !isTrustedResourceUrl(isTrustedResourceUrl(result) ? result : result.url)) {
+      throw new Error(
+        `resolver$ must answer a TrustedResourceUrl — call trustIconResourceUrl(url) first (icon "${key}").`,
+      );
+    }
+    const entry = toUrlEntry(result);
+    if (entry) return resolveEntry(entry);
+  }
+
   if (sets) {
     for (let i = sets.length - 1; i >= 0; i--) {
       const setMarkup = await resolveEntryMarkup(sets[i]);

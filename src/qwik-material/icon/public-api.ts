@@ -37,6 +37,8 @@ export {
   useOptionalIconRegistry,
   type IconOptions,
   type IconResolver,
+  type IconResolverQrl,
+  type IconResolverResult,
   type MatIconRegistrySeed,
   type MatIconRegistrySeedIcon,
   type MatIconRegistrySeedIconSet,

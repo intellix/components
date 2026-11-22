@@ -16,6 +16,7 @@ import {
   setDefaultFontSetClass,
   splitIconName,
   _clearIconResolversForTests,
+  type IconResolverQrl,
   type MatIconRegistryStore,
 } from './icon-registry';
 import {trustIconHtml, trustIconResourceUrl} from './icon-trusted';
@@ -129,7 +130,12 @@ describe('icon-registry', () => {
     it('rejects when the fetch itself fails, with the upstream-style message prefix', async () => {
       vi.stubGlobal(
         'fetch',
-        vi.fn(async () => ({ok: false, status: 500, statusText: 'Server Error', text: async () => ''})),
+        vi.fn(async () => ({
+          ok: false,
+          status: 500,
+          statusText: 'Server Error',
+          text: async () => '',
+        })),
       );
       addSvgIcon(registry, 'd', trustIconResourceUrl('https://cdn.example/d.svg'));
       await expect(getNamedSvgIcon(registry, 'd')).rejects.toThrow(/Failed to fetch icon/);
@@ -165,7 +171,12 @@ describe('icon-registry', () => {
     });
 
     it('resolves a namespaced literal', async () => {
-      addSvgIconLiteralInNamespace(registry, 'ns', 'lit2', trustIconHtml('<svg><path d="M"/></svg>'));
+      addSvgIconLiteralInNamespace(
+        registry,
+        'ns',
+        'lit2',
+        trustIconHtml('<svg><path d="M"/></svg>'),
+      );
       const markup = await getNamedSvgIcon(registry, 'ns:lit2');
       expect(markup).toContain('<path d="M"/>');
     });
@@ -200,8 +211,14 @@ describe('icon-registry', () => {
     });
 
     it('a later-registered set takes precedence over an earlier one for the same id', async () => {
-      addSvgIconSetLiteral(registry, trustIconHtml('<svg><symbol id="x"><path d="OLD"/></symbol></svg>'));
-      addSvgIconSetLiteral(registry, trustIconHtml('<svg><symbol id="x"><path d="NEW"/></symbol></svg>'));
+      addSvgIconSetLiteral(
+        registry,
+        trustIconHtml('<svg><symbol id="x"><path d="OLD"/></symbol></svg>'),
+      );
+      addSvgIconSetLiteral(
+        registry,
+        trustIconHtml('<svg><symbol id="x"><path d="NEW"/></symbol></svg>'),
+      );
       const markup = await getNamedSvgIcon(registry, 'x');
       expect(markup).toContain('NEW');
       expect(markup).not.toContain('OLD');
@@ -209,8 +226,7 @@ describe('icon-registry', () => {
 
     it('fetches a URL-backed icon set via the same cache as single icons', async () => {
       const fetchMock = mockFetch({
-        'https://cdn.example/set.svg':
-          '<svg><symbol id="star"><path d="STAR"/></symbol></svg>',
+        'https://cdn.example/set.svg': '<svg><symbol id="star"><path d="STAR"/></symbol></svg>',
       });
       vi.stubGlobal('fetch', fetchMock);
       addSvgIconSet(registry, trustIconResourceUrl('https://cdn.example/set.svg'));
@@ -239,14 +255,18 @@ describe('icon-registry', () => {
     it('resolves independently of any registration', async () => {
       const fetchMock = mockFetch({'https://cdn.example/direct.svg': '<svg><path d="D"/></svg>'});
       vi.stubGlobal('fetch', fetchMock);
-      const markup = await getSvgIconFromUrl(trustIconResourceUrl('https://cdn.example/direct.svg'));
+      const markup = await getSvgIconFromUrl(
+        trustIconResourceUrl('https://cdn.example/direct.svg'),
+      );
       expect(markup).toContain('<path d="D"/>');
     });
   });
 
   describe('addSvgIconResolver', () => {
     it('is consulted when no direct registration exists, and the result is cached onto the store', async () => {
-      const fetchMock = mockFetch({'https://cdn.example/resolved-ping.svg': '<svg><path d="P"/></svg>'});
+      const fetchMock = mockFetch({
+        'https://cdn.example/resolved-ping.svg': '<svg><path d="P"/></svg>',
+      });
       vi.stubGlobal('fetch', fetchMock);
       addSvgIconResolver((name, namespace) =>
         name === 'ping' && namespace === ''
@@ -266,6 +286,68 @@ describe('icon-registry', () => {
     it('returns null (falls through to "not found") when no resolver matches', async () => {
       addSvgIconResolver(() => null);
       await expect(getNamedSvgIcon(registry, 'unresolved')).rejects.toThrow(/Unable to find icon/);
+    });
+  });
+
+  describe("resolver$ — the registry's own resolver", () => {
+    /** A plain function standing in for the QRL — `getNamedSvgIcon` only calls it. */
+    const resolverQrl = (fn: (name: string, namespace: string) => unknown) =>
+      fn as unknown as IconResolverQrl;
+
+    it('resolves an unregistered icon without writing it into the store', async () => {
+      const fetchMock = mockFetch({'https://cdn.example/r-star.svg': '<svg><path d="R"/></svg>'});
+      vi.stubGlobal('fetch', fetchMock);
+      const resolver = vi.fn(async (name: string, namespace: string) =>
+        namespace === '' ? trustIconResourceUrl(`https://cdn.example/r-${name}.svg`) : null,
+      );
+      registry.resolver$ = resolverQrl(resolver);
+      expect(await getNamedSvgIcon(registry, 'star')).toContain('<path d="R"/>');
+      expect(resolver).toHaveBeenCalledWith('star', '');
+      expect(registry.icons).toEqual({});
+      // Asked again next time; the SVG itself comes from the fetch cache.
+      await getNamedSvgIcon(registry, 'star');
+      expect(resolver).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('takes options with the url, and a synchronous answer', async () => {
+      vi.stubGlobal('fetch', mockFetch({'https://cdn.example/v.svg': '<svg><path d="V"/></svg>'}));
+      registry.resolver$ = resolverQrl(() => ({
+        url: trustIconResourceUrl('https://cdn.example/v.svg'),
+        options: {viewBox: '0 0 8 8'},
+      }));
+      expect(await getNamedSvgIcon(registry, 'v')).toContain('viewBox="0 0 8 8"');
+    });
+
+    it('comes after a direct registration and a plain resolver', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetch({
+          'https://cdn.example/direct.svg': '<svg><path d="D"/></svg>',
+          'https://cdn.example/plain.svg': '<svg><path d="P"/></svg>',
+        }),
+      );
+      const resolver = vi.fn(() => null);
+      registry.resolver$ = resolverQrl(resolver);
+      addSvgIcon(registry, 'direct', trustIconResourceUrl('https://cdn.example/direct.svg'));
+      addSvgIconResolver(name =>
+        name === 'plain' ? trustIconResourceUrl('https://cdn.example/plain.svg') : null,
+      );
+      expect(await getNamedSvgIcon(registry, 'direct')).toContain('<path d="D"/>');
+      expect(await getNamedSvgIcon(registry, 'plain')).toContain('<path d="P"/>');
+      expect(resolver).not.toHaveBeenCalled();
+    });
+
+    it('falls through to the icon sets when it answers null', async () => {
+      registry.resolver$ = resolverQrl(async () => null);
+      addSvgIconSetLiteral(registry, trustIconHtml('<svg><g id="in-set"><path d="S"/></g></svg>'));
+      expect(await getNamedSvgIcon(registry, 'in-set')).toContain('<path d="S"/>');
+      await expect(getNamedSvgIcon(registry, 'nowhere')).rejects.toThrow(/Unable to find icon/);
+    });
+
+    it('rejects an answer that is not a TrustedResourceUrl', async () => {
+      registry.resolver$ = resolverQrl(() => 'https://cdn.example/plain-string.svg');
+      await expect(getNamedSvgIcon(registry, 'x')).rejects.toThrow(/TrustedResourceUrl/);
     });
   });
 

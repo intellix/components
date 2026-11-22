@@ -95,6 +95,7 @@ deviations #7 and new #14 below:
 20. **`useComputed$` with an async compute function is this port's FIRST use of Qwik's async-render-suspension model** (`MatIcon`'s `resolvedSvgIcon` — see `mat-icon.tsx`). Reading a still-pending `ComputedSignal.value` throws the in-flight promise, which Qwik's own renderer catches and retries once it settles — confirmed from `@qwik.dev/core`'s own `AsyncSignal`/`ComputedSignal` type-doc comments ("reading the AsyncSignal will throw a Promise, which will retry the component or task once the value resolves"), not assumed. This is what makes SSR naturally block until the real icon markup is ready (no flash, no fallback state ever reaches the response) and makes the SAME computed re-suspend on the client when `svgIcon` changes after resume, with NO extra wiring. The compute function is written to return a plain, synchronous, non-`Promise` value (not even an `async function`) whenever `svgIcon` isn't actually in play — a REAL `async function` always returns a `Promise` even when nothing inside it ever awaits, which would otherwise push every `<MatIcon>` in the app (including every font-mode and legacy `svgLiteral` one) through the async engine's retry machinery for no reason. Its value is never serialized (`serializationStrategy: 'never'`, 2026-11-19): the resolved markup is in the server-rendered HTML already, so serializing it too only doubled every SVG icon's size in the page — a re-render after resume (an `svgIcon` change) resolves the icon again, from the fetch cache or its URL. `svg-icon-registry.spec.ts` checks the state carries no markup.
 21. **`addSvgIconSet`/icon-set extraction is string-surgery (`icon-set-extract.ts`), not `querySelector`/`cloneNode`.** Same rationale and precedent as deviation #14's `withIconSvgAttributes()` — no live DOM at SSR time, must behave identically there and in the browser. Regex + depth-counted tag matching finds the element with a matching `id="..."` (exact-value match, like upstream's `[id="..."]` selector), strips the id, and converts a matched `<symbol>` into a standalone `<svg>` carrying the same attributes/children — see that file's own module doc comment for the three cases (`<svg>` / `<symbol>` / anything else) it reproduces from `_extractSvgIconFromSet`/`_toSvgElement`.
 
+22. **A registry's own `resolver$` (2026-11-22, not in upstream).** `MatIconRegistryStore.resolver$` (or `useMatIconRegistryProvider({resolver$})`) is an `IconResolverQrl` — upstream's `IconResolver` as a QRL, so it lives in the request-scoped store (unlike item 18's module-level plain functions: shared by every request, and absent in the browser after resume) and may answer asynchronously. `getNamedSvgIcon` asks it after a direct registration and the plain resolvers miss, before the icon sets. Its answer is NOT cached into `icons` (a plain resolver's is, as upstream's `_svgIconConfigs.set`): during SSR that would serialize every resolved icon into the page, which is what it exists to avoid — an app with hundreds of icons, a few on each page, registered them all, and the store carried every one. The SVG text is cached by URL (`icon-fetch.ts`) either way. Read untracked: replacing it doesn't re-resolve rendered icons. An answer that isn't a `TrustedResourceUrl` rejects. Tests: `icon-registry.spec.ts` ("resolver$"), `mat-icon-resolve.spec.tsx` (SSR, resumed, an icon first rendered in the browser).
 ## SVG icon registry
 
 Added 2026-11-03 (see top-of-file note). Quick-start:
@@ -130,8 +131,22 @@ const registry = useOptionalIconRegistry(); // store, or undefined with no provi
 if (registry) addSvgIconLiteral(registry, 'star', trustIconHtml(STAR_SVG));
 ```
 
+Many icons, a few per page: resolve by name with a `resolver$` instead of
+registering them all (every registration is serialized with the store) —
+deviation #22:
+
+```tsx
+useMatIconRegistryProvider({
+  resolver$: $((name: string, namespace: string) =>
+    namespace === '' ? lookUpIconUrl(name).then(url => url && trustIconResourceUrl(url)) : null,
+  ),
+});
+```
+
+What the QRL captures is serialized with it; capture a lookup, not the whole list.
+
 See `icon-registry.ts`'s own module doc comment for the full data/logic
-split rationale, and deviations #2/#4/#6/#7/#16–21 above for every other
+split rationale, and deviations #2/#4/#6/#7/#16–22 above for every other
 design decision and gap.
 
 ## Qwik dev-app wiring
