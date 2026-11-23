@@ -198,7 +198,6 @@ export const COMPONENT_STYLE_VARIANTS = {
         'mat-mdc-list-item-icon',
         'mat-mdc-list-item-both-leading-and-trailing',
         'mat-mdc-list-option',
-        'mdc-list-item--selected',
       ],
       doc:
         'items of two or three lines and the leading/trailing sections (avatar, icon, meta, ' +
@@ -209,14 +208,9 @@ export const COMPONENT_STYLE_VARIANTS = {
 
 /**
  * Pairs `variantOrderConflicts()` reports that can't select the same element, by base selector →
- * variant selector: an item is selected or not.
+ * variant selector (reviewed). None at present.
  */
-const ORDER_CONFLICT_EXCEPTIONS = {
-  list: {
-    '.mdc-list-item:not(.mdc-list-item--selected):focus::before':
-      '.mdc-list-item.mdc-list-item--selected:focus::before',
-  },
-};
+const ORDER_CONFLICT_EXCEPTIONS = {};
 
 /**
  * `css` inside `@layer qwik-material { … }`, after the layer order statement. A `@charset`/`@import`

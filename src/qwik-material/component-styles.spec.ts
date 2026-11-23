@@ -231,6 +231,12 @@ describe('component styles', () => {
     });
   });
 
+  it("keeps a selected item's rules (mat-option's `mdc-list-item--selected` too) in the list base", async () => {
+    const {base, variants} = await splitComponentStyles('list');
+    expect(base).toContain('.mdc-list-item.mdc-list-item--selected{');
+    expect(variants[0].css).not.toContain('.mdc-list-item.mdc-list-item--selected{');
+  });
+
   it('specificity counts as the cascade does', () => {
     expect(specificity('.a')).toBe('0,1,0');
     expect(specificity('.a .b>span::before')).toBe('0,2,2');

@@ -30,7 +30,9 @@ export function useAnimationsDisabled(): Signal<boolean> {
 export function useMatAnimationsProvider(disabled?: boolean): Signal<boolean> {
   const animationsDisabled = useSignal(disabled ?? false);
   useContextProvider(MAT_ANIMATIONS_DISABLED, animationsDisabled);
-  // The ripple delegate launches with its own scope's animations: hosts below claim with these.
-  useContextProvider(MAT_RIPPLE_DELEGATE, false);
+  // Below a ripple delegate, which launches with its own scope's animations, hosts claim with
+  // these. Without one there is nothing to claim from: hosts stay unclaimed (no handler at all).
+  if (useContext(MAT_RIPPLE_DELEGATE, null) !== null)
+    useContextProvider(MAT_RIPPLE_DELEGATE, false);
   return animationsDisabled;
 }

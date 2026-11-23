@@ -190,6 +190,7 @@ once, near the root:
 import {component$} from '@qwik.dev/core';
 import {RouterOutlet, useQwikRouter} from '@qwik.dev/router';
 import {QwikCdkRoot} from '@angular-community/qwik-cdk';
+import {useMatRippleDelegate} from '@angular-community/qwik-material/core';
 
 // Global CSS: cdk overlay structure, material core (tokens/typography/ripple/…). Each
 // qwik-material component brings its own CSS when it renders (§3.2).
@@ -198,6 +199,8 @@ import '@angular-community/qwik-material/core-prebuilt.css';
 
 export default component$(() => {
   useQwikRouter();
+  // Required for ripples: the one set of document listeners every ripple goes through.
+  useMatRippleDelegate();
   return (
     <>
       <head>
@@ -223,6 +226,17 @@ export default component$(() => {
   );
 });
 ```
+
+**`useMatRippleDelegate()` is required for ripples.** It is Angular Material's `RippleEventManager`
+and `MatRippleLoader`: ONE set of passive document listeners (on the root component's first
+element) that creates a button's lazy `.mat-ripple` element and launches every button, list item
+and `matRipple` ripple — the components themselves carry no ripple handler. Without it no ripple
+launches (in dev mode a press on a ripple host rendered in the browser logs a warning). Call it
+once, near the root, after any root-level `useMatRippleProvider()`/`useMatAnimationsProvider()`:
+it launches with the options in force where it's called, and a provider nested below it makes
+its subtree's hosts claim their presses with their own (one `pointerdown` handler each). Tabs,
+menu items, options, checkbox, radio, slide toggle, button toggle, step header and chips still
+carry their own handlers.
 
 `class="mat-typography"` on `<body>` matches what an Angular app's root typically sets, and is
 required for the M2-era typography class aliases (`.mat-h1`, `.mat-body`, …) and plain `h1`–`h6`/

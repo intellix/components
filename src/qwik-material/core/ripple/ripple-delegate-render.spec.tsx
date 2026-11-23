@@ -127,6 +127,15 @@ describe('ripple delegate, server-rendered', () => {
     expect(tag(html, 'mat-mdc-button')).toMatch(/q-e:pointerdown="#\d+\|[^"]+"/);
   });
 
+  it('a nested ripple provider with no delegate above makes no claim either', async () => {
+    const html = await ssr(
+      <NestedScope>
+        <MatButton>One</MatButton>
+      </NestedScope>,
+    );
+    expect(tag(html, 'mat-mdc-button')).not.toMatch(POINTER_HANDLERS);
+  });
+
   it('without a delegate, no host carries a claim (nothing would listen)', async () => {
     const html = await ssr(
       <div>
@@ -190,5 +199,39 @@ describe('ripple delegate, after resume', () => {
     expect(host().hasAttribute('mat-ripple-loader-uninitialized')).toBe(false);
     expect(host().querySelectorAll('.mat-ripple')).toHaveLength(1);
     expect(host().lastElementChild?.className).toBe('mat-ripple mat-mdc-button-ripple');
+  });
+
+  const TogglingIcon = component$(() => {
+    const disabled = useSignal(false);
+    return (
+      <Delegate>
+        <button class="toggle" onClick$={() => (disabled.value = !disabled.value)}>
+          Toggle
+        </button>
+        <MatIconButton class="target" aria-label="x" disabled={disabled.value}>
+          <i class="icon">i</i>
+        </MatIconButton>
+      </Delegate>
+    );
+  });
+
+  it("a re-render of the first button of its variant (its sheet's placer) keeps the button's markup in order", async () => {
+    const {ssrRenderToDom, trigger} = await import('@qwik.dev/core/testing');
+    const {initializeLoaderRipple} = await import('./ripple-delegate');
+    const {document} = await ssrRenderToDom(<TogglingIcon />);
+    const host = () => document.querySelector('.target')!;
+    const init = (initializeLoaderRipple as unknown as {resolved: (e: Event) => void}).resolved;
+    init({type: 'mouseover', target: host()} as unknown as Event);
+    await trigger(document.body, 'button.toggle', 'click');
+    const classes = Array.from(host().children)
+      .filter(c => c.tagName !== 'STYLE' && c.tagName !== 'SCRIPT')
+      .map(c => c.getAttribute('class'));
+    expect(classes).toEqual([
+      'mat-mdc-button-persistent-ripple mdc-icon-button__ripple',
+      'icon',
+      'mat-focus-indicator',
+      'mat-mdc-button-touch-target',
+      'mat-ripple mat-mdc-button-ripple',
+    ]);
   });
 });

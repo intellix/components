@@ -1,5 +1,7 @@
 import {component$, Slot, type CSSProperties} from '@qwik.dev/core';
 import {useMatListStyles} from './list-styles';
+import {listRichSheet} from './list-rich-styles';
+import {serverRendering} from '../core/ssr-sheets';
 
 /**
  * Shared props for the 5 slot components (Avatar, Icon, Title, Line, Meta).
@@ -46,7 +48,8 @@ export interface MatListItemIconProps extends MatListItemSectionProps {
  */
 export const MatListItemAvatar = component$<MatListItemAvatarProps>(props => {
   // A section is the rich sheet's, even in an item that didn't declare it (`leading`, `meta`, …).
-  useMatListStyles('rich');
+  // An `<img>` holds no child to place it in during server rendering: its hook registers it.
+  useMatListStyles(...(serverRendering() && props.as !== 'img' ? [] : (['rich'] as const)));
   const as = props.as ?? 'div';
   const classes = ['mat-mdc-list-item-avatar', 'mdc-list-item__start', props.class].filter(
     Boolean,
@@ -65,6 +68,7 @@ export const MatListItemAvatar = component$<MatListItemAvatarProps>(props => {
   return (
     <div id={props.id} class={classes} style={props.style}>
       <Slot />
+      {listRichSheet()}
     </div>
   );
 });
@@ -72,7 +76,7 @@ export const MatListItemAvatar = component$<MatListItemAvatarProps>(props => {
 /** Leading icon section. Host gets `mat-mdc-list-item-icon` + `mdc-list-item__start`. */
 export const MatListItemIcon = component$<MatListItemIconProps>(props => {
   // A section is the rich sheet's, even in an item that didn't declare it (`leading`, `meta`, …).
-  useMatListStyles('rich');
+  useMatListStyles(...(serverRendering() ? [] : (['rich'] as const)));
   const as = props.as ?? 'div';
   const classes = ['mat-mdc-list-item-icon', 'mdc-list-item__start', props.class].filter(
     Boolean,
@@ -80,6 +84,7 @@ export const MatListItemIcon = component$<MatListItemIconProps>(props => {
   if (as === 'span') {
     return (
       <span id={props.id} class={classes} style={props.style}>
+        {listRichSheet()}
         <Slot />
       </span>
     );
@@ -87,6 +92,7 @@ export const MatListItemIcon = component$<MatListItemIconProps>(props => {
   return (
     <div id={props.id} class={classes} style={props.style}>
       <Slot />
+      {listRichSheet()}
     </div>
   );
 });
@@ -114,6 +120,7 @@ export const MatListItemTitle = component$<MatListItemTitleProps>(props => {
   if (props.as === 'span') {
     return (
       <span id={props.id} class={classes} style={props.style}>
+        {listRichSheet()}
         <Slot />
       </span>
     );
@@ -121,6 +128,7 @@ export const MatListItemTitle = component$<MatListItemTitleProps>(props => {
   return (
     <div id={props.id} class={classes} style={props.style}>
       <Slot />
+      {listRichSheet()}
     </div>
   );
 });
@@ -131,13 +139,14 @@ export const MatListItemTitle = component$<MatListItemTitleProps>(props => {
  */
 export const MatListItemLine = component$<MatListItemLineProps>(props => {
   // A section is the rich sheet's, even in an item that didn't declare it (`leading`, `meta`, …).
-  useMatListStyles('rich');
+  useMatListStyles(...(serverRendering() ? [] : (['rich'] as const)));
   const classes = ['mat-mdc-list-item-line', 'mdc-list-item__secondary-text', props.class].filter(
     Boolean,
   ) as string[];
   if (props.as === 'span') {
     return (
       <span id={props.id} class={classes} style={props.style}>
+        {listRichSheet()}
         <Slot />
       </span>
     );
@@ -145,6 +154,7 @@ export const MatListItemLine = component$<MatListItemLineProps>(props => {
   return (
     <div id={props.id} class={classes} style={props.style}>
       <Slot />
+      {listRichSheet()}
     </div>
   );
 });
@@ -152,13 +162,14 @@ export const MatListItemLine = component$<MatListItemLineProps>(props => {
 /** Trailing meta section (control, button, or additional text). */
 export const MatListItemMeta = component$<MatListItemSectionProps>(props => {
   // A section is the rich sheet's, even in an item that didn't declare it (`leading`, `meta`, …).
-  useMatListStyles('rich');
+  useMatListStyles(...(serverRendering() ? [] : (['rich'] as const)));
   const classes = ['mat-mdc-list-item-meta', 'mdc-list-item__end', props.class].filter(
     Boolean,
   ) as string[];
   return (
     <div id={props.id} class={classes} style={props.style}>
       <Slot />
+      {listRichSheet()}
     </div>
   );
 });

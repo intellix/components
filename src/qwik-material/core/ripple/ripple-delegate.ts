@@ -1,8 +1,9 @@
 import {$, sync$, useContextProvider, useOnDocument, type QRL} from '@qwik.dev/core';
+import {isBrowser, isDev} from '@qwik.dev/core/build';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 import type {HostProps} from '../host-props';
 import {MAT_RIPPLE_DELEGATE} from './ripple-delegate-context';
-import {launchDelegatedRipples} from './ripple-delegate-dom';
+import {launchDelegatedRipples, type ClaimKind} from './ripple-delegate-dom';
 import {useRippleGlobalOptions} from './ripple-global-options';
 
 /**
@@ -64,12 +65,16 @@ export function useMatRippleDelegate(): void {
  * Strings, not the ripple-delegate-dom.ts constants: a `sync$` is serialized on its own.
  */
 export const initializeLoaderRipple = sync$((event: Event): void => {
-  const target = event.target as Element | null;
+  // The innermost target, through shadow roots.
+  const target = ((event.composedPath && event.composedPath()[0]) ||
+    event.target) as Element | null;
   if (!target || target.nodeType !== 1) return;
-  // This event's place among the presses, releases and leaves (see `recordRelease`).
-  const w = (target.ownerDocument.defaultView || {}) as unknown as Record<string, number>;
-  (event as unknown as Record<string, number>)['__matRippleSeq'] = w['__matRippleSeq'] =
-    (w['__matRippleSeq'] || 0) + 1;
+  const w = (target.ownerDocument.defaultView || {}) as unknown as Record<string, unknown>;
+  const e = event as unknown as Record<string, unknown>;
+  // This event's place among the presses, releases and leaves (see `recordRelease`), and the
+  // `pointerdown` in force now: the launch may run after a later press.
+  e['__matRippleSeq'] = w['__matRippleSeq'] = ((w['__matRippleSeq'] as number) || 0) + 1;
+  e['__matRipplePointerDown'] = w['__matRipplePointerDown'];
   const attr = 'mat-ripple-loader-uninitialized';
   const focus = event.type === 'focusin';
   let host: Element | null = focus
@@ -85,16 +90,21 @@ export const initializeLoaderRipple = sync$((event: Event): void => {
       span.className = 'mat-ripple ' + className;
       host.appendChild(span);
       (host as unknown as Record<string, unknown>)['__matRippleLoaderInitialized'] = true;
-      const boot = event as unknown as Record<string, Element[]>;
-      (boot['__matRippleBoot'] = boot['__matRippleBoot'] || []).push(host);
+      const boot = (e['__matRippleBoot'] = (e['__matRippleBoot'] as Element[]) || []);
+      boot.push(host);
     }
     host = focus || !host.parentElement ? null : host.parentElement.closest('[' + attr + ']');
   }
 });
 
-/** The press's `pointerdown`, for `launchDelegatedRipples()` to match claims against. */
+/**
+ * The press's `pointerdown` (with its innermost target), for `launchDelegatedRipples()` to match
+ * claims against.
+ */
 export const recordPointerDown = sync$((event: Event): void => {
-  const view = (event.target as Node | null)?.ownerDocument?.defaultView;
+  const target = ((event.composedPath && event.composedPath()[0]) || event.target) as Node | null;
+  const view = target?.ownerDocument?.defaultView;
+  (event as unknown as Record<string, unknown>)['__matRippleTarget'] = target;
   if (view) (view as unknown as Record<string, unknown>)['__matRipplePointerDown'] = event;
 });
 
@@ -125,25 +135,57 @@ export const recordLeave = sync$((event: MouseEvent): void => {
   }
 });
 
-/** A claim vetoing this press's ripple on its element (ripple disabled by a non-DOM input). */
+/** A veto of this press's ripple of its element's kind (disabled by a non-DOM input). */
 export const vetoRipple = sync$((event: Event, el: Element): void => {
-  (el as unknown as Record<string, unknown>)['__matRippleClaim'] = [event, 0];
+  (el as unknown as Record<string, unknown>)['__matRippleVeto'] = event;
 });
 
-/** A claim for this press, its config to follow from the claimant's own handler. */
+/** A claim of this press's ripple of its element's kind, its config to follow. */
+export const claimDomRipple = sync$((event: Event, el: Element): void => {
+  (el as unknown as Record<string, unknown>)['__matRippleDomClaim'] = event;
+});
+
+/** A claim of an additional ripple for this press, its config to follow. */
 export const claimRipple = sync$((event: Event, el: Element): void => {
-  (el as unknown as Record<string, unknown>)['__matRippleClaim'] = [event, 1];
+  (el as unknown as Record<string, unknown>)['__matRippleClaim'] = event;
 });
 
 /**
  * Host props claiming the element they're spread on — a ripple trigger whose config the delegate
  * can't read from the DOM (see ripple-delegate-dom.ts): ONE `pointerdown` handler instead of a
  * handler per pointer event. `register$` — the claimant's own `$()`, closing over what its config
- * needs — calls `registerRippleClaim(el, event, config)` with them, per press; without it, the
- * claim vetoes the trigger's ripple (a `sync$`: no chunk).
+ * needs — calls `registerRippleClaim(el, event, config, kind)` with them, per press. `kind`: an
+ * additional ripple (`own`: `useMatRipple()`) or the element's kind's, with this config (`dom`: a
+ * button or list item below a nested provider). Without `register$`, the claim vetoes the element's
+ * kind's ripple (a `sync$`: no chunk).
  */
 export function rippleClaimProps(
   register$?: QRL<(event: PointerEvent, el: Element) => void>,
+  kind: ClaimKind = 'own',
 ): HostProps {
-  return {onPointerDown$: register$ ? [claimRipple, register$] : vetoRipple};
+  return {
+    onPointerDown$: register$
+      ? [kind === 'dom' ? claimDomRipple : claimRipple, register$]
+      : vetoRipple,
+  };
+}
+
+/** Dev mode: a press on a ripple host rendered without a delegate says so, once per page. */
+export const warnNoRippleDelegate = sync$((): void => {
+  const w = window as unknown as Record<string, boolean>;
+  if (w['__matRippleNoDelegateWarned']) return;
+  w['__matRippleNoDelegateWarned'] = true;
+  console.warn(
+    'qwik-material: a ripple host was pressed, but no useMatRippleDelegate() is above it, so ' +
+      'no ripple launches. Call useMatRippleDelegate() once near the root (MIGRATING.md).',
+  );
+});
+
+/**
+ * The props of a ripple host with no delegate above it: nothing, but in dev mode in the browser
+ * a `pointerdown` handler warning that its ripple can't launch ({@link warnNoRippleDelegate}).
+ * Never in server-rendered HTML.
+ */
+export function noRippleDelegateProps(): HostProps {
+  return isDev && isBrowser ? {onPointerDown$: warnNoRippleDelegate} : {};
 }

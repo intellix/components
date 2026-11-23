@@ -21,6 +21,8 @@ import {
   useForwardedHostHandlers,
 } from '../core/host-props';
 import {useMatButtonStyles} from './button-styles';
+import {ButtonVariantStyles, buttonVariantSheet} from './internal/variant-styles';
+import {serverRendering} from '../core/ssr-sheets';
 
 /** Props this component already names explicitly — excluded from the generic
  *  `extraHostAttrs()` passthrough (see that prop's doc comment below). Kept
@@ -150,28 +152,20 @@ const DEFAULTS: MatButtonConfig = {
   defaultAppearance: 'text',
 };
 
-/**
- * Registers the appearance sheet of a button whose appearance comes from `MAT_BUTTON_CONFIG`'s
- * `defaultAppearance` rather than its own prop: `MatButton` registers its styles as its first hook,
- * before it can read the config, so it registers `text` there, and this renders beside a button
- * whose configured default is another appearance. Its own component, so the sheet takes the same
- * hook position — the same `<style>` — as everywhere else. Renders nothing.
- */
-const AppearanceStyles = component$<{appearance: MatButtonAppearance}>(props => {
-  useMatButtonStyles(props.appearance);
-  return null;
-});
-
 export const MatButton = component$<MatButtonProps>(props => {
-  // The base sheet and this appearance's (`text` when the appearance is the config's default —
-  // see `AppearanceStyles`). A later render with another appearance registers that one then.
-  useMatButtonStyles(props.appearance ?? 'text');
+  // The base sheet and, in the browser, this appearance's (`text` when the appearance is the
+  // config's default — see `configuredStyles`); during server rendering the appearance's sheet
+  // goes inside the host (`variantSheet`, core/ssr-sheets.ts). A later render with another
+  // appearance registers that one then.
+  useMatButtonStyles(...(serverRendering() ? [] : [props.appearance ?? 'text']));
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const appearance = props.appearance ?? config.defaultAppearance ?? 'text';
+  // In the browser, a configured default appearance other than `text` (not known at the hook).
   const configuredStyles =
-    appearance !== (props.appearance ?? 'text') ? (
-      <AppearanceStyles appearance={appearance} />
+    !serverRendering() && appearance !== (props.appearance ?? 'text') ? (
+      <ButtonVariantStyles variant={appearance} />
     ) : null;
+  const variantSheet = buttonVariantSheet(appearance);
   const color = props.color ?? config.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
   // `href` is read here anyway (the host tag depends on it), so the attribute takes the plain
@@ -270,6 +264,7 @@ export const MatButton = component$<MatButtonProps>(props => {
         <FocusIndicator />
         <TouchTarget />
         {props.hostContent}
+        {variantSheet}
       </a>,
     );
   }
@@ -298,6 +293,7 @@ export const MatButton = component$<MatButtonProps>(props => {
       <FocusIndicator />
       <TouchTarget />
       {props.hostContent}
+      {variantSheet}
     </button>,
   );
 });

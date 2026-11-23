@@ -18,6 +18,8 @@ import {
 } from '../core/host-props';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
 import {useMatButtonStyles} from './button-styles';
+import {buttonVariantSheet} from './internal/variant-styles';
+import {serverRendering} from '../core/ssr-sheets';
 
 /** See `mat-button.tsx`'s identical constant doc comment. */
 const KNOWN_PROPS = new Set<string>([
@@ -117,7 +119,8 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatFabButton = component$<MatFabProps>(props => {
-  useMatButtonStyles('fab');
+  // During server rendering its `fab` sheet goes inside the host (core/ssr-sheets.ts).
+  useMatButtonStyles(...(serverRendering() ? [] : (['fab'] as const)));
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? DEFAULTS.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
@@ -180,6 +183,7 @@ export const MatFabButton = component$<MatFabProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
+      {buttonVariantSheet('fab')}
     </>
   );
 

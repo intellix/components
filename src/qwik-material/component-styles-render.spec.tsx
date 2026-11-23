@@ -81,12 +81,32 @@ describe('component styles, server-rendered', () => {
       await sheet('button', 'fab'),
       await sheet('button', 'outlined'),
     ]);
-    // Each before the first instance that needs it.
-    expect(html.indexOf(styles[3].css)).toBeLessThan(
-      html.search(/<button[^>]* class="[^"]*mat-mdc-outlined-button/),
+    // A variant's sheet sits inside its first instance, its last child — never between two
+    // sibling buttons (`.mat-mdc-dialog-actions .mat-mdc-button-base+.mat-mdc-button-base`).
+    const outlined = html.search(/<button[^>]* class="[^"]*mat-mdc-outlined-button/);
+    expect(outlined).toBeGreaterThan(0);
+    const button = html.slice(outlined, html.indexOf('</button>', outlined));
+    expect(button).toMatch(
+      /<style q:style="[^"]*"[^>]*>[^<]*\.mat-mdc-outlined-button\{[^<]*<\/style>(<script[^>]*><\/script>)?$/,
     );
-    expect(html.search(/<button[^>]* class="[^"]*mat-mdc-outlined-button/)).toBeGreaterThan(0);
+    // Siblings stay siblings: no <style> between a button's end and the next one's start.
+    expect(html).not.toMatch(/<\/button><style/);
     expect(new Set(styles.map(s => s.id)).size).toBe(styles.length);
+  });
+
+  it("dialog actions' text and filled buttons stay adjacent siblings (their margin rule)", async () => {
+    const html = await ssr(
+      // `MatDialogActions`' markup (the component needs an open dialog's container).
+      <div class="mat-mdc-dialog-actions mdc-dialog__actions">
+        <MatButton>Cancel</MatButton>
+        <MatButton appearance="filled">Ok</MatButton>
+      </div>,
+    );
+    // `.mat-mdc-dialog-actions .mat-mdc-button-base+.mat-mdc-button-base{margin-left:8px}`
+    // needs the filled button right after the text one: its sheet is inside it.
+    const actions = html.slice(html.indexOf('mdc-dialog__actions'));
+    expect(actions).toMatch(/Cancel<\/span>[^]*?<\/button><button [^>]*mat-mdc-unelevated-button/);
+    expect(styleTags(html).map(s => s.css)).toContain(await sheet('button', 'filled'));
   });
 
   it('a list registers its two-line and section CSS only for an item that has them', async () => {
@@ -132,9 +152,10 @@ describe('component styles, server-rendered', () => {
       await sheet('badge'),
       await sheet('badge', 'content'),
     ]);
-    // The content element stays the host's last child.
+    // The content element stays the host's last element (after it, only the registration's
+    // `<style>` — and, in dev, its HMR placeholder `<script>`).
     expect(shown).toMatch(
-      /<span [^>]*class="mat-badge-content mat-badge-active"[^>]*>4<\/span><\/span>/,
+      /<span [^>]*class="mat-badge-content mat-badge-active"[^>]*>4<\/span>(<style[^>]*>[^<]*<\/style>)?(<script[^>]*><\/script>)?<\/span>/,
     );
   });
 

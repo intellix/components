@@ -386,10 +386,16 @@ captured state, in every server-rendered page (617 on one home page, ~33 kB raw)
   interactive list item (from `.mdc-list-item--disabled` and the delegate's animations), or a
   claimed element.
 - A trigger whose config isn't in its DOM claims each press on `pointerdown` (which precedes the
-  `mousedown`/`touchstart`): a synchronous veto (a list item's `disableRipple`) or a claim whose
-  config its own `$()` registers (`useMatRipple()`, any host below a `useMatRippleProvider()`/
-  `useMatAnimationsProvider()` nested under the delegate — which set `MAT_RIPPLE_DELEGATE` false).
-  A press waits for a claim's config still loading.
+  `mousedown`/`touchstart`): a synchronous VETO of its kind's ripple (a list item's
+  `disableRipple`); a DOM claim, its kind's ripple with the config its own `$()` registers (any
+  host below a `useMatRippleProvider()`/`useMatAnimationsProvider()` nested under the delegate —
+  which set `MAT_RIPPLE_DELEGATE` false, only under a delegate); or an OWN claim, an additional
+  ripple (`useMatRipple()` — composed onto a button it ripples both, as upstream's two
+  directives; the press creating the button's ripple element skips only the button's). The
+  press's `pointerdown` is copied onto it synchronously (its launch may run after a later press);
+  a press with no `pointerdown` of its own on the element (synthetic) goes by its last claims. A
+  press waits for a claim's config still loading. One launch per event (a second delegate finds
+  it handled), from `composedPath()[0]` through shadow roots.
 - Pointer-up: native listeners on each launched trigger (upstream's `RippleRenderer` registers the
   same). The race the next section describes — a cold chunk's late launch missing the release —
   is closed by `sync$` handlers recording the last release and each element's last leave; a launch

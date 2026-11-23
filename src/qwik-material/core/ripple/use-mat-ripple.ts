@@ -1,7 +1,7 @@
 import {$, useSignal, type QRL, type Signal} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 import type {HostProps} from '../host-props';
-import {rippleClaimProps} from './ripple-delegate';
+import {noRippleDelegateProps, rippleClaimProps} from './ripple-delegate';
 import {useRippleDelegated} from './ripple-delegate-context';
 import {registerRippleClaim} from './ripple-delegate-dom';
 import {
@@ -154,7 +154,7 @@ export function useMatRipple(props: UseMatRippleProps = {}): MatRippleHook {
   const delegated = useRippleDelegated();
   const pointerHandlers: HostProps =
     delegated === null
-      ? {}
+      ? noRippleDelegateProps()
       : rippleClaimProps(
           resolveRippleDisabled(props, globalOptions)
             ? undefined

@@ -1,11 +1,13 @@
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   initializeLoaderRipple,
   recordLeave,
   recordPointerDown,
   recordRelease,
   claimRipple,
+  claimDomRipple,
   vetoRipple,
+  warnNoRippleDelegate,
 } from './ripple-delegate';
 import {
   launchDelegatedRipples,
@@ -70,15 +72,32 @@ const mouse = (type: string, target: Element, init: MouseEventInit = {}) =>
     new MouseEvent(type, {bubbles: true, clientX: 5, clientY: 5, buttons: 1, detail: 1, ...init}),
   );
 
-/** A press as the browser sends it: pointerdown (claims), then mousedown (launch). */
-function press(target: Element, claims: [Element, 'veto' | 'claim'][] = []): MouseEvent {
-  const down = event(target, new PointerEvent('pointerdown', {bubbles: true}));
+type Claim = 'veto' | 'claim' | 'dom';
+const CLAIMS = {veto: vetoRipple, claim: claimRipple, dom: claimDomRipple};
+
+/** A press's `pointerdown` as the browser sends it, with the claims its elements make. */
+function pointerDown(target: Element, claims: [Element, Claim][] = []): PointerEvent {
+  const down = event(target, new PointerEvent('pointerdown', {bubbles: true, composed: true}));
   fn(recordPointerDown)(down);
-  for (const [el, kind] of claims) fn(kind === 'veto' ? vetoRipple : claimRipple)(down, el);
+  for (const [el, kind] of claims) fn(CLAIMS[kind])(down, el);
+  return down;
+}
+
+/** The press's `mousedown`, through the delegate's synchronous handler (not yet launched). */
+function mouseDown(target: Element): MouseEvent {
   const md = mouse('mousedown', target);
   fn(initializeLoaderRipple)(md);
   return md;
 }
+
+/** A press as the browser sends it: pointerdown (claims), then mousedown (to launch). */
+function press(target: Element, claims: [Element, Claim][] = []): MouseEvent {
+  pointerDown(target, claims);
+  return mouseDown(target);
+}
+
+const lastPointerDown = () =>
+  (window as unknown as Record<string, Event>)['__matRipplePointerDown'];
 
 const ripples = (container: Element) => container.querySelectorAll(':scope > .mat-ripple-element');
 
@@ -182,7 +201,7 @@ describe('ripple delegate: claims', () => {
     const container = document.createElement('div');
     root.append(trigger, container);
     const md = press(trigger, [[trigger, 'claim']]);
-    const down = (window as unknown as Record<string, Event>)['__matRipplePointerDown'];
+    const down = lastPointerDown();
     registerRippleClaim(trigger, down, {
       container,
       target: {rippleDisabled: false, rippleConfig: {}},
@@ -197,7 +216,7 @@ describe('ripple delegate: claims', () => {
     const trigger = document.createElement('div');
     root.append(trigger);
     const md = press(trigger, [[trigger, 'claim']]);
-    const down = (window as unknown as Record<string, Event>)['__matRipplePointerDown'];
+    const down = lastPointerDown();
     launchDelegatedRipples(md, scope);
     expect(ripples(trigger)).toHaveLength(0);
 
@@ -240,5 +259,107 @@ describe('ripple delegate: release', () => {
     fn(recordLeave)(mouse('mouseout', item, {relatedTarget: document.body}));
     launchDelegatedRipples(md, scope);
     expect(visible(item)).toHaveLength(0);
+  });
+});
+
+describe('ripple delegate: claims and the button they sit on', () => {
+  it('a matRipple composed onto a button ripples both: its own container and the button', () => {
+    const host = loaderHost();
+    fn(initializeLoaderRipple)(mouse('mouseover', host));
+    const md = press(host, [[host, 'claim']]);
+    registerRippleClaim(host, lastPointerDown(), {
+      container: host,
+      target: {rippleDisabled: false, rippleConfig: {}},
+      globalOptions: {},
+    });
+    launchDelegatedRipples(md, scope);
+    expect(ripples(host.querySelector('.mat-ripple')!)).toHaveLength(1);
+    expect(ripples(host)).toHaveLength(1);
+  });
+
+  it("the press creating a button's ripple element still launches a composed matRipple", () => {
+    const host = loaderHost();
+    const md = press(host, [[host, 'claim']]);
+    registerRippleClaim(host, lastPointerDown(), {
+      container: host,
+      target: {rippleDisabled: false, rippleConfig: {}},
+      globalOptions: {},
+    });
+    launchDelegatedRipples(md, scope);
+    expect(ripples(host.querySelector('.mat-ripple')!)).toHaveLength(0);
+    expect(ripples(host)).toHaveLength(1);
+  });
+
+  it("a DOM claim replaces the button's config, in its ripple element, after its first press", () => {
+    const host = loaderHost({'mat-ripple-loader-disabled': ''});
+    fn(initializeLoaderRipple)(mouse('mouseover', host));
+    const md = press(host, [[host, 'dom']]);
+    registerRippleClaim(
+      host,
+      lastPointerDown(),
+      {target: {rippleDisabled: false, rippleConfig: {}}, globalOptions: {}},
+      'dom',
+    );
+    launchDelegatedRipples(md, scope);
+    expect(ripples(host.querySelector('.mat-ripple')!)).toHaveLength(1);
+    expect(ripples(host)).toHaveLength(0);
+  });
+});
+
+describe('ripple delegate: which press a claim is for', () => {
+  it("a launch running after a later press's pointerdown still goes by its own press", () => {
+    const vetoed = listItem();
+    const other = listItem();
+    const md = press(vetoed, [[vetoed, 'veto']]);
+    // The next press begins (its pointerdown) before the first press's launch runs.
+    pointerDown(other);
+    launchDelegatedRipples(md, scope);
+    expect(ripples(vetoed)).toHaveLength(0);
+  });
+
+  it('a synthetic mousedown (no pointerdown of its own) goes by the last claims', () => {
+    const vetoed = listItem();
+    launchDelegatedRipples(press(vetoed, [[vetoed, 'veto']]), scope);
+    pointerDown(listItem());
+    launchDelegatedRipples(mouseDown(vetoed.firstElementChild!), scope);
+    expect(ripples(vetoed)).toHaveLength(0);
+
+    const plain = listItem();
+    launchDelegatedRipples(mouseDown(plain), scope);
+    expect(ripples(plain)).toHaveLength(1);
+  });
+});
+
+describe('ripple delegate: one launch per press', () => {
+  it('a second delegate on the page launches nothing more', () => {
+    const item = listItem();
+    const md = press(item);
+    launchDelegatedRipples(md, scope);
+    launchDelegatedRipples(md, scope);
+    expect(ripples(item)).toHaveLength(1);
+  });
+
+  it('starts from the innermost target, inside a shadow root', () => {
+    const shadowHost = document.createElement('div');
+    root.append(shadowHost);
+    const shadow = shadowHost.attachShadow({mode: 'open'});
+    const item = document.createElement('a');
+    item.className = 'mat-mdc-list-item mdc-list-item mat-mdc-list-item-interactive';
+    item.innerHTML = '<span>Item</span>';
+    shadow.append(item);
+    launchDelegatedRipples(press(item.firstElementChild!), scope);
+    expect(ripples(item)).toHaveLength(1);
+  });
+});
+
+describe('ripple delegate: missing', () => {
+  it('a press on a host without one warns, once per page (dev mode)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const host = loaderHost();
+    fn(warnNoRippleDelegate)(new PointerEvent('pointerdown'), host);
+    fn(warnNoRippleDelegate)(new PointerEvent('pointerdown'), host);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain('useMatRippleDelegate()');
+    warn.mockRestore();
   });
 });

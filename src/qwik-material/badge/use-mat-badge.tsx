@@ -6,6 +6,7 @@ import type {MatBadgePosition} from './badge-position';
 import type {MatBadgeSize} from './badge-size';
 import {MAT_BADGE_CONFIG, type MatBadgeConfig} from './badge-config';
 import {type MatBadgeStyleVariant, useMatBadgeStyles} from './badge-styles';
+import {markSheetPlaced, serverRendering, sheetToPlace} from '../core/ssr-sheets';
 
 /**
  * Directive-hook form of upstream's `[matBadge]` (`src/material/badge/
@@ -108,8 +109,10 @@ const idGenerator = createIdGenerator();
  * registering the badge CSS (`useMatBadgeStyles()`).
  */
 export function useMatBadge(props: UseMatBadgeProps): MatBadgeHook {
-  useMatBadgeStyles(...matBadgeStyleVariants(props));
-  return badge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS), false);
+  // During server rendering the `content` sheet goes inside the host, with the content element
+  // (core/ssr-sheets.ts); in the browser here.
+  useMatBadgeStyles(...(serverRendering() ? [] : matBadgeStyleVariants(props)));
+  return badge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS), serverRendering());
 }
 
 /**
@@ -120,6 +123,7 @@ export function useMatBadge(props: UseMatBadgeProps): MatBadgeHook {
  */
 const BadgeContentStyles = component$(() => {
   useMatBadgeStyles('content');
+  markSheetPlaced('badge:content');
   return null;
 });
 
@@ -148,7 +152,10 @@ export function matBadge(props: UseMatBadgeProps, config: MatBadgeConfig = DEFAU
   return badge(props, config, true);
 }
 
-/** `matBadge()`; `contentStyles`: the content element brings its sheet (`BadgeContentStyles`). */
+/**
+ * `matBadge()`; `contentStyles`: the content element brings its sheet (`BadgeContentStyles`) — in
+ * the browser always, during server rendering only the first time (core/ssr-sheets.ts).
+ */
 function badge(
   props: UseMatBadgeProps,
   config: MatBadgeConfig,
@@ -201,10 +208,10 @@ function badge(
   // Still the host's last child: the registration renders no element (a `<style>` at most, the
   // first time, which a page's first-hook registrations place before their instance too).
   const content =
-    element && contentStyles ? (
+    element && contentStyles && (!serverRendering() || sheetToPlace('badge:content')) ? (
       <>
-        <BadgeContentStyles />
         {element}
+        <BadgeContentStyles />
       </>
     ) : (
       element

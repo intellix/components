@@ -85,7 +85,10 @@ CSS when it renders, as upstream attaches a component's `styleUrl` on first crea
   `useMatBadgeStyles(...matBadgeStyleVariants(props))` — and always takes one hook position per
   variant (`useConstant(undefined)` for one not asked for), so a variant's `<style>` has one id
   wherever it's registered and a later render asking for another (a button switching appearance, a
-  badge getting content) registers it then. The generator keeps upstream's rule order within each
+  badge getting content) registers it then. During server rendering a component's hook registers
+  only the base sheet, and the first instance of each variant places that sheet INSIDE its host, as
+  its first child (`core/ssr-sheets.ts`) — never between two sibling buttons, where it would break
+  `.mat-mdc-dialog-actions .mat-mdc-button-base+.mat-mdc-button-base` and shift `:nth-child()`. The generator keeps upstream's rule order within each
   sheet, puts every base rule first, and checks (`variantOrderConflicts()`, in
   `component-styles.spec.ts`) that no variant rule upstream placed before a base rule could decide a
   property for the same element at equal specificity; an entry overriding a variant at equal

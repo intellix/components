@@ -1,12 +1,14 @@
 import {$, component$, Slot, useContext, type QRL} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import {rippleClaimProps} from '../core/ripple/ripple-delegate';
+import {noRippleDelegateProps, rippleClaimProps} from '../core/ripple/ripple-delegate';
 import {useRippleDelegated} from '../core/ripple/ripple-delegate-context';
 import {registerRippleClaim} from '../core/ripple/ripple-delegate-dom';
 import {rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context';
 import {type MatListStyleVariant, useMatListStyles} from './list-styles';
+import {listRichSheet} from './list-rich-styles';
+import {serverRendering} from '../core/ssr-sheets';
 
 /**
  * Props for MatListItem. Polymorphic host via `as` prop:
@@ -134,7 +136,8 @@ function itemStyleVariants(props: MatListItemProps): MatListStyleVariant[] {
 }
 
 export const MatListItem = component$<MatListItemProps>(props => {
-  useMatListStyles(...itemStyleVariants(props));
+  // During server rendering the `rich` sheet goes inside the host instead (core/ssr-sheets.ts).
+  useMatListStyles(...(serverRendering() ? [] : itemStyleVariants(props)));
   const as = props.as ?? 'div';
   const activated = props.activated ?? false;
   const disabled = props.disabled ?? false;
@@ -195,17 +198,23 @@ export const MatListItem = component$<MatListItemProps>(props => {
             rippleDisabled
               ? undefined
               : $((event: PointerEvent, host: Element) =>
-                  registerRippleClaim(host, event, {
-                    container: host,
-                    target: {
-                      rippleDisabled,
-                      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+                  registerRippleClaim(
+                    host,
+                    event,
+                    {
+                      container: host,
+                      target: {
+                        rippleDisabled,
+                        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+                      },
+                      globalOptions: rippleGlobalOptions,
                     },
-                    globalOptions: rippleGlobalOptions,
-                  }),
+                    'dom',
+                  ),
                 ),
+            'dom',
           )
-        : {};
+        : noRippleDelegateProps();
 
   // Upstream's `_titles.length` / `_lines.length` / `_hasUnscopedTextContent`,
   // declared by the caller (see the doc comment above).
@@ -282,6 +291,8 @@ export const MatListItem = component$<MatListItemProps>(props => {
       {/* A <span>, not upstream's <div>: this body is also a <button>'s content, which HTML
           restricts to phrasing content. Absolutely positioned (list.scss), so it lays out the same. */}
       <span class="mat-focus-indicator" />
+      {/* Last (core/ssr-sheets.ts): during server rendering, the `rich` sheet the first time. */}
+      {itemStyleVariants(props).length ? listRichSheet() : null}
     </>
   );
 

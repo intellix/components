@@ -15,6 +15,8 @@ import {
 } from '../core/host-props';
 import {cloneJsxForReuse} from '../core/jsx-reuse';
 import {useMatButtonStyles} from './button-styles';
+import {buttonVariantSheet} from './internal/variant-styles';
+import {serverRendering} from '../core/ssr-sheets';
 
 // Mini-FAB has no 'extended' prop; everything else matches MatFabProps
 // (via its index-signature-free MatFabOwnProps — see that type's doc
@@ -56,7 +58,8 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
-  useMatButtonStyles('fab');
+  // During server rendering its `fab` sheet goes inside the host (core/ssr-sheets.ts).
+  useMatButtonStyles(...(serverRendering() ? [] : (['fab'] as const)));
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? DEFAULTS.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
@@ -118,6 +121,7 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
+      {buttonVariantSheet('fab')}
     </>
   );
 

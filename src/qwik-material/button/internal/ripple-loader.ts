@@ -1,6 +1,6 @@
 import {$} from '@qwik.dev/core';
 import type {HostProps} from '../../core/host-props';
-import {rippleClaimProps} from '../../core/ripple/ripple-delegate';
+import {noRippleDelegateProps, rippleClaimProps} from '../../core/ripple/ripple-delegate';
 import {useRippleDelegated} from '../../core/ripple/ripple-delegate-context';
 import {registerRippleClaim} from '../../core/ripple/ripple-delegate-dom';
 import {rippleAnimationConfig} from '../../core/ripple/ripple-dom';
@@ -80,7 +80,9 @@ export function rippleLoaderHostAttrs(config: RippleLoaderConfig): Record<string
  * force here (`rippleClaimProps()`); the span and the attributes still come from the delegate.
  */
 export function useRippleLoader(): HostProps {
-  return useRippleDelegated() === false ? useClaimedRippleLoader() : {};
+  const delegated = useRippleDelegated();
+  if (delegated === null) return noRippleDelegateProps();
+  return delegated ? {} : useClaimedRippleLoader();
 }
 
 /** The claim for a loader host outside the delegate's options scope. */
@@ -89,17 +91,23 @@ function useClaimedRippleLoader(): HostProps {
   const rippleGlobalOptions = useRippleGlobalOptions();
   return rippleClaimProps(
     $((event: PointerEvent, host: Element) =>
-      registerRippleClaim(host, event, {
-        target: {
-          rippleDisabled: host.hasAttribute(DISABLED_ATTR),
-          rippleConfig: {
-            centered: host.hasAttribute(CENTERED_ATTR),
-            animation: rippleAnimationConfig(animationsDisabled.value),
+      registerRippleClaim(
+        host,
+        event,
+        {
+          target: {
+            rippleDisabled: host.hasAttribute(DISABLED_ATTR),
+            rippleConfig: {
+              centered: host.hasAttribute(CENTERED_ATTR),
+              animation: rippleAnimationConfig(animationsDisabled.value),
+            },
           },
+          globalOptions: rippleGlobalOptions,
         },
-        globalOptions: rippleGlobalOptions,
-      }),
+        'dom',
+      ),
     ),
+    'dom',
   );
 }
 

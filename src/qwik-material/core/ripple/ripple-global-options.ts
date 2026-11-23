@@ -72,6 +72,8 @@ export function useRippleGlobalOptions(): RippleGlobalOptions {
  */
 export function useMatRippleProvider(options?: RippleGlobalOptions): void {
   useContextProvider(MAT_RIPPLE_GLOBAL_OPTIONS, options ?? {});
-  // The ripple delegate launches with its own scope's options: hosts below claim with these.
-  useContextProvider(MAT_RIPPLE_DELEGATE, false);
+  // Below a ripple delegate, which launches with its own scope's options, hosts claim with these.
+  // Without one there is nothing to claim from: hosts stay unclaimed (no handler at all).
+  if (useContext(MAT_RIPPLE_DELEGATE, null) !== null)
+    useContextProvider(MAT_RIPPLE_DELEGATE, false);
 }

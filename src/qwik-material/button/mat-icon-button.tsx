@@ -16,6 +16,8 @@ import {
   useForwardedHostHandlers,
 } from '../core/host-props';
 import {useMatButtonStyles} from './button-styles';
+import {buttonVariantSheet} from './internal/variant-styles';
+import {serverRendering} from '../core/ssr-sheets';
 
 /** See `mat-button.tsx`'s identical constant doc comment. */
 const KNOWN_PROPS = new Set<string>([
@@ -82,7 +84,8 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatIconButton = component$<MatIconButtonProps>(props => {
-  useMatButtonStyles('icon');
+  // During server rendering its `icon` sheet goes inside the host (core/ssr-sheets.ts).
+  useMatButtonStyles(...(serverRendering() ? [] : (['icon'] as const)));
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
@@ -137,6 +140,7 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
       <Slot />
       <FocusIndicator />
       <TouchTarget />
+      {buttonVariantSheet('icon')}
     </>
   );
 
