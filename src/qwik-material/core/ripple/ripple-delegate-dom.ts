@@ -150,7 +150,15 @@ function claimFor(el: Element, mark: string, pointerDown: Event | undefined): Ev
   if (!claim) return undefined;
   if (claim === pointerDown) return claim;
   const downTarget = expando<Node>(pointerDown, POINTER_TARGET);
-  return downTarget && el.contains(downTarget) ? undefined : claim;
+  return downTarget && containsComposed(el, downTarget) ? undefined : claim;
+}
+
+/** Whether `node` is `el` or inside it, through shadow roots (a shadow root to its host). */
+function containsComposed(el: Element, node: Node): boolean {
+  for (let n: Node | null = node; n; n = n.parentNode ?? (n as ShadowRoot).host ?? null) {
+    if (n === el) return true;
+  }
+  return false;
 }
 
 /**

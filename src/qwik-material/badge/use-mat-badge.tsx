@@ -45,9 +45,9 @@ import {markSheetPlaced, serverRendering, sheetToPlace} from '../core/ssr-sheets
  * `useMatBadgeStyles()` itself, first, for the badge's host classes. The
  * content element's CSS — nearly all of it — is the `content` variant,
  * registered only while the badge has content to show (a hidden, empty
- * badge is classes on its host and nothing else): by `useMatBadge()` with
- * the rest, and by `matBadge()`'s content element itself, which renders a
- * registering component beside it.
+ * badge is classes on its host and nothing else): by the content element
+ * `useMatBadge()`/`matBadge()` return, which renders a registering
+ * component beside it — one `<style>` id wherever the host's hooks sit.
  */
 export interface UseMatBadgeProps {
   /** Content shown inside `.mat-badge-content`. Empty/whitespace-only (after trim) renders
@@ -109,10 +109,11 @@ const idGenerator = createIdGenerator();
  * registering the badge CSS (`useMatBadgeStyles()`).
  */
 export function useMatBadge(props: UseMatBadgeProps): MatBadgeHook {
-  // During server rendering the `content` sheet goes inside the host, with the content element
-  // (core/ssr-sheets.ts); in the browser here.
-  useMatBadgeStyles(...(serverRendering() ? [] : matBadgeStyleVariants(props)));
-  return badge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS), serverRendering());
+  // The base sheet here; the `content` sheet with the content element (`BadgeContentStyles`), in
+  // the browser as during server rendering (core/ssr-sheets.ts): one `<style>` id wherever this
+  // hook sits among the host's hooks.
+  useMatBadgeStyles();
+  return badge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS));
 }
 
 /**
@@ -149,18 +150,15 @@ function badgeContent(props: Pick<UseMatBadgeProps, 'content'>): string {
  * no CSS: the component rendering the result calls `useMatBadgeStyles()` as its first hook.
  */
 export function matBadge(props: UseMatBadgeProps, config: MatBadgeConfig = DEFAULTS): MatBadgeHook {
-  return badge(props, config, true);
+  return badge(props, config);
 }
 
 /**
- * `matBadge()`; `contentStyles`: the content element brings its sheet (`BadgeContentStyles`) — in
- * the browser always, during server rendering only the first time (core/ssr-sheets.ts).
+ * The badge of `matBadge()` and `useMatBadge()`: its content element brings the `content` sheet
+ * (`BadgeContentStyles`) — in the browser always, during server rendering only the first time
+ * (core/ssr-sheets.ts).
  */
-function badge(
-  props: UseMatBadgeProps,
-  config: MatBadgeConfig,
-  contentStyles: boolean,
-): MatBadgeHook {
+function badge(props: UseMatBadgeProps, config: MatBadgeConfig): MatBadgeHook {
   const position = props.position ?? config.position ?? 'above after';
   const size = props.size ?? config.size ?? 'medium';
   const overlap = props.overlap ?? config.overlap ?? true;
@@ -208,7 +206,7 @@ function badge(
   // Still the host's last child: the registration renders no element (a `<style>` at most, the
   // first time, which a page's first-hook registrations place before their instance too).
   const content =
-    element && contentStyles && (!serverRendering() || sheetToPlace('badge:content')) ? (
+    element && (!serverRendering() || sheetToPlace('badge:content')) ? (
       <>
         {element}
         <BadgeContentStyles />

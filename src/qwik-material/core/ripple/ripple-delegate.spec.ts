@@ -339,6 +339,17 @@ describe('ripple delegate: one launch per press', () => {
     expect(ripples(item)).toHaveLength(1);
   });
 
+  it("a pointerdown inside a shadow root of the element is the element's own press", () => {
+    const shadowHost = listItem();
+    const shadow = shadowHost.attachShadow({mode: 'open'});
+    const inner = document.createElement('span');
+    shadow.append(inner);
+    // An earlier press's veto, then this press inside the item's shadow root, unclaimed.
+    launchDelegatedRipples(press(shadowHost, [[shadowHost, 'veto']]), scope);
+    launchDelegatedRipples(press(inner), scope);
+    expect(ripples(shadowHost)).toHaveLength(1);
+  });
+
   it('starts from the innermost target, inside a shadow root', () => {
     const shadowHost = document.createElement('div');
     root.append(shadowHost);

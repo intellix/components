@@ -149,30 +149,28 @@ export function useMatRipple(props: UseMatRippleProps = {}): MatRippleHook {
   // options aren't in the DOM, so instead of a handler per pointer event (six before) it has one
   // `pointerdown` handler handing the delegate this config — `globalOptions: {}`, as the config
   // already folds this scope's in (the delegate's own scope may differ). A ripple disabled now
-  // vetoes instead (synchronous, no chunk). The delegate launches and fades it; without one,
-  // nothing would listen, so no claim either.
+  // makes no claim. The delegate launches and fades it; without one, nothing would listen, so no
+  // claim either.
   const delegated = useRippleDelegated();
   const pointerHandlers: HostProps =
     delegated === null
       ? noRippleDelegateProps()
-      : rippleClaimProps(
-          resolveRippleDisabled(props, globalOptions)
-            ? undefined
-            : $((event: PointerEvent, trigger: Element) =>
-                registerRippleClaim(trigger, event, {
-                  container: hostRef.value ?? trigger,
-                  target: {
-                    rippleDisabled: resolveRippleDisabled(props, globalOptions),
-                    rippleConfig: resolveRippleConfig(
-                      props,
-                      globalOptions,
-                      animationsDisabled.value,
-                    ),
-                  },
-                  globalOptions: {},
-                }),
-              ),
-        );
+      : // Disabled: no claim at all. Not a veto — that would stop the ripple of the element it is
+        // spread on (a button's own), which upstream's `[matRippleDisabled]` leaves alone.
+        resolveRippleDisabled(props, globalOptions)
+        ? {}
+        : rippleClaimProps(
+            $((event: PointerEvent, trigger: Element) =>
+              registerRippleClaim(trigger, event, {
+                container: hostRef.value ?? trigger,
+                target: {
+                  rippleDisabled: resolveRippleDisabled(props, globalOptions),
+                  rippleConfig: resolveRippleConfig(props, globalOptions, animationsDisabled.value),
+                },
+                globalOptions: {},
+              }),
+            ),
+          );
 
   const launch$ = $(
     (configOrX: number | RippleConfig, y: number = 0, config?: RippleConfig): RippleRef => {

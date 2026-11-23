@@ -84,8 +84,8 @@ export const MatListItemIcon = component$<MatListItemIconProps>(props => {
   if (as === 'span') {
     return (
       <span id={props.id} class={classes} style={props.style}>
-        {listRichSheet()}
         <Slot />
+        {listRichSheet()}
       </span>
     );
   }
@@ -120,8 +120,8 @@ export const MatListItemTitle = component$<MatListItemTitleProps>(props => {
   if (props.as === 'span') {
     return (
       <span id={props.id} class={classes} style={props.style}>
-        {listRichSheet()}
         <Slot />
+        {listRichSheet()}
       </span>
     );
   }
@@ -146,8 +146,8 @@ export const MatListItemLine = component$<MatListItemLineProps>(props => {
   if (props.as === 'span') {
     return (
       <span id={props.id} class={classes} style={props.style}>
-        {listRichSheet()}
         <Slot />
+        {listRichSheet()}
       </span>
     );
   }

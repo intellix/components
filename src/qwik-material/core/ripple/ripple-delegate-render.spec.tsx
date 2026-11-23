@@ -5,6 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {MatButton, MatIconButton} from '../../button';
 import {MatListItem, MatNavList} from '../../list';
 import {MatRipple} from './mat-ripple';
+import {useMatRipple} from './use-mat-ripple';
 import {useMatRippleDelegate} from './ripple-delegate';
 import {useMatRippleProvider} from './ripple-global-options';
 
@@ -114,6 +115,19 @@ describe('ripple delegate, server-rendered', () => {
     const host = tag(html, 'host');
     expect(host).toMatch(/q-e:pointerdown="#\d+\|[^"]+"/);
     expect(host).not.toMatch(/q-e:(mousedown|mouseup|mouseleave|touchstart|touchend|touchcancel)=/);
+  });
+
+  it("a disabled matRipple composed onto a button vetoes nothing: the button's own ripple stays", async () => {
+    const Composed = component$(() => {
+      const ripple = useMatRipple({disabled: true});
+      return <MatButton {...ripple.hostProps}>One</MatButton>;
+    });
+    const html = await ssr(
+      <Delegate>
+        <Composed />
+      </Delegate>,
+    );
+    expect(tag(html, 'mat-mdc-button')).not.toMatch(/q-e:pointerdown=/);
   });
 
   it('below a nested ripple provider, a button claims with the options in force there', async () => {
