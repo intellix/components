@@ -1,20 +1,39 @@
 // Generated from scss/badge/badge-prebuilt.scss by scripts/component-styles.mjs — do not
 // edit; run `pnpm -C src/qwik-material generate-component-styles`.
-import {useStyles$} from '@qwik.dev/core';
+import {useConstant, useStyles$} from '@qwik.dev/core';
 
 /**
- * Registers this entry point's CSS — `scss/badge/badge-prebuilt.scss`, compiled inside `@layer
- * qwik-material` — for the rendering document, once: upstream's the `MatBadge` directive's
- * `_MatBadgeStyleLoader` (`styleUrl: 'badge.css'`, loaded through `_CdkPrivateStyleLoader`;
- * badge.ts) (src/material/badge/), attached when the component is first created, unscoped
- * (`ViewEncapsulation.None`). Server rendering writes it before the first instance; a component
- * first rendered in the browser brings it with its own chunk. Call it as the component's FIRST hook
- * — Qwik keys a `useStyles$` `<style>` by the call site AND the hook's index in the component, so
- * only first-hook calls share one `<style>` (README "Component styles"). Exported for markup
- * rendered without the component (a hand-written host, a plain render function).
+ * The optional parts of this entry point's CSS, each its own `<style>` registered only by a
+ * component that renders it (scripts/component-styles.mjs `COMPONENT_STYLE_VARIANTS`): `'content'`,
+ * the content element (`.mat-badge-content`), which a badge renders only with content to show.
  */
-export function useMatBadgeStyles(): void {
+export type MatBadgeStyleVariant = 'content';
+
+/**
+ * Registers this entry point's base CSS and the `variants` given —
+ * `scss/badge/badge-prebuilt.scss`, compiled inside `@layer qwik-material` — for the rendering
+ * document, once: upstream's the `MatBadge` directive's `_MatBadgeStyleLoader` (`styleUrl:
+ * 'badge.css'`, loaded through `_CdkPrivateStyleLoader`; badge.ts) (src/material/badge/), attached
+ * when the component is first created, unscoped (`ViewEncapsulation.None`). Server rendering writes
+ * it before the first instance; a component first rendered in the browser brings it with its own
+ * chunk. Call it as the component's FIRST hook — Qwik keys a `useStyles$` `<style>` by the call
+ * site AND the hook's index in the component, so only first-hook calls share one `<style>` (README
+ * "Component styles"). Exported for markup rendered without the component (a hand-written host, a
+ * plain render function). Every call takes the same 2 hook positions — the base sheet, then one per
+ * variant in declaration order (`useConstant(undefined)` for a variant not asked for) — so a
+ * variant's `<style>` has one id wherever it is registered, and a variant asked for only by a later
+ * render (a button switching appearance, a badge getting content) still registers then.
+ */
+export function useMatBadgeStyles(...variants: readonly MatBadgeStyleVariant[]): void {
   useStyles$(
-    `@layer qwik-cdk,qwik-material;@layer qwik-material{.mat-badge{position:relative}.mat-badge.mat-badge{overflow:visible}.mat-badge-content{position:absolute;text-align:center;display:inline-block;transition:transform 200ms ease-in-out;transform:scale(0.6);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-sizing:border-box;pointer-events:none;background-color:var(--mat-badge-background-color, var(--mat-sys-error));color:var(--mat-badge-text-color, var(--mat-sys-on-error));font-family:var(--mat-badge-text-font, var(--mat-sys-label-small-font));font-weight:var(--mat-badge-text-weight, var(--mat-sys-label-small-weight));border-radius:var(--mat-badge-container-shape, var(--mat-sys-corner-full))}.mat-badge-above .mat-badge-content{bottom:100%}.mat-badge-below .mat-badge-content{top:100%}.mat-badge-before .mat-badge-content{right:100%}[dir=rtl] .mat-badge-before .mat-badge-content{right:auto;left:100%}.mat-badge-after .mat-badge-content{left:100%}[dir=rtl] .mat-badge-after .mat-badge-content{left:auto;right:100%}@media(forced-colors: active){.mat-badge-content{outline:solid 1px;border-radius:0}}.mat-badge-disabled .mat-badge-content{background-color:var(--mat-badge-disabled-state-background-color, color-mix(in srgb, var(--mat-sys-error) 38%, transparent));color:var(--mat-badge-disabled-state-text-color, var(--mat-sys-on-error))}.mat-badge-hidden .mat-badge-content{display:none}.ng-animate-disabled .mat-badge-content,.mat-badge-content._mat-animation-noopable{transition:none}.mat-badge-content.mat-badge-active{transform:none}.mat-badge-small .mat-badge-content{width:var(--mat-badge-legacy-small-size-container-size, unset);height:var(--mat-badge-legacy-small-size-container-size, unset);min-width:var(--mat-badge-small-size-container-size, 6px);min-height:var(--mat-badge-small-size-container-size, 6px);line-height:var(--mat-badge-small-size-line-height, 6px);padding:var(--mat-badge-small-size-container-padding, 0);font-size:var(--mat-badge-small-size-text-size, 0);margin:var(--mat-badge-small-size-container-offset, -6px 0)}.mat-badge-small.mat-badge-overlap .mat-badge-content{margin:var(--mat-badge-small-size-container-overlap-offset, -6px)}.mat-badge-medium .mat-badge-content{width:var(--mat-badge-legacy-container-size, unset);height:var(--mat-badge-legacy-container-size, unset);min-width:var(--mat-badge-container-size, 16px);min-height:var(--mat-badge-container-size, 16px);line-height:var(--mat-badge-line-height, 16px);padding:var(--mat-badge-container-padding, 0 4px);font-size:var(--mat-badge-text-size, var(--mat-sys-label-small-size));margin:var(--mat-badge-container-offset, -12px 0)}.mat-badge-medium.mat-badge-overlap .mat-badge-content{margin:var(--mat-badge-container-overlap-offset, -12px)}.mat-badge-large .mat-badge-content{width:var(--mat-badge-legacy-large-size-container-size, unset);height:var(--mat-badge-legacy-large-size-container-size, unset);min-width:var(--mat-badge-large-size-container-size, 16px);min-height:var(--mat-badge-large-size-container-size, 16px);line-height:var(--mat-badge-large-size-line-height, 16px);padding:var(--mat-badge-large-size-container-padding, 0 4px);font-size:var(--mat-badge-large-size-text-size, var(--mat-sys-label-small-size));margin:var(--mat-badge-large-size-container-offset, -12px 0)}.mat-badge-large.mat-badge-overlap .mat-badge-content{margin:var(--mat-badge-large-size-container-overlap-offset, -12px)}}`,
+    `@layer qwik-cdk,qwik-material;@layer qwik-material{.mat-badge{position:relative}.mat-badge.mat-badge{overflow:visible}}`,
   );
+  // content: the content element (`.mat-badge-content`), which a badge renders only with content to show
+  if (variants.includes('content')) {
+    useStyles$(
+      `@layer qwik-cdk,qwik-material;@layer qwik-material{.mat-badge-content{position:absolute;text-align:center;display:inline-block;transition:transform 200ms ease-in-out;transform:scale(0.6);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-sizing:border-box;pointer-events:none;background-color:var(--mat-badge-background-color, var(--mat-sys-error));color:var(--mat-badge-text-color, var(--mat-sys-on-error));font-family:var(--mat-badge-text-font, var(--mat-sys-label-small-font));font-weight:var(--mat-badge-text-weight, var(--mat-sys-label-small-weight));border-radius:var(--mat-badge-container-shape, var(--mat-sys-corner-full))}.mat-badge-above .mat-badge-content{bottom:100%}.mat-badge-below .mat-badge-content{top:100%}.mat-badge-before .mat-badge-content{right:100%}[dir=rtl] .mat-badge-before .mat-badge-content{right:auto;left:100%}.mat-badge-after .mat-badge-content{left:100%}[dir=rtl] .mat-badge-after .mat-badge-content{left:auto;right:100%}@media(forced-colors: active){.mat-badge-content{outline:solid 1px;border-radius:0}}.mat-badge-disabled .mat-badge-content{background-color:var(--mat-badge-disabled-state-background-color, color-mix(in srgb, var(--mat-sys-error) 38%, transparent));color:var(--mat-badge-disabled-state-text-color, var(--mat-sys-on-error))}.mat-badge-hidden .mat-badge-content{display:none}.ng-animate-disabled .mat-badge-content,.mat-badge-content._mat-animation-noopable{transition:none}.mat-badge-content.mat-badge-active{transform:none}.mat-badge-small .mat-badge-content{width:var(--mat-badge-legacy-small-size-container-size, unset);height:var(--mat-badge-legacy-small-size-container-size, unset);min-width:var(--mat-badge-small-size-container-size, 6px);min-height:var(--mat-badge-small-size-container-size, 6px);line-height:var(--mat-badge-small-size-line-height, 6px);padding:var(--mat-badge-small-size-container-padding, 0);font-size:var(--mat-badge-small-size-text-size, 0);margin:var(--mat-badge-small-size-container-offset, -6px 0)}.mat-badge-small.mat-badge-overlap .mat-badge-content{margin:var(--mat-badge-small-size-container-overlap-offset, -6px)}.mat-badge-medium .mat-badge-content{width:var(--mat-badge-legacy-container-size, unset);height:var(--mat-badge-legacy-container-size, unset);min-width:var(--mat-badge-container-size, 16px);min-height:var(--mat-badge-container-size, 16px);line-height:var(--mat-badge-line-height, 16px);padding:var(--mat-badge-container-padding, 0 4px);font-size:var(--mat-badge-text-size, var(--mat-sys-label-small-size));margin:var(--mat-badge-container-offset, -12px 0)}.mat-badge-medium.mat-badge-overlap .mat-badge-content{margin:var(--mat-badge-container-overlap-offset, -12px)}.mat-badge-large .mat-badge-content{width:var(--mat-badge-legacy-large-size-container-size, unset);height:var(--mat-badge-legacy-large-size-container-size, unset);min-width:var(--mat-badge-large-size-container-size, 16px);min-height:var(--mat-badge-large-size-container-size, 16px);line-height:var(--mat-badge-large-size-line-height, 16px);padding:var(--mat-badge-large-size-container-padding, 0 4px);font-size:var(--mat-badge-large-size-text-size, var(--mat-sys-label-small-size));margin:var(--mat-badge-large-size-container-offset, -12px 0)}.mat-badge-large.mat-badge-overlap .mat-badge-content{margin:var(--mat-badge-large-size-container-overlap-offset, -12px)}}`,
+    );
+  } else {
+    useConstant(undefined);
+  }
 }

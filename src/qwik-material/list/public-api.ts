@@ -35,4 +35,4 @@ export {
 } from './mat-list-item-sections';
 
 // The entry point's CSS, registered by its components; see list-styles.ts.
-export {useMatListStyles} from './list-styles';
+export {type MatListStyleVariant, useMatListStyles} from './list-styles';

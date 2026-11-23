@@ -101,7 +101,7 @@ export interface PaginatorNavButtonProps {
 }
 
 export const PaginatorNavButton = component$<PaginatorNavButtonProps>(props => {
-  useMatButtonStyles();
+  useMatButtonStyles('icon');
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();
   const focusOrigin = useFocusOrigin();

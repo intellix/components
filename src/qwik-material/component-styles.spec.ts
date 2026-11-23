@@ -4,10 +4,15 @@ import ts from 'typescript';
 import {describe, expect, it} from 'vitest';
 import {
   COMPONENT_STYLE_ENTRIES,
+  COMPONENT_STYLE_VARIANTS,
   compileComponentStyles,
   componentStylePaths,
   LAYER_ORDER,
   renderStylesModule,
+  specificity,
+  splitComponentStyles,
+  styleVariantTypeName,
+  variantOrderConflicts,
 } from './scripts/component-styles.mjs';
 
 /**
@@ -53,7 +58,17 @@ const REGISTERS: Record<string, string[]> = {
   'form-field': ['MatFormField'],
   'grid-list': ['MatGridTile', 'GridListStyles'],
   icon: ['MatIcon'],
-  list: ['MatList', 'MatNavList', 'MatActionList', 'MatListItem'],
+  // The sections register the list's `rich` sheet (their classes are its classes).
+  list: [
+    'MatList',
+    'MatNavList',
+    'MatActionList',
+    'MatListItem',
+    'MatListItemAvatar',
+    'MatListItemIcon',
+    'MatListItemLine',
+    'MatListItemMeta',
+  ],
   // `MenuStyles`: the plain-function `MatMenu` placeholder's loader (its `<mat-menu>` host).
   menu: ['MenuStyles', 'MenuPanel'],
   paginator: ['MatPaginator'],
@@ -180,12 +195,49 @@ describe('component styles', () => {
 
   it.each(COMPONENT_STYLE_ENTRIES)('%s: the entry point exports its style hook', async entry => {
     const api = readFileSync(join(root, entry, 'public-api.ts'), 'utf8');
-    expect(api).toContain(`export {${hookName(entry)}} from './${entry}-styles';`);
     const hook = readFileSync(componentStylePaths(entry).module, 'utf8');
-    expect(hook).toMatch(new RegExp(`export function ${hookName(entry)}\\(\\): void \\{`));
+    if (entry in COMPONENT_STYLE_VARIANTS) {
+      const type = styleVariantTypeName(entry);
+      expect(api).toContain(`export {type ${type}, ${hookName(entry)}} from './${entry}-styles';`);
+      expect(hook).toContain(
+        `export function ${hookName(entry)}(...variants: readonly ${type}[]): void {`,
+      );
+    } else {
+      expect(api).toContain(`export {${hookName(entry)}} from './${entry}-styles';`);
+      expect(hook).toMatch(new RegExp(`export function ${hookName(entry)}\\(\\): void \\{`));
+    }
     // The CSS is a literal in the `useStyles$` call (no `?inline` import — see the generator).
     expect(hook).toContain('useStyles$(\n    `@layer qwik-cdk,qwik-material;@layer qwik-material{');
     expect(hook).not.toMatch(/^import .*css/m);
+  });
+
+  describe.each(Object.keys(COMPONENT_STYLE_VARIANTS))('%s, split into variants', entry => {
+    it('the base and variant sheets each sit in the layer, and hold every rule once', async () => {
+      // `splitComponentStyles()` itself throws on a lost, duplicated or empty part.
+      const {base, variants} = await splitComponentStyles(entry);
+      expect(variants.map(v => v.name)).toEqual(Object.keys(COMPONENT_STYLE_VARIANTS[entry]));
+      for (const css of [base, ...variants.map(v => v.css)]) {
+        expect(css.startsWith(`${LAYER_ORDER.replace(', ', ',')}@layer qwik-material{`)).toBe(true);
+        expect(css.match(/@layer/g)).toHaveLength(2);
+      }
+      // Smaller apart: the point of the split.
+      const whole = (await compileComponentStyles(entry)).length;
+      expect(base.length).toBeLessThan(whole);
+      for (const v of variants) expect(v.css.length, v.name).toBeLessThan(whole);
+    });
+
+    it('no variant rule now after a base rule could flip which one wins', async () => {
+      expect(await variantOrderConflicts(entry)).toEqual([]);
+    });
+  });
+
+  it('specificity counts as the cascade does', () => {
+    expect(specificity('.a')).toBe('0,1,0');
+    expect(specificity('.a .b>span::before')).toBe('0,2,2');
+    expect(specificity('.a:not(.b):focus')).toBe('0,3,0');
+    expect(specificity(':where(.a) .b')).toBe('0,1,0');
+    expect(specificity('[dir=rtl] .a:hover')).toBe('0,3,0');
+    expect(specificity('#x .a')).toBe('1,1,0');
   });
 
   it('every style hook call is a leading statement (shared <style> id, see README)', () => {

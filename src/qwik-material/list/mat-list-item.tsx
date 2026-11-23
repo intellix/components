@@ -3,7 +3,7 @@ import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
 import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context';
-import {useMatListStyles} from './list-styles';
+import {type MatListStyleVariant, useMatListStyles} from './list-styles';
 
 /**
  * Props for MatListItem. Polymorphic host via `as` prop:
@@ -119,8 +119,19 @@ export interface MatListItemProps {
   onClick$?: QRL<(event: MouseEvent) => void>;
 }
 
+/**
+ * The list sheets an item with these props renders: the `rich` one (two/three lines, a leading
+ * avatar or icon, trailing meta) only when it has any — the same structure props that pick its
+ * classes below, read before any hook so the styles stay its first hook.
+ */
+function itemStyleVariants(props: MatListItemProps): MatListStyleVariant[] {
+  const lines =
+    props.lines ?? (props.title ? 1 : 0) + (props.lineCount ?? 0) + (props.content ? 1 : 0);
+  return lines > 1 || props.leading || props.meta ? ['rich'] : [];
+}
+
 export const MatListItem = component$<MatListItemProps>(props => {
-  useMatListStyles();
+  useMatListStyles(...itemStyleVariants(props));
   const as = props.as ?? 'div';
   const activated = props.activated ?? false;
   const disabled = props.disabled ?? false;

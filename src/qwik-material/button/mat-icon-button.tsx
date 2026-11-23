@@ -82,7 +82,7 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatIconButton = component$<MatIconButtonProps>(props => {
-  useMatButtonStyles();
+  useMatButtonStyles('icon');
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;

@@ -261,7 +261,10 @@ point's TypeScript (`<entry>/<entry>-styles.ts`), so the app needs no Sass, no V
 CSS pipeline for **qwik-material's** CSS. Markup an app renders by hand with a component's classes
 (a hand-written `mat-mdc-button` host, `matBadge()` called from a plain render function) registers
 that entry point's CSS itself: every entry point exports its hook, `useMat<Entry>Styles()` (e.g.
-`useMatButtonStyles()` from `.../button`) — call it as that component's first hook.
+`useMatButtonStyles('elevated')` from `.../button`) — call it as that component's first hook. The
+button, list and badge hooks take the variants the markup renders (a button appearance, `icon`,
+`fab`; the list's `rich` items; the badge's `content`, via `matBadgeStyleVariants(props)`): only
+those parts of the stylesheet are registered.
 
 This "no Sass" claim does not extend to qwik-cdk. `<QwikCdkRoot>`'s default `loadStyles` (see
 [§3.1](#31-root-component)) imports `scss/overlay/overlay-structure-layered.scss`, and

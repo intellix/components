@@ -52,7 +52,7 @@ const DEFAULTS: MatButtonConfig = {
 };
 
 export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
-  useMatButtonStyles();
+  useMatButtonStyles('fab');
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const color = props.color ?? config.color ?? DEFAULTS.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;

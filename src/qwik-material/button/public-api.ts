@@ -11,4 +11,4 @@ export {MatFabButton, type MatFabProps} from './mat-fab-button';
 export {MatMiniFabButton, type MatMiniFabProps} from './mat-mini-fab-button';
 
 // The entry point's CSS, registered by its components; see button-styles.ts.
-export {useMatButtonStyles} from './button-styles';
+export {type MatButtonStyleVariant, useMatButtonStyles} from './button-styles';

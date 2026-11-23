@@ -72,7 +72,9 @@ export interface MatDateRangeInputProps<D = unknown> extends Omit<
 }
 
 export const MatDateRangeInput = component$<MatDateRangeInputProps>(props => {
-  useMatButtonStyles();
+  // The button sheets the datepicker CSS overrides at equal specificity (the calendar header's
+  // period and arrow buttons), before it — README "Component styles".
+  useMatButtonStyles('text', 'icon');
   useMatDatepickerStyles();
   const picker = props.picker;
   const idGen = useIdGenerator();

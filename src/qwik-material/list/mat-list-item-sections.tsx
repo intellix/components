@@ -1,4 +1,5 @@
 import {component$, Slot, type CSSProperties} from '@qwik.dev/core';
+import {useMatListStyles} from './list-styles';
 
 /**
  * Shared props for the 5 slot components (Avatar, Icon, Title, Line, Meta).
@@ -44,6 +45,8 @@ export interface MatListItemIconProps extends MatListItemSectionProps {
  * scope, see list/SYNC.md).
  */
 export const MatListItemAvatar = component$<MatListItemAvatarProps>(props => {
+  // A section is the rich sheet's, even in an item that didn't declare it (`leading`, `meta`, …).
+  useMatListStyles('rich');
   const as = props.as ?? 'div';
   const classes = ['mat-mdc-list-item-avatar', 'mdc-list-item__start', props.class].filter(
     Boolean,
@@ -68,6 +71,8 @@ export const MatListItemAvatar = component$<MatListItemAvatarProps>(props => {
 
 /** Leading icon section. Host gets `mat-mdc-list-item-icon` + `mdc-list-item__start`. */
 export const MatListItemIcon = component$<MatListItemIconProps>(props => {
+  // A section is the rich sheet's, even in an item that didn't declare it (`leading`, `meta`, …).
+  useMatListStyles('rich');
   const as = props.as ?? 'div';
   const classes = ['mat-mdc-list-item-icon', 'mdc-list-item__start', props.class].filter(
     Boolean,
@@ -125,6 +130,8 @@ export const MatListItemTitle = component$<MatListItemTitleProps>(props => {
  * 3-line maximum).
  */
 export const MatListItemLine = component$<MatListItemLineProps>(props => {
+  // A section is the rich sheet's, even in an item that didn't declare it (`leading`, `meta`, …).
+  useMatListStyles('rich');
   const classes = ['mat-mdc-list-item-line', 'mdc-list-item__secondary-text', props.class].filter(
     Boolean,
   ) as string[];
@@ -144,6 +151,8 @@ export const MatListItemLine = component$<MatListItemLineProps>(props => {
 
 /** Trailing meta section (control, button, or additional text). */
 export const MatListItemMeta = component$<MatListItemSectionProps>(props => {
+  // A section is the rich sheet's, even in an item that didn't declare it (`leading`, `meta`, …).
+  useMatListStyles('rich');
   const classes = ['mat-mdc-list-item-meta', 'mdc-list-item__end', props.class].filter(
     Boolean,
   ) as string[];

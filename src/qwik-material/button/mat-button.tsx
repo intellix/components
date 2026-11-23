@@ -150,10 +150,28 @@ const DEFAULTS: MatButtonConfig = {
   defaultAppearance: 'text',
 };
 
+/**
+ * Registers the appearance sheet of a button whose appearance comes from `MAT_BUTTON_CONFIG`'s
+ * `defaultAppearance` rather than its own prop: `MatButton` registers its styles as its first hook,
+ * before it can read the config, so it registers `text` there, and this renders beside a button
+ * whose configured default is another appearance. Its own component, so the sheet takes the same
+ * hook position — the same `<style>` — as everywhere else. Renders nothing.
+ */
+const AppearanceStyles = component$<{appearance: MatButtonAppearance}>(props => {
+  useMatButtonStyles(props.appearance);
+  return null;
+});
+
 export const MatButton = component$<MatButtonProps>(props => {
-  useMatButtonStyles();
+  // The base sheet and this appearance's (`text` when the appearance is the config's default —
+  // see `AppearanceStyles`). A later render with another appearance registers that one then.
+  useMatButtonStyles(props.appearance ?? 'text');
   const config = useContext(MAT_BUTTON_CONFIG, DEFAULTS);
   const appearance = props.appearance ?? config.defaultAppearance ?? 'text';
+  const configuredStyles =
+    appearance !== (props.appearance ?? 'text') ? (
+      <AppearanceStyles appearance={appearance} />
+    ) : null;
   const color = props.color ?? config.color ?? null;
   const disabledInteractive = props.disabledInteractive ?? config.disabledInteractive ?? false;
   // `href` is read here anyway (the host tag depends on it), so the attribute takes the plain
@@ -228,7 +246,8 @@ export const MatButton = component$<MatButtonProps>(props => {
   const describedBy = props.ariaDescribedBy ?? (props['aria-describedby'] as string | undefined);
 
   if (isAnchor) {
-    return (
+    return withStyles(
+      configuredStyles,
       <a
         ref={props.ref}
         href={href}
@@ -253,11 +272,12 @@ export const MatButton = component$<MatButtonProps>(props => {
         <TouchTarget />
         {props.hostContent}
         <LazyRipple initialized={rippleInitialized} />
-      </a>
+      </a>,
     );
   }
 
-  return (
+  return withStyles(
+    configuredStyles,
     <button
       ref={props.ref}
       type={props.type}
@@ -281,6 +301,18 @@ export const MatButton = component$<MatButtonProps>(props => {
       <TouchTarget />
       {props.hostContent}
       <LazyRipple initialized={rippleInitialized} />
-    </button>
+    </button>,
   );
 });
+
+/** `host`, after `styles` when there are any (a fragment only then: one costs vnode data). */
+function withStyles(styles: JSXOutput, host: JSXOutput): JSXOutput {
+  return styles ? (
+    <>
+      {styles}
+      {host}
+    </>
+  ) : (
+    host
+  );
+}

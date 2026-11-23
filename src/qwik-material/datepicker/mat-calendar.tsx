@@ -162,7 +162,9 @@ const CalendarContent = component$<{focusOrigin: Signal<CalendarFocusOrigin>}>(p
 const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 
 export const MatCalendar = component$<MatCalendarProps>(props => {
-  useMatButtonStyles();
+  // The button sheets the datepicker CSS overrides at equal specificity (the calendar header's
+  // period and arrow buttons), before it — README "Component styles".
+  useMatButtonStyles('text', 'icon');
   useMatDatepickerStyles();
   // `props.locale` (set by `datepicker-runtime.ts` for the popup case — see this prop's own doc
   // comment for why that case can't rely on THIS component's own `useDateLocale()` call) takes

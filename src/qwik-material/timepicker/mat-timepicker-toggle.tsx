@@ -54,7 +54,7 @@ export interface MatTimepickerToggleProps<D = unknown> {
 }
 
 export const MatTimepickerToggle = component$<MatTimepickerToggleProps>(props => {
-  useMatButtonStyles();
+  useMatButtonStyles('icon');
   const picker = props.picker;
   const ctx = useContext(QWIK_CDK);
   const animationsDisabled = useAnimationsDisabled();

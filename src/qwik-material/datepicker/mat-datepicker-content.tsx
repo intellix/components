@@ -152,7 +152,9 @@ const ActionsOutlet = component$<{
 });
 
 export const MatDatepickerContent = component$<MatDatepickerContentProps>(props => {
-  useMatButtonStyles();
+  // The button sheets the datepicker CSS overrides at equal specificity (the calendar header's
+  // period and arrow buttons), before it — README "Component styles".
+  useMatButtonStyles('text', 'icon');
   useMatDatepickerStyles();
   const containerRef = useSignal<HTMLElement>();
   // Pure tab-wrapping + anchors — see this file's own doc comment for why `autoFocus`/

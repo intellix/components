@@ -7,8 +7,8 @@ export type {MatBadgeSize} from './badge-size';
 export type {MatBadgeConfig} from './badge-config';
 export {MAT_BADGE_CONFIG, useMatBadgeProvider} from './badge-config';
 export {MatBadge, type MatBadgeProps} from './mat-badge';
-export {matBadge, useMatBadge} from './use-mat-badge';
+export {matBadge, matBadgeStyleVariants, useMatBadge} from './use-mat-badge';
 export type {UseMatBadgeProps, MatBadgeHook} from './use-mat-badge';
 
 // The entry point's CSS, registered by its components; see badge-styles.ts.
-export {useMatBadgeStyles} from './badge-styles';
+export {type MatBadgeStyleVariant, useMatBadgeStyles} from './badge-styles';

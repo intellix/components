@@ -126,7 +126,8 @@ const adapter = DEFAULT_DATE_ADAPTER as unknown as DateAdapter<unknown>;
 const formats = MAT_NATIVE_DATE_FORMATS;
 
 export const MatCalendarHeader = component$<MatCalendarHeaderProps>(props => {
-  useMatButtonStyles();
+  // Its period button (text) and arrow buttons (icon), by hand.
+  useMatButtonStyles('text', 'icon');
   const idGen = useIdGenerator();
   // Once per mount — see mat-calendar-body.tsx's ids.
   const periodLabelId = useSignal(() => idGen.getId('mat-calendar-period-label-')).value;

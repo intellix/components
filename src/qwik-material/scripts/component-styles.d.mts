@@ -11,3 +11,13 @@ export declare function renderStylesModule(entry: string): Promise<string>;
 export declare function writeComponentStyles(): Promise<string[]>;
 export declare function staleComponentStyles(): Promise<string[]>;
 export declare function staleMessage(stale: string[]): string;
+export declare const COMPONENT_STYLE_VARIANTS: Record<
+  string,
+  Record<string, {classes: string[]; doc: string}>
+>;
+export declare function splitComponentStyles(
+  entry: string,
+): Promise<{base: string; variants: {name: string; css: string}[]}>;
+export declare function specificity(selector: string): string;
+export declare function variantOrderConflicts(entry: string): Promise<string[]>;
+export declare function styleVariantTypeName(entry: string): string;

@@ -71,7 +71,8 @@ export interface MatDatepickerToggleProps<D = unknown> {
 }
 
 export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props => {
-  useMatButtonStyles();
+  // Its icon button, by hand, and the datepicker CSS's text/icon overrides before that CSS.
+  useMatButtonStyles('text', 'icon');
   useMatDatepickerStyles();
   const picker = props.picker;
   const ctx = useContext(QWIK_CDK);

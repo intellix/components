@@ -5,7 +5,7 @@ import type {MatBadgeColor} from './badge-color';
 import type {MatBadgePosition} from './badge-position';
 import type {MatBadgeSize} from './badge-size';
 import {MAT_BADGE_CONFIG, type MatBadgeConfig} from './badge-config';
-import {useMatBadgeStyles} from './badge-styles';
+import {type MatBadgeStyleVariant, useMatBadgeStyles} from './badge-styles';
 
 /**
  * Directive-hook form of upstream's `[matBadge]` (`src/material/badge/
@@ -41,7 +41,10 @@ import {useMatBadgeStyles} from './badge-styles';
  * constructor) — call it as the consuming component's FIRST hook so every
  * caller shares one `<style>` (README "Component styles"). `matBadge()`
  * can't (no hook phase): the component rendering its result calls
- * `useMatBadgeStyles()` itself, first.
+ * `useMatBadgeStyles(...matBadgeStyleVariants(props))` itself, first. The
+ * content element's CSS — nearly all of it — is the `content` variant,
+ * registered only while the badge has content to show (a hidden, empty
+ * badge is classes on its host and nothing else).
  */
 export interface UseMatBadgeProps {
   /** Content shown inside `.mat-badge-content`. Empty/whitespace-only (after trim) renders
@@ -103,8 +106,23 @@ const idGenerator = createIdGenerator();
  * registering the badge CSS (`useMatBadgeStyles()`).
  */
 export function useMatBadge(props: UseMatBadgeProps): MatBadgeHook {
-  useMatBadgeStyles();
+  useMatBadgeStyles(...matBadgeStyleVariants(props));
   return matBadge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS));
+}
+
+/**
+ * The badge sheets a badge with these props renders, for `useMatBadgeStyles()`: `content` when it
+ * shows content (`matBadge()` renders the `.mat-badge-content` element exactly then).
+ */
+export function matBadgeStyleVariants(
+  props: Pick<UseMatBadgeProps, 'content'>,
+): MatBadgeStyleVariant[] {
+  return badgeContent(props) ? ['content'] : [];
+}
+
+/** The content a badge shows: `props.content` as a trimmed string, `''` for none. */
+function badgeContent(props: Pick<UseMatBadgeProps, 'content'>): string {
+  return props.content == null ? '' : `${props.content}`.trim();
 }
 
 /**
@@ -124,7 +142,7 @@ export function matBadge(props: UseMatBadgeProps, config: MatBadgeConfig = DEFAU
   // See the `color` prop doc above: no class unless explicitly provided.
   const colorClass = props.color ? `mat-badge-${props.color}` : undefined;
 
-  const contentStr = props.content == null ? '' : `${props.content}`.trim();
+  const contentStr = badgeContent(props);
   const hasBadgeElement = !!contentStr;
   const isAbove = !position.includes('below');
   const isAfter = !position.includes('before');

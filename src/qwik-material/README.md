@@ -76,6 +76,21 @@ CSS when it renders, as upstream attaches a component's `styleUrl` on first crea
   `.mat-mdc-paginator-icon { width: 28px }`, the disabled icon button's color over datepicker's
   `.mat-datepicker-toggle button { color: inherit }`, badge's doubled `.mat-badge.mat-badge {
   overflow: visible }` over `.mat-icon`'s `hidden` — no order of sub-layers keeps them all.
+- Variants: a large stylesheet whose parts select distinct elements ships as a base sheet plus
+  variant sheets (`COMPONENT_STYLE_VARIANTS` in the generator), each its own `<style>`, so a page
+  carries only what it renders. Button: `text`, `filled`, `elevated`, `outlined`, `tonal` (one per
+  `MatButton` appearance), `icon`, `fab`; list: `rich` (two/three-line items, avatar/icon/meta
+  sections); badge: `content` (the `.mat-badge-content` element, which only a badge with content
+  renders). The hook takes the variants its caller renders — `useMatButtonStyles('elevated')`,
+  `useMatBadgeStyles(...matBadgeStyleVariants(props))` — and always takes one hook position per
+  variant (`useConstant(undefined)` for one not asked for), so a variant's `<style>` has one id
+  wherever it's registered and a later render asking for another (a button switching appearance, a
+  badge getting content) registers it then. The generator keeps upstream's rule order within each
+  sheet, puts every base rule first, and checks (`variantOrderConflicts()`, in
+  `component-styles.spec.ts`) that no variant rule upstream placed before a base rule could decide a
+  property for the same element at equal specificity; an entry overriding a variant at equal
+  specificity registers that variant before its own CSS (the datepicker: `useMatButtonStyles('text',
+  'icon')`, then `useMatDatepickerStyles()`).
 - The hooks are exported for markup rendered without its component — a hand-written
   `mat-mdc-button` host, `matBadge()` called from a plain render function: the component
   rendering it calls the entry point's hook (`useMatButtonStyles()`, `useMatBadgeStyles()`) as its
