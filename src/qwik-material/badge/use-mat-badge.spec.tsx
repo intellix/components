@@ -35,7 +35,11 @@ async function markup(host: JSXOutput): Promise<string> {
   const {render, screen} = await createDOM();
   await render(host);
   const el = screen.querySelector('.mat-badge') as HTMLElement;
-  return el.outerHTML.replace(/(cdk-describedby-message-|mat-badge-content-)\d+/g, '$1N');
+  // `matBadge()`'s content brings its own CSS registration (a component rendering no element; in
+  // dev, Qwik's HMR placeholder `<script hidden>` for it): bookkeeping, not the badge's markup.
+  return el.outerHTML
+    .replace(/<script [^>]*hidden[^>]*><\/script>/g, '')
+    .replace(/(cdk-describedby-message-|mat-badge-content-)\d+/g, '$1N');
 }
 
 const CASES: UseMatBadgeProps[] = [

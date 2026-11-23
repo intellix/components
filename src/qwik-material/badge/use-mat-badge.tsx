@@ -1,4 +1,4 @@
-import {useContext, type JSXOutput} from '@qwik.dev/core';
+import {component$, useContext, type JSXOutput} from '@qwik.dev/core';
 import {createIdGenerator} from '@angular-community/qwik-cdk/a11y';
 import type {HostProps} from '../core/host-props';
 import type {MatBadgeColor} from './badge-color';
@@ -41,10 +41,12 @@ import {type MatBadgeStyleVariant, useMatBadgeStyles} from './badge-styles';
  * constructor) — call it as the consuming component's FIRST hook so every
  * caller shares one `<style>` (README "Component styles"). `matBadge()`
  * can't (no hook phase): the component rendering its result calls
- * `useMatBadgeStyles(...matBadgeStyleVariants(props))` itself, first. The
+ * `useMatBadgeStyles()` itself, first, for the badge's host classes. The
  * content element's CSS — nearly all of it — is the `content` variant,
  * registered only while the badge has content to show (a hidden, empty
- * badge is classes on its host and nothing else).
+ * badge is classes on its host and nothing else): by `useMatBadge()` with
+ * the rest, and by `matBadge()`'s content element itself, which renders a
+ * registering component beside it.
  */
 export interface UseMatBadgeProps {
   /** Content shown inside `.mat-badge-content`. Empty/whitespace-only (after trim) renders
@@ -107,8 +109,19 @@ const idGenerator = createIdGenerator();
  */
 export function useMatBadge(props: UseMatBadgeProps): MatBadgeHook {
   useMatBadgeStyles(...matBadgeStyleVariants(props));
-  return matBadge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS));
+  return badge(props, useContext(MAT_BADGE_CONFIG, DEFAULTS), false);
 }
+
+/**
+ * Registers the badge `content` sheet where a `matBadge()` content element renders — `matBadge()`
+ * has no hook phase, and its caller registered the badge CSS as its first hook without knowing
+ * the content (a CMS badge's text, read after other hooks). Its own component, so the sheet takes
+ * the same hook position — the same `<style>` — as everywhere else. Renders nothing.
+ */
+const BadgeContentStyles = component$(() => {
+  useMatBadgeStyles('content');
+  return null;
+});
 
 /**
  * The badge sheets a badge with these props renders, for `useMatBadgeStyles()`: `content` when it
@@ -132,6 +145,15 @@ function badgeContent(props: Pick<UseMatBadgeProps, 'content'>): string {
  * no CSS: the component rendering the result calls `useMatBadgeStyles()` as its first hook.
  */
 export function matBadge(props: UseMatBadgeProps, config: MatBadgeConfig = DEFAULTS): MatBadgeHook {
+  return badge(props, config, true);
+}
+
+/** `matBadge()`; `contentStyles`: the content element brings its sheet (`BadgeContentStyles`). */
+function badge(
+  props: UseMatBadgeProps,
+  config: MatBadgeConfig,
+  contentStyles: boolean,
+): MatBadgeHook {
   const position = props.position ?? config.position ?? 'above after';
   const size = props.size ?? config.size ?? 'medium';
   const overlap = props.overlap ?? config.overlap ?? true;
@@ -170,12 +192,23 @@ export function matBadge(props: UseMatBadgeProps, config: MatBadgeConfig = DEFAU
     props.description && !interactive && hasBadgeElement ? props.description : undefined;
 
   const badgeContentId = hasBadgeElement ? idGenerator.getId('mat-badge-content-') : undefined;
-  const content = hasBadgeElement ? (
+  const element = hasBadgeElement ? (
     <span id={badgeContentId} class="mat-badge-content mat-badge-active" aria-hidden="true">
       {contentStr}
       {inlineDescription && <span class="cdk-visually-hidden">{inlineDescription}</span>}
     </span>
   ) : undefined;
+  // Still the host's last child: the registration renders no element (a `<style>` at most, the
+  // first time, which a page's first-hook registrations place before their instance too).
+  const content =
+    element && contentStyles ? (
+      <>
+        <BadgeContentStyles />
+        {element}
+      </>
+    ) : (
+      element
+    );
 
   const hostProps: HostProps = {
     class: classes,

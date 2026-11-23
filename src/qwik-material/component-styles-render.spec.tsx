@@ -3,7 +3,7 @@ import {component$, useSignal} from '@qwik.dev/core';
 import {renderToString} from '@qwik.dev/core/server';
 import {ssrRenderToDom, trigger} from '@qwik.dev/core/testing';
 import {describe, expect, it} from 'vitest';
-import {MatBadge} from './badge';
+import {MatBadge, matBadge, useMatBadgeStyles} from './badge';
 import {MatButton, MatIconButton, MatMiniFabButton} from './button';
 import {MatCard} from './card';
 import {MatDivider} from './divider';
@@ -116,6 +116,26 @@ describe('component styles, server-rendered', () => {
       await sheet('list'),
       await sheet('list', 'rich'),
     ]);
+  });
+
+  it("matBadge()'s content element brings its CSS; a hidden, empty badge doesn't", async () => {
+    const Host = component$<{content: string}>(props => {
+      useMatBadgeStyles();
+      const badge = matBadge({content: props.content});
+      return <span {...badge.hostProps}>x{badge.content}</span>;
+    });
+    const empty = await ssr(<Host content="" />);
+    expect(styleTags(empty).map(s => s.css)).toEqual([await sheet('badge')]);
+
+    const shown = await ssr(<Host content="4" />);
+    expect(styleTags(shown).map(s => s.css)).toEqual([
+      await sheet('badge'),
+      await sheet('badge', 'content'),
+    ]);
+    // The content element stays the host's last child.
+    expect(shown).toMatch(
+      /<span [^>]*class="mat-badge-content mat-badge-active"[^>]*>4<\/span><\/span>/,
+    );
   });
 
   it("a badge registers its content element's CSS only when it shows content", async () => {
