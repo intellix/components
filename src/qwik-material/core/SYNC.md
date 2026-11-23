@@ -365,7 +365,40 @@ button-toggle notes above). New, framework-free port of
 | `core/ripple/ripple-dom.ts` | n/a (Qwik-material-specific) | new | The Qwik-facing API every component calls from inside its own `$()` handlers: `handleRippleEvent(event, container, target)` (the SOLE entry point, dispatching on `event.type` for all six pointer events), `launchRipple`/`fadeOutAllRipples`/`fadeOutAllNonPersistentRipples` (`MatRipple.launch()`/`fadeOutAll()`/`fadeOutAllNonPersistent()` equivalents — exposed for completeness; no current consumer needs them besides the pointer path, since the slider's own `.launch()` caller keeps its existing purpose-built `slider-ripple.ts`), and `rippleAnimationConfig(animationsDisabled, overrides)` (folds `_animationsDisabled` into a 0/0 duration override, matching `MatRipple.rippleConfig`'s/`MatRippleLoader._createRipple`'s own precedence) |
 | `core/ripple/ripple-renderer.spec.ts` | `src/material/core/ripple/ripple.spec.ts` | ported (partial) | 33 vitest cases porting the meaningful behavioral assertions (sizing/furthest-corner math, centered/radius/color, default+custom animation config, full `RippleState` lifecycle, mousedown/touchstart/multi-touch/screen-reader-fake-event-filtering/synthetic-mouse-after-touch, `fadeOutAll`/`fadeOutAllNonPersistent`, persistent ripples, the registry, `handleRippleEvent`, `rippleAnimationConfig`). Dropped at the time this row was written: `MAT_RIPPLE_GLOBAL_OPTIONS` tests (no global-options system existed yet here — see the dedicated "Standalone `matRipple` directive + `MAT_RIPPLE_GLOBAL_OPTIONS`" section below for that, added 2026-11-03), `fixture.detectChanges()` mechanics, `ngOnDestroy` cleanup (no directive instance — a `WeakMap`-cached entry for a detached container is just GC'd) |
 
-### Why no `RippleEventManager` port
+### The ripple delegate (2026-11-23): `RippleEventManager` + `MatRippleLoader`, after all
+
+`useMatRippleDelegate()` (`ripple-delegate.ts`, `ripple-delegate-dom.ts`) is upstream's one
+document-level listener per event type, for the button family's lazy ripple (`MatRippleLoader`) and
+for every delegated ripple trigger's presses (`RippleEventManager`): passive `q-dp:*` listeners on
+the delegate's element, once per page. The section below (why there was no port) held while every
+host's own `q-e:*` handlers were free; they weren't: 6 to 8 attributes per ripple host, with their
+captured state, in every server-rendered page (617 on one home page, ~33 kB raw). Now:
+
+- The loader's `focus`/`mouseenter`/`mousedown`/`touchstart` initialization is a `sync$` on
+  `focusin` (the host itself)/`mouseover`/`mousedown`/`touchstart`, imperative as upstream's
+  `_createRipple`: it removes `mat-ripple-loader-uninitialized` (a CONSTANT JSX prop — Qwik never
+  re-diffs one) and appends the `.mat-ripple` span (no `:` attribute — Qwik skips it when it builds
+  vnodes from the DOM, and never had it in a client-built vnode tree), so no re-render undoes
+  either (`ripple-delegate-render.spec.tsx`). The `LazyRipple` component and the per-button signal
+  are gone.
+- `mousedown`/`touchstart` walk from the target up, as qwikloader dispatched the per-host
+  handlers, launching each trigger: a button-family loader host (config from its attributes), an
+  interactive list item (from `.mdc-list-item--disabled` and the delegate's animations), or a
+  claimed element.
+- A trigger whose config isn't in its DOM claims each press on `pointerdown` (which precedes the
+  `mousedown`/`touchstart`): a synchronous veto (a list item's `disableRipple`) or a claim whose
+  config its own `$()` registers (`useMatRipple()`, any host below a `useMatRippleProvider()`/
+  `useMatAnimationsProvider()` nested under the delegate — which set `MAT_RIPPLE_DELEGATE` false).
+  A press waits for a claim's config still loading.
+- Pointer-up: native listeners on each launched trigger (upstream's `RippleRenderer` registers the
+  same). The race the next section describes — a cold chunk's late launch missing the release —
+  is closed by `sync$` handlers recording the last release and each element's last leave; a launch
+  that finds either after its own event fades out at once.
+- Not delegated yet (own handlers, unchanged): tab labels/links/pagination, menu items, options,
+  checkbox, radio, slide toggle, button toggle, step header, chips (whose loader drives render
+  logic from its signal).
+
+### Why no `RippleEventManager` port (superseded above, 2026-11-23)
 
 Upstream delegates `mousedown`/`touchstart` through one document-level
 capturing listener per event type, shared app-wide, specifically to avoid

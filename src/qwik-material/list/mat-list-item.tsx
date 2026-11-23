@@ -1,6 +1,9 @@
 import {$, component$, Slot, useContext, type QRL} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../dialog/use-animations-disabled';
-import {handleRippleEvent, rippleAnimationConfig} from '../core/ripple/ripple-dom';
+import {rippleClaimProps} from '../core/ripple/ripple-delegate';
+import {useRippleDelegated} from '../core/ripple/ripple-delegate-context';
+import {registerRippleClaim} from '../core/ripple/ripple-delegate-dom';
+import {rippleAnimationConfig} from '../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../core/ripple/ripple-global-options';
 import {MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS} from './list-context';
 import {type MatListStyleVariant, useMatListStyles} from './list-styles';
@@ -142,6 +145,7 @@ export const MatListItem = component$<MatListItemProps>(props => {
   const listBase = useContext(MAT_LIST_BASE_STATE, MAT_LIST_BASE_STATE_DEFAULTS);
   const animationsDisabled = useAnimationsDisabled();
   const rippleGlobalOptions = useRippleGlobalOptions();
+  const delegated = useRippleDelegated();
 
   // Mirrors upstream `_initInteractiveListItem()`'s own guard
   // (`this._listBase && !this._listBase._isNonInteractive`): a
@@ -172,22 +176,36 @@ export const MatListItem = component$<MatListItemProps>(props => {
   // element itself (no dedicated ripple `<div>`, unlike menu-item/mat-option).
   // `.mat-ripple-element` spans therefore launch and append as direct
   // children of `<mat-list-item>`/`<a mat-list-item>`/`<button mat-list-item>`.
-  // ONE shared `$()` reference wired to all six pointer events — see
-  // `core/ripple/ripple-renderer.ts`'s module doc comment for why that's
-  // required, not just tidy (cross-chunk QRL ordering on a cold chunk).
-  // The host is the element Qwik passes the listener (the one it's set on),
-  // not a `ref` signal: a signal holding the element is serialized per item.
-  const rippleEvent$ = $((event: MouseEvent | TouchEvent, host: Element) => {
-    handleRippleEvent(
-      event,
-      host,
-      {
-        rippleDisabled,
-        rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
-      },
-      rippleGlobalOptions,
-    );
-  });
+  //
+  // Launched by the ripple delegate (`useMatRippleDelegate()`), which reads an
+  // interactive item's `disabled` off its `.mdc-list-item--disabled` class and
+  // knows the animations — so an item under it carries no handler at all. Its
+  // own or its list's `disableRipple` isn't in the DOM: such an item vetoes its
+  // ripple (`rippleClaimProps()`, one synchronous `pointerdown` handler). Below
+  // a provider nested under the delegate, the item claims its presses with the
+  // options in force here.
+  const rippleProps = !isInteractive
+    ? {}
+    : delegated
+      ? props.disableRipple || listBase.disableRipple
+        ? rippleClaimProps()
+        : {}
+      : delegated === false
+        ? rippleClaimProps(
+            rippleDisabled
+              ? undefined
+              : $((event: PointerEvent, host: Element) =>
+                  registerRippleClaim(host, event, {
+                    container: host,
+                    target: {
+                      rippleDisabled,
+                      rippleConfig: {animation: rippleAnimationConfig(animationsDisabled.value)},
+                    },
+                    globalOptions: rippleGlobalOptions,
+                  }),
+                ),
+          )
+        : {};
 
   // Upstream's `_titles.length` / `_lines.length` / `_hasUnscopedTextContent`,
   // declared by the caller (see the doc comment above).
@@ -277,20 +295,6 @@ export const MatListItem = component$<MatListItemProps>(props => {
     'aria-labelledby': props['aria-labelledby'],
     'aria-describedby': props['aria-describedby'],
   };
-
-  // Only attached for an item inside an interactive list — mirrors
-  // upstream never constructing a `RippleRenderer`/registering its
-  // trigger-event listeners at all for a non-interactive one.
-  const rippleProps = isInteractive
-    ? {
-        onMouseDown$: rippleEvent$,
-        onMouseUp$: rippleEvent$,
-        onMouseLeave$: rippleEvent$,
-        onTouchStart$: rippleEvent$,
-        onTouchEnd$: rippleEvent$,
-        onTouchCancel$: rippleEvent$,
-      }
-    : {};
 
   if (as === 'a') {
     return (

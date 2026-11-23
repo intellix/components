@@ -1,5 +1,9 @@
-import {$, type Signal, sync$, useOn, useSignal} from '@qwik.dev/core';
-import {handleRippleEvent, rippleAnimationConfig} from '../../core/ripple/ripple-dom';
+import {$} from '@qwik.dev/core';
+import type {HostProps} from '../../core/host-props';
+import {rippleClaimProps} from '../../core/ripple/ripple-delegate';
+import {useRippleDelegated} from '../../core/ripple/ripple-delegate-context';
+import {registerRippleClaim} from '../../core/ripple/ripple-delegate-dom';
+import {rippleAnimationConfig} from '../../core/ripple/ripple-dom';
 import {useRippleGlobalOptions} from '../../core/ripple/ripple-global-options';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 
@@ -35,35 +39,19 @@ const CENTERED_ATTR = 'mat-ripple-loader-centered';
 const DISABLED_ATTR = 'mat-ripple-loader-disabled';
 
 /**
- * SSR-rendered host attributes equivalent to upstream's
- * `MatRippleLoader.configureRipple()` call — the parts that never change
- * again after the initial render. Spread onto the same host element that
- * `useRippleLoader` attaches to, e.g.:
+ * SSR-rendered host attributes equivalent to upstream's `MatRippleLoader.configureRipple()` call,
+ * spread onto the host before `useRippleLoader()`'s props and the literal uninitialized attribute:
  * ```tsx
  * <button
  *   {...rippleLoaderHostAttrs({className: 'mat-mdc-button-ripple'})}
- *   mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
+ *   {...rippleLoader}
+ *   mat-ripple-loader-uninitialized=""
  * >
  * ```
  *
- * Deliberately excludes `RIPPLE_UNINITIALIZED_ATTR` itself (upstream's
- * `matRippleUninitialized`, removed by `_createRipple` once the ripple is
- * actually created) even though that one DOES change after the initial
- * render, driven by `useRippleLoader()`'s signal: a Qwik JSX **spread**
- * prop (`{...someObject}`) whose value becomes `undefined` after a
- * client-side re-render does NOT reliably get removed from the live DOM
- * following SSR + resume, even though everything else about that re-render
- * (e.g. this same component's text content, or a `{signal.value && <span/>}`
- * conditional child) patches correctly — confirmed empirically with a
- * minimal repro (a `custom-uninitialized` attr toggled via spread never
- * disappeared after resume, but the exact same toggle written as a literal
- * `custom-uninitialized={signal.value ? undefined : ''}` JSX attribute
- * removed it correctly). Each caller therefore writes
- * `mat-ripple-loader-uninitialized={...}` (the literal string
- * `RIPPLE_UNINITIALIZED_ATTR` names) as its own plain JSX attribute,
- * inline, reading the signal directly in the attribute expression — not
- * through an intermediate variable, and not through this function's
- * spread — alongside the rest of these attrs.
+ * Excludes `RIPPLE_UNINITIALIZED_ATTR` (upstream's `matRippleUninitialized`, removed by
+ * `_createRipple` once the ripple exists): the ripple delegate removes it, and only a literal,
+ * constant JSX attribute — written last, after every spread — is one Qwik never writes again.
  */
 export function rippleLoaderHostAttrs(config: RippleLoaderConfig): Record<string, string> {
   const attrs: Record<string, string> = {
@@ -75,143 +63,51 @@ export function rippleLoaderHostAttrs(config: RippleLoaderConfig): Record<string
 }
 
 /**
- * Client-side half of the ripple-loader contract — the lazy, per-instance
- * replacement for a `useVisibleTask$`-based listener setup (rule 7 of the
- * DOM-parity remediation design: no per-instance `useVisibleTask$` for
- * interaction plumbing in components that appear many times per page).
+ * The client half of the ripple-loader contract, for a button-family host: the host props to
+ * spread on it, next to `rippleLoaderHostAttrs()` and the literal
+ * `mat-ripple-loader-uninitialized=""` (its LAST attribute: a constant prop Qwik sets once and
+ * never re-diffs, so the delegate's removal of it sticks).
  *
- * `useOn()` only attaches serialized `on:<event>` references to this
- * component's own host element at SSR/render time (same mechanism as
- * `qwik-cdk/a11y`'s `useFocusOrigin()`) — the handler's chunk is downloaded
- * and run by qwikloader the FIRST time one of
- * focus/mousedown/mouseenter/touchstart actually fires on the host, never
- * before. This mirrors upstream `MatRippleLoader`'s own lazy-interaction
- * contract (it defers constructing the real `MatRipple` the same way, just
- * via one document-level delegated listener instead of per-host
- * attributes).
+ * Under the ripple delegate (`useMatRippleDelegate()`, core/ripple/ripple-delegate.ts) — the
+ * upstream design: `MatRippleLoader` is one document-level listener — that is NOTHING: the
+ * delegate creates the `.mat-ripple` span on the first `mouseover`/`focusin`/`mousedown`/
+ * `touchstart` (synchronously, upstream's `_createRipple`) and launches ripples with the config
+ * read off these attributes. Before, each host carried eight `q-e:*` handlers (a `sync$` and one
+ * QRL capturing a signal) and re-rendered a `LazyRipple` child to add the span.
  *
- * Returns a `Signal<boolean>`: `false` until a qualifying event fires, then
- * `true` forever (idempotent — later events are harmless no-op writes of
- * the same value). The caller renders BOTH the host's
- * `mat-ripple-loader-uninitialized` attribute, as its own literal JSX
- * attribute — `mat-ripple-loader-uninitialized={rippleInitialized.value ?
- * undefined : ''}` — AND the lazily-created `<span class="mat-ripple
- * …">` itself DECLARATIVELY from this signal's value, e.g.
- * `{rippleInitialized.value && <span class="mat-ripple
- * mat-mdc-button-ripple" />}` as the host's last JSX child (mirrors
- * upstream's `_createRipple` appending it as the host's last child) — see
- * mat-button.tsx and friends.
- *
- * This is deliberately NOT "mutate the live DOM directly inside the event
- * handler", which is what this hook did on an earlier pass and what a first
- * attempt naturally reaches for. That version broke the moment MatButton
- * also started deriving its `cdk-*-focused` classes from
- * `useFocusOrigin()`'s signal (qwik-cdk/a11y): a single click fires both a
- * ripple-triggering event AND a focus event, and `useFocusOrigin()`'s signal
- * write triggers Qwik to reconcile the WHOLE component's vnode tree on the
- * next render — which silently undid the imperative mutation (observed
- * empirically: the appended `.mat-ripple` span got pruned and the removed
- * `uninitialized` attribute came back, because neither exists in the vnode
- * Qwik was reconciling against). Routing ripple state through a signal
- * instead — the same pattern `useFocusOrigin()` itself uses — keeps it
- * correct across a re-render for ANY reason, not just the one active during
- * manual testing. General lesson for this host: once ANY part of a
- * component's render depends on a signal, nothing else may mutate that
- * component's DOM imperatively — it has to go through a signal too.
- *
- * The real ripple ANIMATION (added alongside the ripple-span bootstrap
- * above, same `core/ripple/`-remediation pass): on `mousedown`/`touchstart`,
- * this same handler also checks whether the `.mat-ripple` span this hook's
- * caller conditionally renders already exists in the live DOM. It won't yet
- * on the very first qualifying event on a given host (the span is a
- * declarative child of `initialized`, so setting the signal above only
- * schedules it to appear on the NEXT render) — mirroring upstream's own
- * `MatRippleLoader`: its document-level capture listener creates the ripple
- * DOM/registers trigger-event handling synchronously, but a NEWLY-registered
- * delegated listener added mid-dispatch of the CURRENT event does not itself
- * receive that same event (confirmed against the DOM event-dispatch spec),
- * so the bootstrapping interaction never gets a ripple either — only every
- * one after it. Once the span exists (from an earlier `mouseenter`/`focus`,
- * or a later `mousedown`/`touchstart` on an already-initialized host),
- * `handleRippleEvent()` (`core/ripple/ripple-dom.ts`) launches a real
- * ripple into it. The ripple config is read directly off the host's own
- * `mat-ripple-loader-*` attributes — EXACTLY mirroring upstream's
- * `_createRipple`, which builds its `RippleTarget` the same way
- * (`host.hasAttribute(matRippleCentered)`/`host.hasAttribute(matRippleDisabled)`)
- * — so no caller of `useRippleLoader()` needs to change: `rippleLoaderHostAttrs()`
- * already renders every input this needs.
- *
- * ALL eight events (`focus`/`mouseenter` for bootstrap-only, plus
- * `mousedown`/`touchstart`/`mouseup`/`mouseleave`/`touchend`/`touchcancel`
- * for the actual ripple pointer lifecycle) are wired to this SAME `$()`
- * reference — required, not just tidy: `core/ripple/ripple-renderer.ts`'s
- * module doc comment explains why two separate QRLs (one per event type)
- * can't reliably guarantee `handleMouseDown`'s pointer-down state update
- * happens before `handlePointerUp` reads it for a single click's
- * mousedown/mouseup pair.
+ * Below a nested `useMatRippleProvider()`/`useMatAnimationsProvider()`, the host CLAIMS its
+ * presses instead — one `pointerdown` handler handing the delegate the options in
+ * force here (`rippleClaimProps()`); the span and the attributes still come from the delegate.
  */
-export function useRippleLoader(): Signal<boolean> {
-  const initialized = useSignal(false);
+export function useRippleLoader(): HostProps {
+  return useRippleDelegated() === false ? useClaimedRippleLoader() : {};
+}
+
+/** The claim for a loader host outside the delegate's options scope. */
+function useClaimedRippleLoader(): HostProps {
   const animationsDisabled = useAnimationsDisabled();
   const rippleGlobalOptions = useRippleGlobalOptions();
-
-  const handleInteraction$ = $((event: Event, host: Element) => {
-    if (event.type === 'focus' || event.type === 'mouseenter') {
-      initialized.value = true;
-      return;
-    }
-    if (event.type === 'mousedown' || event.type === 'touchstart') {
-      initialized.value = true;
-    }
-
-    const container = host.querySelector<HTMLElement>('.mat-ripple');
-    // Bootstrap event on a never-before-interacted-with host — the span
-    // doesn't exist in the live DOM yet (see doc comment above). Nothing
-    // more to do; the signal write above arms every later interaction.
-    if (!container) return;
-
-    handleRippleEvent(
-      event as MouseEvent | TouchEvent,
-      container,
-      {
-        rippleDisabled: host.hasAttribute(DISABLED_ATTR),
-        rippleConfig: {
-          centered: host.hasAttribute(CENTERED_ATTR),
-          animation: rippleAnimationConfig(animationsDisabled.value),
+  return rippleClaimProps(
+    $((event: PointerEvent, host: Element) =>
+      registerRippleClaim(host, event, {
+        target: {
+          rippleDisabled: host.hasAttribute(DISABLED_ATTR),
+          rippleConfig: {
+            centered: host.hasAttribute(CENTERED_ATTR),
+            animation: rippleAnimationConfig(animationsDisabled.value),
+          },
         },
-      },
-      rippleGlobalOptions,
-    );
-  });
-
-  // Synchronous twin of the bootstrap above: qwikloader runs a `sync$` handler during
-  // the real event dispatch, before any lazy QRL resolves. Upstream's loader
-  // initializes in a capture-phase listener, so e.g. a click that disables its own
-  // button always finds the ripple already created; the async `initialized` write
-  // can land after the click handler's state change. See `wasRippleInitialized`.
-  useOn(
-    ['focus', 'mousedown', 'mouseenter', 'touchstart'],
-    sync$((_event: Event, host: Element) => {
-      (host as unknown as Record<string, boolean>)['__matRippleLoaderInitialized'] = true;
-    }),
+        globalOptions: rippleGlobalOptions,
+      }),
+    ),
   );
-  useOn('focus', handleInteraction$);
-  useOn('mousedown', handleInteraction$);
-  useOn('mouseenter', handleInteraction$);
-  useOn('touchstart', handleInteraction$);
-  useOn('mouseup', handleInteraction$);
-  useOn('mouseleave', handleInteraction$);
-  useOn('touchend', handleInteraction$);
-  useOn('touchcancel', handleInteraction$);
-
-  return initialized;
 }
 
 /**
- * Whether `host` has received a ripple-initializing event, recorded synchronously at event time
- * (an expando, never a DOM attribute). Use this, not the async `initialized` signal alone, when
- * the answer must respect real event order — e.g. upstream `setDisabled()`'s "was the ripple
- * created before the disabled change" branch.
+ * Whether `host` has received a ripple-initializing event, recorded synchronously at event time by
+ * the delegate (an expando, never a DOM attribute). Use this when the answer must respect real
+ * event order — e.g. upstream `setDisabled()`'s "was the ripple created before the disabled
+ * change" branch.
  */
 export function wasRippleInitialized(host: Element | undefined): boolean {
   return !!(host as unknown as Record<string, boolean> | undefined)?.[

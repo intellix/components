@@ -80,7 +80,7 @@ export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props =>
   const disableRipple = props.disableRipple ?? false;
 
   const focusOrigin = useFocusOrigin();
-  const rippleInitialized = useRippleLoader();
+  const rippleLoader = useRippleLoader();
   const rippleAttrs = rippleLoaderHostAttrs({
     className: 'mat-mdc-button-ripple',
     centered: true,
@@ -142,7 +142,8 @@ export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props =>
         tabIndex={disabled ? -1 : (props.tabIndex ?? 0)}
         {...disabledAttr(disabled)}
         {...rippleAttrs}
-        mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
+        {...rippleLoader}
+        mat-ripple-loader-uninitialized=""
       >
         <span class="mat-mdc-button-persistent-ripple mdc-icon-button__ripple" />
         {cloneJsxForReuse(props.icon) ?? (
@@ -160,7 +161,6 @@ export const MatDatepickerToggle = component$<MatDatepickerToggleProps>(props =>
         )}
         <FocusIndicator />
         <TouchTarget />
-        {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
       </button>
     </mat-datepicker-toggle>
   );

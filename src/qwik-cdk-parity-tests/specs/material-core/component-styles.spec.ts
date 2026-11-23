@@ -26,7 +26,9 @@ test.describe('qwik-material component styles', () => {
     await page.waitForSelector('[data-scenario-ready]');
     const styles = await componentStyles(page);
     const carrying = (rule: string) => styles.filter(s => s.css.includes(rule));
-    expect(carrying('.mat-mdc-button{')).toHaveLength(1);
+    // The button's base sheet (`.mdc-button`), once; only the variant sheets it renders.
+    expect(carrying('.mdc-button{')).toHaveLength(1);
+    expect(carrying('.mat-mdc-fab-base{')).toHaveLength(0);
     expect(carrying('.mat-mdc-form-field{')).toHaveLength(1);
     expect(carrying('.mat-mdc-dialog-container{')).toHaveLength(0);
     for (const style of styles)

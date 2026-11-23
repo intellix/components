@@ -1,6 +1,7 @@
 import {component$} from '@qwik.dev/core';
 import {RouterOutlet, useQwikRouter} from '@qwik.dev/router';
 import {QwikCdkRoot} from '@angular-community/qwik-cdk';
+import {useMatRippleDelegate} from '@angular-community/qwik-material/core';
 import '@angular-community/qwik-cdk/overlay-prebuilt.css';
 import '@angular-community/qwik-material/core-prebuilt.css';
 import '@angular-community/qwik-material/typography-prebuilt.css';
@@ -10,6 +11,8 @@ export default component$(() => {
   // v2: `useQwikRouter()` replaces the v1 `<QwikCityProvider>` wrapper
   // component (still present but deprecated in rc.4 — removed in v3).
   useQwikRouter();
+  // Every qwik-material ripple on the page goes through this one set of document listeners.
+  useMatRippleDelegate();
 
   return (
     <>

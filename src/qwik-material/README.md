@@ -194,6 +194,33 @@ A few rules of thumb:
   `<MatBadge>`, `<MatStepperNext>`/`<MatStepperPrevious>` are thin wrappers around these same
   hooks, for whenever you don't need to compose with another directive.
 
+### Ripples: one delegate per page
+
+Install the ripple delegate once, near the root, after any root-level `useMatRippleProvider()` /
+`useMatAnimationsProvider()`:
+
+```tsx
+import {useMatRippleDelegate} from '@angular-community/qwik-material/core';
+
+export default component$(() => {
+  useMatRippleDelegate();
+  return <>…</>;
+});
+```
+
+It is upstream's design — `RippleEventManager` and `MatRippleLoader` are one document-level
+listener per event type — and it replaces the `q-e:*` handlers every ripple host carried before (6
+to 8 per button or list item, with the state they capture, in the server-rendered HTML): ONE set of
+passive `q-dp:*` document listeners on the delegate's element. It creates a button's lazy
+`.mat-ripple` element on the first hover/focus/press (synchronously, a `sync$`: no chunk), and on
+`mousedown`/`touchstart` launches a ripple for every ripple trigger from the target up, reading a
+button's config off its `mat-ripple-loader-*` attributes and a list item's off its classes; a
+trigger whose config isn't in its DOM (a `useMatRipple()` host, a list item with `disableRipple`, a
+host below a nested provider) claims its presses with ONE `pointerdown` handler. Without the
+delegate, no ripple launches. Components not yet delegated (tabs, menu items, options, checkbox,
+radio, slide toggle, button toggle, step header, chips) keep their own handlers. See
+`core/ripple/ripple-delegate.ts` and `ripple-delegate-dom.ts`.
+
 ### Standalone ripples (`matRipple`)
 
 `useMatRipple()` is the same directive-hook pattern applied to upstream's `[mat-ripple]`/

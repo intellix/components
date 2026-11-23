@@ -1,10 +1,12 @@
 import {$, useSignal, type QRL, type Signal} from '@qwik.dev/core';
 import {useAnimationsDisabled} from '../../dialog/use-animations-disabled';
 import type {HostProps} from '../host-props';
+import {rippleClaimProps} from './ripple-delegate';
+import {useRippleDelegated} from './ripple-delegate-context';
+import {registerRippleClaim} from './ripple-delegate-dom';
 import {
   fadeOutAllNonPersistentRipples,
   fadeOutAllRipples,
-  handleRippleEvent,
   launchRipple,
   rippleAnimationConfig,
 } from './ripple-dom';
@@ -143,17 +145,34 @@ export function useMatRipple(props: UseMatRippleProps = {}): MatRippleHook {
   const animationsDisabled = useAnimationsDisabled();
   const hostRef = useSignal<Element>();
 
-  // ALL SIX pointer events share this ONE `$()` reference — required, not
-  // just tidy; see `ripple-renderer.ts`'s module doc comment for why two
-  // separate QRLs can't reliably order a single click's mousedown/mouseup
-  // pair on a cold chunk.
-  const handlePointerEvent$ = $((event: MouseEvent | TouchEvent) => {
-    const container = hostRef.value;
-    handleRippleEvent(event, container, {
-      rippleDisabled: resolveRippleDisabled(props, globalOptions),
-      rippleConfig: resolveRippleConfig(props, globalOptions, animationsDisabled.value),
-    });
-  });
+  // The trigger CLAIMS its presses from the ripple delegate (`useMatRippleDelegate()`): its
+  // options aren't in the DOM, so instead of a handler per pointer event (six before) it has one
+  // `pointerdown` handler handing the delegate this config — `globalOptions: {}`, as the config
+  // already folds this scope's in (the delegate's own scope may differ). A ripple disabled now
+  // vetoes instead (synchronous, no chunk). The delegate launches and fades it; without one,
+  // nothing would listen, so no claim either.
+  const delegated = useRippleDelegated();
+  const pointerHandlers: HostProps =
+    delegated === null
+      ? {}
+      : rippleClaimProps(
+          resolveRippleDisabled(props, globalOptions)
+            ? undefined
+            : $((event: PointerEvent, trigger: Element) =>
+                registerRippleClaim(trigger, event, {
+                  container: hostRef.value ?? trigger,
+                  target: {
+                    rippleDisabled: resolveRippleDisabled(props, globalOptions),
+                    rippleConfig: resolveRippleConfig(
+                      props,
+                      globalOptions,
+                      animationsDisabled.value,
+                    ),
+                  },
+                  globalOptions: {},
+                }),
+              ),
+        );
 
   const launch$ = $(
     (configOrX: number | RippleConfig, y: number = 0, config?: RippleConfig): RippleRef => {
@@ -176,15 +195,6 @@ export function useMatRipple(props: UseMatRippleProps = {}): MatRippleHook {
   const fadeOutAllNonPersistent$ = $(() => {
     if (hostRef.value) fadeOutAllNonPersistentRipples(hostRef.value);
   });
-
-  const pointerHandlers: HostProps = {
-    onMouseDown$: handlePointerEvent$,
-    onTouchStart$: handlePointerEvent$,
-    onMouseUp$: handlePointerEvent$,
-    onMouseLeave$: handlePointerEvent$,
-    onTouchEnd$: handlePointerEvent$,
-    onTouchCancel$: handlePointerEvent$,
-  };
 
   const hostProps: HostProps = {
     ref: hostRef,

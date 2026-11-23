@@ -166,7 +166,7 @@ export const PaginatorNavButton = component$<PaginatorNavButtonProps>(props => {
     hideTooltip(ctx, signals, {hideDelay: 0, animationsDisabled: animationsDisabled.value});
   });
 
-  const rippleInitialized = useRippleLoader();
+  const rippleLoader = useRippleLoader();
   // `disabled` is deliberately OMITTED from this config (unlike `MatIconButton`'s own usage) —
   // see the `rippleDisabledAttr` doc comment below for why this component computes
   // `mat-ripple-loader-disabled` itself instead.
@@ -178,8 +178,8 @@ export const PaginatorNavButton = component$<PaginatorNavButtonProps>(props => {
    * attribute (which is what `rippleLoaderHostAttrs`' spread-based `disabled` config normally
    * produces, and which is exactly wrong here — see below): upstream only touches the
    * `mat-ripple-loader-disabled` ATTRIBUTE while the ripple has NEVER been instantiated; the
-   * moment a qualifying interaction creates it (same event this component's own
-   * `useRippleLoader()` / `rippleInitialized` watches for), every LATER `setDisabled()` call
+   * moment a qualifying interaction creates it (the ripple delegate's, see `useRippleLoader()`),
+   * every LATER `setDisabled()` call
    * mutates the ripple's own internal property only and never touches the attribute again — so
    * whatever the attribute was AT the instant of first interaction is what it stays, forever,
    * even if `disabled` keeps changing afterward.
@@ -200,11 +200,11 @@ export const PaginatorNavButton = component$<PaginatorNavButtonProps>(props => {
    */
   const rippleDisabledAttr = useSignal(props.disabled);
   useTask$(({track}) => {
-    const everInitialized = track(() => rippleInitialized.value);
     const liveDisabled = track(() => props.disabled);
-    // `wasRippleInitialized` respects real event order (set synchronously on mouseenter/
-    // mousedown), so a click that disables its own button still finds the ripple created first.
-    if (everInitialized || wasRippleInitialized(hostRef.value)) return; // sticky from here on
+    // `wasRippleInitialized`: set synchronously by the ripple delegate when it creates the ripple
+    // (mouseover/focusin/mousedown/touchstart), so a click that disables its own button still
+    // finds the ripple created first.
+    if (wasRippleInitialized(hostRef.value)) return; // sticky from here on
     rippleDisabledAttr.value = liveDisabled;
   });
 
@@ -242,14 +242,14 @@ export const PaginatorNavButton = component$<PaginatorNavButtonProps>(props => {
       // `hidesingleselectionindicator` echo for the same category of fix).
       {...{disabledinteractive: '', mattooltipposition: 'above'}}
       {...rippleAttrs}
-      mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
+      {...rippleLoader}
+      mat-ripple-loader-uninitialized=""
       mat-ripple-loader-disabled={rippleDisabledAttr.value ? '' : undefined}
     >
       <span class="mat-mdc-button-persistent-ripple mdc-icon-button__ripple" />
       {props.icon}
       <FocusIndicator />
       <TouchTarget />
-      {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
     </button>
   );
 });

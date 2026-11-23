@@ -20,7 +20,7 @@ const CalendarBody = component$<{class?: string}>(props => (
  */
 const HandWrittenButton = component$(() => {
   const label = useSignal('Hand-written');
-  useMatButtonStyles();
+  useMatButtonStyles('text');
   return (
     <button class="mat-mdc-button-base mdc-button mat-mdc-button hand-written">
       {label.value}

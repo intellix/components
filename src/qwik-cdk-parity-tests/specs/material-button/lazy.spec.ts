@@ -176,9 +176,18 @@ test.describe('lazy interaction handlers — no eager useVisibleTask$ (rule 7)',
     // `<QwikCdkRoot>`'s eager, synchronous inline `<script>` instead (see
     // `qwik-cdk/a11y/SYNC.md`'s 2026-11-01 entry), which isn't a
     // per-component `q-e:pointerdown` attribute at all.
-    for (const evt of ['focusin', 'focusout', 'focus', 'mousedown', 'mouseenter', 'touchstart']) {
-      expect(await button.getAttribute(`q-e:${evt}`), `expected a q-e:${evt} attribute`).toBeTruthy();
+    for (const evt of ['focusin', 'focusout']) {
+      expect(
+        await button.getAttribute(`q-e:${evt}`),
+        `expected a q-e:${evt} attribute`,
+      ).toBeTruthy();
     }
+    // The ripple has no handler on the button (2026-11-23): the page's one ripple delegate
+    // (`useMatRippleDelegate()`, the dev-app root) listens on the document instead.
+    for (const evt of ['focus', 'mousedown', 'mouseenter', 'touchstart', 'mouseup', 'mouseleave']) {
+      expect(await button.getAttribute(`q-e:${evt}`), `no q-e:${evt} attribute`).toBeNull();
+    }
+    expect(await page.locator('[q-dp\\:mousedown]').count(), 'one ripple delegate').toBe(1);
 
     expect(
       await anyFiredOn(page, await symbols.all(), buttonHandle),
@@ -186,10 +195,12 @@ test.describe('lazy interaction handlers — no eager useVisibleTask$ (rule 7)',
     ).toBe(false);
     await expect(button).not.toHaveClass(/cdk-focused/);
 
-    // A real click exercises both hooks: it moves focus in (useFocusOrigin)
-    // and fires focus/mousedown/mouseenter (useRippleLoader).
+    // A real click exercises both: it moves focus in (useFocusOrigin) and the
+    // delegate creates the ripple element on the way (mouseover/mousedown).
     await button.click();
     await page.waitForTimeout(300);
+    expect(await button.getAttribute('mat-ripple-loader-uninitialized')).toBeNull();
+    expect(await button.locator(':scope > .mat-ripple.mat-mdc-button-ripple').count()).toBe(1);
 
     expect(
       await anyFiredOn(page, await symbols.all(), buttonHandle),

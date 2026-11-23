@@ -49,7 +49,7 @@ interface CalendarNavButtonProps {
  *  `<MatIconButton>`. Mirrors `qwik-material/paginator`'s `PaginatorNavButton` structure. */
 const CalendarNavButton = component$<CalendarNavButtonProps>(props => {
   const focusOrigin = useFocusOrigin();
-  const rippleInitialized = useRippleLoader();
+  const rippleLoader = useRippleLoader();
   const rippleAttrs = rippleLoaderHostAttrs({
     className: 'mat-mdc-button-ripple',
     centered: true,
@@ -81,13 +81,13 @@ const CalendarNavButton = component$<CalendarNavButtonProps>(props => {
       onClick$={props.onClick$}
       {...{disabledinteractive: ''}}
       {...rippleAttrs}
-      mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
+      {...rippleLoader}
+      mat-ripple-loader-uninitialized=""
     >
       <span class="mat-mdc-button-persistent-ripple mdc-icon-button__ripple" />
       {props.icon}
       <FocusIndicator />
       <TouchTarget />
-      {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
     </button>
   );
 });

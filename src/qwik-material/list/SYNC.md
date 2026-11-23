@@ -84,6 +84,8 @@ the structure with props that stand in for upstream's queries:
 
 ## Ripple (2026-11-03)
 
+**2026-11-23:** launched by the ripple delegate (`useMatRippleDelegate()`, core/SYNC.md "The ripple delegate"): an interactive item carries no handler (the delegate reads `.mdc-list-item--disabled` and its own animations), an item whose own or list's `disableRipple` is set vetoes its ripple with one synchronous `pointerdown` handler, and an item below a nested ripple/animations provider claims its presses with the options in force there. The six per-item handlers below are gone.
+
 Ports upstream `MatListItemBase`'s ripple wiring (`src/material/list/list-base.ts`) using this
 project's existing `core/ripple/` renderer (`core/ripple/ripple-dom.ts`'s `handleRippleEvent()` +
 `useRippleGlobalOptions()` + `useAnimationsDisabled()`/`rippleAnimationConfig()` — the SAME

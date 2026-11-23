@@ -114,6 +114,9 @@ export {cloneJsxForReuse} from './jsx-reuse';
 // `ripple/use-mat-ripple.ts`'s doc comment and `qwik-material/README.md`'s "Composing directives".
 export {useMatRipple, type UseMatRippleProps, type MatRippleHook} from './ripple/use-mat-ripple';
 export {MatRipple, type MatRippleProps} from './ripple/mat-ripple';
+// The ONE set of document listeners every ripple goes through (upstream's RippleEventManager and
+// MatRippleLoader) — call once near the root; see `ripple/ripple-delegate.ts`.
+export {useMatRippleDelegate} from './ripple/ripple-delegate';
 export {
   MAT_RIPPLE_GLOBAL_OPTIONS,
   useRippleGlobalOptions,

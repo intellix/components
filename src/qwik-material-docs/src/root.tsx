@@ -1,6 +1,7 @@
 import {component$} from '@qwik.dev/core';
 import {RouterOutlet, useQwikRouter} from '@qwik.dev/router';
 import {QwikCdkRoot} from '@angular-community/qwik-cdk';
+import {useMatRippleDelegate} from '@angular-community/qwik-material/core';
 import {useMatProviders} from '@angular-community/qwik-material/providers';
 import '@angular-community/qwik-cdk/overlay-prebuilt.css';
 import '@angular-community/qwik-material/core-prebuilt.css';
@@ -28,6 +29,8 @@ import {withBase} from './lib/base-path';
 export default component$(() => {
   useQwikRouter();
   useMatProviders({icon: {fontSet: 'material-symbols-outlined'}});
+  // Every qwik-material ripple on the page goes through this one set of document listeners.
+  useMatRippleDelegate();
 
   return (
     <>

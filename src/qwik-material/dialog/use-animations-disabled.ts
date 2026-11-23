@@ -1,4 +1,5 @@
 import {useContext, useContextProvider, useSignal, type Signal} from '@qwik.dev/core';
+import {MAT_RIPPLE_DELEGATE} from '../core/ripple/ripple-delegate-context';
 import {MAT_ANIMATIONS_DISABLED} from './mat-dialog-tokens';
 
 /**
@@ -29,5 +30,7 @@ export function useAnimationsDisabled(): Signal<boolean> {
 export function useMatAnimationsProvider(disabled?: boolean): Signal<boolean> {
   const animationsDisabled = useSignal(disabled ?? false);
   useContextProvider(MAT_ANIMATIONS_DISABLED, animationsDisabled);
+  // The ripple delegate launches with its own scope's animations: hosts below claim with these.
+  useContextProvider(MAT_RIPPLE_DELEGATE, false);
   return animationsDisabled;
 }

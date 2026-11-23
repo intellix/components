@@ -5,7 +5,12 @@ import type {RippleGlobalOptions} from './ripple-global-options';
 
 /**
  * The Qwik-facing half of this port — called from inside a component's own
- * `$()` event handler.
+ * `$()` event handler, or by the ripple delegate (`ripple-delegate-dom.ts`,
+ * 2026-11-23), which now launches the button family's, list items' and
+ * `useMatRipple()`'s ripples from one set of document listeners: what follows
+ * about per-component handlers holds for the components not delegated yet
+ * (tabs, menu items, options, checkbox, radio, slide toggle, button toggle,
+ * step header, chips).
  *
  * Upstream wires `MatRipple`'s trigger element through
  * `RippleEventManager` — a single, lazily-installed, document-level

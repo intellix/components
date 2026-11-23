@@ -1,5 +1,6 @@
-import {$, component$, Slot, useSignal, type QRL} from '@qwik.dev/core';
+import {component$, Slot, type QRL} from '@qwik.dev/core';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
+import {useMatButtonStyles} from '@angular-community/qwik-material/button';
 
 export interface PlainButtonProps {
   /** Marks this as the dialog's auto-focus target (upstream `cdkFocusInitial`, a bare template
@@ -29,8 +30,9 @@ export interface PlainButtonProps {
  * independent of the dialog's own focus-trap).
  */
 export const PlainButton = component$<PlainButtonProps>(props => {
+  // A text button's markup by hand: the button base and text sheets, as `MatButton` registers them.
+  useMatButtonStyles('text');
   const focusOrigin = useFocusOrigin();
-  const rippleInitialized = useSignal(false);
 
   const classes = [
     'mdc-button',
@@ -44,23 +46,17 @@ export const PlainButton = component$<PlainButtonProps>(props => {
     focusOrigin.value === 'program' && 'cdk-program-focused',
   ].filter(Boolean) as string[];
 
-  // `MatRippleLoader`'s real bootstrap events include `focus`/`mousedown` (confirmed live) —
-  // both qualify for this dialog's own interaction (a plain click, and the auto-focus a
-  // `cdkFocusInitial` button receives on open).
-  const bootstrapRipple$ = $(() => {
-    rippleInitialized.value = true;
-  });
-
   return (
     <button
       {...(props.cdkFocusInitial ? ({cdkfocusinitial: ''} as Record<string, string>) : {})}
       type={props.type}
       class={classes}
-      mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
       mat-ripple-loader-class-name="mat-mdc-button-ripple"
       onClick$={props.onClick$}
-      onFocus$={bootstrapRipple$}
-      onMouseDown$={bootstrapRipple$}
+      // The ripple delegate (`useMatRippleDelegate()`, the app root) creates the `.mat-ripple`
+      // span on the first focus/hover/press and removes this constant attribute, as upstream's
+      // `MatRippleLoader` (button/internal/ripple-loader.ts).
+      mat-ripple-loader-uninitialized=""
     >
       <span class="mat-mdc-button-persistent-ripple mdc-button__ripple" />
       <span class="mdc-button__label">
@@ -68,7 +64,6 @@ export const PlainButton = component$<PlainButtonProps>(props => {
       </span>
       <span class="mat-focus-indicator" />
       <span class="mat-mdc-button-touch-target" />
-      {rippleInitialized.value && <span class="mat-ripple mat-mdc-button-ripple" />}
     </button>
   );
 });

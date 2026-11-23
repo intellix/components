@@ -1,4 +1,5 @@
 import {createContextId, useContext, useContextProvider} from '@qwik.dev/core';
+import {MAT_RIPPLE_DELEGATE} from './ripple-delegate-context';
 import type {RippleAnimationConfig} from './ripple-ref';
 
 /**
@@ -71,4 +72,6 @@ export function useRippleGlobalOptions(): RippleGlobalOptions {
  */
 export function useMatRippleProvider(options?: RippleGlobalOptions): void {
   useContextProvider(MAT_RIPPLE_GLOBAL_OPTIONS, options ?? {});
+  // The ripple delegate launches with its own scope's options: hosts below claim with these.
+  useContextProvider(MAT_RIPPLE_DELEGATE, false);
 }

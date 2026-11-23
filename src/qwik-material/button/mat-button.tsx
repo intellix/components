@@ -9,13 +9,13 @@ import type {OpenString} from '../core/open-string';
 import {PersistentRipple} from './internal/persistent-ripple';
 import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
-import {LazyRipple} from './internal/lazy-ripple';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
 import {
   callHostHandler,
   extraHostAttrs,
+  mergeHostProps,
   type HostHandler,
   type HostRef,
   useForwardedHostHandlers,
@@ -193,7 +193,8 @@ export const MatButton = component$<MatButtonProps>(props => {
   // spans are focusable, but harmless.
   const focusOrigin = useFocusOrigin({hostClasses: true});
   // Untracked: `hostClasses` toggles the focus classes with classList, so focus changes must not
-  // re-render the host (see LazyRipple for why); a re-render for any other reason
+  // re-render the host (a re-render rewrites the whole `class`, undoing classes another
+  // script toggled); a re-render for any other reason
   // still writes the current ones.
   const origin = focusOrigin.untrackedValue;
 
@@ -226,16 +227,10 @@ export const MatButton = component$<MatButtonProps>(props => {
     await callHostHandler(props.onClick$, e, el);
   });
 
-  // Lazy, useOn()-based replacement for the old `useVisibleTask$`-based
-  // ripple loader (see internal/ripple-loader.ts) — attaches to this
-  // component's own host element, same as `useFocusOrigin()` above. Returns
-  // a signal (not a side effect): the ripple span + its host attribute must
-  // come from a declarative render rather than be mutated imperatively (see
-  // useRippleLoader()'s doc comment). The span renders in `LazyRipple` so the
-  // signal re-renders only that child, never this host.
+  // The ripple: nothing per host under the ripple delegate (see internal/ripple-loader.ts).
   // Directive-hook handlers via useOn(), not JSX props — see useForwardedHostHandlers().
   useForwardedHostHandlers(props);
-  const rippleInitialized = useRippleLoader();
+  const rippleLoader = useRippleLoader();
   const rippleAttrs = rippleLoaderHostAttrs({
     className: 'mat-mdc-button-ripple',
     disabled: props.disableRipple || props.disabled,
@@ -243,6 +238,10 @@ export const MatButton = component$<MatButtonProps>(props => {
 
   // See the `[extraAttr]` prop doc above.
   const extraAttrs = extraHostAttrs(props as Record<string, unknown>, KNOWN_PROPS);
+  // With the ripple claim's `pointerdown` handler merged in, beside any of the caller's own.
+  const hostAttrs = rippleLoader.onPointerDown$
+    ? mergeHostProps(extraAttrs, rippleLoader)
+    : extraAttrs;
   const describedBy = props.ariaDescribedBy ?? (props['aria-describedby'] as string | undefined);
 
   if (isAnchor) {
@@ -260,9 +259,9 @@ export const MatButton = component$<MatButtonProps>(props => {
         aria-describedby={describedBy}
         aria-labelledby={props.ariaLabelledBy}
         onClick$={preventDisabledClick$}
-        {...extraAttrs}
+        {...hostAttrs}
         {...rippleAttrs}
-        mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
+        mat-ripple-loader-uninitialized=""
       >
         <PersistentRipple isFab={false} />
         <span class="mdc-button__label">
@@ -271,7 +270,6 @@ export const MatButton = component$<MatButtonProps>(props => {
         <FocusIndicator />
         <TouchTarget />
         {props.hostContent}
-        <LazyRipple initialized={rippleInitialized} />
       </a>,
     );
   }
@@ -289,9 +287,9 @@ export const MatButton = component$<MatButtonProps>(props => {
       aria-describedby={describedBy}
       aria-labelledby={props.ariaLabelledBy}
       onClick$={props.onClick$}
-      {...extraAttrs}
+      {...hostAttrs}
       {...rippleAttrs}
-      mat-ripple-loader-uninitialized={rippleInitialized.value ? undefined : ''}
+      mat-ripple-loader-uninitialized=""
     >
       <PersistentRipple isFab={false} />
       <span class="mdc-button__label">
@@ -300,7 +298,6 @@ export const MatButton = component$<MatButtonProps>(props => {
       <FocusIndicator />
       <TouchTarget />
       {props.hostContent}
-      <LazyRipple initialized={rippleInitialized} />
     </button>,
   );
 });
