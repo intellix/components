@@ -144,6 +144,9 @@ function createDrawer(
     // `undefined` means "the animation task hasn't run yet" — distinguishes a drawer that
     // starts `opened` from a later transition INTO opened (see the task below).
     const prevOpened = useSignal<boolean | undefined>(undefined);
+    // Counts the open/close transitions started: a transition's settling (below) only runs while it
+    // is the latest one — see the task's `setTimeout`.
+    const transitionSeq = useSignal(0);
 
     const position = props.position === 'end' ? 'end' : 'start';
     const mode = props.mode ?? 'over';
@@ -306,7 +309,16 @@ function createDrawer(
       // comment above for why.
       const transitionsOn = containerState.transitionsEnabled.value;
       const delay = transitionsOn ? DRAWER_TRANSITION_MS : 0;
+      // Not cleared on the task's cleanup: the task also re-runs for a width/mode change, which
+      // starts no transition and must not cancel the one in flight. Upstream only ever emits for
+      // the animation that finishes; a transition superseded before it settles (opened, then
+      // closed within 400 ms) reports nothing. Reporting its stale value would hand a consumer
+      // that writes `onOpenedChange$` back into `opened` the superseded state, starting another
+      // transition whose own stale report undoes it — the drawer opening and closing every
+      // 400 ms for good.
+      const seq = ++transitionSeq.value;
       setTimeout(() => {
+        if (seq !== transitionSeq.value) return;
         animating.value = false;
         const hostEl = hostRef.value;
         if (hostEl) hostEl.classList.remove('mat-drawer-animating');
