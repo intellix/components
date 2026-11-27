@@ -1,9 +1,10 @@
-import {component$, Slot, useContext, $} from '@qwik.dev/core';
+import {component$, Slot, useContext, $, type JSXOutput} from '@qwik.dev/core';
 import type {MatButtonColor} from './button-appearance';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import type {OpenString} from '../core/open-string';
 import {FocusIndicator} from './internal/focus-indicator';
 import {TouchTarget} from './internal/touch-target';
+import {cloneJsxForReuse} from '../core/jsx-reuse';
 import {rippleLoaderHostAttrs, useRippleLoader} from './internal/ripple-loader';
 import {disabledAttr} from './internal/disabled-attr';
 import {useFocusOrigin} from '@angular-community/qwik-cdk/a11y';
@@ -41,6 +42,7 @@ const KNOWN_PROPS = new Set<string>([
   'id',
   'class',
   'ref',
+  'hostContent',
 ]);
 
 export interface MatIconButtonProps {
@@ -73,6 +75,11 @@ export interface MatIconButtonProps {
   ariaLabelledBy?: string;
   id?: string;
   class?: string | ReadonlyArray<string>;
+  /**
+   * A directive hook's own extra content (`useMatBadge(...).content`, the `.mat-badge-content` span), rendered as
+   * the host's last child — see `mat-button.tsx`'s identical prop doc comment.
+   */
+  hostContent?: JSXOutput;
   /** See `mat-button.tsx`'s identical `[extraAttr]` doc comment. */
   [extraAttr: string]: unknown;
 }
@@ -140,6 +147,8 @@ export const MatIconButton = component$<MatIconButtonProps>(props => {
       <Slot />
       <FocusIndicator />
       <TouchTarget />
+      {/* Cloned: the ripple loader's re-render on first hover would empty it (core/jsx-reuse.ts). */}
+      {cloneJsxForReuse(props.hostContent)}
       {buttonVariantSheet('icon')}
     </>
   );

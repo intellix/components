@@ -45,6 +45,7 @@ const KNOWN_PROPS = new Set<string>([
   'class',
   'ref',
   'icon',
+  'hostContent',
 ]);
 
 /**
@@ -107,6 +108,11 @@ export interface MatFabOwnProps {
 
 /** See `mat-button.tsx`'s identical `[extraAttr]` doc comment. */
 export interface MatFabProps extends MatFabOwnProps {
+  /**
+   * A directive hook's own extra content (`useMatBadge(...).content`, the `.mat-badge-content` span), rendered as
+   * the host's last child — see `mat-button.tsx`'s identical prop doc comment.
+   */
+  hostContent?: JSXOutput;
   [extraAttr: string]: unknown;
 }
 
@@ -183,6 +189,8 @@ export const MatFabButton = component$<MatFabProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
+      {/* Cloned: the ripple loader's re-render on first hover would empty it (core/jsx-reuse.ts). */}
+      {cloneJsxForReuse(props.hostContent)}
       {buttonVariantSheet('fab')}
     </>
   );

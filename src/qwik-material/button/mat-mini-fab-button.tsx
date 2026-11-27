@@ -1,4 +1,4 @@
-import {component$, Slot, useContext, $} from '@qwik.dev/core';
+import {component$, Slot, useContext, $, type JSXOutput} from '@qwik.dev/core';
 import type {MatFabOwnProps} from './mat-fab-button';
 import {MAT_BUTTON_CONFIG, type MatButtonConfig} from './button-config';
 import {PersistentRipple} from './internal/persistent-ripple';
@@ -22,6 +22,11 @@ import {serverRendering} from '../core/ssr-sheets';
 // (via its index-signature-free MatFabOwnProps — see that type's doc
 // comment for why `Omit` needs the index-signature-free version).
 export interface MatMiniFabProps extends Omit<MatFabOwnProps, 'extended'> {
+  /**
+   * A directive hook's own extra content (`useMatBadge(...).content`, the `.mat-badge-content` span), rendered as
+   * the host's last child — see `mat-button.tsx`'s identical prop doc comment.
+   */
+  hostContent?: JSXOutput;
   [extraAttr: string]: unknown;
 }
 
@@ -48,6 +53,7 @@ const KNOWN_PROPS = new Set<string>([
   'class',
   'ref',
   'icon',
+  'hostContent',
 ]);
 
 // Same accent default as MatFabButton (see fab.ts line 130-143).
@@ -121,6 +127,8 @@ export const MatMiniFabButton = component$<MatMiniFabProps>(props => {
       </span>
       <FocusIndicator />
       <TouchTarget />
+      {/* Cloned: the ripple loader's re-render on first hover would empty it (core/jsx-reuse.ts). */}
+      {cloneJsxForReuse(props.hostContent)}
       {buttonVariantSheet('fab')}
     </>
   );
