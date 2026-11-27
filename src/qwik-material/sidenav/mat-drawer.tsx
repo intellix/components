@@ -70,6 +70,10 @@ export interface MatDrawerProps {
   onOpenedStart$?: QRL<() => void>;
   /** Fires when the drawer has started closing. Mirrors upstream's `closedStart` output. */
   onClosedStart$?: QRL<() => void>;
+  /** The host's `role` — an Angular consumer binds `[attr.role]` on `<mat-sidenav>` (upstream sets none). */
+  role?: string;
+  /** `data-*` attributes for the host — an Angular consumer's `[attr.data-…]` bindings on `<mat-sidenav>`. */
+  [dataAttr: `data-${string}`]: string | undefined;
   class?: string | ReadonlyArray<string>;
   id?: string;
   /** Inline style, merged with this drawer's own computed `width` (and, when
@@ -420,8 +424,23 @@ function createDrawer(
     // FunctionComponent-typed-alias pattern.
     const HostTag = hostTag as unknown as FunctionComponent<Record<string, unknown>>;
 
+    // The consumer's `data-*` attributes, as its `[attr.data-…]` bindings on upstream's host.
+    const dataAttrs: Record<string, string> = {};
+    for (const key in props) {
+      const value = (props as Record<string, unknown>)[key];
+      if (key.startsWith('data-') && typeof value === 'string') dataAttrs[key] = value;
+    }
+
     return (
-      <HostTag ref={hostRef} id={props.id} class={classes} style={style} tabIndex={tabIndexValue}>
+      <HostTag
+        ref={hostRef}
+        id={props.id}
+        class={classes}
+        style={style}
+        tabIndex={tabIndexValue}
+        role={props.role}
+        {...dataAttrs}
+      >
         {/* `cdkscrollable` mirrors upstream's bare `cdkScrollable` directive-selector attribute
             (`drawer.html`'s `<div class="mat-drawer-inner-container" cdkScrollable>`) — a static,
             no-value marker Angular echoes onto the host, same category as slide-toggle's
